@@ -30,10 +30,16 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
   }, []);
 
   const handleUpdate = () => {
+<<<<<<< HEAD
     // توجيه لصفحة التحديث المخصصة — لا تفتح APK مباشرة
     const UPDATE_PAGE = 'https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/update.html';
     const target = apkUrl && apkUrl.endsWith('.html') ? apkUrl : UPDATE_PAGE;
     window.open(target, '_blank');
+=======
+    if (apkUrl) {
+      window.open(apkUrl, '_blank');
+    }
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   };
 
   return (

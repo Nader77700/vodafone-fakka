@@ -127,6 +127,7 @@ export function useUpdateChecker() {
   const isBelowMin  = minVersionCode > 0 && installedCode < minVersionCode;
   // version_force_update boolean toggle: يُجبر إذا كان هناك إصدار أحدث
   const isForceToggled = forceUpdateToggle && latestVersion !== null && latestVersion.version_code > installedCode;
+<<<<<<< HEAD
 
   // ─── Guard حاسم: لا Force Update ولا hasUpdate إلا بعد التأكد من APK ───
   // apkExists=null = جارٍ الفحص، apkExists=false = الرابط ميت (لا تُظهر شيئاً)
@@ -136,6 +137,9 @@ export function useUpdateChecker() {
   const forceUpdate = forceReady
     && ready             // انتظر اكتمال فحص APK أولاً
     && apkReady          // APK موجود فعلاً ويرجع 200
+=======
+  const forceUpdate = forceReady
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     && Capacitor.isNativePlatform()
     && (isBelowMin || isBlocked || isForceToggled);
 

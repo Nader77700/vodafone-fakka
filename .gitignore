@@ -2,7 +2,10 @@ node_modules
 dist
 .vite
 *.log
+<<<<<<< HEAD
 .sync/
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 android/app/build
 android/build
 android/.gradle
@@ -22,6 +25,9 @@ Thumbs.db
 coverage
 playwright-report
 test-results
+<<<<<<< HEAD
 /.skills
 /tasks
 package.json.[0-9]*
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)

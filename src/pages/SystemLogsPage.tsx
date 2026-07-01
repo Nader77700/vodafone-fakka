@@ -13,7 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+<<<<<<< HEAD
 import { formatEgyptDateTime } from '@/lib/egyptTime';
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
 const LOG_LEVEL_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; cls: string }> = {
   info:    { label: 'معلومات', icon: Info,          cls: 'bg-primary/10 text-primary border-primary/20' },
@@ -181,7 +184,11 @@ export default function SystemLogsPage() {
                     </div>
                   </div>
                   <span className="text-[9px] text-muted-foreground shrink-0 tabular-nums">
+<<<<<<< HEAD
                     {formatEgyptDateTime(log.created_at)}
+=======
+                    {new Date(log.created_at).toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                   </span>
                 </div>
                 {log.metadata && Object.keys(log.metadata).length > 0 && (

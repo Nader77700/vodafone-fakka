@@ -17,7 +17,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+<<<<<<< HEAD
 import { formatEgyptDateTime } from '@/lib/egyptTime';
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 import { toast } from 'sonner';
 
 const TYPE_CONFIG: Record<NotificationType, { icon: React.FC<{ className?: string }>; cls: string; label: string }> = {
@@ -68,7 +71,11 @@ function formatTime(dateStr: string) {
   if (diff < 60) return 'الآن';
   if (diff < 3600) return `${Math.floor(diff / 60)} د`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} س`;
+<<<<<<< HEAD
   return formatEgyptDateTime(d);
+=======
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 }
 
 export default function NotificationsPage() {

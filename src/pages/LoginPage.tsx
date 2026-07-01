@@ -10,10 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { OFFICIAL_LOGO } from '@/pages/SplashScreen';
 import { consumePendingInvite, clearPendingInvite, type PendingInvite } from '@/pages/JoinPage';
+<<<<<<< HEAD
 import {
   assignUserToMerchantSecure,
   getPendingInviteToken, clearPendingInviteToken, linkUserToInviteToken,
 } from '@/lib/api';
+=======
+import { assignUserToMerchantSecure } from '@/lib/api';
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
 type Mode = 'login' | 'register';
 
@@ -45,7 +49,11 @@ export default function LoginPage() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
 
+<<<<<<< HEAD
   // ── دعوة التاجر المحفوظة (v1 = /join/:code) ──
+=======
+  // ── دعوة التاجر المحفوظة ──
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
   useEffect(() => {
     const inv = consumePendingInvite();
@@ -55,6 +63,7 @@ export default function LoginPage() {
     if (locState?.mode === 'register') setMode('register');
   }, []); // eslint-disable-line
 
+<<<<<<< HEAD
   // ── تطبيق روابط الدعوة المعلّقة بعد تسجيل الدخول أو الإنشاء ──────────────
   // يدعم كلا النوعين: v1 (/join/:code) + v2 (/invite/:token)
   const applyPendingInvites = async (userId: string) => {
@@ -81,6 +90,8 @@ export default function LoginPage() {
     }
   };
 
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   const loginEmail = `${username.trim().toLowerCase()}@miaoda.com`;
 
   const handleLogin = async () => {
@@ -91,6 +102,7 @@ export default function LoginPage() {
     setLoading(true);
 
     // تسجيل دخول برقم الهاتف: ابحث عن الإيميل في profiles
+<<<<<<< HEAD
     // إصلاح: عند تكرار الرقم نُعطي أولوية للحساب الأحدث (created_at DESC)
     if (isPhoneInput(username)) {
       const normalized = normalizeEgyptPhone(username);
@@ -102,10 +114,21 @@ export default function LoginPage() {
         .limit(5);
 
       if (!profileRows || profileRows.length === 0) {
+=======
+    if (isPhoneInput(username)) {
+      const normalized = normalizeEgyptPhone(username);
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('phone', normalized)
+        .maybeSingle();
+      if (!profileData?.email) {
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         setLoading(false);
         toast.error('لم يُعثر على حساب بهذا الرقم');
         return;
       }
+<<<<<<< HEAD
 
       // نجرّب كل حساب بالترتيب (الأحدث أولاً) حتى يتطابق بكلمة المرور
       let matchedSession = null;
@@ -121,12 +144,25 @@ export default function LoginPage() {
       }
       // تطبيق الدعوة المعلّقة بعد الدخول برقم الهاتف
       if (matchedSession?.user?.id) await applyPendingInvites(matchedSession.user.id);
+=======
+      const { error } = await supabase.auth.signInWithPassword({ email: profileData.email, password });
+      setLoading(false);
+      if (error) {
+        toast.error('كلمة المرور غير صحيحة لهذا الرقم');
+        return;
+      }
+      // عرض شاشة البداية بعد تسجيل الدخول
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
       navigate('/home', { replace: true });
       return;
     }
 
     // تسجيل دخول باسم المستخدم
+<<<<<<< HEAD
     const { data: signData, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+=======
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     setLoading(false);
     if (error) {
       if (error.message.includes('Invalid login') || error.message.includes('invalid_credentials')) {
@@ -140,8 +176,11 @@ export default function LoginPage() {
       }
       return;
     }
+<<<<<<< HEAD
     // تطبيق رابط الدعوة المعلّق بعد تسجيل الدخول
     if (signData?.user?.id) await applyPendingInvites(signData.user.id);
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     // عرض شاشة البداية بعد تسجيل الدخول
     navigate('/home', { replace: true });
   };
@@ -151,6 +190,7 @@ export default function LoginPage() {
       toast.error('يرجى ملء جميع الحقول');
       return;
     }
+<<<<<<< HEAD
     if (username.trim().length < 4) {
       toast.error('اسم المستخدم يجب أن يكون 4 أحرف على الأقل');
       return;
@@ -161,6 +201,14 @@ export default function LoginPage() {
     }
     if (!/^[a-zA-Z]+$/.test(username.trim())) {
       toast.error('اسم المستخدم يجب أن يحتوي على حروف إنجليزية فقط (بدون أرقام أو رموز)');
+=======
+    if (username.trim().length < 5) {
+      toast.error('اسم المستخدم يجب أن يكون 5 أحرف على الأقل');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      toast.error('اسم المستخدم يجب أن يحتوي على حروف وأرقام و _ فقط');
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
       return;
     }
     if (password.length < 8) {
@@ -189,7 +237,11 @@ export default function LoginPage() {
     }
     const normalizedPhone = normalizeEgyptPhone(phone);
     if (!/^01[0-9]{9}$/.test(normalizedPhone)) {
+<<<<<<< HEAD
       toast.error('يرجى إدخال رقم هاتف مصري صحيح (للتواصل على WhatsApp)');
+=======
+      toast.error('يرجى إدخال رقم هاتف مصري صحيح (فودافون كاش)');
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
       return;
     }
     if (!agreed) {
@@ -235,7 +287,20 @@ export default function LoginPage() {
       }).eq('id', data.user.id);
 
       // ── ربط التاجر تلقائياً إذا جاء من رابط دعوة ──
+<<<<<<< HEAD
       await applyPendingInvites(data.user.id);
+=======
+      if (pendingInvite) {
+        await assignUserToMerchantSecure(
+          data.user.id,
+          pendingInvite.merchant_id,
+          pendingInvite.invite_code,
+          'invite_link',
+        );
+        clearPendingInvite();
+        toast.success(`تم ربط حسابك بـ ${pendingInvite.merchant_name} ✅`);
+      }
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     }
     setLoading(false);
     toast.success('تم إنشاء الحساب بنجاح!');
@@ -315,14 +380,21 @@ export default function LoginPage() {
               </Label>
               <div className="relative input-premium rounded-lg">
                 <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+<<<<<<< HEAD
                 <div className="space-y-1.5">
                 <Input
                   className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
                   placeholder={mode === 'login' ? 'اسم المستخدم أو 01XXXXXXXXX' : 'nader'}
+=======
+                <Input
+                  className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
+                  placeholder={mode === 'login' ? 'اسم المستخدم أو 01XXXXXXXXX' : 'أدخل اسم المستخدم'}
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleRegister())}
                 />
+<<<<<<< HEAD
                 {mode === 'register' && (
                   <p className="text-xs text-muted-foreground pr-1">اسم المستخدم باللغة الإنجليزية فقط · 4–16 حرفاً</p>
                 )}
@@ -334,6 +406,15 @@ export default function LoginPage() {
             {mode === 'register' && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-normal text-muted-foreground">رقم التواصل على WhatsApp</Label>
+=======
+              </div>
+            </div>
+
+            {/* رقم فودافون كاش — عند التسجيل فقط */}
+            {mode === 'register' && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-normal text-muted-foreground">رقم فودافون كاش</Label>
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                 <div className="relative input-premium rounded-lg">
                   <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -345,7 +426,11 @@ export default function LoginPage() {
                     onChange={e => setPhone(e.target.value)}
                   />
                 </div>
+<<<<<<< HEAD
                 <p className="text-xs text-muted-foreground pr-1">رقم الهاتف للتواصل معك فقط — لا يُستخدم في الشحن</p>
+=======
+                <p className="text-xs text-muted-foreground pr-1">رقم الهاتف المصري المرتبط بفودافون كاش</p>
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
               </div>
             )}
 

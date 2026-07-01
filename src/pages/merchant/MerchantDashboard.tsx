@@ -26,11 +26,17 @@ import {
   generateMerchantInviteLink,
   getMerchantUsersPaged, getMerchantUserStats, updateMerchantUserStatus,
   getMerchantWallet, getMerchantLedger,
+<<<<<<< HEAD
   getMerchantMembersPaged, getMerchantMembersStats,
   activateMemberSubscription, renewMemberSubscription, setMemberStatus,
   type MerchantUsersResult,
 } from '@/lib/api';
 import type { Profile, MerchantUserStatus, MerchantWallet, MerchantLedgerEntry, MerchantMember, MemberStatsResult } from '@/types/types';
+=======
+  type MerchantUsersResult,
+} from '@/lib/api';
+import type { Profile, MerchantUserStatus, MerchantWallet, MerchantLedgerEntry } from '@/types/types';
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 import MemberDetailSheet from '@/components/merchant/MemberDetailSheet';
 import InviteManager from '@/components/merchant/InviteManager';
 import MerchantOperationsTab from '@/components/merchant/MerchantOperationsTab';
@@ -419,6 +425,7 @@ function InviteManagerTab({ merchantId }: { merchantId: string }) {
   );
 }
 
+<<<<<<< HEAD
 // ─── Subscriptions Tab ────────────────────────────────────────────────────────
 // تفعيل/تجديد اشتراكات الأعضاء وإدارة حالاتهم مباشرةً
 function SubscriptionsTab({ merchantId }: { merchantId: string }) {
@@ -676,6 +683,8 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
   );
 }
 
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 // ─── Points Tab ───────────────────────────────────────────────────────────────
 function PointsTab({ merchantId }: { merchantId: string }) {
   const [wallet, setWallet] = useState<MerchantWallet | null>(null);
@@ -976,8 +985,12 @@ export default function MerchantDashboard() {
         {activeTab === 'overview'      && <OverviewTab />}
         {activeTab === 'users'         && merchant && <UsersTab merchantId={merchant.id} />}
         {activeTab === 'users'         && !merchant && <PlaceholderSection icon={Users} title="جارٍ التحميل…" desc="" />}
+<<<<<<< HEAD
         {activeTab === 'subscriptions' && merchant && <SubscriptionsTab merchantId={merchant.id} />}
         {activeTab === 'subscriptions' && !merchant && <PlaceholderSection icon={CreditCard} title="جارٍ التحميل…" desc="" />}
+=======
+        {activeTab === 'subscriptions' && <PlaceholderSection icon={CreditCard}  title="الاشتراكات"          desc="متابعة اشتراكات مستخدميك وحالتها" />}
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         {activeTab === 'points'        && merchant && <PointsTab merchantId={merchant.id} />}
         {activeTab === 'points'        && !merchant && <PlaceholderSection icon={Zap} title="جارٍ التحميل…" desc="" />}
         {activeTab === 'operations'    && merchant && <MerchantOperationsTab merchantId={merchant.id} />}

@@ -133,11 +133,17 @@ serve(async (req) => {
 
     // ─── 2. محتوى الإشعار ──────────────────────────────────────────────────
     const notifTitle = "🚀 إصدار جديد متاح";
+<<<<<<< HEAD
     const notifBody  = `تم إصدار النسخة ${version}. اضغط لتحميل التحديث من صفحة التحديثات.`;
     // ⚡ action_url = صفحة التحديث المخصصة (وليس رابط APK المباشر)
     // المستخدم يُوجَّه لصفحة update.html الجميلة — منها يقوم بالتحميل
     const UPDATE_PAGE = "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/update.html";
     const actionUrl   = UPDATE_PAGE;
+=======
+    const notifBody  = `تم إصدار النسخة ${version}. اضغط لتحميل آخر تحديث والاستفادة من التحسينات الجديدة.`;
+    // ⚡ action_url = رابط APK المباشر حتى يفتح المتصفح تلقائياً عند الضغط
+    const actionUrl  = apk_url ?? "/updates";
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
     // ─── 3. إدخال إشعار عام في notifications ──────────────────────────────
     const { data: notifRow, error: insertErr } = await supabase

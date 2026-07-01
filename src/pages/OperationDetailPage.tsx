@@ -9,7 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/db/supabase';
 import type { Operation } from '@/types/types';
 import { parseApiError } from '@/lib/errorMapper';
+<<<<<<< HEAD
 import { formatEgyptDate, formatEgyptTime, formatEgyptDateTime } from '@/lib/egyptTime';
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 import {
   ArrowRight, CheckCircle2, XCircle, Clock, Hash, Phone,
   CreditCard, Banknote, Calendar, Timer, Wallet, Shield,
@@ -129,8 +132,13 @@ export default function OperationDetailPage() {
   const mapped = op.status === 'failed' ? parseApiError(op.error_message) : null;
 
   const performedDate = new Date(opFull.performed_at);
+<<<<<<< HEAD
   const dateLabel = formatEgyptDate(performedDate);
   const timeLabel = formatEgyptTime(performedDate);
+=======
+  const dateLabel = performedDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeLabel = performedDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
   const durationMs = opFull.duration_ms ?? opFull.latency_ms;
 
@@ -276,7 +284,11 @@ export default function OperationDetailPage() {
                   <DataRow label="Execution Layer"  value={opFull.execution_layer} />
                   <DataRow label="Retry Count"      value={opFull.retry_count ?? 0} />
                   <DataRow label="Duration (ms)"    value={durationMs} />
+<<<<<<< HEAD
                   <DataRow label="Created At"       value={opFull.created_at ? formatEgyptDateTime(opFull.created_at) : '—'} />
+=======
+                  <DataRow label="Created At"       value={opFull.created_at ? new Date(opFull.created_at).toLocaleString('ar-EG') : '—'} />
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                 </div>
 
                 {/* نتيجة */}

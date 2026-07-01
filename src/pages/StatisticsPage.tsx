@@ -12,7 +12,10 @@ import {
   CalendarDays, CalendarCheck, Calendar, Clock
 } from 'lucide-react';
 import AppFooter from '@/components/common/AppFooter';
+<<<<<<< HEAD
 import { formatEgyptDateTime } from '@/lib/egyptTime';
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
 interface StatCardProps {
   icon: React.ElementType;
@@ -110,7 +113,14 @@ export default function StatisticsPage() {
                 <p className="text-sm font-black text-primary">{s.last_operation.amount} ج.م</p>
               )}
               <p className="text-xs text-muted-foreground">
+<<<<<<< HEAD
                 {formatEgyptDateTime(s.last_operation.performed_at)}
+=======
+                {new Date(s.last_operation.performed_at).toLocaleString('en-GB', {
+                  year: 'numeric', month: 'short', day: 'numeric',
+                  hour: '2-digit', minute: '2-digit'
+                })}
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
               </p>
             </div>
           </div>
