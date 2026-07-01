@@ -8,13 +8,9 @@ import type {
 const DEVICE_HEADERS: Record<string, string> = {
   'User-Agent': 'okhttp/4.12.0',
   'Connection': 'Keep-Alive',
-<<<<<<< HEAD
   // ❌ لا نضع Accept-Encoding: gzip يدوياً — OkHttp/CapacitorHttp يضيفه تلقائياً
   // ويفك الضغط تلقائياً. لو حددناه يدوياً تعطّل فك الضغط التلقائي (OkHttp documented behaviour)
   // مما يُرجع binary data بدل JSON → parseError = Binary Data Detected
-=======
-  'Accept-Encoding': 'gzip',
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   'x-dynatrace': 'MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157',
   'x-agent-operatingsystem': '13',
   'clientId': 'AnaVodafoneAndroid',
@@ -1077,7 +1073,6 @@ async function executeNativeVodafoneOrder(payload: {
     try {
       const { VodafoneDetector } = await import('./vodafoneDetector');
       const netInfo = await VodafoneDetector.getNetworkInfo();
-<<<<<<< HEAD
 
       // تحقق أن البلوجن يعمل native فعلاً (وليس web fallback)
       // Web fallback يُرجع activeDataSimOperator = 'غير متوفر (ويب)' وisWifiActive=navigator.onLine دائماً
@@ -1089,39 +1084,24 @@ async function executeNativeVodafoneOrder(payload: {
         // لا نعتمد على بيانات web fallback لاتخاذ قرار الحجب — متابعة
         log(0, 'Network Pre-Check', 'skip', 'VodafoneDetector web fallback — تخطي فحص WiFi، متابعة الطلب');
       } else if (netInfo.isWifiActive && !netInfo.isMobileDataActive) {
-=======
-      if (netInfo.isWifiActive && !netInfo.isMobileDataActive) {
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         log(0, 'Network Pre-Check', 'fail', `WiFi فقط بدون Mobile Data — seamless سيفشل`);
         return {
           success: false,
           error: '📡 يرجى تشغيل بيانات Vodafone.\nأوقف الـ WiFi أو فعّل بيانات الجوال وأعد المحاولة.',
           debugSteps: steps,
         };
-<<<<<<< HEAD
       } else if (netInfo.isWifiActive && netInfo.isMobileDataActive) {
         // WiFi + بيانات معاً — Android يوجّه عبر WiFi → يمنع Seamless
         log(0, 'Network Pre-Check', 'fail', `WiFi مفعّل مع Mobile Data — Android يوجّه عبر WiFi`);
-=======
-      }
-      if (netInfo.isWifiActive && netInfo.isMobileDataActive) {
-        // WiFi + بيانات فودافون معاً — Android يوجّه الطلبات عبر WiFi → يمنع Seamless
-        log(0, 'Network Pre-Check', 'fail', `WiFi مفعّل مع Mobile Data — Android يوجّه عبر WiFi → seamless سيفشل`);
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         return {
           success: false,
           error: '📶 يرجى إيقاف الـ WiFi تماماً.\n\nالشحن يحتاج بيانات Vodafone المباشرة — أوقف الـ WiFi من الإعدادات ثم أعد المحاولة.',
           debugSteps: steps,
         };
       } else {
-<<<<<<< HEAD
         log(0, 'Network Pre-Check', 'pass', `Mobile Data فقط: ${netInfo.activeNetwork} | WiFi: ${netInfo.isWifiActive} | op=${netInfo.activeDataSimOperatorName}`);
       }
     } catch {
-=======
-        log(0, 'Network Pre-Check', 'pass', `Mobile Data فقط: ${netInfo.activeNetwork} | WiFi: ${netInfo.isWifiActive}`);
-      }    } catch {
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
       log(0, 'Network Pre-Check', 'skip', 'تعذّر جلب معلومات الشبكة — متابعة بدون فحص');
     }
 
@@ -1227,7 +1207,6 @@ async function executeNativeVodafoneOrder(payload: {
         log(1, 'Seamless Token', 'fail',
           `HTTP ${seamlessHttpStatus} | format=${seamlessInspect.detectedFormat} | keys=[${seamlessInspect.topLevelKeys.join(', ')}] | parseErr=${seamlessInspect.parseError || 'none'} | encoding=${seamlessInspect.contentEncoding || 'none'} | rawLen=${seamlessInspect.rawLength}`,
           seamlessRaw, seamlessInspect);
-<<<<<<< HEAD
 
         // رسالة خطأ دقيقة تعكس السبب الحقيقي — لا نذكر WiFi إلا إذا أكده الفحص
         let seamlessErrMsg: string;
@@ -1247,11 +1226,6 @@ async function executeNativeVodafoneOrder(payload: {
         return {
           success: false,
           error: seamlessErrMsg,
-=======
-        return {
-          success: false,
-          error: '🔄 تم فقد الاتصال ببيانات Vodafone.\nيرجى إيقاف WiFi واستخدام بيانات Vodafone مباشرة ثم إعادة المحاولة.',
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
           debugSteps: steps,
         };
       }
@@ -2858,12 +2832,8 @@ export interface UserDetail {
   profile: Profile & { auth_last_sign_in?: string | null };
   subscription: Subscription | null;
   license_code: string | null;
-<<<<<<< HEAD
   ops_count: number;         // إجمالي كل العمليات (ناجحة + فاشلة) — للعرض الإداري
   ops_limit: number | null;  // الحد الأقصى من license_key (null = غير محدود)
-=======
-  ops_count: number;
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   total_cards: number;
   total_amount: number;
   phone_numbers: string[];
@@ -2909,10 +2879,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
   let profile: Profile & { auth_last_sign_in?: string | null };
   let subscription: Subscription | null;
   let license_code: string | null = null;
-<<<<<<< HEAD
   let ops_limit: number | null = null;
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
   if (v2?.profile) {
     profile = v2.profile as Profile & { auth_last_sign_in?: string | null };
@@ -2927,7 +2894,6 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     profile = { ...(profRes.data as Profile), auth_last_sign_in: null };
     subscription = subRes.data ?? null;
     if (subscription?.license_key_id) {
-<<<<<<< HEAD
       const { data: k } = await supabase.from('license_keys').select('code, operations_per_user, max_ops_per_user').eq('id', subscription.license_key_id).maybeSingle();
       license_code = k?.code ?? null;
       const raw = k?.operations_per_user ?? k?.max_ops_per_user ?? null;
@@ -2942,13 +2908,6 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     ops_limit = rawV2 === 0 ? null : rawV2;
   }
 
-=======
-      const { data: k } = await supabase.from('license_keys').select('code').eq('id', subscription.license_key_id).maybeSingle();
-      license_code = k?.code ?? null;
-    }
-  }
-
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   // حسابات مشابهة (نفس رقم الهاتف)
   let similar_accounts: UserDetail['similar_accounts'] = [];
   if (profile.phone) {
@@ -2975,10 +2934,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     profile,
     subscription,
     license_code,
-<<<<<<< HEAD
     ops_limit,
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     ops_count: ops.length,                                          // كل العمليات
     total_cards: ops.filter(o => o.status === 'success').length,    // الكروت الناجحة فقط
     total_amount: ops.filter(o => o.status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0),

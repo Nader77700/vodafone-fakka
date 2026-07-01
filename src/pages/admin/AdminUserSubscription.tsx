@@ -156,7 +156,6 @@ export default function AdminUserSubscription() {
                 <InfoRow label="تاريخ البداية" value={fmt(subscription.activated_at || subscription.created_at)} />
                 <InfoRow label="تاريخ الانتهاء" value={fmt(subscription.expires_at)} />
                 <InfoRow label="الأيام المتبقية" value={days === null ? '—' : days > 0 ? `${days} يوم` : 'منتهي'} />
-<<<<<<< HEAD
                 {/* العمليات المنجزة = الناجحة فقط (من subscription.ops_count بعد إصلاح الخصم) */}
                 <InfoRow label="كروت مشحونة (ناجحة)" value={String(detail.total_cards ?? 0)} />
                 <InfoRow label="كل العمليات (ناجحة + فاشلة)" value={String(detail.ops_count ?? 0)} />
@@ -167,15 +166,6 @@ export default function AdminUserSubscription() {
                   detail.ops_limit == null
                     ? 'غير محدود ♾️'
                     : String(Math.max(0, detail.ops_limit - (subscription.ops_count ?? 0)))
-=======
-                <InfoRow label="العمليات المنجزة" value={String(detail.ops_count ?? 0)} />
-                <InfoRow label="الحد اليومي" value={
-                  (subscription as typeof subscription & { operations_per_user?: number | null })?.operations_per_user == null
-                    ? 'غير محدود' : String((subscription as typeof subscription & { operations_per_user?: number | null }).operations_per_user)
-                } />
-                <InfoRow label="العمليات المتبقية" value={
-                  subscription.ops_remaining == null ? 'غير محدود' : String(subscription.ops_remaining)
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                 } />
                 <InfoRow label="آخر عملية" value={fmt(detail.last_operation?.performed_at)} />
               </div>

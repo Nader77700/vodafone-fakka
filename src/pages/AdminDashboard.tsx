@@ -3,10 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
-<<<<<<< HEAD
 import { formatEgyptDateTime, formatEgyptDate } from '@/lib/egyptTime';
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 import {
   getAllProfiles, getAllSubscriptions, getAllLicenseKeys,
 
@@ -629,11 +626,7 @@ function UpdateDiagnosticsPanel() {
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground tabular-nums">{r.fileSize ?? '—'}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground tabular-nums">
-<<<<<<< HEAD
                     {formatEgyptDate(r.created_at)}
-=======
-                    {new Date(r.created_at).toLocaleDateString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
                     {r.is_latest
@@ -656,11 +649,7 @@ function UpdateDiagnosticsPanel() {
                     {r.push_fail_count > 0 ? r.push_fail_count : '—'}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-[10px] text-muted-foreground tabular-nums">
-<<<<<<< HEAD
                     {r.push_notif_sent_at ? formatEgyptDateTime(r.push_notif_sent_at) : '—'}
-=======
-                    {r.push_notif_sent_at ? new Date(r.push_notif_sent_at).toLocaleString('ar-EG') : '—'}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                   </td>
                 </tr>
               ))}
@@ -922,11 +911,7 @@ function UserDiagnosticsSection({ user }: { user: UserDetail }) {
     // 8. فترة السماح
     if (sub?.in_grace_period) {
       const graceEnd = sub.grace_ends_at ? new Date(sub.grace_ends_at) : null;
-<<<<<<< HEAD
       results.push({ label: 'فترة السماح', status: 'warn', message: `في فترة السماح${graceEnd ? ` حتى ${formatEgyptDate(graceEnd)}` : ''}`, action: 'تجديد الاشتراك' });
-=======
-      results.push({ label: 'فترة السماح', status: 'warn', message: `في فترة السماح${graceEnd ? ` حتى ${graceEnd.toLocaleDateString('ar-EG')}` : ''}`, action: 'تجديد الاشتراك' });
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     } else {
       results.push({ label: 'فترة السماح', status: 'ok', message: 'لا توجد فترة سماح نشطة' });
     }
@@ -1668,11 +1653,7 @@ export default function AdminDashboard() {
     const res = await updateSubscriptionExpiry(subEditorTarget.profile.id, isNaN(days) ? null : days, undefined, profile?.id);
     setSubEditorSaving(false);
     if (!res.success) { toast.error(res.error ?? 'فشل تعديل تاريخ الانتهاء'); return; }
-<<<<<<< HEAD
     toast.success(`تم تحديث تاريخ الانتهاء — ${res.newExpiry ? formatEgyptDate(res.newExpiry) : ''}`);
-=======
-    toast.success(`تم تحديث تاريخ الانتهاء — ${res.newExpiry ? new Date(res.newExpiry).toLocaleDateString('ar-EG') : ''}`);
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     setSubEditorOpen(false);
     loadLinkedUsers();
     // تحديث UserDetail إذا كان مفتوحاً
@@ -2365,13 +2346,8 @@ export default function AdminDashboard() {
                         {/* شبكة التواريخ */}
                         <div className="grid grid-cols-3 gap-2">
                           {[
-<<<<<<< HEAD
                             { label: 'تاريخ التفعيل', val: s.activated_at ? formatEgyptDate(s.activated_at) : '—' },
                             { label: 'تاريخ الانتهاء', val: s.expires_at ? formatEgyptDate(s.expires_at) : '—' },
-=======
-                            { label: 'تاريخ التفعيل', val: s.activated_at ? new Date(s.activated_at).toLocaleDateString('ar-EG') : '—' },
-                            { label: 'تاريخ الانتهاء', val: s.expires_at ? new Date(s.expires_at).toLocaleDateString('ar-EG') : '—' },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                             { label: 'الوقت المتبقي', val: countdown ? (countdown.expired ? 'منتهي' : countdown.label) : '—' },
                           ].map(({ label, val }) => (
                             <div key={label} className="bg-muted/30 rounded-lg p-2 text-center">
@@ -2618,13 +2594,8 @@ export default function AdminDashboard() {
                               {[
                                 { label: 'المدة', val: `${k.duration_days} يوم`, icon: Calendar },
                                 { label: 'الاستخدامات', val: isTrialKey ? `${usedCount} / ${maxUsers}` : String(usedCount), icon: Users },
-<<<<<<< HEAD
                                 { label: 'تاريخ الإنشاء', val: formatEgyptDate(k.created_at), icon: Clock },
                                 { label: k.used_at ? 'تاريخ التفعيل' : 'الحالة', val: k.used_at ? formatEgyptDate(k.used_at) : '—', icon: CheckCircle },
-=======
-                                { label: 'تاريخ الإنشاء', val: new Date(k.created_at).toLocaleDateString('ar-EG'), icon: Clock },
-                                { label: k.used_at ? 'تاريخ التفعيل' : 'الحالة', val: k.used_at ? new Date(k.used_at).toLocaleDateString('ar-EG') : '—', icon: CheckCircle },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                               ].map(({ label, val, icon: Icon }) => (
                                 <div key={label} className="flex items-center gap-1.5 bg-muted/30 rounded-lg px-2 py-1.5">
                                   <Icon className="w-3 h-3 text-muted-foreground shrink-0" />
@@ -2707,11 +2678,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <p className="text-xs font-semibold">{meta.label}</p>
                             <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-<<<<<<< HEAD
                               {formatEgyptDateTime(log.created_at)}
-=======
-                              {new Date(log.created_at).toLocaleString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                             </p>
                           </div>
                           {log.details && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{log.details}</p>}
@@ -2770,11 +2737,7 @@ export default function AdminDashboard() {
                           style={{ width: `${Math.min(100, (pa.usage_count / (phoneResult.data[0]?.usage_count || 1)) * 100)}%` }} />
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-<<<<<<< HEAD
                         آخر استخدام: {formatEgyptDateTime(pa.last_used_at)}
-=======
-                        آخر استخدام: {new Date(pa.last_used_at).toLocaleString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                       </p>
                     </div>
                   ))}
@@ -2874,11 +2837,7 @@ export default function AdminDashboard() {
                         if (!logsResult?.data.length) return;
                         const header = 'المستوى,الإجراء,الرسالة,المستخدم,التاريخ\n';
                         const rows = logsResult.data.map(l =>
-<<<<<<< HEAD
                           [l.level, l.action, (l.message ?? '').replace(/,/g, '؛'), l.user_id?.slice(0, 8) ?? '—', formatEgyptDateTime(l.created_at)].join(',')
-=======
-                          [l.level, l.action, (l.message ?? '').replace(/,/g, '؛'), l.user_id?.slice(0, 8) ?? '—', new Date(l.created_at).toLocaleString('ar-EG')].join(',')
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                         ).join('\n');
                         const blob = new Blob(['\ufeff' + header + rows], { type: 'text/csv;charset=utf-8;' });
                         const url = URL.createObjectURL(blob);
@@ -2914,11 +2873,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center gap-1.5 shrink-0">
                               <Badge variant="outline" className={`text-[9px] ${levelCls}`}>{log.level}</Badge>
                               <button
-<<<<<<< HEAD
                                 onClick={() => { navigator.clipboard.writeText(`[${log.level}] ${log.action}: ${log.message ?? ''} | ${formatEgyptDateTime(log.created_at)}`); toast.success('تم النسخ'); }}
-=======
-                                onClick={() => { navigator.clipboard.writeText(`[${log.level}] ${log.action}: ${log.message ?? ''} | ${new Date(log.created_at).toLocaleString('ar-EG')}`); toast.success('تم النسخ'); }}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                                 className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground">
                                 <Copy className="w-3 h-3" />
                               </button>
@@ -2931,11 +2886,7 @@ export default function AdminDashboard() {
                                 👤 {log.user_id.slice(0, 8)}...
                               </span>
                             )}
-<<<<<<< HEAD
                             <p className="text-[10px] text-muted-foreground tabular-nums">{formatEgyptDateTime(log.created_at)}</p>
-=======
-                            <p className="text-[10px] text-muted-foreground tabular-nums">{new Date(log.created_at).toLocaleString('ar-EG')}</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                           </div>
                         </div>
                       </div>
@@ -2982,11 +2933,7 @@ export default function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{s.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{s.body}</p>
-<<<<<<< HEAD
                         <p className="text-[10px] text-muted-foreground tabular-nums">{formatEgyptDateTime(s.scheduled_at)} · {s.target_type === 'all' ? 'الجميع' : 'مستخدم محدد'}</p>
-=======
-                        <p className="text-[10px] text-muted-foreground tabular-nums">{new Date(s.scheduled_at).toLocaleString('ar-EG')} · {s.target_type === 'all' ? 'الجميع' : 'مستخدم محدد'}</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                       </div>
                       <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10 shrink-0"
                         onClick={async () => { await deleteScheduledNotification(s.id); toast.success('تم الحذف'); loadScheduled(); }}>
@@ -3018,11 +2965,7 @@ export default function AdminDashboard() {
                             {n.is_global && <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">للجميع</Badge>}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 text-pretty">{n.body}</p>
-<<<<<<< HEAD
                           <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">{formatEgyptDateTime(n.created_at)}</p>
-=======
-                          <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">{new Date(n.created_at).toLocaleString('ar-EG')}</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button variant="ghost" size="icon" className="w-8 h-8 text-primary hover:bg-primary/10"
@@ -3349,11 +3292,7 @@ export default function AdminDashboard() {
                             { label: 'المستخدمون المسموح', value: maxAllowed !== null ? `${maxAllowed} مستخدم` : 'غير محدود' },
                             { label: 'المتبقي',            value: remaining !== null ? `${remaining} مستخدم` : '—' },
                             { label: 'عمليات/مستخدم',  value: (() => { const ops = k.operations_per_user ?? k.max_ops_per_user ?? null; return ops !== null ? `${ops} عملية` : '♾️ غير محدود'; })() },
-<<<<<<< HEAD
                             { label: 'تاريخ الانتهاء',    value: k.expiry_date ? formatEgyptDate(k.expiry_date) : '—' },
-=======
-                            { label: 'تاريخ الانتهاء',    value: k.expiry_date ? new Date(k.expiry_date).toLocaleDateString('ar-EG') : '—' },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                             { label: 'وضع الانتهاء',      value: k.expiration_mode === 'BY_USAGE' ? 'عند نفاد الحصة' : k.expiration_mode === 'EARLIEST' ? 'الأسبق' : 'بتاريخ الانتهاء' },
                             ...(k.notes ? [{ label: 'ملاحظات', value: k.notes }] : []),
                           ].map(({ label, value }) => (
@@ -3385,11 +3324,7 @@ export default function AdminDashboard() {
                             الحالة المحفوظة: {giftBox.is_enabled ? 'مفعّل' : 'معطّل'}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
-<<<<<<< HEAD
                             آخر تحديث: {formatEgyptDateTime(giftBox.updated_at)}
-=======
-                            آخر تحديث: {new Date(giftBox.updated_at).toLocaleString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                           </p>
                         </div>
                       </div>
@@ -3505,11 +3440,7 @@ export default function AdminDashboard() {
                               : '✅ قاعدة البيانات سليمة — جميع العدادات متزامنة'}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-<<<<<<< HEAD
                             آخر فحص: {formatEgyptDateTime(integrityReport.check_time)}
-=======
-                            آخر فحص: {new Date(integrityReport.check_time).toLocaleString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                           </p>
                         </>
                       );
@@ -3926,11 +3857,7 @@ export default function AdminDashboard() {
                         )}
                         {prod.last_used_at && (
                           <span className="text-muted-foreground">
-<<<<<<< HEAD
                             آخر استخدام: <strong>{formatEgyptDate(prod.last_used_at)}</strong>
-=======
-                            آخر استخدام: <strong>{new Date(prod.last_used_at).toLocaleDateString('ar-EG')}</strong>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                           </span>
                         )}
                       </div>
@@ -4343,15 +4270,9 @@ export default function AdminDashboard() {
                     { label: 'البريد الإلكتروني', value: selectedUser.profile.email ?? '—',                copyable: true },
                     { label: 'رقم الهاتف',        value: selectedUser.profile.phone ?? '—',                copyable: !!selectedUser.profile.phone },
                     { label: 'الاسم الكامل',      value: selectedUser.profile.full_name ?? '—',             copyable: false },
-<<<<<<< HEAD
                     { label: 'تاريخ التسجيل',     value: formatEgyptDateTime(selectedUser.profile.created_at), copyable: false },
                     { label: 'آخر تسجيل دخول',   value: (selectedUser.profile as { auth_last_sign_in?: string | null }).auth_last_sign_in
                         ? formatEgyptDateTime((selectedUser.profile as { auth_last_sign_in?: string | null }).auth_last_sign_in!)
-=======
-                    { label: 'تاريخ التسجيل',     value: new Date(selectedUser.profile.created_at).toLocaleString('ar-EG'), copyable: false },
-                    { label: 'آخر تسجيل دخول',   value: (selectedUser.profile as { auth_last_sign_in?: string | null }).auth_last_sign_in
-                        ? new Date((selectedUser.profile as { auth_last_sign_in?: string | null }).auth_last_sign_in!).toLocaleString('ar-EG')
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                         : '—', copyable: false },
                     { label: 'الدور',             value: selectedUser.profile.role,                         copyable: false },
                     { label: 'الحالة',            value: selectedUser.profile.is_active ? 'نشط' : 'محظور', copyable: false },
@@ -4399,22 +4320,13 @@ export default function AdminDashboard() {
                       const opsRem   = opsLimit != null ? Math.max(0, opsLimit - opsUsed) : null;
                       return [
                         { label: 'كود الاشتراك',    value: selectedUser.license_code ?? '—',  copyable: !!selectedUser.license_code },
-<<<<<<< HEAD
                         { label: 'تاريخ التفعيل',   value: sub.activated_at ? formatEgyptDate(sub.activated_at) : '—', copyable: false },
                         { label: 'تاريخ الانتهاء',  value: sub.expires_at ? formatEgyptDate(sub.expires_at) : '—', copyable: false },
-=======
-                        { label: 'تاريخ التفعيل',   value: sub.activated_at ? new Date(sub.activated_at).toLocaleDateString('ar-EG') : '—', copyable: false },
-                        { label: 'تاريخ الانتهاء',  value: sub.expires_at ? new Date(sub.expires_at).toLocaleDateString('ar-EG') : '—', copyable: false },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                         { label: 'الأيام المتبقية', value: daysRem != null ? `${daysRem} يوم` : '—', copyable: false },
                         { label: 'العمليات المستخدمة', value: String(opsUsed), copyable: false },
                         { label: 'الحد الأقصى للعمليات', value: opsLimit != null ? String(opsLimit) : 'غير محدود', copyable: false },
                         { label: 'العمليات المتبقية', value: opsRem != null ? String(opsRem) : 'غير محدود', copyable: false },
-<<<<<<< HEAD
                         { label: 'فترة السماح', value: sub.in_grace_period ? `نعم (حتى ${sub.grace_ends_at ? formatEgyptDate(sub.grace_ends_at) : '—'})` : 'لا', copyable: false },
-=======
-                        { label: 'فترة السماح', value: sub.in_grace_period ? `نعم (حتى ${sub.grace_ends_at ? new Date(sub.grace_ends_at).toLocaleDateString('ar-EG') : '—'})` : 'لا', copyable: false },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                       ].map(({ label, value, copyable }) => (
                         <div key={label} className="flex items-center justify-between px-3 py-2 gap-2">
                           <span className="text-xs text-muted-foreground shrink-0">{label}</span>
@@ -4652,11 +4564,7 @@ export default function AdminDashboard() {
                           <span className="text-[11px] font-mono flex-1 min-w-0 truncate">{op.phone_number}</span>
                           <span className="text-[11px] text-muted-foreground truncate hidden md:block">{op.card_type}</span>
                           {op.amount != null && <span className="text-[11px] font-bold text-primary shrink-0">{op.amount}ج</span>}
-<<<<<<< HEAD
                           <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(op.performed_at)}</span>
-=======
-                          <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{new Date(op.performed_at).toLocaleDateString('ar-EG')}</span>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                           <button className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-primary/10 text-primary border border-primary/20"
                             onClick={() => setAdminOpDetail({ op: opRaw })}>تفاصيل</button>
                         </div>
@@ -4680,11 +4588,7 @@ export default function AdminDashboard() {
                           <p className="text-[11px] font-semibold truncate">{a.title}</p>
                           {a.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{a.description}</p>}
                         </div>
-<<<<<<< HEAD
                         <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(a.created_at)}</p>
-=======
-                        <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">{new Date(a.created_at).toLocaleDateString('ar-EG')}</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                       </div>
                     ))}
                   </div>
@@ -4717,11 +4621,7 @@ export default function AdminDashboard() {
                           <p className="text-[11px] font-semibold truncate">{n.title}</p>
                           <p className="text-[10px] text-muted-foreground line-clamp-1">{n.body}</p>
                         </div>
-<<<<<<< HEAD
                         <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(n.created_at)}</p>
-=======
-                        <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">{new Date(n.created_at).toLocaleDateString('ar-EG')}</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                         <button className="opacity-0 group-hover:opacity-100 shrink-0 text-destructive/60 hover:text-destructive transition-opacity disabled:opacity-30"
                           disabled={deletingNotifId === n.id}
                           onClick={async () => {
@@ -4820,13 +4720,8 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: 'المدة',            val: `${codeDetail.key.custom_duration_days ?? codeDetail.key.duration_days} يوم` },
-<<<<<<< HEAD
                     { label: 'تاريخ الإنشاء',    val: formatEgyptDate(codeDetail.key.created_at) },
                     { label: 'تاريخ التفعيل',    val: codeDetail.key.used_at ? formatEgyptDate(codeDetail.key.used_at) : '—' },
-=======
-                    { label: 'تاريخ الإنشاء',    val: new Date(codeDetail.key.created_at).toLocaleDateString('ar-EG') },
-                    { label: 'تاريخ التفعيل',    val: codeDetail.key.used_at ? new Date(codeDetail.key.used_at).toLocaleDateString('ar-EG') : '—' },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                     { label: 'وضع الانتهاء',     val: codeDetail.key.expiration_mode ?? '—' },
                   ].map(({ label, val }) => (
                     <div key={label} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
@@ -4946,11 +4841,7 @@ export default function AdminDashboard() {
                                 {tu.profile?.username ?? tu.profile?.email ?? tu.user_id.slice(0, 8) + '...'}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-<<<<<<< HEAD
                                 تفعيل: {formatEgyptDate(tu.activated_at)}
-=======
-                                تفعيل: {new Date(tu.activated_at).toLocaleDateString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                               </p>
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -5079,11 +4970,7 @@ export default function AdminDashboard() {
                               <div className="flex items-center justify-between gap-2">
                                 <p className="text-xs font-semibold">{meta.label}</p>
                                 <p className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
-<<<<<<< HEAD
                                   {formatEgyptDateTime(log.created_at)}
-=======
-                                  {new Date(log.created_at).toLocaleString('ar-EG')}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                                 </p>
                               </div>
                               {log.details && <p className="text-[10px] text-muted-foreground mt-0.5">{log.details}</p>}
@@ -5675,11 +5562,7 @@ export default function AdminDashboard() {
                 <div key={d.user_id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{d.profiles?.username ?? d.profiles?.email ?? d.user_id.slice(0, 8) + '...'}</p>
-<<<<<<< HEAD
                     <p className="text-[10px] text-muted-foreground">{formatEgyptDateTime(d.delivered_at)}</p>
-=======
-                    <p className="text-[10px] text-muted-foreground">{new Date(d.delivered_at).toLocaleString('ar-EG')}</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge variant="outline" className={`text-[10px] ${d.push_sent ? 'border-success/40 text-success' : 'border-muted-foreground/30 text-muted-foreground'}`}>
@@ -5716,11 +5599,7 @@ export default function AdminDashboard() {
               { label: 'المنتج',        value: op.card_type },
               { label: 'المبلغ',        value: op.amount != null ? `${op.amount} ج` : '—' },
               { label: 'الحالة',        value: op.status },
-<<<<<<< HEAD
               { label: 'التاريخ',       value: formatEgyptDateTime(op.performed_at) },
-=======
-              { label: 'التاريخ',       value: new Date(op.performed_at).toLocaleString('ar-EG') },
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
               { label: 'مدة التنفيذ',  value: op.duration_ms != null ? `${op.duration_ms} ms` : '—' },
             ];
             return (

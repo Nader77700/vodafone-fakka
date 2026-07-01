@@ -226,11 +226,7 @@ export default function AdminUserDetail() {
     </AdminShell>
   );
 
-<<<<<<< HEAD
   const { profile, subscription, license_code, ops_count, ops_limit, total_cards, total_amount, activity, recent_ops, devices, similar_accounts, notifications } = detail;
-=======
-  const { profile, subscription, license_code, ops_count, total_cards, total_amount, activity, recent_ops, devices, similar_accounts, notifications } = detail;
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   const days = calcDays(subscription?.expires_at);
   const isBanned = !profile.is_active;
   const subStatus = isBanned ? 'banned'
@@ -370,17 +366,11 @@ export default function AdminUserDetail() {
               <InfoRow label="الأيام المتبقية" value={days === null ? '—' : days > 0 ? `${days} يوم` : 'منتهي'} />
               <InfoRow label="كروت مشحونة (ناجحة)" value={String(total_cards)} />
               <InfoRow label="كل العمليات (ناجحة + فاشلة)" value={String(ops_count)} />
-<<<<<<< HEAD
               <InfoRow label="حد الاشتراك" value={ops_limit == null ? 'غير محدود ♾️' : String(ops_limit)} />
               <InfoRow label="العمليات المتبقية" value={
                 ops_limit == null
                   ? 'غير محدود ♾️'
                   : String(Math.max(0, ops_limit - (subscription.ops_count ?? 0)))
-=======
-              <InfoRow label="الحد اليومي" value={
-                (subscription as typeof subscription & { operations_per_user?: number | null })?.operations_per_user == null
-                  ? 'غير محدود' : String((subscription as typeof subscription & { operations_per_user?: number | null }).operations_per_user)
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
               } />
               <InfoRow label="آخر عملية" value={fmt(detail.last_operation?.performed_at)} />
             </div>

@@ -191,7 +191,6 @@ export function parseApiError(rawError: string | null | undefined): MappedError 
   switch (errorType) {
     case 'pin_locked':
       arabicMessage =
-<<<<<<< HEAD
         'السبب: تم تجميد حسابك مؤقتاً بسبب تكرار إدخال الرقم السري الخاطئ 3 مرات.\n\nالحل:\n• انتظر 24 ساعة لرفع التجميد تلقائياً.\n• أو اتصل على 888 من خطك وقل "رقم سري".\n• أو اكتب #912# وأرسل من نفس الخط.';
       break;
     case 'unregistered_msisdn':
@@ -201,22 +200,10 @@ export function parseApiError(rawError: string | null | undefined): MappedError 
     case 'invalid_pin': {
       let msg = 'السبب: الرقم السري غير صحيح.\n\nالحل:\n• تحقق من رقم سري Vodafone Cash المكوّن من 6 أرقام.\n• أعد المحاولة بالرقم الصحيح.\n• ⚠️ بعد 3 محاولات خاطئة سيُقفل الحساب تلقائياً!';
       if (operationId) msg += `\n• رقم العملية للمراجعة: ${operationId}`;
-=======
-        '🔒 تم تجميد حسابك مؤقتاً\nبسبب تكرار إدخال الرقم السري الخاطئ 3 مرات.\n\nانتظر 24 ساعة أو أعِد تعيين الرقم السري:\n• اتصل على 888 من خطك\n• أو اكتب #912# وأرسل';
-      break;
-    case 'unregistered_msisdn':
-      arabicMessage =
-        '📵 الرقم المُدخل غير مسجّل في Vodafone Cash\nتأكد أن الرقم مفعّل عليه محفظة Vodafone Cash.\n\nللتسجيل: اكتب #910# وأرسل أو توجّه لأقرب فرع فودافون.';
-      break;
-    case 'invalid_pin': {
-      let msg = '❌ الرقم السري غير صحيح.\nيرجى التأكد من رقم سري Vodafone Cash (6 أرقام).\n\n⚠️ تحذير: بعد 3 محاولات خاطئة سيُقفل الحساب!\n\nإذا نسيت الرقم السري: اكتب #912# وأرسل';
-      if (operationId) msg += `\nأو أدخل رقم العملية: ${operationId}`;
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
       arabicMessage = msg;
       break;
     }
     case 'insufficient_balance':
-<<<<<<< HEAD
       arabicMessage = 'السبب: لا يوجد رصيد كافٍ في محفظة Vodafone Cash.\n\nالحل:\n• اشحن محفظتك بالقيمة المطلوبة.\n• تحقق من رصيدك عبر *9#.\n• ثم أعد المحاولة.';
       break;
     case 'wifi_detected':
@@ -241,33 +228,6 @@ export function parseApiError(rawError: string | null | undefined): MappedError 
       arabicMessage = raw && raw.trim().length > 0
         ? `السبب: ${raw.trim()}\n\nالحل:\n• أعد المحاولة مرة أخرى.\n• إذا استمر الخطأ تواصل مع الإدارة.`
         : 'السبب: حدث خطأ غير متوقع.\n\nالحل:\n• أعد المحاولة مرة أخرى.';
-=======
-      arabicMessage = '💳 لا يوجد رصيد كافٍ بمحفظتك.\nيرجى شحن محفظة Vodafone Cash ثم إعادة المحاولة.';
-      break;
-    case 'wifi_detected':
-      arabicMessage = '📶 يرجى إيقاف WiFi واستخدام بيانات Vodafone فقط.';
-      break;
-    case 'network_changed':
-      arabicMessage = '🔄 تم فقد الاتصال ببيانات Vodafone.\nيرجى تشغيل بيانات Vodafone ثم إعادة المحاولة.';
-      break;
-    case 'data_disabled':
-      arabicMessage = '📡 يرجى تشغيل بيانات Vodafone ثم إعادة المحاولة.';
-      break;
-    case 'timeout':
-      arabicMessage = '⏱️ انتهت مهلة الاتصال.\nتحقق من الإنترنت ثم أعد المحاولة.';
-      break;
-    case 'server_unreachable':
-      arabicMessage = '🔌 تعذر الاتصال بالخدمة حالياً.\nحاول مرة أخرى بعد قليل.';
-      break;
-    case 'service_unavailable':
-      arabicMessage = '🚫 الخدمة غير متاحة حالياً.\nيرجى المحاولة لاحقاً.';
-      break;
-    default:
-      // عرض الخطأ الحقيقي من API بدلاً من رسالة عامة — المستخدم يستحق معرفة السبب
-      arabicMessage = raw && raw.trim().length > 0
-        ? raw.trim()
-        : '⚠️ حدث خطأ غير متوقع.\nيرجى إعادة المحاولة.';
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   }
 
   return { arabicMessage, operationId, errorType };

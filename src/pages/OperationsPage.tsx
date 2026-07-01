@@ -4,10 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getUserOperations } from '@/lib/api';
 import { parseApiError } from '@/lib/errorMapper';
-<<<<<<< HEAD
 import { formatEgyptDate, formatEgyptTime } from '@/lib/egyptTime';
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 import { supabase } from '@/db/supabase';
 import { staleWhileRevalidate, CACHE_KEYS } from '@/lib/appCache';
 import type { Operation, PaginatedResult } from '@/types/types';
@@ -63,17 +60,10 @@ function OpCard({ op, onView }: { op: Operation; onView: (op: Operation) => void
         <div className="text-left shrink-0 space-y-1">
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full border block text-center ${s.cls}`}>{s.label}</span>
           <p className="text-[10px] text-muted-foreground text-center tabular-nums">
-<<<<<<< HEAD
             {formatEgyptDate(op.performed_at)}
           </p>
           <p className="text-[10px] text-muted-foreground text-center tabular-nums">
             {formatEgyptTime(op.performed_at)}
-=======
-            {new Date(op.performed_at).toLocaleDateString('en-GB')}
-          </p>
-          <p className="text-[10px] text-muted-foreground text-center tabular-nums">
-            {new Date(op.performed_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
           </p>
         </div>
       </div>

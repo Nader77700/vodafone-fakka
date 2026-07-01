@@ -706,14 +706,11 @@ function BalanceExecuteDialog({
       setSubmitting(false); executingRef.current = false; return;
     }
 
-<<<<<<< HEAD
     // ← إصلاح: العملية الفاشلة لا تُخصم — نسترد النقطة فوراً
     if (!success && !isAdmin) {
       await refundOperation(user.id);
     }
 
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
     const timeLabel = new Date(performedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const dateLabel = new Date(performedAt).toLocaleDateString('en-GB');

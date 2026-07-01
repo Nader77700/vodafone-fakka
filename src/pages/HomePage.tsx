@@ -20,10 +20,7 @@ import type { ActivityEntry, SubscriptionOpsInfo, OpsCheckResult } from '@/lib/a
 import type { ChargeDebugStep } from '@/lib/api';
 import type { Subscription, Operation } from '@/types/types';
 import { parseApiError, shouldShowNetworkTips, getFirstLine, isPinLocked, isUnregisteredMsisdn } from '@/lib/errorMapper';
-<<<<<<< HEAD
 import { formatEgyptTime, formatEgyptDate, formatReceiptDate } from '@/lib/egyptTime';
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 import { ALL_PRODUCTS, FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
 import type { VodafoneProduct } from '@/data/products';
 import { VodafoneDetector, isNativeAndroid } from '@/lib/vodafoneDetector';
@@ -33,11 +30,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Loader2,
   Shield, CreditCard, Users, ChevronLeft,
   Database, Sparkles, Gift, Wifi, Signal, RefreshCw,
-<<<<<<< HEAD
   Smartphone, Copy, Info, Home, RotateCcw,
-=======
-  Smartphone,
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -624,7 +617,6 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
   );
 }
 
-<<<<<<< HEAD
 // ── مكوّن: نافذة تفاصيل العملية الكاملة ──
 function OperationDetailsDialog({
   open, onClose, receipt,
@@ -813,8 +805,6 @@ function ReceiptView({
   );
 }
 
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 // ── Modal تنفيذ الطلب Premium — هوية Vodafone Fakka الكاملة ──
 function ExecuteModal({
   product, open, onClose, onSuccess, isAdmin = false, prefillPhone = '', logoUrl = '',
@@ -825,11 +815,7 @@ function ExecuteModal({
   const navigate = useNavigate();
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
-<<<<<<< HEAD
   const [sender, setSender] = useState(''); // مقروء تلقائياً من Native — لا يظهر للمستخدم
-=======
-  const [sender, setSender] = useState('');
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   const [loadingStep, setLoadingStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -840,7 +826,6 @@ function ExecuteModal({
   const [trialExhausted, setTrialExhausted] = useState(false);
   const [trialOpsUsed, setTrialOpsUsed] = useState(0);
   const [trialMaxOps, setTrialMaxOps] = useState(2);
-<<<<<<< HEAD
   // ── حالة الإيصال بعد النجاح ──
   const [receipt, setReceipt] = useState<{
     opNumber: number | null;
@@ -855,8 +840,6 @@ function ExecuteModal({
     latencyMs: number;
     via: string;
   } | null>(null);
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
   // منع تنفيذ متعدد عبر ref متزامن
   const executingRef   = useRef(false);
   const lastFailedAtRef = useRef<number>(0); // cooldown بعد الفشل
@@ -882,11 +865,7 @@ function ExecuteModal({
     if (!open) return;
     setPhone(prefillPhone); setPin(''); setSender(''); setLoadingStep(0);
     setLastError(null); setLastErrorType('unknown'); setDebugSteps([]);
-<<<<<<< HEAD
     setBridgeActive(null); setNetworkInfo(null); setReceipt(null);
-=======
-    setBridgeActive(null); setNetworkInfo(null);
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     executingRef.current = false;
     if (isNativeAPK) {
       fetchNetworkInfo();
@@ -951,15 +930,7 @@ function ExecuteModal({
 
     const trimPhone  = phone.trim();
     const trimPin    = pin.trim();
-<<<<<<< HEAD
     const trimSender = sender.trim(); // يُقرأ تلقائياً من Native — يُمرَّر للـ API فارغاً إذا لم يُتاح
-=======
-    const trimSender = sender.trim();
-    if (!trimSender) { executingRef.current = false; toast.error('يرجى إدخال رقم محفظتك'); return; }
-    if (!trimSender.startsWith('01') || trimSender.length !== 11) {
-      executingRef.current = false; toast.error('رقم محفظتك غير صحيح — 11 رقم يبدأ بـ 01'); return;
-    }
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     if (!trimPhone) { executingRef.current = false; toast.error('يرجى إدخال رقم الهاتف المستفيد'); return; }
     if (!trimPhone.startsWith('01') || trimPhone.length !== 11) {
       executingRef.current = false; toast.error('رقم الهاتف غير صحيح — 11 رقم يبدأ بـ 01'); return;
@@ -1052,7 +1023,6 @@ function ExecuteModal({
       return;
     }
 
-<<<<<<< HEAD
     // ← إصلاح: العملية الفاشلة لا تُخصم — نسترد النقطة فوراً
     if (!result.success && !isAdmin) {
       await refundOperation(user.id);
@@ -1061,11 +1031,6 @@ function ExecuteModal({
     const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
     const timeLabel = formatEgyptTime(performedAt);
     const dateLabel = formatReceiptDate(performedAt);
-=======
-    const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
-    const timeLabel = new Date(performedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-    const dateLabel = new Date(performedAt).toLocaleDateString('en-GB');
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     const username  = profile?.username ?? user.email ?? 'المستخدم';
 
     // ── Debug Log احترافي — للأدمن فقط — لا يظهر للمستخدم ──
@@ -1120,7 +1085,6 @@ function ExecuteModal({
 
     if (result.success) {
       toast.success('✅ تم الشحن بنجاح!', { description: `${product.displayName} — ${product.priceLabel} للرقم ${trimPhone}`, duration: 5000 });
-<<<<<<< HEAD
       // عرض الإيصال داخل نفس الشاشة بدلاً من الإغلاق الفوري
       setReceipt({
         opNumber:      opNumber,
@@ -1136,9 +1100,6 @@ function ExecuteModal({
         via:           result.via ?? 'native',
       });
       onSuccess();
-=======
-      onSuccess(); onClose();
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     } else {
       // تحويل خطأ API إلى رسالة عربية موحدة — لا تقنيات للمستخدم
       const mapped = parseApiError(result.error);
@@ -1152,21 +1113,13 @@ function ExecuteModal({
   return (
     <>
       <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} />
-<<<<<<< HEAD
       <Dialog open={open} onOpenChange={v => { if (!v && !submitting && !receipt) onClose(); }}>
-=======
-      <Dialog open={open} onOpenChange={v => { if (!v && !submitting) onClose(); }}>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[460px] p-0 border-0 max-h-[92dvh] overflow-y-auto gap-0"
           style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
           dir="rtl"
         >
-<<<<<<< HEAD
           {product && !receipt && (
-=======
-          {product && (
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
             <div className="flex flex-col">
               {/* ── شريط علوي أحمر ── */}
               <div className="h-1 w-full rounded-t-[20px] shrink-0"
@@ -1384,7 +1337,6 @@ function ExecuteModal({
                   </div>
                 )}
 
-<<<<<<< HEAD
                 {/* ── بطاقة التعليمات: رقم المحفظة يُقرأ تلقائياً ── */}
                 <div className="rounded-2xl border overflow-hidden"
                   style={{ background: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.2)' }}>
@@ -1406,21 +1358,6 @@ function ExecuteModal({
                       </li>
                     ))}
                   </ul>
-=======
-                {/* ── حقل رقم المحفظة ── */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-white">رقم هاتفك (محفظة Vodafone Cash)</Label>
-                  <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{ borderColor: 'rgba(230,0,0,0.35)', background: 'rgba(255,255,255,0.04)' }}>
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: accentColor }} />
-                    <Input type="tel" inputMode="numeric" maxLength={11}
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
-                      placeholder="01xxxxxxxxx" value={sender}
-                      onChange={e => setSender(e.target.value.replace(/\D/g, '').slice(0, 11))} dir="ltr"
-                      disabled={submitting} />
-                  </div>
-                  <p className="text-[11px] pr-1" style={{ color: 'rgba(255,255,255,0.3)' }}>رقم الخط المفعّل عليه بيانات فودافون</p>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                 </div>
 
                 {/* ── حقل رقم المستفيد ── */}
@@ -1455,7 +1392,6 @@ function ExecuteModal({
                   </p>
                 </div>
 
-<<<<<<< HEAD
                 {/* ── بطاقة الخطأ — السبب والحل بشكل واضح ── */}
                 {lastError && !submitting && (() => {
                   const locked       = isPinLocked(lastErrorType);
@@ -1514,62 +1450,11 @@ function ExecuteModal({
                           {['أوقف الـ WiFi وشغّل بيانات الهاتف (4G)', 'تأكد أن الشريحة النشطة هي Vodafone', 'أعد تشغيل بيانات الهاتف ثم حاول مجدداً'].map((tip, i) => (
                             <div key={i} className="flex items-start gap-1.5">
                               <span className="text-[9px] shrink-0 mt-1 text-red-400">▸</span>
-=======
-                {/* ── بطاقة الخطأ — رسائل عربية فقط، بدون تقنيات ── */}
-                {lastError && !submitting && (() => {
-                  const locked = isPinLocked(lastErrorType);
-                  const unregistered = isUnregisteredMsisdn(lastErrorType);
-                  const borderColor = locked
-                    ? 'rgba(251,146,60,0.4)'
-                    : unregistered
-                      ? 'rgba(99,102,241,0.4)'
-                      : 'rgba(220,38,38,0.3)';
-                  const bgColor = locked
-                    ? 'rgba(251,146,60,0.08)'
-                    : unregistered
-                      ? 'rgba(99,102,241,0.08)'
-                      : 'rgba(220,38,38,0.08)';
-                  const titleColor = locked ? '#fb923c' : unregistered ? '#a5b4fc' : '#f87171';
-                  const title = locked ? '🔒 الحساب مجمَّد مؤقتاً' : unregistered ? '📵 رقم غير مسجَّل' : 'فشل الشحن';
-                  const Icon = locked ? AlertTriangle : XCircle;
-                  const iconColor = locked ? 'text-orange-400' : unregistered ? 'text-indigo-400' : 'text-red-400';
-                  return (
-                    <div className="rounded-xl border p-4 space-y-3"
-                      style={{ background: bgColor, borderColor }}>
-                      <div className="flex items-start gap-2.5">
-                        <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${iconColor}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold mb-1" style={{ color: titleColor }}>{title}</p>
-                          {lastError.split('\n').filter(Boolean).map((line, i) => (
-                            <p key={i} className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>{line}</p>
-                          ))}
-                        </div>
-                      </div>
-                      {/* نصائح الشبكة */}
-                      {shouldShowNetworkTips(lastErrorType) && (
-                        <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>خطوات للإصلاح:</p>
-                          {['أوقف الـ WiFi وشغّل بيانات الهاتف (4G)', 'تأكد أن رقمك المدخل فودافون مصري', 'أعد تشغيل بيانات الهاتف ثم حاول مجدداً'].map((tip, i) => (
-                            <div key={i} className="flex items-start gap-1.5">
-                              <span className="text-[10px] font-black text-red-400 shrink-0">{i + 1}.</span>
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                               <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>{tip}</p>
                             </div>
                           ))}
                         </div>
                       )}
-<<<<<<< HEAD
-=======
-                      {/* تحذير قفل الحساب — لا تحاول مجدداً */}
-                      {locked && (
-                        <div className="pt-2 border-t" style={{ borderColor: 'rgba(251,146,60,0.2)' }}>
-                          <p className="text-[11px] font-bold text-orange-300 mb-1">⛔ لا تحاول مجدداً الآن</p>
-                          <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                            الحساب مقفول مؤقتاً — محاولات إضافية لن تُفيد حتى رفع الحظر.
-                          </p>
-                        </div>
-                      )}
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                     </div>
                   );
                 })()}
@@ -1622,11 +1507,7 @@ function ExecuteModal({
                   const canExecute = isVodafoneReady || (!isNativeAPK && bridgeActive === true);
                   const accountLocked = isPinLocked(lastErrorType);
                   const isRetry = !!lastError && !accountLocked;
-<<<<<<< HEAD
                   const isDisabled = submitting || !phone || !pin || !canExecute || accountLocked;
-=======
-                  const isDisabled = submitting || !phone || !pin || !sender || !canExecute || accountLocked;
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
                   return (
                     <button
                       className="w-full h-14 rounded-2xl font-black text-base text-white flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
@@ -1681,7 +1562,6 @@ function ExecuteModal({
               </div>
             </div>
           )}
-<<<<<<< HEAD
 
           {/* ══════════════════════════════════════════════════════
               شاشة الإيصال — تظهر بعد نجاح الشحن مباشرة
@@ -1693,8 +1573,6 @@ function ExecuteModal({
               onClose={onClose}
             />
           )}
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         </DialogContent>
       </Dialog>
     </>

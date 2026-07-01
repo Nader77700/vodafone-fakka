@@ -4,7 +4,6 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-<<<<<<< HEAD
   appVersion:     '3.0.232',
   versionCode:    148,
   buildTimestamp: '2026-07-02T00:00:00Z',
@@ -18,17 +17,6 @@ export const BUILD_INFO = {
     'v3.0.102: قفل الجهاز الواحد + بصمة جهاز قوية + إصلاح إحصائيات الاشتراكات + تحرير الجهاز من لوحة التحكم',
     'v3.0.101: إيصال شحن احترافي + رسائل أخطاء ذكية بالسبب والحل + توقيت مصري + تطوير نموذج التسجيل',
     'v3.0.100: إصلاح جذري — حذف Accept-Encoding:gzip (Binary Response fix) + إصلاح كشف WiFi الخاطئ + رسائل خطأ دقيقة',
-=======
-  appVersion:     '3.0.99',
-  versionCode:    143,
-  buildTimestamp: '2026-06-21T12:00:00Z',
-  sourceHash:     'c8d4e5f6a7b81930',
-  bundleFile:     'VodafoneFakka-v3.0.99.apk',
-  bundleHash:     'apk_v3_0_99_code143',
-  apkHash:        'apk_v3_0_99_code143',
-  dbVersion:      'v3.0.99',
-  releaseNotes: [
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
     'v3.0.99: واتساب ديناميكي (اسم + هاتف) + حجب الشحن مع WiFi + رسائل خطأ تفصيلية',
     'v3.0.94: v161 — مراجعة تكامل شاملة: إصلاح 5 bugs جذرية (forceLogout + notification_type + Zap + Badge + base64url) + Phase 11 Production Validation',
     'v3.0.94: v161 — مراجعة تكامل شاملة: إصلاح 5 bugs جذرية + Phase 11 Production Validation',
