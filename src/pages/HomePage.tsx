@@ -1023,6 +1023,11 @@ function ExecuteModal({
       return;
     }
 
+    // ← إصلاح: العملية الفاشلة لا تُخصم — نسترد النقطة فوراً
+    if (!result.success && !isAdmin) {
+      await refundOperation(user.id);
+    }
+
     const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
     const timeLabel = formatEgyptTime(performedAt);
     const dateLabel = formatReceiptDate(performedAt);

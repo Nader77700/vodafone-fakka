@@ -2832,7 +2832,8 @@ export interface UserDetail {
   profile: Profile & { auth_last_sign_in?: string | null };
   subscription: Subscription | null;
   license_code: string | null;
-  ops_count: number;
+  ops_count: number;         // إجمالي كل العمليات (ناجحة + فاشلة) — للعرض الإداري
+  ops_limit: number | null;  // الحد الأقصى من license_key (null = غير محدود)
   total_cards: number;
   total_amount: number;
   phone_numbers: string[];
@@ -2878,6 +2879,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
   let profile: Profile & { auth_last_sign_in?: string | null };
   let subscription: Subscription | null;
   let license_code: string | null = null;
+  let ops_limit: number | null = null;
 
   if (v2?.profile) {
     profile = v2.profile as Profile & { auth_last_sign_in?: string | null };
@@ -2892,9 +2894,18 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     profile = { ...(profRes.data as Profile), auth_last_sign_in: null };
     subscription = subRes.data ?? null;
     if (subscription?.license_key_id) {
-      const { data: k } = await supabase.from('license_keys').select('code').eq('id', subscription.license_key_id).maybeSingle();
+      const { data: k } = await supabase.from('license_keys').select('code, operations_per_user, max_ops_per_user').eq('id', subscription.license_key_id).maybeSingle();
       license_code = k?.code ?? null;
+      const raw = k?.operations_per_user ?? k?.max_ops_per_user ?? null;
+      ops_limit = raw === 0 ? null : raw;
     }
+  }
+
+  // جلب ops_limit من license_key عند استخدام v2
+  if (!ops_limit && subscription?.license_key_id) {
+    const { data: kv2 } = await supabase.from('license_keys').select('operations_per_user, max_ops_per_user').eq('id', subscription.license_key_id).maybeSingle();
+    const rawV2 = kv2?.operations_per_user ?? kv2?.max_ops_per_user ?? null;
+    ops_limit = rawV2 === 0 ? null : rawV2;
   }
 
   // حسابات مشابهة (نفس رقم الهاتف)
@@ -2923,6 +2934,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     profile,
     subscription,
     license_code,
+    ops_limit,
     ops_count: ops.length,                                          // كل العمليات
     total_cards: ops.filter(o => o.status === 'success').length,    // الكروت الناجحة فقط
     total_amount: ops.filter(o => o.status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0),

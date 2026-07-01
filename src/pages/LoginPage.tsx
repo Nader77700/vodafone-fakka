@@ -91,26 +91,36 @@ export default function LoginPage() {
     setLoading(true);
 
     // تسجيل دخول برقم الهاتف: ابحث عن الإيميل في profiles
+    // إصلاح: عند تكرار الرقم نُعطي أولوية للحساب الأحدث (created_at DESC)
     if (isPhoneInput(username)) {
       const normalized = normalizeEgyptPhone(username);
-      const { data: profileData } = await supabase
+      const { data: profileRows } = await supabase
         .from('profiles')
-        .select('email')
+        .select('email, id, created_at')
         .eq('phone', normalized)
-        .maybeSingle();
-      if (!profileData?.email) {
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!profileRows || profileRows.length === 0) {
         setLoading(false);
         toast.error('لم يُعثر على حساب بهذا الرقم');
         return;
       }
-      const { data: signRes, error } = await supabase.auth.signInWithPassword({ email: profileData.email, password });
+
+      // نجرّب كل حساب بالترتيب (الأحدث أولاً) حتى يتطابق بكلمة المرور
+      let matchedSession = null;
+      for (const row of profileRows) {
+        const { data: s, error: e } = await supabase.auth.signInWithPassword({ email: row.email, password });
+        if (!e && s?.user) { matchedSession = s; break; }
+      }
+
       setLoading(false);
-      if (error) {
-        toast.error('كلمة المرور غير صحيحة لهذا الرقم');
+      if (!matchedSession) {
+        toast.error('كلمة المرور غير صحيحة');
         return;
       }
       // تطبيق الدعوة المعلّقة بعد الدخول برقم الهاتف
-      if (signRes?.user?.id) await applyPendingInvites(signRes.user.id);
+      if (matchedSession?.user?.id) await applyPendingInvites(matchedSession.user.id);
       navigate('/home', { replace: true });
       return;
     }

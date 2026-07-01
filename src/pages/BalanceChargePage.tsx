@@ -706,6 +706,11 @@ function BalanceExecuteDialog({
       setSubmitting(false); executingRef.current = false; return;
     }
 
+    // ← إصلاح: العملية الفاشلة لا تُخصم — نسترد النقطة فوراً
+    if (!success && !isAdmin) {
+      await refundOperation(user.id);
+    }
+
     const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
     const timeLabel = new Date(performedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const dateLabel = new Date(performedAt).toLocaleDateString('en-GB');

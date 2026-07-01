@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.102',
-  versionCode:    146,
-  buildTimestamp: '2026-06-21T12:00:00Z',
-  sourceHash:     'e1f2a3b4c5d67890',
-  bundleFile:     'VodafoneFakka-v3.0.102.apk',
-  bundleHash:     'apk_v3_0_102_code146',
-  apkHash:        'apk_v3_0_102_code146',
-  dbVersion:      'v3.0.102',
+  appVersion:     '3.0.232',
+  versionCode:    148,
+  buildTimestamp: '2026-07-02T00:00:00Z',
+  sourceHash:     'f3e4b5c6d7e89012',
+  bundleFile:     'VodafoneFakka-v3.0.232.apk',
+  bundleHash:     'apk_v3_0_232_code148',
+  apkHash:        'apk_v3_0_232_code148',
+  dbVersion:      'v3.0.232',
   releaseNotes: [
+    'v3.0.232: إصلاح خصم العمليات — استرداد تلقائي عند الفشل + إصلاح login بالهاتف عند تكرار الأرقام + توحيد عرض الاشتراك + إصلاح trigger انتهاء الاشتراك',
     'v3.0.102: قفل الجهاز الواحد + بصمة جهاز قوية + إصلاح إحصائيات الاشتراكات + تحرير الجهاز من لوحة التحكم',
     'v3.0.101: إيصال شحن احترافي + رسائل أخطاء ذكية بالسبب والحل + توقيت مصري + تطوير نموذج التسجيل',
     'v3.0.100: إصلاح جذري — حذف Accept-Encoding:gzip (Binary Response fix) + إصلاح كشف WiFi الخاطئ + رسائل خطأ دقيقة',
