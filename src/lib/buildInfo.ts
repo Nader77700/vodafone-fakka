@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.234',
-  versionCode:    150,
-  buildTimestamp: '2026-07-02T10:30:00Z',
-  sourceHash:     'a1b2c3d4e5f60001',
-  bundleFile:     'VodafoneFakka-v3.0.234.apk',
-  bundleHash:     'apk_v3_0_234_code150',
-  apkHash:        'apk_v3_0_234_code150',
-  dbVersion:      'v3.0.234',
+  appVersion:     '3.0.235',
+  versionCode:    151,
+  buildTimestamp: '2026-07-02T11:40:00Z',
+  sourceHash:     'a1b2c3d4e5f60002',
+  bundleFile:     'VodafoneFakka-v3.0.235.apk',
+  bundleHash:     'apk_v3_0_235_code151',
+  apkHash:        'apk_v3_0_235_code151',
+  dbVersion:      'v3.0.235',
   releaseNotes: [
+    'v3.0.235: إصلاح تحديث APK — تنزيل مباشر عبر GitHub Releases بدون مشاكل',
     'v3.0.234: حظر الجلسات المتعددة — جلسة واحدة لكل حساب (Single Session Enforcement)',
     'v3.0.233: إصلاح validation رقم الهاتف + منع تكرار الأرقام عند التسجيل + إصلاح merge conflicts 21 ملف',
     'v3.0.232: إصلاح خصم العمليات — استرداد تلقائي عند الفشل + إصلاح login بالهاتف عند تكرار الأرقام + توحيد عرض الاشتراك + إصلاح trigger انتهاء الاشتراك',
