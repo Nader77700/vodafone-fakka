@@ -31,15 +31,14 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
   }, []);
 
   const handleUpdate = async () => {
-    // صفحة تحديث مُدمَجة في serve-app?update (لا تتطلب auth من جانب المستخدم)
-    // Browser.open → Chrome Custom Tab (ليس WebView) → يتعامل مع APK download بشكل صحيح
-    const UPDATE_PAGE = 'https://vchmsnavyhripakyvzom.supabase.co/functions/v1/serve-app?update';
+    // فتح رابط APK مباشرة في Browser.open → Chrome Custom Tab على Android
+    // Chrome يتعامل مع APK كتنزيل تلقائياً بدون auth
+    const downloadUrl = apkUrl || 'https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.234.apk';
 
     if (Capacitor.isNativePlatform()) {
-      // Chrome Custom Tab على Android — يدعم تنزيل APK بشكل صحيح
-      await Browser.open({ url: UPDATE_PAGE, windowName: '_system' });
+      await Browser.open({ url: downloadUrl, windowName: '_system' });
     } else {
-      window.open(UPDATE_PAGE, '_blank');
+      window.open(downloadUrl, '_blank');
     }
   };
 
