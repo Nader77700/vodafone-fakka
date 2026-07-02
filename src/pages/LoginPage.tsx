@@ -14,6 +14,7 @@ import {
   assignUserToMerchantSecure,
   getPendingInviteToken, clearPendingInviteToken, linkUserToInviteToken,
 } from '@/lib/api';
+import { getDeviceId } from '@/lib/deviceId';
 
 type Mode = 'login' | 'register';
 
@@ -119,8 +120,12 @@ export default function LoginPage() {
         toast.error('كلمة المرور غير صحيحة');
         return;
       }
-      // تطبيق الدعوة المعلّقة بعد الدخول برقم الهاتف
-      if (matchedSession?.user?.id) await applyPendingInvites(matchedSession.user.id);
+      // حفظ device_id عند تسجيل الدخول برقم الهاتف
+      if (matchedSession?.user?.id) {
+        const deviceId = getDeviceId();
+        supabase.from('profiles').update({ device_id: deviceId }).eq('id', matchedSession.user.id).then(() => {});
+        await applyPendingInvites(matchedSession.user.id);
+      }
       navigate('/home', { replace: true });
       return;
     }
@@ -140,8 +145,12 @@ export default function LoginPage() {
       }
       return;
     }
-    // تطبيق رابط الدعوة المعلّق بعد تسجيل الدخول
-    if (signData?.user?.id) await applyPendingInvites(signData.user.id);
+    // تطبيق رابط الدعوة المعلّق + حفظ device_id بعد تسجيل الدخول
+    if (signData?.user?.id) {
+      const deviceId = getDeviceId();
+      supabase.from('profiles').update({ device_id: deviceId }).eq('id', signData.user.id).then(() => {});
+      await applyPendingInvites(signData.user.id);
+    }
     // عرض شاشة البداية بعد تسجيل الدخول
     navigate('/home', { replace: true });
   };

@@ -20,6 +20,7 @@ import SplashScreen, { SplashOverlay } from './pages/SplashScreen';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import MainLayout from './components/layouts/MainLayout';
+import SessionConflictScreen from './pages/SessionConflictScreen';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { resolveRoute, notifLog } from '@/lib/notificationRouter';
 import { getDeviceFingerprint } from '@/lib/deviceFingerprint';
@@ -283,6 +284,8 @@ function MerchantClientGate() {
 const COLD_START_KEY = 'vfp_cold_start_done';
 
 function AppInner() {
+  const { sessionConflict } = useAuth();
+
   // isColdStart: true فقط إذا لم يكن للتطبيق نشاط حديث (خلال 30 دقيقة)
   const isColdStart = (() => {
     const ts = Number(localStorage.getItem(ACTIVITY_KEY) ?? 0);
@@ -312,8 +315,11 @@ function AppInner() {
       {/* MaintenanceScreen — يغطي التطبيق بالكامل فوراً من لوحة الإدارة */}
       {flags.ff_maintenance_mode && <MaintenanceScreen />}
 
+      {/* SessionConflictScreen — الحساب مفتوح على جهاز آخر */}
+      {!flags.ff_maintenance_mode && sessionConflict && <SessionConflictScreen />}
+
       {/* ForceUpdateScreen — يغطي كل شيء ولا يسمح بالدخول حتى التحديث */}
-      {!flags.ff_maintenance_mode && forceUpdate && (
+      {!flags.ff_maintenance_mode && !sessionConflict && forceUpdate && (
         <ForceUpdateScreen
           apkUrl={latestVersion?.apk_url}
           latestVersion={latestVersion?.version}

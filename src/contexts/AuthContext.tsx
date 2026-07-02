@@ -6,27 +6,33 @@ import { getProfile } from '@/lib/api';
 import type { Profile } from '@/types/types';
 import { toast } from 'sonner';
 import { useInviteAutoLink } from '@/hooks/useInviteAutoLink';
+import { getDeviceId } from '@/lib/deviceId';
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  sessionConflict: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  claimSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
+  sessionConflict: false,
   signOut: async () => {},
   refreshProfile: async () => {},
+  claimSession: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionConflict, setSessionConflict] = useState(false);
   const { tryAutoLink } = useInviteAutoLink();
 
   const doSignOut = async (message?: string) => {
@@ -117,13 +123,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // ── Single Session Check — تجاهل للأدوار المميزة ──────────────────────
+    const skipRoles = ['admin', 'super_admin'];
+    if (!skipRoles.includes(profileData.role)) {
+      const currentDeviceId = getDeviceId();
+      const storedDeviceId = profileData.device_id;
+
+      if (storedDeviceId && storedDeviceId !== currentDeviceId) {
+        // تعارض: الحساب مفتوح على جهاز آخر
+        setProfile(profileData);
+        setSessionConflict(true);
+        return;
+      }
+
+      // أول تسجيل دخول أو نفس الجهاز — سجّل device_id
+      if (!storedDeviceId || storedDeviceId !== currentDeviceId) {
+        supabase.from('profiles')
+          .update({ device_id: currentDeviceId })
+          .eq('id', u.id)
+          .then(() => {}, () => {});
+      }
+    }
+
+    setSessionConflict(false);
     setProfile(profileData);
     // Phase 7: ربط تلقائي بالتاجر إن كان هناك دعوة معلّقة
     tryAutoLink(u.id);
   };
 
+  // المستخدم يختار "الاستمرار على هذا الجهاز" → حدّث device_id
+  const claimSession = async () => {
+    if (!user) return;
+    const currentDeviceId = getDeviceId();
+    await supabase.from('profiles')
+      .update({ device_id: currentDeviceId })
+      .eq('id', user.id);
+    setSessionConflict(false);
+    toast.success('تم تفعيل الجلسة على هذا الجهاز');
+  };
+
   const refreshProfile = async () => {
     if (user) await loadProfile(user);
+  };
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('[AuthContext] signOut error:', e);
+    } finally {
+      setUser(null);
+      setProfile(null);
+      setSessionConflict(false);
+    }
   };
 
   useEffect(() => {
@@ -162,19 +214,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error('[AuthContext] signOut error:', e);
-    } finally {
-      setUser(null);
-      setProfile(null);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, sessionConflict, signOut, refreshProfile, claimSession }}>
       {children}
     </AuthContext.Provider>
   );
