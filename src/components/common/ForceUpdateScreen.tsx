@@ -32,8 +32,11 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
 
   const handleUpdate = async () => {
     // فتح رابط APK مباشرة في Browser.open → Chrome Custom Tab على Android
-    // Chrome يتعامل مع APK كتنزيل تلقائياً بدون auth
-    const downloadUrl = apkUrl || 'https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.234.apk';
+    // GitHub Releases يضمن تنزيل مباشر بدون مشاكل Content-Type
+    const GH_APK = 'https://github.com/Nader77700/vodafone-fakka/releases/download/v3.0.235/VodafoneFakka-v3.0.235.apk';
+    const SUPABASE_APK = 'https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.235.apk';
+    // استخدام GitHub Release كمصدر أساسي — Supabase كـ fallback
+    const downloadUrl = apkUrl?.includes('github.com') ? apkUrl : GH_APK;
 
     if (Capacitor.isNativePlatform()) {
       await Browser.open({ url: downloadUrl, windowName: '_system' });
