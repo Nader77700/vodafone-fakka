@@ -8,7 +8,6 @@ on:
 env:
   SUPABASE_URL: https://vchmsnavyhripakyvzom.supabase.co
 
-<<<<<<< HEAD
 # ═══════════════════════════════════════════════════════════════════════════
 #  Atomic Deployment Pipeline — الترتيب الصحيح الوحيد المسموح به:
 #
@@ -20,8 +19,6 @@ env:
 #  أي فشل في (1–5) = إلغاء النشر كاملاً بدون تحديث DB أو إشعار.
 # ═══════════════════════════════════════════════════════════════════════════
 
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,7 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-<<<<<<< HEAD
       # ─── [0] استخراج الإصدار أولاً — قبل أي شيء ──────────────────────────
       - name: Read version from build.gradle
         id: version
@@ -46,8 +42,6 @@ jobs:
           echo "APK_PUBLIC_URL=$APK_PUBLIC_URL"     >> $GITHUB_ENV
           echo "✅ Version: $APP_VERSION (code $APP_VERSION_CODE) → $APK_NAME"
 
-=======
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -59,20 +53,12 @@ jobs:
           node-version: 24
           cache: 'pnpm'
 
-<<<<<<< HEAD
       # ─── [1] BUILD ─────────────────────────────────────────────────────────
       - name: Install dependencies & build Vite
         run: |
           pnpm install --frozen-lockfile
           npx vite build --minify true --outDir dist
           echo "✅ Vite build OK"
-=======
-      - name: Install dependencies & build Vite
-        run: |
-          pnpm install --frozen-lockfile
-          # pnpm build مش بيبني — بيطبع رسالة فقط → نستخدم vite مباشرة
-          npx vite build --minify true --outDir dist
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -84,13 +70,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Fix local.properties SDK path
-<<<<<<< HEAD
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
-=======
-        run: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
-          cat android/local.properties
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
       - name: Capacitor sync
         run: pnpm exec cap sync android
@@ -107,21 +87,15 @@ jobs:
           HTTP_MANIFEST=$(find node_modules -path "*capacitor-community/http*/android/src/main/AndroidManifest.xml" | head -1)
           [[ -n "$HTTP_MANIFEST" ]] && sed -i 's/ package="[^"]*"//' "$HTTP_MANIFEST" || true
 
-<<<<<<< HEAD
       # ─── [2] SIGN ──────────────────────────────────────────────────────────
       - name: Build signed APK
         run: |
           cd android && ./gradlew assembleRelease --no-daemon
           echo "✅ Gradle build + sign OK"
-=======
-      - name: Build signed APK
-        run: cd android && ./gradlew assembleRelease --no-daemon
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
         env:
           KEYSTORE_PASSWORD: vodafone123
           KEY_ALIAS: vfkey
 
-<<<<<<< HEAD
       # ─── [3] PREPARE APK ──────────────────────────────────────────────────
       - name: Rename APK + compute hash
         run: |
@@ -136,25 +110,6 @@ jobs:
           echo "APK_HASH=$APK_HASH" >> $GITHUB_ENV
           echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
           echo "✅ APK ready: ${{ env.APK_NAME }} | size=${APK_SIZE} bytes | md5=$APK_HASH"
-=======
-      - name: Read version from build.gradle
-        run: |
-          # استخراج versionName و versionCode تلقائياً من build.gradle
-          APP_VERSION=$(grep 'versionName' android/app/build.gradle | head -1 | sed 's/.*versionName "\(.*\)".*/\1/' | tr -d '[:space:]')
-          APP_VERSION_CODE=$(grep 'versionCode' android/app/build.gradle | head -1 | sed 's/.*versionCode \([0-9]*\).*/\1/' | tr -d '[:space:]')
-          echo "APP_VERSION=$APP_VERSION"   >> $GITHUB_ENV
-          echo "APP_VERSION_CODE=$APP_VERSION_CODE" >> $GITHUB_ENV
-          echo "APK_NAME=VodafoneFakka-v${APP_VERSION}.apk" >> $GITHUB_ENV
-          echo "Detected version: $APP_VERSION (code $APP_VERSION_CODE)"
-
-      - name: Rename APK
-        run: |
-          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
-          cp "$APK_PATH" "${{ env.APK_NAME }}"
-          echo "APK_HASH=$(md5sum ${{ env.APK_NAME }} | awk '{print $1}')" >> $GITHUB_ENV
-          echo "APK_SIZE=$(stat -c%s ${{ env.APK_NAME }})" >> $GITHUB_ENV
-          ls -lh "${{ env.APK_NAME }}"
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -162,7 +117,6 @@ jobs:
           name: VodafoneFakka-v${{ env.APP_VERSION }}
           path: ${{ env.APK_NAME }}
 
-<<<<<<< HEAD
       # ─── [4] UPLOAD ────────────────────────────────────────────────────────
       - name: Upload APK to Supabase Storage
         env:
@@ -170,21 +124,12 @@ jobs:
         run: |
           echo "📤 Uploading ${{ env.APK_NAME }} to Supabase Storage..."
           UPLOAD_HTTP=$(curl -s -o /tmp/upload_response.txt -w "%{http_code}" -X POST \
-=======
-      - name: Upload APK to Supabase
-        env:
-          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
-        run: |
-          echo "Uploading ${{ env.APK_NAME }} to Supabase Storage..."
-          UPLOAD_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
             "${{ env.SUPABASE_URL }}/storage/v1/object/apk-releases/${{ env.APK_NAME }}" \
             -H "Authorization: Bearer $SB_SERVICE_KEY" \
             -H "apikey: $SB_SERVICE_KEY" \
             -H "Content-Type: application/vnd.android.package-archive" \
             -H "x-upsert: true" \
             --data-binary "@${{ env.APK_NAME }}")
-<<<<<<< HEAD
           echo "Upload HTTP status: $UPLOAD_HTTP"
           cat /tmp/upload_response.txt
           if [[ "$UPLOAD_HTTP" != "200" ]]; then
@@ -258,61 +203,22 @@ jobs:
           echo "📝 Updating DB — v${{ env.APP_VERSION }} (code ${{ env.APP_VERSION_CODE }})"
 
           # إدراج إن لم يوجد
-=======
-          echo "Supabase upload HTTP status: $UPLOAD_RESP"
-          if [[ "$UPLOAD_RESP" != "200" ]]; then
-            echo "❌ Upload failed with status $UPLOAD_RESP"
-            exit 1
-          fi
-          echo "✅ APK uploaded successfully"
-
-          # تحقق من وجود الملف بعد الرفع
-          VERIFY=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ env.SUPABASE_URL }}/storage/v1/object/public/apk-releases/${{ env.APK_NAME }}")
-          echo "Verify URL status: $VERIFY"
-          if [[ "$VERIFY" != "200" ]]; then
-            echo "❌ APK not accessible after upload!"
-            exit 1
-          fi
-          echo "✅ APK URL verified"
-
-      - name: Update DB
-        env:
-          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
-        run: |
-          APK_PUBLIC_URL="${{ env.SUPABASE_URL }}/storage/v1/object/public/apk-releases/${{ env.APK_NAME }}"
-
-          # إدراج أو تحديث app_versions للإصدار الجديد
-          # أولاً: إدراج إن لم يوجد
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
           curl -s -X POST "${{ env.SUPABASE_URL }}/rest/v1/app_versions" \
             -H "Authorization: Bearer $SB_SERVICE_KEY" \
             -H "apikey: $SB_SERVICE_KEY" \
             -H "Content-Type: application/json" \
             -H "Prefer: resolution=ignore-duplicates" \
-<<<<<<< HEAD
             -d "{\"version\":\"${{ env.APP_VERSION }}\",\"version_code\":${{ env.APP_VERSION_CODE }},\"apk_url\":\"${{ env.APK_PUBLIC_URL }}\",\"is_latest\":true,\"update_type\":\"apk\",\"apk_deployed\":true,\"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 
           # تحديث الصف الموجود
-=======
-            -d "{\"version\":\"${{ env.APP_VERSION }}\",\"version_code\":${{ env.APP_VERSION_CODE }},\"apk_url\":\"$APK_PUBLIC_URL\",\"is_latest\":true,\"update_type\":\"apk\"}"
-
-          # تحديث إن كان موجود
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
           curl -s -X PATCH \
             "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=eq.${{ env.APP_VERSION_CODE }}" \
             -H "Authorization: Bearer $SB_SERVICE_KEY" \
             -H "apikey: $SB_SERVICE_KEY" \
             -H "Content-Type: application/json" \
-<<<<<<< HEAD
             -d "{\"apk_url\":\"${{ env.APK_PUBLIC_URL }}\",\"is_latest\":true,\"apk_deployed\":true,\"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 
           # إيقاف is_latest للإصدارات القديمة
-=======
-            -d "{\"apk_url\":\"$APK_PUBLIC_URL\",\"is_latest\":true}"
-
-          # تعطيل is_latest للإصدارات الأقل
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
           curl -s -X PATCH \
             "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=lt.${{ env.APP_VERSION_CODE }}" \
             -H "Authorization: Bearer $SB_SERVICE_KEY" \
@@ -324,11 +230,7 @@ jobs:
           for KEY in version_latest_name version_latest_code version_apk_url; do
             if [ "$KEY" = "version_latest_name" ]; then VAL="${{ env.APP_VERSION }}"; fi
             if [ "$KEY" = "version_latest_code" ]; then VAL="${{ env.APP_VERSION_CODE }}"; fi
-<<<<<<< HEAD
             if [ "$KEY" = "version_apk_url" ];     then VAL="${{ env.APK_PUBLIC_URL }}"; fi
-=======
-            if [ "$KEY" = "version_apk_url" ];     then VAL="$APK_PUBLIC_URL"; fi
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
             curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
               -H "Authorization: Bearer $SB_SERVICE_KEY" \
               -H "apikey: $SB_SERVICE_KEY" \
@@ -336,7 +238,6 @@ jobs:
               -d "{\"value\":\"$VAL\"}"
           done
 
-<<<<<<< HEAD
           echo "✅ DB updated — v${{ env.APP_VERSION }} is_latest=true, apk_deployed=true"
 
       # ─── [7] SEND NOTIFICATION — آخر خطوة في Pipeline ────────────────────
@@ -376,6 +277,3 @@ jobs:
           fi
           echo "✅ Push notification sent successfully"
           echo "🎉 Deployment complete: v${{ env.APP_VERSION }} is live!"
-=======
-          echo "✅ DB updated — v${{ env.APP_VERSION }} (code ${{ env.APP_VERSION_CODE }}) is now latest"
->>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
