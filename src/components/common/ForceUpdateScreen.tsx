@@ -30,10 +30,10 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
   }, []);
 
   const handleUpdate = () => {
-    // توجيه لصفحة التحديث المخصصة — لا تفتح APK مباشرة
-    const UPDATE_PAGE = 'https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/update.html';
-    const target = apkUrl && apkUrl.endsWith('.html') ? apkUrl : UPDATE_PAGE;
-    window.open(target, '_blank');
+    // صفحة التحديث المخصصة — Edge Function تعيد HTML احترافي مع زر تنزيل APK
+    const UPDATE_PAGE = 'https://vchmsnavyhripakyvzom.supabase.co/functions/v1/update-landing';
+    // '_system' يفتح المتصفح الخارجي في Capacitor بدلاً من WebView الداخلي
+    window.open(UPDATE_PAGE, '_system');
   };
 
   return (
