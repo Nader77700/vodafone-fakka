@@ -8,7 +8,7 @@ SET search_path = public
 AS $$
 DECLARE
   _url  TEXT := 'https://vchmsnavyhripakyvzom.supabase.co/functions/v1/auto-version-notify';
-  _key  TEXT := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo';
+  _key  TEXT := '${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}';
   _body TEXT;
 BEGIN
   -- فقط عند تحويل is_latest إلى true وعدم إرسال الإشعار من قبل

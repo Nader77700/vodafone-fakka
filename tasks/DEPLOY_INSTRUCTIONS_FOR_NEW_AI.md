@@ -8,7 +8,7 @@
 ```
 SUPABASE_URL  = https://vchmsnavyhripakyvzom.supabase.co
 SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyODc4NTUsImV4cCI6MjA5Nzg2Mzg1NX0.pnqdmg5BApYx3HAPWR2UFhuV5ewyayvKR_dZk8of4s8
-SERVICE_KEY   = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
+SERVICE_KEY   = ${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}
 ```
 
 > ⚠️ الـ WORKSPACE بيتغير حسب app_id بتاع المشروع الجديد  
@@ -70,7 +70,7 @@ set -euo pipefail
 
 WORKSPACE="/workspace/YOUR_APP_ID_HERE"
 SUPABASE_URL="https://vchmsnavyhripakyvzom.supabase.co"
-SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo"
+SERVICE_KEY="${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}"
 DIST_DIR="$WORKSPACE/dist"
 LIVE_URL="${SUPABASE_URL}/storage/v1/object/public/web-live/index.html"
 
@@ -143,8 +143,8 @@ bash tasks/deploy-web.sh
 
 ```bash
 curl -s -X POST "https://vchmsnavyhripakyvzom.supabase.co/rest/v1/app_versions" \
-  -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo" \
+  -H "apikey: ${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "version": "3.0.XX",

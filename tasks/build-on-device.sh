@@ -10,7 +10,7 @@ cd "$PROJECT_DIR"
 
 # ===== المتغيرات اللازمة =====
 SUPABASE_URL="https://vchmsnavyhripakyvzom.supabase.co"
-SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo"
+SERVICE_KEY="${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}"
 KEYSTORE_PATH="${PROJECT_DIR}/android/app/vodafone-fakka-release.jks"
 KEYSTORE_PASS="fakka2024vodafone"
 KEY_ALIAS="vodafone-fakka"
