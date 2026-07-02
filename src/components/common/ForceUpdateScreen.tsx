@@ -4,12 +4,13 @@
  * - تظهر عندما installedCode < min_version_code في DB
  * - لا يوجد زر تخطي أو إغلاق
  * - تمنع زر الرجوع على Android
- * - يوجه المستخدم لصفحة التحديثات داخل التطبيق
+ * - تفتح صفحة التحديث في Chrome Custom Tab (Browser.open)
  */
 import { useEffect } from 'react';
 import { Download, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 interface ForceUpdateScreenProps {
@@ -29,11 +30,17 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
     return () => { handle?.remove(); };
   }, []);
 
-  const handleUpdate = () => {
-    // صفحة التحديث المخصصة — Edge Function تعيد HTML احترافي مع زر تنزيل APK
-    const UPDATE_PAGE = 'https://vchmsnavyhripakyvzom.supabase.co/functions/v1/update-landing';
-    // '_system' يفتح المتصفح الخارجي في Capacitor بدلاً من WebView الداخلي
-    window.open(UPDATE_PAGE, '_system');
+  const handleUpdate = async () => {
+    // صفحة تحديث مُدمَجة في serve-app?update (لا تتطلب auth من جانب المستخدم)
+    // Browser.open → Chrome Custom Tab (ليس WebView) → يتعامل مع APK download بشكل صحيح
+    const UPDATE_PAGE = 'https://vchmsnavyhripakyvzom.supabase.co/functions/v1/serve-app?update';
+
+    if (Capacitor.isNativePlatform()) {
+      // Chrome Custom Tab على Android — يدعم تنزيل APK بشكل صحيح
+      await Browser.open({ url: UPDATE_PAGE, windowName: '_system' });
+    } else {
+      window.open(UPDATE_PAGE, '_blank');
+    }
   };
 
   return (
