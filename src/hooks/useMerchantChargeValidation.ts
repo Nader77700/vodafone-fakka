@@ -31,13 +31,8 @@ function translateReason(reason: string, stage: string): string {
     member_suspended:      'تم إيقاف عضويتك مؤقتاً',
     member_blocked:        'تم حظر عضويتك',
     member_disabled:       'تم تعطيل عضويتك',
-<<<<<<< HEAD
     member_expired:        'انتهى اشتراكك. يرجى التواصل مع التاجر الخاص بك لتجديد الاشتراك.',
     no_active_subscription:'حسابك غير مفعل حالياً. يرجى التواصل مع التاجر الخاص بك لتفعيل الاشتراك.',
-=======
-    member_expired:        'انتهت صلاحية عضويتك',
-    no_active_subscription:'لا يوجد اشتراك نشط — جدّد اشتراكك للمتابعة',
->>>>>>> origin/main
     ops_exhausted:         'نفدت عمليات اشتراكك — جدّد اشتراكك للمتابعة',
     rpc_error:             'خطأ في التحقق — أعد المحاولة',
   };

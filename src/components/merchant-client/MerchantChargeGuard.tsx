@@ -128,15 +128,9 @@ export default function MerchantChargeGuard({ compact = false }: Props) {
         إعادة التحقق
       </Button>
 
-<<<<<<< HEAD
       {/* نصيحة — بدون روابط أو أرقام تواصل ───────────── */}
       <p className="text-[11px] text-muted-foreground max-w-[260px] text-pretty">
         للمساعدة يرجى التواصل مباشرة مع التاجر الخاص بك.
-=======
-      {/* نصيحة ───────────────────────────────────────── */}
-      <p className="text-[11px] text-muted-foreground max-w-[260px] text-pretty">
-        إذا كنت تعتقد أن هذا خطأ، تواصل مع التاجر أو أعد المحاولة بعد قليل.
->>>>>>> origin/main
       </p>
     </div>
   );

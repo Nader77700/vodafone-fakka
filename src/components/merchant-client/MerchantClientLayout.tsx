@@ -1,21 +1,13 @@
 // تخطيط Merchant Client Mode — مُبسَّط
 // يعرض فقط: شريط علوي نظيف + المحتوى + زر خروج
-<<<<<<< HEAD
 // الشريط السفلي: أربعة عناصر — بدون قفل للاشتراك المعلق (فقط رسالة عند العملية)
-=======
-// الشريط السفلي: قسمان فقط (فودافون كاش / الرصيد) + شاشة pending عند عدم الاشتراك
->>>>>>> origin/main
 import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import MerchantClientSuspended from './MerchantClientSuspended';
-<<<<<<< HEAD
 import MerchantBlockedMemberScreen from './MerchantBlockedMemberScreen';
 import MerchantWelcomeDialog from './MerchantWelcomeDialog';
-=======
-import MerchantPendingScreen from './MerchantPendingScreen';
->>>>>>> origin/main
 import { KillSwitchScreen, MaintenanceScreen, ForceUpdateScreen } from './MerchantControlScreens';
 import { useMerchantControlConfig } from '@/hooks/useMerchantControlConfig';
 import { supabase } from '@/db/supabase';
@@ -65,11 +57,7 @@ export default function MerchantClientLayout() {
     toast.info('تم تسجيل الخروج');
   };
 
-<<<<<<< HEAD
   // ── شاشة التحميل (محدودة بـ 3 ثوانٍ لمنع loading لا نهائي) ──
-=======
-  // ── شاشة التحميل ──
->>>>>>> origin/main
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
@@ -81,7 +69,6 @@ export default function MerchantClientLayout() {
     );
   }
 
-<<<<<<< HEAD
   // ── توقف التاجر (merchant-level) ──
   if (merchantSuspended) return <MerchantClientSuspended />;
 
@@ -96,29 +83,6 @@ export default function MerchantClientLayout() {
 
   // ملاحظة: pending / expired → يدخل التطبيق بشكل طبيعي
   // MerchantChargeGuard يتولى عرض الرسالة عند محاولة تنفيذ أي عملية
-=======
-  // ── توقف التاجر ──
-  if (merchantSuspended) return <MerchantClientSuspended />;
-
-  // ── شاشة انتظار تفعيل الاشتراك ──
-  // تظهر عندما يكون العضو مرتبطاً بتاجر لكن ليس لديه اشتراك نشط
-  const memberStatus = data?.member?.member_status;
-  const subStatus    = data?.subscription?.status;
-  const needsActivation =
-    data !== null &&
-    (memberStatus === 'pending' || memberStatus === undefined || memberStatus === null) &&
-    (subStatus === undefined || subStatus === null || subStatus === 'pending');
-
-  if (needsActivation) {
-    return (
-      <>
-        {killSwitch  && <KillSwitchScreen message={config?.kill_switch_msg} />}
-        {forceUpdate && !killSwitch && <ForceUpdateScreen message={config?.force_update_msg} updateUrl={config?.force_update_url} />}
-        <MerchantPendingScreen />
-      </>
-    );
-  }
->>>>>>> origin/main
 
   return (
     <div className="flex flex-col min-h-screen bg-background" dir="rtl">
@@ -126,12 +90,9 @@ export default function MerchantClientLayout() {
       {killSwitch  && <KillSwitchScreen message={config?.kill_switch_msg} />}
       {forceUpdate && !killSwitch && <ForceUpdateScreen message={config?.force_update_msg} updateUrl={config?.force_update_url} />}
 
-<<<<<<< HEAD
       {/* Welcome Dialog — أول دخول فقط */}
       <MerchantWelcomeDialog />
 
-=======
->>>>>>> origin/main
       {/* ─── شريط العنوان العلوي — نظيف بدون قائمة ─── */}
       <header
         className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/90 backdrop-blur-sm sticky top-0 z-40"

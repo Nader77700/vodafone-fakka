@@ -61,7 +61,6 @@ export interface Merchant {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-<<<<<<< HEAD
   // brand fields
   brand_color?: string | null;
   logo_url?: string | null;
@@ -74,8 +73,6 @@ export interface Merchant {
   sub_duration_days?: number | null;
   invite_enabled?: boolean;
   balance?: number;
-=======
->>>>>>> origin/main
   // computed / joined
   remaining_points?: number;
   users_count?: number;

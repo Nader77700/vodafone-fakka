@@ -2577,19 +2577,12 @@ export async function sendNotificationBulk(
   return { sent, failed };
 }
 
-<<<<<<< HEAD
 // جلب كل المستخدمين بدون pagination (للـ picker) — يستثني أعضاء التجار
-=======
-// جلب كل المستخدمين بدون pagination (للـ picker)
->>>>>>> origin/main
 export async function getAllProfilesForPicker(search = ''): Promise<Profile[]> {
   let query = supabase
     .from('profiles')
     .select('id, username, email, phone, avatar_url, full_name, role, is_active')
-<<<<<<< HEAD
     .is('merchant_id', null)   // استثناء كامل لأعضاء التجار
-=======
->>>>>>> origin/main
     .order('username', { ascending: true })
     .limit(200);
   if (search.trim()) {
@@ -3203,10 +3196,7 @@ export async function getAllLinkedUsers(page = 1, search = ''): Promise<Paginate
   let q = supabase
     .from('profiles')
     .select('*', { count: 'exact' })
-<<<<<<< HEAD
     .is('merchant_id', null)   // فصل كامل: لا تظهر أعضاء التجار في قائمة المستخدمين الأساسيين
-=======
->>>>>>> origin/main
     .order('created_at', { ascending: false })
     .range(from, to);
 
@@ -4501,7 +4491,6 @@ export async function adminTransferMember(
 
 /** تحديث إعدادات التاجر (brand_color, welcome_msg, logo_url, max_users) */
 export async function updateMerchantSettings(params: {
-<<<<<<< HEAD
   merchantId:            string;
   brandColor?:           string | null;
   welcomeMsg?:           string | null;
@@ -4516,20 +4505,6 @@ export async function updateMerchantSettings(params: {
     p_logo_url:              params.logoUrl              ?? null,
     p_max_users:             params.maxUsers             ?? null,
     p_welcome_instructions:  params.welcomeInstructions  ?? null,
-=======
-  merchantId:  string;
-  brandColor?: string | null;
-  welcomeMsg?: string | null;
-  logoUrl?:    string | null;
-  maxUsers?:   number | null;
-}): Promise<{ success: boolean; error?: string }> {
-  const { data, error } = await supabase.rpc('update_merchant_settings', {
-    p_merchant_id: params.merchantId,
-    p_brand_color: params.brandColor ?? null,
-    p_welcome_msg: params.welcomeMsg ?? null,
-    p_logo_url:    params.logoUrl    ?? null,
-    p_max_users:   params.maxUsers   ?? null,
->>>>>>> origin/main
   });
   if (error) return { success: false, error: error.message };
   return data as { success: boolean; error?: string };
@@ -4591,7 +4566,6 @@ export async function getMerchantFull(merchantId: string) {
     .eq('id', merchantId)
     .single();
   if (error || !data) return null;
-<<<<<<< HEAD
   return data as {
     id: string; name: string; brand_color: string | null;
     welcome_msg: string | null; logo_url: string | null;
@@ -4690,8 +4664,5 @@ export async function adminGetMerchantDetail(merchantId: string): Promise<{
     subscriptions: Array.isArray(subsRes.data) ? subsRes.data : [],
     codes:         Array.isArray(codesRes.data) ? codesRes.data : [],
   };
-=======
-  return data as { id: string; name: string; brand_color: string | null; welcome_msg: string | null; logo_url: string | null; max_users: number | null; status: string; [key: string]: unknown };
->>>>>>> origin/main
 }
 

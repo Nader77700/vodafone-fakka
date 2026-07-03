@@ -141,10 +141,7 @@ export default function AdminMerchantDetail() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [brandColor, setBrandColor]           = useState('');
   const [welcomeMsg, setWelcomeMsg]           = useState('');
-<<<<<<< HEAD
   const [welcomeInstructions, setWelcomeInstructions] = useState('');
-=======
->>>>>>> origin/main
   const [logoUrl, setLogoUrl]                 = useState('');
   const [maxUsers, setMaxUsers]               = useState('');
   const [walletAmt, setWalletAmt]             = useState('');
@@ -175,10 +172,7 @@ export default function AdminMerchantDetail() {
       if (!m) return;
       setBrandColor(m.brand_color ?? '');
       setWelcomeMsg(m.welcome_msg ?? '');
-<<<<<<< HEAD
       setWelcomeInstructions(m.welcome_instructions ?? '');
-=======
->>>>>>> origin/main
       setLogoUrl(m.logo_url ?? '');
       setMaxUsers(m.max_users != null ? String(m.max_users) : '');
     });
@@ -223,10 +217,7 @@ export default function AdminMerchantDetail() {
       merchantId: id, brandColor: brandColor || null,
       welcomeMsg: welcomeMsg || null, logoUrl: logoUrl || null,
       maxUsers: maxUsers ? parseInt(maxUsers, 10) : null,
-<<<<<<< HEAD
       welcomeInstructions: welcomeInstructions || null,
-=======
->>>>>>> origin/main
     });
     setSettingsLoading(false);
     if (r.success) { toast.success('تم حفظ الإعدادات ✅'); await load(); }
@@ -545,7 +536,6 @@ export default function AdminMerchantDetail() {
                   </label>
                   <Input type="number" min={1} value={maxUsers} onChange={e => setMaxUsers(e.target.value)} placeholder="غير محدود" className="h-9 text-sm" />
                 </div>
-<<<<<<< HEAD
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground font-medium">
                     تعليمات الاستخدام
@@ -563,8 +553,6 @@ export default function AdminMerchantDetail() {
                     سيتم إرسال التعليمات كـ Dialog لكل عضو — تحديثها يُعيد إظهار الـ Dialog تلقائياً.
                   </p>
                 </div>
-=======
->>>>>>> origin/main
               </div>
               <Button className="w-full h-9 gap-2" onClick={handleSaveSettings} disabled={settingsLoading}>
                 {settingsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

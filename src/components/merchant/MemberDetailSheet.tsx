@@ -225,11 +225,8 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
       .channel(`member-detail-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'merchant_members',
         filter: `user_id=eq.${userId}` }, () => { loadMember(); })
-<<<<<<< HEAD
       .on('postgres_changes', { event: '*', schema: 'public', table: 'merchant_member_subscriptions',
         filter: `user_id=eq.${userId}` }, () => { loadMember(); })
-=======
->>>>>>> origin/main
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'merchant_member_ledger',
         filter: `user_id=eq.${userId}` }, () => { loadLedger(); })
       .subscribe();
@@ -456,7 +453,6 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                 );
               })()}
 
-<<<<<<< HEAD
               {/* Status Actions — حظر↔فك حظر، إيقاف↔تشغيل */}
               {(() => {
                 const ms = member?.member_status ?? 'pending';
@@ -483,22 +479,6 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                   actions.push({ label: 'حظر',           status: 'blocked',   icon: Ban,      cls: 'text-destructive border-destructive/30' });
                 }
 
-=======
-              {/* Status Actions — smart: only show actions valid for current state */}
-              {(() => {
-                const ms = member?.member_status ?? 'pending';
-                // أزرار الحالة المتاحة بناءً على الحالة الحالية
-                const actions: { label: string; status: MemberStatus; icon: React.ElementType; cls: string }[] = [];
-                if (ms === 'suspended' || ms === 'blocked' || ms === 'disabled' || ms === 'expired') {
-                  actions.push({ label: 'استعادة', status: 'active',    icon: UserCheck, cls: 'text-success border-success/30' });
-                }
-                if (ms === 'active' || ms === 'pending') {
-                  actions.push({ label: 'إيقاف',   status: 'suspended', icon: UserX,  cls: 'text-warning border-warning/30' });
-                }
-                if (ms !== 'blocked') {
-                  actions.push({ label: 'حظر',     status: 'blocked',   icon: Ban,    cls: 'text-destructive border-destructive/30' });
-                }
->>>>>>> origin/main
                 if (!actions.length) return null;
                 return (
                   <div>
