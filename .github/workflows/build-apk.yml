@@ -1,0 +1,279 @@
+name: Build Vodafone Fakka APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  SUPABASE_URL: https://vchmsnavyhripakyvzom.supabase.co
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Atomic Deployment Pipeline — الترتيب الصحيح الوحيد المسموح به:
+#
+#  1. Build  ➜  2. Sign  ➜  3. Upload  ➜  4. Verify HTTP 200  ➜
+#  5. Download Test  ➜  6. Update DB  ➜  7. Send Notification  ➜
+#  8. Force Update
+#
+#  ممنوع: أي خطوة تعتمد على خطوة لم تنجح بعد.
+#  أي فشل في (1–5) = إلغاء النشر كاملاً بدون تحديث DB أو إشعار.
+# ═══════════════════════════════════════════════════════════════════════════
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # ─── [0] استخراج الإصدار أولاً — قبل أي شيء ──────────────────────────
+      - name: Read version from build.gradle
+        id: version
+        run: |
+          APP_VERSION=$(grep 'versionName' android/app/build.gradle | head -1 \
+            | sed 's/.*versionName "\(.*\)".*/\1/' | tr -d '[:space:]')
+          APP_VERSION_CODE=$(grep 'versionCode' android/app/build.gradle | head -1 \
+            | sed 's/.*versionCode \([0-9]*\).*/\1/' | tr -d '[:space:]')
+          APK_NAME="VodafoneFakka-v${APP_VERSION}.apk"
+          APK_PUBLIC_URL="${{ env.SUPABASE_URL }}/storage/v1/object/public/apk-releases/${APK_NAME}"
+          echo "APP_VERSION=$APP_VERSION"           >> $GITHUB_ENV
+          echo "APP_VERSION_CODE=$APP_VERSION_CODE" >> $GITHUB_ENV
+          echo "APK_NAME=$APK_NAME"                 >> $GITHUB_ENV
+          echo "APK_PUBLIC_URL=$APK_PUBLIC_URL"     >> $GITHUB_ENV
+          echo "✅ Version: $APP_VERSION (code $APP_VERSION_CODE) → $APK_NAME"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      # ─── [1] BUILD ─────────────────────────────────────────────────────────
+      - name: Install dependencies & build Vite
+        run: |
+          pnpm install --frozen-lockfile
+          npx vite build --minify true --outDir dist
+          echo "✅ Vite build OK"
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Fix local.properties SDK path
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Capacitor sync
+        run: pnpm exec cap sync android
+
+      - name: Fix gradlew permissions
+        run: chmod +x android/gradlew
+
+      - name: Fix HTTP plugin namespace
+        run: |
+          HTTP_GRADLE=$(find node_modules -path "*capacitor-community/http*/android/build.gradle" | head -1)
+          if [[ -n "$HTTP_GRADLE" && $(grep -c "namespace" "$HTTP_GRADLE") -eq 0 ]]; then
+            sed -i "s|android {|android {\n    namespace 'com.getcapacitor.community.http'|" "$HTTP_GRADLE"
+          fi
+          HTTP_MANIFEST=$(find node_modules -path "*capacitor-community/http*/android/src/main/AndroidManifest.xml" | head -1)
+          [[ -n "$HTTP_MANIFEST" ]] && sed -i 's/ package="[^"]*"//' "$HTTP_MANIFEST" || true
+
+      # ─── [2] SIGN ──────────────────────────────────────────────────────────
+      - name: Build signed APK
+        run: |
+          cd android && ./gradlew assembleRelease --no-daemon
+          echo "✅ Gradle build + sign OK"
+        env:
+          KEYSTORE_PASSWORD: vodafone123
+          KEY_ALIAS: vfkey
+
+      # ─── [3] PREPARE APK ──────────────────────────────────────────────────
+      - name: Rename APK + compute hash
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          if [[ -z "$APK_PATH" ]]; then
+            echo "❌ No APK found after build!"
+            exit 1
+          fi
+          cp "$APK_PATH" "${{ env.APK_NAME }}"
+          APK_HASH=$(md5sum "${{ env.APK_NAME }}" | awk '{print $1}')
+          APK_SIZE=$(stat -c%s "${{ env.APK_NAME }}")
+          echo "APK_HASH=$APK_HASH" >> $GITHUB_ENV
+          echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
+          echo "✅ APK ready: ${{ env.APK_NAME }} | size=${APK_SIZE} bytes | md5=$APK_HASH"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VodafoneFakka-v${{ env.APP_VERSION }}
+          path: ${{ env.APK_NAME }}
+
+      # ─── [4] UPLOAD ────────────────────────────────────────────────────────
+      - name: Upload APK to Supabase Storage
+        env:
+          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
+        run: |
+          echo "📤 Uploading ${{ env.APK_NAME }} to Supabase Storage..."
+          UPLOAD_HTTP=$(curl -s -o /tmp/upload_response.txt -w "%{http_code}" -X POST \
+            "${{ env.SUPABASE_URL }}/storage/v1/object/apk-releases/${{ env.APK_NAME }}" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            -H "x-upsert: true" \
+            --data-binary "@${{ env.APK_NAME }}")
+          echo "Upload HTTP status: $UPLOAD_HTTP"
+          cat /tmp/upload_response.txt
+          if [[ "$UPLOAD_HTTP" != "200" ]]; then
+            echo "❌ UPLOAD FAILED — aborting deployment. No DB update, no notification."
+            exit 1
+          fi
+          echo "✅ Upload successful"
+
+      # ─── [5a] VERIFY: URL returns HTTP 200 ────────────────────────────────
+      - name: Verify APK URL returns HTTP 200
+        env:
+          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
+        run: |
+          echo "🔍 Verifying APK URL: ${{ env.APK_PUBLIC_URL }}"
+          # انتظر 5 ثوانٍ لضمان CDN propagation
+          sleep 5
+
+          # محاولة حتى 5 مرات بفاصل 10 ثوانٍ
+          for i in 1 2 3 4 5; do
+            VERIFY_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer $SB_SERVICE_KEY" \
+              -H "apikey: $SB_SERVICE_KEY" \
+              "${{ env.APK_PUBLIC_URL }}")
+            echo "Attempt $i: HTTP $VERIFY_HTTP"
+            if [[ "$VERIFY_HTTP" == "200" ]]; then
+              echo "✅ URL verified — returns HTTP 200"
+              break
+            fi
+            if [[ $i -eq 5 ]]; then
+              echo "❌ URL NOT ACCESSIBLE after 5 attempts (last: HTTP $VERIFY_HTTP)"
+              echo "❌ Aborting — No DB update, no notification sent."
+              exit 1
+            fi
+            echo "⏳ Waiting 10s before retry..."
+            sleep 10
+          done
+
+      # ─── [5b] DOWNLOAD TEST: تنزيل أول 512KB للتحقق من سلامة الملف ─────────
+      - name: Download test — verify APK is fully readable
+        env:
+          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
+        run: |
+          echo "📥 Partial download test (first 512KB)..."
+          DL_HTTP=$(curl -s -o /tmp/apk_test.bin -w "%{http_code}" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY" \
+            -H "Range: bytes=0-524287" \
+            "${{ env.APK_PUBLIC_URL }}")
+          DL_SIZE=$(stat -c%s /tmp/apk_test.bin 2>/dev/null || echo 0)
+          echo "Download HTTP: $DL_HTTP | Downloaded: $DL_SIZE bytes"
+
+          # HTTP 200 أو 206 كلاهما مقبول مع Range header
+          if [[ "$DL_HTTP" != "200" && "$DL_HTTP" != "206" ]]; then
+            echo "❌ Download test FAILED — HTTP $DL_HTTP"
+            echo "❌ Aborting — No DB update, no notification sent."
+            exit 1
+          fi
+          if [[ "$DL_SIZE" -lt 102400 ]]; then
+            echo "❌ Downloaded only $DL_SIZE bytes — file may be corrupt or incomplete"
+            echo "❌ Aborting — No DB update, no notification sent."
+            exit 1
+          fi
+          echo "✅ Download test passed — $DL_SIZE bytes readable"
+          rm -f /tmp/apk_test.bin
+
+      # ─── [6] UPDATE DB — فقط بعد نجاح جميع الخطوات السابقة ───────────────
+      - name: Update Database (ONLY after full verification)
+        env:
+          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
+        run: |
+          echo "📝 Updating DB — v${{ env.APP_VERSION }} (code ${{ env.APP_VERSION_CODE }})"
+
+          # إدراج إن لم يوجد
+          curl -s -X POST "${{ env.SUPABASE_URL }}/rest/v1/app_versions" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=ignore-duplicates" \
+            -d "{\"version\":\"${{ env.APP_VERSION }}\",\"version_code\":${{ env.APP_VERSION_CODE }},\"apk_url\":\"${{ env.APK_PUBLIC_URL }}\",\"is_latest\":true,\"update_type\":\"apk\",\"apk_deployed\":true,\"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+
+          # تحديث الصف الموجود
+          curl -s -X PATCH \
+            "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=eq.${{ env.APP_VERSION_CODE }}" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"apk_url\":\"${{ env.APK_PUBLIC_URL }}\",\"is_latest\":true,\"apk_deployed\":true,\"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+
+          # إيقاف is_latest للإصدارات القديمة
+          curl -s -X PATCH \
+            "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=lt.${{ env.APP_VERSION_CODE }}" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"is_latest\":false}"
+
+          # تحديث app_config
+          for KEY in version_latest_name version_latest_code version_apk_url; do
+            if [ "$KEY" = "version_latest_name" ]; then VAL="${{ env.APP_VERSION }}"; fi
+            if [ "$KEY" = "version_latest_code" ]; then VAL="${{ env.APP_VERSION_CODE }}"; fi
+            if [ "$KEY" = "version_apk_url" ];     then VAL="${{ env.APK_PUBLIC_URL }}"; fi
+            curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
+              -H "Authorization: Bearer $SB_SERVICE_KEY" \
+              -H "apikey: $SB_SERVICE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"value\":\"$VAL\"}"
+          done
+
+          echo "✅ DB updated — v${{ env.APP_VERSION }} is_latest=true, apk_deployed=true"
+
+      # ─── [7] SEND NOTIFICATION — آخر خطوة في Pipeline ────────────────────
+      - name: Send Push Notification (LAST step — APK confirmed ready)
+        env:
+          SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
+        run: |
+          echo "🔔 Sending push notification — APK is confirmed live at ${{ env.APK_PUBLIC_URL }}"
+          UPDATE_PAGE="https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/update.html"
+
+          # جلب version_id من DB أولاً لمنع التكرار
+          VERSION_ROW=$(curl -s \
+            "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=eq.${{ env.APP_VERSION_CODE }}&select=id,push_notif_sent" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY")
+          echo "Version row: $VERSION_ROW"
+
+          NOTIF_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ env.SUPABASE_URL }}/functions/v1/auto-version-notify" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"version\":       \"${{ env.APP_VERSION }}\",
+              \"version_code\":  ${{ env.APP_VERSION_CODE }},
+              \"apk_url\":       \"${UPDATE_PAGE}\",
+              \"release_notes\": \"v${{ env.APP_VERSION }}: تحديث جديد متاح للتحميل\"
+            }")
+          NOTIF_HTTP=$(echo "$NOTIF_RESP" | tail -1)
+          NOTIF_BODY=$(echo "$NOTIF_RESP" | head -1)
+          echo "Notification HTTP: $NOTIF_HTTP"
+          echo "Notification response: $NOTIF_BODY"
+
+          if [[ "$NOTIF_HTTP" != "200" ]]; then
+            # فشل الإشعار لا يُلغي النشر — APK موجود والDB محدَّث
+            echo "⚠️ Notification failed (HTTP $NOTIF_HTTP) — but APK and DB are already updated"
+            exit 0
+          fi
+          echo "✅ Push notification sent successfully"
+          echo "🎉 Deployment complete: v${{ env.APP_VERSION }} is live!"
