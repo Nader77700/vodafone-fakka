@@ -1,7 +1,7 @@
 // تخطيط Merchant Client Mode — مُبسَّط
 // يعرض فقط: شريط علوي نظيف + المحتوى + زر خروج
 // الشريط السفلي: أربعة عناصر — بدون قفل للاشتراك المعلق (فقط رسالة عند العملية)
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
@@ -36,6 +36,14 @@ export default function MerchantClientLayout() {
   const navigate  = useNavigate();
   const loc       = useLocation();
 
+  // منع loading لا نهائي — 4 ثوانٍ حد أقصى
+  const [loadTimeout, setLoadTimeout] = useState(false);
+  useEffect(() => {
+    if (!isLoading) { setLoadTimeout(false); return; }
+    const t = setTimeout(() => setLoadTimeout(true), 4000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
   const brandColor = data?.merchant?.brand_color ?? '#E60000';
 
   // إعادة توجيه المسارات غير المسموح بها إلى /home
@@ -57,8 +65,8 @@ export default function MerchantClientLayout() {
     toast.info('تم تسجيل الخروج');
   };
 
-  // ── شاشة التحميل (محدودة بـ 3 ثوانٍ لمنع loading لا نهائي) ──
-  if (isLoading) {
+  // ── شاشة التحميل (محدودة بـ 4 ثوانٍ لمنع loading لا نهائي) ──
+  if (isLoading && !loadTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
         <div className="text-center space-y-3">

@@ -31,6 +31,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { useMerchantChargeValidation } from '@/hooks/useMerchantChargeValidation';
 
 // ── ألوان هوية التطبيق الأحمر/الأسود ──
 const C = {
@@ -857,6 +858,10 @@ export default function BalanceChargePage() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const isMerchantClient = !!(profile?.merchant_id && profile.role === 'user');
+
+  // ── تحقق أهلية عميل التاجر — يُستدعى دائماً (Rules of Hooks) ──────────────
+  const merchantValidation = useMerchantChargeValidation();
 
   const [session, setSession]           = useState<BalanceSession | null>(null);
   const [allSessions, setAllSessions]   = useState<BalanceSession[]>([]);
@@ -935,6 +940,42 @@ export default function BalanceChargePage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: C.bg }}>
         <p className="text-muted-foreground text-sm">يجب تسجيل الدخول للوصول لهذه الصفحة</p>
+      </div>
+    );
+  }
+
+  // ── حماية عمليات عميل التاجر ──────────────────────────────────────────────
+  if (isMerchantClient && !merchantValidation.loading && !merchantValidation.eligible) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ background: C.bg }} dir="rtl">
+        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b"
+          style={{ background: 'rgba(8,0,0,0.95)', backdropFilter: 'blur(12px)', borderColor: 'rgba(230,0,0,0.1)' }}>
+          <button className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/5"
+            onClick={() => navigate('/')}>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+          <p className="text-sm font-black text-white">الشحن من الرصيد</p>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-5">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.25)' }}>
+            <AlertTriangle className="w-8 h-8" style={{ color: C.red }} />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-base font-black text-white">لا يمكن تنفيذ عمليات الشحن</h2>
+            <p className="text-sm font-medium leading-relaxed" style={{ color: C.red }}>
+              {merchantValidation.errorLabel ?? 'حسابك غير مفعل حالياً. يرجى التواصل مع التاجر الخاص بك لتفعيل الاشتراك.'}
+            </p>
+          </div>
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
+            onClick={merchantValidation.refresh}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            إعادة التحقق
+          </button>
+        </div>
       </div>
     );
   }
