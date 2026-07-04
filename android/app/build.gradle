@@ -7,8 +7,8 @@ android {
         applicationId "com.naderakram.vodafonefakka"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 168
-        versionName "3.0.253"
+        versionCode 169
+        versionName "3.0.254"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
