@@ -23,6 +23,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write   # مطلوب لإنشاء GitHub Releases
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -195,8 +198,10 @@ jobs:
           echo "✅ Download test passed — $DL_SIZE bytes readable"
           rm -f /tmp/apk_test.bin
 
-      # ─── [7] CREATE GITHUB RELEASE — لضمان عمل النسخ القديمة من التطبيق ──
+      # ─── [7] CREATE GITHUB RELEASE — محاولة إضافية (اختياري — لا يوقف النشر) ──
       - name: Create GitHub Release with APK
+        id: gh_release
+        continue-on-error: true   # فشله لا يوقف تحديث DB أو الإشعار
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -218,15 +223,17 @@ jobs:
           echo "GH_APK_URL=$GH_APK_URL" >> $GITHUB_ENV
           echo "✅ GitHub Release created: $GH_APK_URL"
 
-      # ─── [8] UPDATE DB — تحديث الرابط ليكون GitHub (للتوافق مع النسخ القديمة) ──
-      - name: Update Database with GitHub Release URL
+      # ─── [8] UPDATE DB — يستخدم Supabase URL دائماً (لا يعتمد على GitHub Release) ──
+      - name: Update Database with Supabase Storage URL
+        if: always()   # يعمل دائماً — حتى لو فشل GitHub Release
         env:
           SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
         run: |
-          echo "📝 Updating DB with GitHub Release URL — v${{ env.APP_VERSION }}"
+          echo "📝 Updating DB — v${{ env.APP_VERSION }}"
 
-          # الرابط الأساسي: GitHub Release (يعمل مع الكود القديم والجديد)
-          FINAL_URL="${{ env.GH_APK_URL }}"
+          # الرابط الأساسي دائماً: Supabase Storage (مضمون 100%) — لا يعتمد على GitHub
+          FINAL_URL="${{ env.APK_PUBLIC_URL }}"
+          echo "✅ Using Supabase Storage URL: $FINAL_URL"
 
           # تحديث/إدراج صف app_versions
           curl -s -X POST "${{ env.SUPABASE_URL }}/rest/v1/app_versions" \
@@ -267,6 +274,7 @@ jobs:
 
       # ─── [9] SEND NOTIFICATION ────────────────────────────────────────────
       - name: Send Push Notification (LAST step — APK confirmed ready)
+        if: always()   # يعمل دائماً — حتى لو فشل GitHub Release
         env:
           SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
         run: |
