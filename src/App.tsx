@@ -497,23 +497,53 @@ function useDevToolsGuard(isAdmin: boolean) {
     if (isAdmin) return; // الأدمن مستثنى
 
     const THRESHOLD = 160; // فارق البكسل المقبول
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     const check = () => {
+      // تجاهل الفحص على أجهزة الموبايل الحقيقية — لا DevTools هناك
+      if (typeof window !== 'undefined' && window.outerWidth <= 768 && window.outerHeight <= 1024) {
+        setDevToolsOpen(false);
+        return;
+      }
       const widthDiff  = window.outerWidth  - window.innerWidth;
       const heightDiff = window.outerHeight - window.innerHeight;
       const opened = widthDiff > THRESHOLD || heightDiff > THRESHOLD;
       setDevToolsOpen(opened);
     };
 
-    // فحص عند تغيير حجم النافذة
+    const startInterval = () => {
+      if (interval) return;
+      interval = setInterval(check, 3000); // كل 3 ثواني بدلاً من 2
+    };
+
+    const stopInterval = () => {
+      if (interval) { clearInterval(interval); interval = null; }
+    };
+
+    // إيقاف الفحص عند دخول الخلفية — يوفر CPU/RAM على الأجهزة الضعيفة
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stopInterval();
+        setDevToolsOpen(false); // إخفاء overlay عند الخلفية
+      } else {
+        startInterval();
+        check(); // فحص فوري عند العودة للأمام
+      }
+    };
+
     window.addEventListener('resize', check);
-    // فحص متكرر كل 2 ثانية
-    const interval = setInterval(check, 2000);
-    check(); // فحص أولي
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // لا نبدأ الفحص إلا إذا كانت الصفحة في المقدمة
+    if (!document.hidden) {
+      startInterval();
+      check();
+    }
 
     return () => {
+      stopInterval();
       window.removeEventListener('resize', check);
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [isAdmin]);
 

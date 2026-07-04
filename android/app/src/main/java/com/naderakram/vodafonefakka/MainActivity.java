@@ -45,7 +45,7 @@ public class MainActivity extends BridgeActivity {
     private boolean           mAppReady       = false;
     private final Handler     mHandler        = new Handler(Looper.getMainLooper());
     // 20 ثانية — وقت كافٍ لتحميل التطبيق حتى على اتصال بطيء
-    private static final long TIMEOUT_MS      = 20_000L;
+    private static final long TIMEOUT_MS      = 30_000L;
 
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {

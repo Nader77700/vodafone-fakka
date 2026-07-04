@@ -8,6 +8,10 @@ import { supabase } from '@/db/supabase';
 export const OFFICIAL_LOGO = '/vfp-logo.png';
 const MIN_DISPLAY_MS = 5000;
 
+// ── تحسين الأداء: تقليل الأنيميشن على الأجهزة الضعيفة ─────────────────────
+// على Android الأجهزة الحقيقية → تعطيل الـ particles لتوفير CPU/GPU
+const IS_NATIVE = Capacitor.isNativePlatform();
+
 // ── خطوات التهيئة الحقيقية ─────────────────────────────────────────────────
 interface InitStep {
   id: string;
@@ -76,11 +80,11 @@ function ConstellationBg() {
       {NODES.map((n, i) => (
         <circle key={i} cx={`${n.x}%`} cy={`${n.y}%`} r="0.5"
           fill="#E60000" opacity="0.7"
-          style={{ animation: `node-pulse ${2 + (i % 3)}s ${(i * 0.3) % 2}s ease-in-out infinite alternate` }}
+          style={IS_NATIVE ? { opacity: 0.6 } : { animation: `node-pulse ${2 + (i % 3)}s ${(i * 0.3) % 2}s ease-in-out infinite alternate` }}
         />
       ))}
-      {/* نقاط صغيرة منتشرة (Particles) */}
-      {[...Array(22)].map((_, i) => (
+      {/* نقاط صغيرة منتشرة (Particles) — تُعطَّل على الأجهزة الحقيقية لتوفير CPU */}
+      {!IS_NATIVE && [...Array(22)].map((_, i) => (
         <circle key={`p${i}`}
           cx={`${(i * 17 + 7) % 97}%`} cy={`${(i * 11 + 13) % 88}%`}
           r="0.25" fill="rgba(200,0,0,0.45)"
@@ -178,8 +182,8 @@ function RedWave() {
           fill="url(#wg)" opacity="0.7"/>
         <path d="M300 180 C270 150, 230 170, 200 145 C170 120, 150 155, 120 140 C90 125, 50 160, 30 150 L0 160 L0 180 Z"
           fill="rgba(180,0,0,0.35)"/>
-        {/* نقاط متوهجة فوق الموجة */}
-        {[...Array(8)].map((_, i) => (
+        {/* نقاط متوهجة فوق الموجة — تُعطَّل على الأجهزة الحقيقية */}
+        {!IS_NATIVE && [...Array(8)].map((_, i) => (
           <circle key={i}
             cx={180 + i * 16} cy={140 - (i % 3) * 12}
             r="1.2" fill="rgba(230,0,0,0.8)"
@@ -290,7 +294,8 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
         <div style={{
           position: 'relative',
           marginBottom: 28,
-          animation: 'logo-float 4s ease-in-out infinite',
+          // تعطيل أنيميشن اللوجو على الأجهزة الحقيقية لتوفير GPU
+          animation: IS_NATIVE ? 'none' : 'logo-float 4s ease-in-out infinite',
         }}>
           {/* توهج خلفي أحمر */}
           <div style={{
