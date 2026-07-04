@@ -44,7 +44,7 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
     // ⛔ لا GitHub Releases أبداً — يبقى قديماً ولا يُحدَّث تلقائياً
     let downloadUrl: string;
 
-    if (apkUrl && apkUrl.startsWith('https://') && apkUrl.includes('apk-releases')) {
+    if (apkUrl && apkUrl.startsWith('https://') && (apkUrl.includes('apk-releases') || apkUrl.includes('supabase.co'))) {
       // الرابط من DB صحيح ومن Supabase Storage ✅
       downloadUrl = apkUrl;
     } else if (latestVersion) {
