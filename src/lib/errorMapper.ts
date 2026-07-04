@@ -130,15 +130,19 @@ function classifyError(raw: string): ErrorType {
   ) return 'network_changed';
 
   // بيانات Vodafone مغلقة / لا يوجد اتصال
+  // ⚠️ تنبيه: لا تضع كلمات عامة مثل 'بيانات' أو '4g' هنا لأنها تظهر في رسائل خطأ أخرى
   if (
     t.includes('data disabled') ||
-    t.includes('mobile data') ||
-    t.includes('بيانات') ||
-    t.includes('4g') ||
+    t.includes('mobile data off') ||
+    t.includes('mobile data is off') ||
+    t.includes('بيانات معطلة') ||
+    t.includes('بيانات الجوال مغلقة') ||
     t.includes('no sim') ||
-    t.includes('sim not') ||
+    t.includes('sim not found') ||
+    t.includes('no active sim') ||
     t.includes('network unavailable') ||
-    t.includes('no network')
+    t.includes('no network') ||
+    t.includes('data_disabled')  // error_code صريح من الخادم
   ) return 'data_disabled';
 
   // timeout

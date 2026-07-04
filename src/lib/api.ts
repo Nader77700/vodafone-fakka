@@ -1084,6 +1084,7 @@ async function executeNativeVodafoneOrder(payload: {
         // لا نعتمد على بيانات web fallback لاتخاذ قرار الحجب — متابعة
         log(0, 'Network Pre-Check', 'skip', 'VodafoneDetector web fallback — تخطي فحص WiFi، متابعة الطلب');
       } else if (netInfo.isWifiActive && !netInfo.isMobileDataActive) {
+        // WiFi فقط بدون Mobile Data — Seamless لن يعمل
         log(0, 'Network Pre-Check', 'fail', `WiFi فقط بدون Mobile Data — seamless سيفشل`);
         return {
           success: false,
@@ -1108,7 +1109,7 @@ async function executeNativeVodafoneOrder(payload: {
     const { CapacitorHttp } = await import('@capacitor/core');
     log(1, 'CapacitorHttp Import', 'pass', 'Plugin loaded OK');
 
-    // ── Step 1: seamless token ──
+    // ── Step 1: seamless token — مع إعادة المحاولة تلقائياً (3 محاولات × 2 ثانية) ──
     let seamlessToken: string | null = null;
     let senderMsisdn: string = payload.sender;
     let seamlessHttpStatus = 0;
@@ -1116,125 +1117,151 @@ async function executeNativeVodafoneOrder(payload: {
     let seamlessInspect: ResponseInspect | undefined;
 
     const SEAMLESS_URL = 'http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless';
+    const MAX_SEAMLESS_RETRIES = 3;
+    const SEAMLESS_RETRY_DELAY_MS = 2000;
 
-    try {
-      const step1StartedAt = new Date().toISOString();
+    for (let seamlessAttempt = 1; seamlessAttempt <= MAX_SEAMLESS_RETRIES; seamlessAttempt++) {
+      // تأخير بين المحاولات (ما عدا الأولى)
+      if (seamlessAttempt > 1) {
+        log(0, `Seamless Retry`, 'skip', `محاولة ${seamlessAttempt}/${MAX_SEAMLESS_RETRIES} — انتظار ${SEAMLESS_RETRY_DELAY_MS}ms`);
+        await new Promise(r => setTimeout(r, SEAMLESS_RETRY_DELAY_MS));
+      }
 
-      // ── Phase 4: Full Trace — Request ──
-      devLog(`[vf-trace] ═══════════════════════ STEP 1 — SEAMLESS TOKEN ═══════════════════════`);
-      devLog(`[vf-trace] REQUEST_STARTED_AT : ${step1StartedAt}`);
-      devLog(`[vf-trace] URL                : ${SEAMLESS_URL}`);
-      devLog(`[vf-trace] METHOD             : GET`);
-      devLog(`[vf-trace] HEADERS            :`, JSON.stringify(DEVICE_HEADERS));
+      try {
+        const step1StartedAt = new Date().toISOString();
 
-      const seamlessRes = await CapacitorHttp.request({
-        method: 'GET',
-        url: SEAMLESS_URL,
-        headers: DEVICE_HEADERS,
-        readTimeout: 15000,
-        connectTimeout: 15000,
-      });
+        // ── Phase 4: Full Trace — Request ──
+        devLog(`[vf-trace] ═══════════════════════ STEP 1 — SEAMLESS TOKEN (attempt ${seamlessAttempt}) ═══════════════════════`);
+        devLog(`[vf-trace] REQUEST_STARTED_AT : ${step1StartedAt}`);
+        devLog(`[vf-trace] URL                : ${SEAMLESS_URL}`);
+        devLog(`[vf-trace] METHOD             : GET`);
+        devLog(`[vf-trace] HEADERS            :`, JSON.stringify(DEVICE_HEADERS));
 
-      const step1ReceivedAt = new Date().toISOString();
-      seamlessHttpStatus = seamlessRes.status ?? 0;
-      const seamlessHeaders: Record<string, string> = (seamlessRes.headers as Record<string, string>) ?? {};
+        const seamlessRes = await CapacitorHttp.request({
+          method: 'GET',
+          url: SEAMLESS_URL,
+          headers: DEVICE_HEADERS,
+          readTimeout: 15000,
+          connectTimeout: 15000,
+        });
 
-      // ── Phase 4: Full Trace — Response ──
-      devLog(`[vf-trace] RESPONSE_RECEIVED_AT: ${step1ReceivedAt}`);
-      devLog(`[vf-trace] HTTP_STATUS         : ${seamlessHttpStatus}`);
-      devLog(`[vf-trace] CONTENT_TYPE        : ${seamlessHeaders['content-type'] || seamlessHeaders['Content-Type'] || '(none)'}`);
-      devLog(`[vf-trace] CONTENT_ENCODING    : ${seamlessHeaders['content-encoding'] || seamlessHeaders['Content-Encoding'] || '(none)'}`);
-      devLog(`[vf-trace] CONTENT_LENGTH      : ${seamlessHeaders['content-length'] || seamlessHeaders['Content-Length'] || '(not set)'}`);
-      devLog(`[vf-trace] DATA_TYPE           : ${typeof seamlessRes.data}`);
-      devLog(`[vf-trace] DATA_CONSTRUCTOR    : ${seamlessRes.data?.constructor?.name ?? 'n/a'}`);
-      devLog(`[vf-trace] DATA_IS_ARRAY       : ${Array.isArray(seamlessRes.data)}`);
+        const step1ReceivedAt = new Date().toISOString();
+        seamlessHttpStatus = seamlessRes.status ?? 0;
+        const seamlessHeaders: Record<string, string> = (seamlessRes.headers as Record<string, string>) ?? {};
 
-      // Full response inspector (Phase 3 fix applied)
-      seamlessInspect = buildInspect(
-        SEAMLESS_URL, 'GET', step1StartedAt, step1ReceivedAt,
-        seamlessHttpStatus, seamlessHeaders, seamlessRes.data
-      );
+        // ── Phase 4: Full Trace — Response ──
+        devLog(`[vf-trace] RESPONSE_RECEIVED_AT: ${step1ReceivedAt}`);
+        devLog(`[vf-trace] HTTP_STATUS         : ${seamlessHttpStatus}`);
+        devLog(`[vf-trace] CONTENT_TYPE        : ${seamlessHeaders['content-type'] || seamlessHeaders['Content-Type'] || '(none)'}`);
+        devLog(`[vf-trace] CONTENT_ENCODING    : ${seamlessHeaders['content-encoding'] || seamlessHeaders['Content-Encoding'] || '(none)'}`);
+        devLog(`[vf-trace] CONTENT_LENGTH      : ${seamlessHeaders['content-length'] || seamlessHeaders['Content-Length'] || '(not set)'}`);
+        devLog(`[vf-trace] DATA_TYPE           : ${typeof seamlessRes.data}`);
+        devLog(`[vf-trace] DATA_CONSTRUCTOR    : ${seamlessRes.data?.constructor?.name ?? 'n/a'}`);
+        devLog(`[vf-trace] DATA_IS_ARRAY       : ${Array.isArray(seamlessRes.data)}`);
 
-      // ── Phase 4: Full Trace — Parse Results ──
-      devLog(`[vf-trace] DETECTED_FORMAT     : ${seamlessInspect.detectedFormat}`);
-      devLog(`[vf-trace] RAW_LENGTH          : ${seamlessInspect.rawLength} chars`);
-      devLog(`[vf-trace] RAW_FIRST_200       : ${seamlessInspect.rawFirst5000.slice(0, 200)}`);
-      devLog(`[vf-trace] PARSE_ERROR         : ${seamlessInspect.parseError || 'none'}`);
-      devLog(`[vf-trace] TOP_LEVEL_KEYS      : [${seamlessInspect.topLevelKeys.join(', ')}]`);
-      devLog(`[vf-trace] TOKEN_CANDIDATES    :`, JSON.stringify(seamlessInspect.tokenCandidates));
+        // Full response inspector (Phase 3 fix applied)
+        seamlessInspect = buildInspect(
+          SEAMLESS_URL, 'GET', step1StartedAt, step1ReceivedAt,
+          seamlessHttpStatus, seamlessHeaders, seamlessRes.data
+        );
 
-      seamlessRaw = seamlessInspect.rawFirst5000;
+        // ── Phase 4: Full Trace — Parse Results ──
+        devLog(`[vf-trace] DETECTED_FORMAT     : ${seamlessInspect.detectedFormat}`);
+        devLog(`[vf-trace] RAW_LENGTH          : ${seamlessInspect.rawLength} chars`);
+        devLog(`[vf-trace] RAW_FIRST_200       : ${seamlessInspect.rawFirst5000.slice(0, 200)}`);
+        devLog(`[vf-trace] PARSE_ERROR         : ${seamlessInspect.parseError || 'none'}`);
+        devLog(`[vf-trace] TOP_LEVEL_KEYS      : [${seamlessInspect.topLevelKeys.join(', ')}]`);
+        devLog(`[vf-trace] TOKEN_CANDIDATES    :`, JSON.stringify(seamlessInspect.tokenCandidates));
 
-      // ── Phase 4: Token Extraction with explicit priority trace ──
-      const candidates = seamlessInspect.tokenCandidates;
-      const TOKEN_PRIORITY = [
-        'seamlessToken', 'token', 'Token', 'TOKEN',
-        'access_token', 'accessToken',
-        'sessionToken', 'session_token',
-        'authToken', 'auth_token',
-      ] as const;
+        seamlessRaw = seamlessInspect.rawFirst5000;
 
-      for (const field of TOKEN_PRIORITY) {
-        const val = candidates[field];
-        if (val !== null && val !== undefined) {
-          seamlessToken = val;
-          devLog(`[vf-trace] TOKEN_FOUND_IN      : ${field}`);
-          devLog(`[vf-trace] TOKEN_VALUE_LENGTH  : ${val.length}`);
-          devLog(`[vf-trace] TOKEN_FIRST_20      : ${val.slice(0, 20)}…`);
-          break;
+        // ── Phase 4: Token Extraction with explicit priority trace ──
+        const candidates = seamlessInspect.tokenCandidates;
+        const TOKEN_PRIORITY = [
+          'seamlessToken', 'token', 'Token', 'TOKEN',
+          'access_token', 'accessToken',
+          'sessionToken', 'session_token',
+          'authToken', 'auth_token',
+        ] as const;
+
+        for (const field of TOKEN_PRIORITY) {
+          const val = candidates[field];
+          if (val !== null && val !== undefined) {
+            seamlessToken = val;
+            devLog(`[vf-trace] TOKEN_FOUND_IN      : ${field}`);
+            devLog(`[vf-trace] TOKEN_VALUE_LENGTH  : ${val.length}`);
+            devLog(`[vf-trace] TOKEN_FIRST_20      : ${val.slice(0, 20)}…`);
+            break;
+          }
+          devLog(`[vf-trace] TOKEN_FIELD_NULL    : ${field}`);
         }
-        devLog(`[vf-trace] TOKEN_FIELD_NULL    : ${field}`);
-      }
 
-      if (!seamlessToken) {
-        devLog(`[vf-trace] FINAL_TOKEN         : NULL`);
-        devLog(`[vf-trace] FAILURE_REASON      : ${seamlessInspect.parseError || 'All token fields are null in parsed JSON'}`);
-      } else {
-        devLog(`[vf-trace] FINAL_TOKEN         : EXTRACTED from ${seamlessInspect.tokenExtractedFrom}`);
-      }
-
-      if (seamlessInspect.parsedJson?.msisdn) {
-        senderMsisdn = String(seamlessInspect.parsedJson.msisdn);
-      }
-
-      if (seamlessToken) {
-        const extractedAt = new Date().toISOString();
-        devLog(`[vf-trace] TOKEN_EXTRACTED_AT  : ${extractedAt}`);
-        log(1, 'Seamless Token', 'pass',
-          `HTTP ${seamlessHttpStatus} | format=${seamlessInspect.detectedFormat} | token_len=${seamlessToken.length} | from=${seamlessInspect.tokenExtractedFrom} | msisdn=${senderMsisdn}`,
-          seamlessRaw, seamlessInspect);
-      } else {
-        log(1, 'Seamless Token', 'fail',
-          `HTTP ${seamlessHttpStatus} | format=${seamlessInspect.detectedFormat} | keys=[${seamlessInspect.topLevelKeys.join(', ')}] | parseErr=${seamlessInspect.parseError || 'none'} | encoding=${seamlessInspect.contentEncoding || 'none'} | rawLen=${seamlessInspect.rawLength}`,
-          seamlessRaw, seamlessInspect);
-
-        // رسالة خطأ دقيقة تعكس السبب الحقيقي — لا نذكر WiFi إلا إذا أكده الفحص
-        let seamlessErrMsg: string;
-        const pErr = seamlessInspect.parseError || '';
-        if (pErr.toLowerCase().includes('binary') || pErr.toLowerCase().includes('gzip') || pErr.toLowerCase().includes('compress')) {
-          seamlessErrMsg = '⚠️ خطأ في قراءة رد الخادم (بيانات مضغوطة).\nيرجى المحاولة مجدداً أو التواصل مع الدعم.';
-        } else if (pErr.toLowerCase().includes('html') || pErr.toLowerCase().includes('redirect')) {
-          seamlessErrMsg = '🔄 انتهت الجلسة أو تم التحويل لصفحة تسجيل دخول.\nيرجى إعادة المحاولة.';
-        } else if (seamlessHttpStatus === 0 || seamlessHttpStatus >= 500) {
-          seamlessErrMsg = `⚠️ تعذّر الاتصال بخادم Vodafone (HTTP ${seamlessHttpStatus}).\nيرجى التحقق من اتصال بيانات الجوال وإعادة المحاولة.`;
-        } else if (seamlessHttpStatus === 401 || seamlessHttpStatus === 403) {
-          seamlessErrMsg = '🔒 رفض Vodafone التحقق من الهوية.\nتأكد أن الشريحة نشطة وبياناتها مفعّلة.';
+        if (!seamlessToken) {
+          devLog(`[vf-trace] FINAL_TOKEN         : NULL`);
+          devLog(`[vf-trace] FAILURE_REASON      : ${seamlessInspect.parseError || 'All token fields are null in parsed JSON'}`);
         } else {
-          seamlessErrMsg = `🔄 تعذّر الحصول على رمز المصادقة من Vodafone.\nيرجى إعادة المحاولة. (HTTP ${seamlessHttpStatus})`;
+          devLog(`[vf-trace] FINAL_TOKEN         : EXTRACTED from ${seamlessInspect.tokenExtractedFrom}`);
         }
 
-        return {
-          success: false,
-          error: seamlessErrMsg,
-          debugSteps: steps,
-        };
+        if (seamlessInspect.parsedJson?.msisdn) {
+          senderMsisdn = String(seamlessInspect.parsedJson.msisdn);
+        }
+
+        if (seamlessToken) {
+          const extractedAt = new Date().toISOString();
+          devLog(`[vf-trace] TOKEN_EXTRACTED_AT  : ${extractedAt}`);
+          log(1, 'Seamless Token', 'pass',
+            `HTTP ${seamlessHttpStatus} | attempt=${seamlessAttempt} | format=${seamlessInspect.detectedFormat} | token_len=${seamlessToken.length} | from=${seamlessInspect.tokenExtractedFrom} | msisdn=${senderMsisdn}`,
+            seamlessRaw, seamlessInspect);
+          break; // ✅ تم الحصول على التوكن — اخرج من حلقة الـ retry
+        }
+
+        // فشل استخراج التوكن — هل نعيد المحاولة؟
+        const pErr = seamlessInspect.parseError || '';
+        const isRetryable = seamlessHttpStatus === 0 || seamlessHttpStatus >= 500 ||
+          pErr.toLowerCase().includes('binary') || pErr.toLowerCase().includes('gzip');
+
+        log(1, 'Seamless Token', 'fail',
+          `HTTP ${seamlessHttpStatus} | attempt=${seamlessAttempt}/${MAX_SEAMLESS_RETRIES} | retryable=${isRetryable} | format=${seamlessInspect.detectedFormat} | parseErr=${pErr || 'none'}`,
+          seamlessRaw, seamlessInspect);
+
+        if (!isRetryable || seamlessAttempt === MAX_SEAMLESS_RETRIES) {
+          // خطأ غير قابل للاسترداد أو استنفدنا المحاولات → اخرج برسالة دقيقة
+          let seamlessErrMsg: string;
+          if (pErr.toLowerCase().includes('binary') || pErr.toLowerCase().includes('gzip') || pErr.toLowerCase().includes('compress')) {
+            seamlessErrMsg = '⚠️ خطأ مؤقت في خادم Vodafone (بيانات مضغوطة).\nجارٍ إعادة المحاولة تلقائياً — أو أعد المحاولة يدوياً.';
+          } else if (pErr.toLowerCase().includes('html') || pErr.toLowerCase().includes('redirect')) {
+            seamlessErrMsg = '🔄 انتهت الجلسة أو تم التحويل.\nأغلق التطبيق وأعد تشغيله.';
+          } else if (seamlessHttpStatus === 0 || seamlessHttpStatus >= 500) {
+            seamlessErrMsg = `⚠️ خادم Vodafone لا يستجيب (HTTP ${seamlessHttpStatus}).\nالشبكة تعمل ✓ — المشكلة من جانب Vodafone، أعد المحاولة بعد لحظات.`;
+          } else if (seamlessHttpStatus === 401 || seamlessHttpStatus === 403) {
+            seamlessErrMsg = '🔒 رفض Vodafone التحقق — الشريحة غير نشطة أو الجلسة انتهت.\nأعد تشغيل بيانات الجوال وحاول مجدداً.';
+          } else {
+            seamlessErrMsg = `🔄 تعذّر الحصول على رمز المصادقة من Vodafone.\nيرجى إعادة المحاولة. (HTTP ${seamlessHttpStatus})`;
+          }
+          return { success: false, error: seamlessErrMsg, debugSteps: steps };
+        }
+        // isRetryable && هناك محاولات متبقية → تابع الحلقة
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        log(1, 'Seamless Token', 'fail', `Network error (attempt ${seamlessAttempt}/${MAX_SEAMLESS_RETRIES}): ${msg}`);
+
+        if (seamlessAttempt === MAX_SEAMLESS_RETRIES) {
+          return {
+            success: false,
+            error: '📡 تعذّر الاتصال بخادم Vodafone.\nتأكد من تشغيل بيانات الجوال (ليس WiFi) ثم أعد المحاولة.',
+            debugSteps: steps,
+          };
+        }
+        // استمر في الحلقة للمحاولة التالية
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      log(1, 'Seamless Token', 'fail', `Network error: ${msg}`);
+    } // end seamless retry loop
+
+    // إذا لم نحصل على توكن بعد كل المحاولات
+    if (!seamlessToken) {
       return {
         success: false,
-        error: '📡 يرجى تشغيل بيانات Vodafone ثم إعادة المحاولة.\nتحقق من أن الـ SIM نشط والبيانات مفعّلة.',
+        error: '⚠️ فشل التحقق من شبكة Vodafone بعد 3 محاولات.\nتأكد من تشغيل بيانات الجوال وأعد المحاولة.',
         debugSteps: steps,
       };
     }
