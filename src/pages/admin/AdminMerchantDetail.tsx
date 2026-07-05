@@ -28,7 +28,6 @@ import {
   merchantWalletRecharge,
   merchantWalletDeduct,
   getMerchantLedger,
-  demoteToUser,
 } from '@/lib/api';
 import MerchantControlCenter from '@/components/admin/MerchantControlCenter';
 import type { MerchantDetail, MerchantStatus } from '@/types/types';
@@ -484,43 +483,6 @@ export default function AdminMerchantDetail() {
             ))}
           </div>
         </SectionCard>
-
-        {/* ── تحويل إلى مستخدم عادي ── */}
-        {detail.owner_profile?.id && (
-          <SectionCard title="إجراءات المالك" icon={UserX}>
-            <div className="space-y-3">
-              <div className="rounded-xl border border-warning/30 bg-warning/5 p-3 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                <p className="text-xs text-warning">
-                  تحويل التاجر إلى مستخدم عادي سيوقف متجره مؤقتاً مع الإبقاء على كامل بياناته وأعضائه. يمكن إعادة الترقية لاحقاً.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="w-full h-10 gap-2 border-warning/50 text-warning hover:bg-warning/10"
-                disabled={saving}
-                onClick={() =>
-                  ask(
-                    'تحويل إلى مستخدم عادي',
-                    `سيتم تحويل "${detail.owner_profile?.username ?? detail.name}" إلى مستخدم عادي. بيانات المتجر تبقى محفوظة ويمكن استعادته لاحقاً.`,
-                    async () => {
-                      const r = await demoteToUser(detail.owner_profile!.id, adminProfile?.id);
-                      if (r.success) {
-                        toast.success('تم تحويل التاجر إلى مستخدم عادي ✅');
-                      } else {
-                        toast.error(r.error ?? 'فشل التحويل');
-                      }
-                    },
-                    'destructive'
-                  )
-                }
-              >
-                <UserX className="w-4 h-4" />
-                تحويل إلى مستخدم عادي
-              </Button>
-            </div>
-          </SectionCard>
-        )}
 
         {/* ── مركز التحكم ── */}
         <SectionCard title="مركز التحكم" icon={Shield}>

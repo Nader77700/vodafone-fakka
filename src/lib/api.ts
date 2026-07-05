@@ -3913,12 +3913,12 @@ export async function promoteToMerchant(
   return result;
 }
 
-/** تحويل تاجر إلى مستخدم عادي (يحتفظ ببيانات المتجر، لا يحذف) */
+/** تحويل تاجر إلى مستخدم عادي (يؤرشف البيانات، لا يحذف) */
 export async function demoteToUser(
   userId: string,
   adminId?: string
 ): Promise<{ success: boolean; merchant_id?: string; error?: string }> {
-  const { data, error } = await supabase.rpc('demote_from_merchant', {
+  const { data, error } = await supabase.rpc('demote_to_user', {
     p_user_id:  userId,
     p_admin_id: adminId ?? null,
   });

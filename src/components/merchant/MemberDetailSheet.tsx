@@ -259,15 +259,8 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
     setActionLoading(true);
     const res = await setMemberStatus(merchantId, userId, status);
     setActionLoading(false);
-    if (res.success) {
-      // تحديث فوري للحالة في الـ UI بدون انتظار إعادة التحميل
-      setMember(prev => prev ? { ...prev, member_status: status } : prev);
-      toast.success(`تم تغيير الحالة إلى: ${MEMBER_STATUS_LABELS[status]}`);
-      loadMember();
-      onChanged();
-    } else {
-      toast.error(res.error ?? 'فشل تغيير الحالة');
-    }
+    if (res.success) { toast.success(`تم تغيير الحالة إلى: ${MEMBER_STATUS_LABELS[status]}`); loadMember(); onChanged(); }
+    else toast.error(res.error ?? 'فشل تغيير الحالة');
   };
 
   const handleDelete = async () => {
