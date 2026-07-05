@@ -18,6 +18,7 @@ export interface MCMerchant {
 }
 
 export interface MCMember {
+  member_id:        string;           // ← مطلوب لفلتر Realtime الصحيح
   member_status:    string;
   joined_at:        string;
   last_op_at:       string | null;
@@ -144,7 +145,6 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
   useEffect(() => {
     if (!userId || !merchantId) return;
 
-    // debounce: تجنب طلبات متعددة عند تدفق الأحداث
     let debounceTimer: ReturnType<typeof setTimeout>;
     const debouncedLoad = () => {
       clearTimeout(debounceTimer);
@@ -153,24 +153,17 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
 
     const channel = supabase
       .channel(`mc_security_${userId}`)
-      // تغيير حالة التاجر
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'merchants',
         filter: `id=eq.${merchantId}`,
       }, debouncedLoad)
-      // تغيير ملف المستخدم (قد يُزال merchant_id)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'profiles',
         filter: `id=eq.${userId}`,
       }, debouncedLoad)
-      // تغيير اشتراك عضو التاجر (الجدول الصحيح)
+      // تغيير حالة العضوية (INSERT/UPDATE/DELETE)
       .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'merchant_member_subscriptions',
-        filter: `user_id=eq.${userId}`,
-      }, debouncedLoad)
-      // تغيير حالة العضوية
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'merchant_members',
+        event: '*', schema: 'public', table: 'merchant_members',
         filter: `user_id=eq.${userId}`,
       }, debouncedLoad)
       .subscribe();
@@ -180,6 +173,45 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
       void supabase.removeChannel(channel);
     };
   }, [userId, merchantId, load]);
+
+  // ─── Realtime: اشتراكات العضو (تحتاج member_id من البيانات المحمّلة) ──────
+  const memberId = data?.member?.member_id ?? null;
+  useEffect(() => {
+    if (!memberId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const debouncedLoad = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { void load(); }, 600);
+    };
+
+    // merchant_member_subscriptions ليس لها user_id — الفلتر الصحيح هو member_id
+    const channel = supabase
+      .channel(`mc_subscription_${memberId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'merchant_member_subscriptions',
+        filter: `member_id=eq.${memberId}`,
+      }, debouncedLoad)
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [memberId, load]);
+
+  // ─── Polling: تحديث دوري كل 30 ثانية للتأكد من تزامن البيانات ────────────
+  useEffect(() => {
+    if (!userId || !isMerchantClient) return;
+    const interval = setInterval(() => { void load(); }, 30_000);
+    // تحديث عند عودة المستخدم للتطبيق (visibility change)
+    const onVisible = () => { if (document.visibilityState === 'visible') void load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [userId, isMerchantClient, load]);
 
   // ── PHASE 1-2: Single Source of Truth ─────────────────────────────────────
   // الاشتراك نشط فقط عندما: التاجر نشط + العضو نشط + الاشتراك active

@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Wifi, Battery, Bell, History, LogOut, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getUnreadNotificationCount } from '@/lib/api';
 
 // المسارات المسموح بها لعميل التاجر
 const MC_ALLOWED = new Set([
@@ -30,11 +31,33 @@ const MC_NAV = [
 ] as const;
 
 export default function MerchantClientLayout() {
-  const { profile }      = useAuth();
+  const { profile } = useAuth();
   const { data, merchantSuspended, isLoading } = useMerchantClient();
   const { killSwitch, maintenance, forceUpdate, forceLogout, config } = useMerchantControlConfig();
   const navigate  = useNavigate();
   const loc       = useLocation();
+
+  // عدد الإشعارات غير المقروءة
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    if (!profile?.id) return;
+    getUnreadNotificationCount(profile.id).then(setUnreadCount);
+    // تحديث فوري عند وصول إشعار جديد عبر Realtime
+    const ch = supabase
+      .channel(`mc_notif_badge_${profile.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${profile.id}`,
+      }, () => setUnreadCount(c => c + 1))
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+      }, payload => {
+        const n = payload.new as { is_global?: boolean };
+        if (n?.is_global) setUnreadCount(c => c + 1);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [profile?.id]);
 
   // منع loading لا نهائي — 4 ثوانٍ حد أقصى
   const [loadTimeout, setLoadTimeout] = useState(false);
@@ -159,6 +182,7 @@ export default function MerchantClientLayout() {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => { if (item.to === '/notifications') setUnreadCount(0); }}
               className={({ isActive }) => cn(
                 'flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all min-w-0',
                 isActive ? 'text-foreground' : 'text-muted-foreground',
@@ -167,7 +191,7 @@ export default function MerchantClientLayout() {
               {({ isActive }) => (
                 <>
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all relative"
                     style={isActive
                       ? { background: `${item.color}15`, border: `1px solid ${item.color}30` }
                       : { background: 'transparent' }}
@@ -176,6 +200,12 @@ export default function MerchantClientLayout() {
                       className="w-4.5 h-4.5"
                       style={isActive ? { color: item.color } : {}}
                     />
+                    {/* بادج الإشعارات غير المقروءة */}
+                    {item.to === '/notifications' && unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </div>
                   <span
                     className="text-[9px] font-semibold leading-none"
