@@ -133,14 +133,10 @@ serve(async (req) => {
 
     // ─── 2. محتوى الإشعار ──────────────────────────────────────────────────
     const notifTitle = "🚀 إصدار جديد متاح";
-<<<<<<< HEAD
-    const notifBody  = `تم إصدار النسخة ${version}. اضغط لتحميل التحديث من صفحة التحديثات.`;
-    // ⚡ action_url = صفحة التحديث المخصصة (وليس رابط APK المباشر)
-    // المستخدم يُوجَّه لصفحة update.html الجميلة — منها يقوم بالتحميل
-    const UPDATE_PAGE = "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/update.html";
-    const actionUrl   = UPDATE_PAGE;
-=======
->>>>>>> 389ef3c ()
+    const notifBody  = `يتوفر إصدار جديد من التطبيق — اضغط لتحميله`;
+    // action_url = رابط تحميل APK المباشر من Supabase Storage
+    const STORAGE_BASE = "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases";
+    const actionUrl   = apk_url ?? `${STORAGE_BASE}/VodafoneFakka-v${version}.apk`;
 
     // ─── 3. إدخال إشعار عام في notifications ──────────────────────────────
     const { data: notifRow, error: insertErr } = await supabase
