@@ -321,29 +321,38 @@ function AccountsPanel({
 }
 
 // ══════════════════════════════════════════════════════════
-// مكوّن: بانر معلومات القسم (يظهر دائماً حتى بدون جلسة)
+// مكوّن: بانر معلومات القسم الثابت (PHASE 10) — يظهر دائماً
 // ══════════════════════════════════════════════════════════
 function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
-  if (hasSession) return null;
+  // PHASE 10: بانر مصغّر عند وجود جلسة، كامل بدونها
+  if (hasSession) {
+    return (
+      <div className="mx-4 mt-3 flex items-center gap-2.5 p-3 rounded-xl"
+        style={{ background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)' }}>
+        <Phone className="w-4 h-4 shrink-0" style={{ color: '#60a5fa' }} />
+        <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
+          هذا القسم يشحن من <span className="font-black text-white">رصيد الهاتف مباشرة</span> وليس من Vodafone Cash.
+          سيُخصَم مبلغ الكارت من رصيد الخط.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="mx-4 mt-4 rounded-2xl overflow-hidden"
       style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(230,0,0,0.2)` }}>
       <div className="p-4 space-y-3">
-        {/* عنوان */}
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: C.redLight, border: `1px solid ${C.redBorder}` }}>
-            <Wallet className="w-5 h-5" style={{ color: C.red }} />
+            <Phone className="w-5 h-5" style={{ color: C.red }} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-black text-white">الشحن من رصيد أنا فودافون</p>
+            <p className="text-sm font-black text-white">الشحن من رصيد الهاتف مباشرة</p>
             <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: C.muted }}>
-              شحن كروت الفكة والمارد مباشرة من رصيد هاتفك بدون Vodafone Cash
+              هذا القسم يخصم قيمة الكارت من رصيد الخط — <span className="font-bold" style={{ color: C.red }}>لا يستخدم Vodafone Cash</span>
             </p>
           </div>
         </div>
-
-        {/* ميزات سريعة */}
         <div className="grid grid-cols-3 gap-2">
           {[
             { icon: <Zap className="w-3.5 h-3.5" style={{ color: C.red }} />, text: 'شحن فوري' },
@@ -357,8 +366,6 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
             </div>
           ))}
         </div>
-
-        {/* تنبيه متطلبات */}
         <div className="flex items-start gap-2 p-3 rounded-xl"
           style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
           <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.warning }} />
@@ -378,6 +385,37 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
             </ul>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// مكوّن: بطاقة الانتقال لـ Vodafone Cash (PHASE 9)
+// ══════════════════════════════════════════════════════════
+function VodafoneCashCard({ onNavigate }: { onNavigate: () => void }) {
+  return (
+    <div className="mx-4 mb-4 rounded-2xl overflow-hidden"
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
+          <Wallet className="w-5 h-5" style={{ color: C.red }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-black text-white">هل تريد الشحن بـ Vodafone Cash؟</p>
+          <p className="text-[10px] mt-0.5 leading-relaxed" style={{ color: C.muted }}>
+            إذا كنت تفضل الشحن من المحفظة فهو أسرع وأسهل.
+          </p>
+        </div>
+        <button
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-[0.96]"
+          style={{ background: C.redLight, border: `1px solid ${C.redBorder}`, color: C.red }}
+          onClick={onNavigate}
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+          الانتقال
+        </button>
       </div>
     </div>
   );
@@ -630,7 +668,165 @@ function BalanceLoginDialog({
 }
 
 // ══════════════════════════════════════════════════════════
-// Dialog: تأكيد وتنفيذ الشحن
+// PHASE 2: خريطة أخطاء السيرفر → رسائل عربية واضحة
+// ══════════════════════════════════════════════════════════
+function mapServerError(raw: string | null | undefined): {
+  title: string; reason: string; solution: string; isBalanceError: boolean; isSessionError: boolean;
+} {
+  const s = (raw ?? '').toLowerCase();
+  // رصيد غير كافٍ
+  if (s.includes('رصيد غير كافٍ') || s.includes('رصيد') || s.includes('insufficient') || s.includes('2252') || s.includes('6051')) {
+    return {
+      title: 'لا يوجد رصيد كافٍ',
+      reason: 'لا يوجد رصيد كافٍ على الخط المستخدم للشحن.',
+      solution: 'يرجى التأكد من وجود رصيد كافٍ على الخط ثم أعد المحاولة، أو اشحن الخط أولاً.',
+      isBalanceError: true, isSessionError: false,
+    };
+  }
+  // جلسة منتهية
+  if (s.includes('انتهت صلاحية') || s.includes('token') || s.includes('expired') || s.includes('session') || s.includes('401')) {
+    return {
+      title: 'انتهت صلاحية الجلسة',
+      reason: 'انتهت صلاحية جلسة تسجيل الدخول.',
+      solution: 'يرجى تسجيل الدخول مرة أخرى للمتابعة.',
+      isBalanceError: false, isSessionError: true,
+    };
+  }
+  // فشل تسجيل دخول
+  if (s.includes('login') || s.includes('password') || s.includes('incorrect') || s.includes('كلمة المرور') || s.includes('رقم الهاتف')) {
+    return {
+      title: 'فشل تسجيل الدخول',
+      reason: 'بيانات الدخول غير صحيحة.',
+      solution: 'تأكد من رقم الهاتف وكلمة المرور ثم حاول مجدداً.',
+      isBalanceError: false, isSessionError: false,
+    };
+  }
+  // خطأ شبكة
+  if (s.includes('network') || s.includes('fetch') || s.includes('اتصال') || s.includes('خادم') || s.includes('timeout')) {
+    return {
+      title: 'تعذر الاتصال',
+      reason: 'تعذر الاتصال بالخادم.',
+      solution: 'تأكد من اتصالك بالإنترنت ثم أعد المحاولة.',
+      isBalanceError: false, isSessionError: false,
+    };
+  }
+  // رقم غير مسجل
+  if (s.includes('unregistered') || s.includes('غير مسجّل') || s.includes('1051')) {
+    return {
+      title: 'رقم غير مسجّل',
+      reason: 'رقمك غير مسجّل في خدمة أنا فودافون.',
+      solution: 'فعّل خدمة أنا فودافون أولاً ثم أعد المحاولة.',
+      isBalanceError: false, isSessionError: false,
+    };
+  }
+  // خطأ مؤقت فودافون
+  if (s.includes('3999') || s.includes('مؤقت') || s.includes('خوادم فودافون')) {
+    return {
+      title: 'خطأ مؤقت',
+      reason: 'خطأ مؤقت من خوادم فودافون.',
+      solution: 'أعد المحاولة بعد ثوانٍ قليلة.',
+      isBalanceError: false, isSessionError: false,
+    };
+  }
+  // خطأ عام
+  return {
+    title: 'حدث خطأ',
+    reason: raw ? raw.replace(/^[❌💳⚠️🔑📵]\s*/u, '') : 'حدث خطأ غير متوقع.',
+    solution: 'يرجى إعادة المحاولة لاحقاً.',
+    isBalanceError: false, isSessionError: false,
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// PHASE 8: بطاقة تفاصيل الفشل الاحترافية
+// ══════════════════════════════════════════════════════════
+function ErrorDetailCard({
+  errorRaw, opTime, onRetry, onReLogin, cooldownLeft, submitting,
+}: {
+  errorRaw: string; opTime: string | null;
+  onRetry: () => void; onReLogin: () => void;
+  cooldownLeft: number; submitting: boolean;
+}) {
+  const info = mapServerError(errorRaw);
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid rgba(230,0,0,0.25)`, background: 'rgba(20,0,0,0.6)' }}>
+      {/* رأس البطاقة */}
+      <div className="flex items-center gap-3 p-4 border-b" style={{ borderColor: 'rgba(230,0,0,0.12)', background: 'rgba(230,0,0,0.06)' }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.3)' }}>
+          <XCircle className="w-5 h-5" style={{ color: C.red }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-black" style={{ color: '#ff6666' }}>{info.title}</p>
+          <p className="text-[10px]" style={{ color: C.muted }}>فشلت عملية الشحن من الرصيد</p>
+        </div>
+        <span className="text-[9px] font-black px-2 py-1 rounded-full"
+          style={{ background: 'rgba(230,0,0,0.15)', color: C.red }}>فشل</span>
+      </div>
+
+      {/* تفاصيل الخطأ */}
+      <div className="p-4 space-y-3">
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: C.warning }} />
+            <div>
+              <p className="text-[10px] font-black" style={{ color: C.warning }}>سبب الفشل</p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>{info.reason}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: C.green }} />
+            <div>
+              <p className="text-[10px] font-black" style={{ color: C.green }}>الحل المقترح</p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>{info.solution}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* وقت العملية */}
+        {opTime && (
+          <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <Clock className="w-3 h-3" style={{ color: C.muted }} />
+            <span className="text-[10px]" style={{ color: C.muted }}>وقت المحاولة: {opTime}</span>
+          </div>
+        )}
+
+        {/* زر إعادة المحاولة */}
+        {!info.isSessionError ? (
+          <button
+            className="w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+            style={{
+              background: cooldownLeft > 0 || submitting ? 'rgba(255,255,255,0.05)' : C.redLight,
+              border: `1px solid ${cooldownLeft > 0 || submitting ? 'rgba(255,255,255,0.1)' : C.redBorder}`,
+              color: cooldownLeft > 0 || submitting ? C.muted : C.red,
+            }}
+            disabled={cooldownLeft > 0 || submitting}
+            onClick={onRetry}
+          >
+            {cooldownLeft > 0
+              ? <><Clock className="w-3.5 h-3.5" />أعد المحاولة بعد {cooldownLeft}ث</>
+              : submitting
+                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />جارٍ الشحن…</>
+                : <><RefreshCw className="w-3.5 h-3.5" />إعادة المحاولة</>}
+          </button>
+        ) : (
+          <button
+            className="w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+            style={{ background: C.redLight, border: `1px solid ${C.redBorder}`, color: C.red }}
+            onClick={onReLogin}
+          >
+            <LogIn className="w-3.5 h-3.5" />تسجيل الدخول مجدداً
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// Dialog: تأكيد وتنفيذ الشحن — محسَّن (PHASES 3,4,5,7,8,12,14)
 // ══════════════════════════════════════════════════════════
 function BalanceExecuteDialog({
   open, onClose, onSuccess, product, session, onSessionExpired,
@@ -641,19 +837,64 @@ function BalanceExecuteDialog({
 }) {
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
+  // PHASE 3: مرحلتان — عرض التفاصيل أولاً ثم تأكيد
+  const [step, setStep]                   = useState<'details' | 'executing' | 'error'>('details');
   const [submitting, setSubmitting]       = useState(false);
   const [lastError, setLastError]         = useState<string | null>(null);
+  const [opTime, setOpTime]               = useState<string | null>(null);
   const [trialExhausted, setTrialExhausted] = useState(false);
   const [trialOpsUsed, setTrialOpsUsed]   = useState(0);
   const [trialMaxOps, setTrialMaxOps]     = useState(0);
+
+  // PHASE 5: Cooldown بعد فشل رصيد
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [cooldownLeft, setCooldownLeft]   = useState(0);
+
   const executingRef = useRef(false);
+  const abortRef     = useRef<AbortController | null>(null);
   const receiverPhone = session?.phone ?? '';
+
+  // إعادة ضبط عند فتح الـ Dialog
+  useEffect(() => {
+    if (open) { setStep('details'); setLastError(null); setOpTime(null); setCooldownUntil(0); setCooldownLeft(0); }
+  }, [open]);
+
+  // عداد الـ Cooldown
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownLeft(left);
+      if (left === 0) setCooldownUntil(0);
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
 
   const handleExecute = async () => {
     if (!user || !product || !session || !receiverPhone) return;
-    if (executingRef.current) return;
+    if (executingRef.current) return; // PHASE 14: منع تكرار
+    if (cooldownLeft > 0) return;     // PHASE 5: منع خلال cooldown
+
+    // PHASE 4: Pre-Validation قبل إرسال الطلب
+    if (!navigator.onLine) {
+      setLastError('تعذر الاتصال بالخادم');
+      setStep('error');
+      setOpTime(new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
+      return;
+    }
+    if (!isBalanceSessionActive()) {
+      clearBalanceSession();
+      toast.error('انتهت صلاحية جلسة تسجيل الدخول — يرجى تسجيل الدخول مرة أخرى');
+      onSessionExpired(); return;
+    }
+
     executingRef.current = true;
+    abortRef.current = new AbortController();
     setSubmitting(true); setLastError(null);
+    setStep('executing');
 
     if (!isAdmin) {
       const opsCheck: OpsCheckResult = await checkAndConsumeOperation(user.id);
@@ -661,7 +902,8 @@ function BalanceExecuteDialog({
         setTrialOpsUsed(opsCheck.opsUsed ?? 0);
         setTrialMaxOps(opsCheck.opsLimit ?? 0);
         setTrialExhausted(true);
-        setSubmitting(false); executingRef.current = false; return;
+        setSubmitting(false); executingRef.current = false;
+        setStep('details'); return;
       }
     }
 
@@ -672,27 +914,38 @@ function BalanceExecuteDialog({
       body: { product_id: product.product_id, receiver: receiverPhone, access_token: session.access_token, msisdn: session.msisdn },
     });
 
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    setOpTime(timeLabel);
+
     let success = false;
     let errorMsg: string | null = null;
+
     if (fnErr) {
       const msg = await fnErr?.context?.text?.().catch(() => null);
       try { errorMsg = JSON.parse(msg ?? '').error ?? 'فشل الاتصال بالخادم'; } catch { errorMsg = 'فشل الاتصال بالخادم'; }
     } else if (!data?.success) {
-      errorMsg = data?.error ?? 'فشل الشحن';
+      // PHASE 2: قراءة سبب الفشل الحقيقي من السيرفر
+      errorMsg = data?.error ?? 'فشل الشحن من الرصيد';
       if (data?.session_expired) {
         clearBalanceSession();
-        toast.error('🔑 انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً');
+        toast.error('انتهت صلاحية جلسة تسجيل الدخول — يرجى تسجيل الدخول مرة أخرى');
         setSubmitting(false); executingRef.current = false; onSessionExpired(); return;
       }
     } else { success = true; }
 
-    // ── العملية مسجّلة سيرفر-سايد من Edge Function → لا حاجة لـ insertOperation ──
+    // PHASE 5: تفعيل cooldown 30 ثانية عند فشل الرصيد
+    if (!success && errorMsg) {
+      const errInfo = mapServerError(errorMsg);
+      if (errInfo.isBalanceError) {
+        setCooldownUntil(Date.now() + 30_000);
+      }
+    }
+
     const serverRegistered = data?.registered === true;
-    const opNumber: number | null = serverRegistered ? (data?.operation_number ?? null) : null;
-    const performedAt = new Date().toISOString();
+    const performedAt = now.toISOString();
 
     if (!serverRegistered) {
-      // fallback: تسجيل من العميل لو السيرفر ما سجّلش (حالة استثنائية)
       const { error: opErr, data: opData } = await insertOperation({
         user_id: user.id, phone_number: receiverPhone, card_type: product.display_name,
         card_data: {
@@ -709,21 +962,15 @@ function BalanceExecuteDialog({
       } as Parameters<typeof insertOperation>[0]);
 
       if (opErr) {
-        if (success) {
-          toast.warning('✅ تم الشحن — سيُسجَّل عند عودة الإنترنت', { duration: 8000 });
-        } else {
-          await refundOperation(user.id);
-          toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية');
-        }
+        if (success) toast.warning('✅ تم الشحن — سيُسجَّل عند عودة الإنترنت', { duration: 8000 });
+        else { await refundOperation(user.id); toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية'); }
         setSubmitting(false); executingRef.current = false; return;
       }
       if (!success && !isAdmin) await refundOperation(user.id);
 
       const clientOpNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
-      // استخدم operation_number من العميل
-      const timeLabel2 = new Date(performedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-      const dateLabel2 = new Date(performedAt).toLocaleDateString('en-GB');
-      const username2  = profile?.username ?? user.email ?? 'المستخدم';
+      const dateLabel = new Date(performedAt).toLocaleDateString('en-GB');
+      const username2 = profile?.username ?? user.email ?? 'المستخدم';
       await Promise.all([
         logActivity(user.id, 'recharge',
           success ? `شحن ناجح (رصيد أنا فودافون) — ${product.display_name}` : `شحن فاشل (رصيد أنا فودافون) — ${product.display_name}`,
@@ -734,16 +981,16 @@ function BalanceExecuteDialog({
           user_id: user.id, level: success ? 'info' : 'warning',
           action: success ? 'balance_recharge_success' : 'balance_recharge_failed',
           message: success
-            ? `شحن ناجح (رصيد) — ${product.display_name} — ${receiverPhone}${clientOpNumber != null ? ` — #${clientOpNumber}` : ''}`
+            ? `شحن ناجح (رصيد) — ${product.display_name} — ${receiverPhone}`
             : `شحن فاشل (رصيد) — ${product.display_name} — ${receiverPhone} — ${(errorMsg ?? '').split('\n')[0]}`,
           metadata: { product_id: product.product_id, phone: receiverPhone, amount: product.price, operation_source: 'ana_vodafone_balance', operation_number: clientOpNumber },
         }),
         sendNotification({
           user_id: user.id,
-          title: success ? `✅ تم شحن ${product.display_name} (رصيد أنا فودافون)` : `❌ فشل الشحن (رصيد أنا فودافون) — ${product.display_name}`,
+          title: success ? `✅ تم شحن ${product.display_name} (رصيد أنا فودافون)` : `❌ فشل الشحن (رصيد) — ${product.display_name}`,
           body: success
-            ? `المستخدم: ${username2}\nالرقم: ${receiverPhone}${clientOpNumber != null ? `\nرقم العملية: #${clientOpNumber}` : ''}\nالتاريخ: ${dateLabel2}\nالوقت: ${timeLabel2}\nالحالة: ناجحة`
-            : `المستخدم: ${username2}\nالرقم: ${receiverPhone}\nالتاريخ: ${dateLabel2}\nالوقت: ${timeLabel2}\nالسبب: ${(errorMsg ?? 'فشل').split('\n')[0]}`,
+            ? `المستخدم: ${username2}\nالرقم: ${receiverPhone}${clientOpNumber != null ? `\nرقم العملية: #${clientOpNumber}` : ''}\nالتاريخ: ${dateLabel}\nالوقت: ${timeLabel}\nالحالة: ناجحة`
+            : `المستخدم: ${username2}\nالرقم: ${receiverPhone}\nالتاريخ: ${dateLabel}\nالوقت: ${timeLabel}\nالسبب: ${(errorMsg ?? 'فشل').split('\n')[0]}`,
           type: 'operation', is_global: false,
         }),
       ]).catch(() => {});
@@ -752,127 +999,202 @@ function BalanceExecuteDialog({
           ? { usage_count: (product.usage_count ?? 0) + 1, success_count: (product.success_count ?? 0) + 1, last_used_at: performedAt }
           : { usage_count: (product.usage_count ?? 0) + 1, fail_count: (product.fail_count ?? 0) + 1, last_used_at: performedAt };
         await supabase.from('balance_products').update(upd).eq('product_id', product.product_id);
-      } catch { /* لا يوقف التدفق */ }
+      } catch { /* no-op */ }
       setSubmitting(false); executingRef.current = false;
-      if (success) {
-        toast.success('✅ تم الشحن من الرصيد بنجاح!', { description: `${product.display_name} — ${product.price} جنيه على رقم ${receiverPhone}`, duration: 5000 });
-        onSuccess(); onClose();
-      } else {
-        setLastError(errorMsg ?? 'فشل الشحن');
-        toast.error('❌ فشل الشحن من الرصيد', { description: (errorMsg ?? 'فشل').split('\n')[0], duration: 8000 });
-      }
+      if (success) { toast.success('✅ تم الشحن بنجاح!', { description: `${product.display_name} — ${product.price} جنيه`, duration: 5000 }); onSuccess(); onClose(); }
+      else { setLastError(errorMsg ?? 'فشل الشحن'); setStep('error'); toast.error('❌ فشل الشحن من الرصيد', { description: mapServerError(errorMsg).reason, duration: 8000 }); }
       return;
     }
 
-    // مسار سيرفر-سايد: العملية مسجّلة — فقط استرداد النقطة لو فشل + تحديث balance_products + عرض النتيجة
+    // مسار سيرفر-سايد
     if (!success && !isAdmin) await refundOperation(user.id);
-
-    // تحديث إحصائيات المنتج
     try {
       const upd = success
-        ? { usage_count: (product.usage_count ?? 0) + 1, success_count: (product.success_count ?? 0) + 1, last_used_at: new Date().toISOString() }
-        : { usage_count: (product.usage_count ?? 0) + 1, fail_count: (product.fail_count ?? 0) + 1, last_used_at: new Date().toISOString() };
+        ? { usage_count: (product.usage_count ?? 0) + 1, success_count: (product.success_count ?? 0) + 1, last_used_at: now.toISOString() }
+        : { usage_count: (product.usage_count ?? 0) + 1, fail_count: (product.fail_count ?? 0) + 1, last_used_at: now.toISOString() };
       await supabase.from('balance_products').update(upd).eq('product_id', product.product_id);
-    } catch { /* لا يوقف التدفق */ }
+    } catch { /* no-op */ }
 
     setSubmitting(false); executingRef.current = false;
     if (success) {
-      toast.success('✅ تم الشحن من الرصيد بنجاح!', {
-        description: `${product.display_name} — ${product.price} جنيه على رقم ${receiverPhone}`, duration: 5000,
-      });
+      toast.success('✅ تم الشحن بنجاح!', { description: `${product.display_name} — ${product.price} جنيه`, duration: 5000 });
       onSuccess(); onClose();
     } else {
-      setLastError(errorMsg ?? 'فشل الشحن');
-      toast.error('❌ فشل الشحن من الرصيد', { description: (errorMsg ?? 'فشل').split('\n')[0], duration: 8000 });
+      setLastError(errorMsg ?? 'فشل الشحن'); setStep('error');
+      toast.error('❌ فشل الشحن من الرصيد', { description: mapServerError(errorMsg).reason, duration: 8000 });
     }
   };
 
+  const handleClose = () => { if (!submitting) onClose(); };
+  const handleReLogin = () => { clearBalanceSession(); onSessionExpired(); onClose(); };
+
   if (!product || !session) return null;
 
+  // PHASE 12: تفاصيل العملية الكاملة
   const details = [
-    { label: 'الكارت',        value: product.display_name },
-    { label: 'السعر',         value: `${product.price} جنيه` },
-    { label: 'الرصيد الصافي', value: product.net_charge_label === 'غير محدد' ? 'غير محدد' : product.net_charge_label ? `${product.net_charge_label} جنيه` : '—' },
-    { label: 'الوحدات',       value: product.units_label ?? '—' },
-    { label: 'الصلاحية',      value: product.validity },
-    { label: 'رقم الشحن',     value: receiverPhone },
+    { label: 'اسم الكارت',      value: product.display_name },
+    { label: 'السعر',            value: `${product.price} جنيه` },
+    { label: 'الرصيد الصافي',   value: product.net_charge_label === 'غير محدد' ? 'غير محدد' : product.net_charge_label ? `${product.net_charge_label} جنيه` : '—' },
+    { label: 'الوحدات',          value: product.units_label ?? '—' },
+    { label: 'الصلاحية',         value: product.validity },
+    { label: 'رقم الشحن',        value: receiverPhone },
+    { label: 'طريقة الدفع',      value: 'رصيد الهاتف' },     // PHASE 12
   ];
 
   return (
     <>
       <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} />
-      <Dialog open={open} onOpenChange={v => { if (!v && !submitting) onClose(); }}>
+      <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[440px] p-0 border-0 gap-0 max-h-[90dvh] overflow-y-auto"
           style={{ background: '#0d0000', border: `1px solid ${C.redBorder}`, borderRadius: 20 }}
           dir="rtl"
         >
+          {/* هيدر */}
           <div className="p-5 pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                 style={{ background: C.redLight, border: `1px solid ${C.redBorder}` }}>
-                <Zap className="w-5 h-5" style={{ color: C.red }} />
+                {step === 'error'
+                  ? <XCircle className="w-5 h-5" style={{ color: C.red }} />
+                  : step === 'executing'
+                    ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: C.red }} />
+                    : <Zap className="w-5 h-5" style={{ color: C.red }} />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-black text-white truncate">{product.display_name}</p>
-                <p className="text-[11px]" style={{ color: C.muted }}>شحن من الرصيد — {session.phone}</p>
+                <p className="text-[11px]" style={{ color: C.muted }}>
+                  {step === 'error' ? 'فشلت عملية الشحن' : step === 'executing' ? 'جارٍ الشحن…' : 'تأكيد الشحن من رصيد الهاتف'}
+                </p>
               </div>
             </div>
           </div>
 
           <div className="p-5 space-y-4">
-            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${C.bgCardBorder}`, background: C.bgCard }}>
-              {details.map((row, i) => (
-                <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b last:border-b-0"
-                  style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                  <span className="text-xs" style={{ color: C.muted }}>{row.label}</span>
-                  <span className={`text-xs font-bold ${row.label === 'رقم الشحن' ? 'font-mono' : ''}`}
-                    style={{ color: row.label === 'السعر' ? C.red : '#fff' }}>
-                    {row.value}
-                  </span>
+
+            {/* ── مرحلة التفاصيل + التأكيد (PHASE 3) ── */}
+            {(step === 'details') && (
+              <>
+                {/* PHASE 10: بانر توضيحي مصغّر داخل الـ Dialog */}
+                <div className="flex items-start gap-2.5 p-3 rounded-xl"
+                  style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)' }}>
+                  <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#60a5fa' }} />
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    سيتم خصم قيمة الكارت مباشرةً من <span className="font-black text-white">رصيد الخط</span> وليس من محفظة Vodafone Cash.
+                  </p>
                 </div>
-              ))}
-            </div>
 
-            <div className="rounded-xl p-3.5 space-y-1.5" style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: C.warning }} />
-                <p className="text-xs font-black" style={{ color: C.warning }}>تنبيه مهم</p>
-              </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                تأكد من وجود رصيد كافٍ على رقم أنا فودافون المسجل لديك.
-                سيتم خصم قيمة الكارت من رصيد هاتفك مباشرة <span className="font-bold text-white">بالسعر القديم</span>.
-              </p>
-            </div>
+                {/* جدول التفاصيل */}
+                <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${C.bgCardBorder}`, background: C.bgCard }}>
+                  {details.map((row, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b last:border-b-0"
+                      style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                      <span className="text-xs" style={{ color: C.muted }}>{row.label}</span>
+                      <span
+                        className={`text-xs font-bold ${row.label === 'رقم الشحن' ? 'font-mono' : ''}`}
+                        style={{
+                          color: row.label === 'السعر' ? C.red
+                            : row.label === 'طريقة الدفع' ? C.warning
+                            : '#fff',
+                        }}
+                      >
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-            {lastError && (
-              <div className="flex items-start gap-2 p-3 rounded-xl"
-                style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.2)' }}>
-                <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.red }} />
-                <p className="text-xs leading-relaxed" style={{ color: '#ff9999' }}>{lastError}</p>
+                {/* PHASE 3: تأكيد قبل التنفيذ */}
+                <div className="rounded-xl p-3.5 space-y-2" style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: C.warning }} />
+                    <p className="text-xs font-black" style={{ color: C.warning }}>هل أنت متأكد من تنفيذ عملية الشحن؟</p>
+                  </div>
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                    سيتم خصم <span className="font-black text-white">{product.price} جنيه</span> من رصيد الخط الحالي.
+                  </p>
+                  <ul className="space-y-1">
+                    {['وجود رصيد كافٍ على الخط.', 'أن الخط الحالي هو نفس الخط المسجل.', 'أن الخدمة تعمل بشكل طبيعي.'].map((item, i) => (
+                      <li key={i} className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-black" style={{ color: C.warning }}>✔</span>
+                        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* أزرار التأكيد / الإلغاء */}
+                <div className="flex gap-2.5">
+                  <button
+                    className="flex-1 h-11 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
+                    onClick={handleClose}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    className="flex-[2] h-11 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                    style={{
+                      background: `linear-gradient(135deg,${C.red},${C.redDeep})`,
+                      boxShadow: `0 0 24px ${C.redGlow}`,
+                      color: '#fff', border: `1px solid ${C.redBorder}`,
+                    }}
+                    onClick={handleExecute}
+                  >
+                    <Zap className="w-4 h-4" />تأكيد الشحن
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ── مرحلة التنفيذ ── */}
+            {step === 'executing' && (
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                  style={{ background: C.redLight, border: `1px solid ${C.redBorder}` }}>
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: C.red }} />
+                </div>
+                <div className="text-center space-y-1.5">
+                  <p className="text-sm font-black text-white">جارٍ الشحن من رصيد الهاتف…</p>
+                  <p className="text-xs" style={{ color: C.muted }}>لا تغلق هذه النافذة</p>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    يتم خصم {product.price} جنيه من رصيد خط {receiverPhone}
+                  </p>
+                </div>
               </div>
             )}
 
-            <button
-              className="w-full h-12 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-              style={{
-                background: submitting ? 'rgba(230,0,0,0.1)' : `linear-gradient(135deg,${C.red},${C.redDeep})`,
-                boxShadow: submitting ? 'none' : `0 0 28px ${C.redGlow}`,
-                color: '#fff', border: `1px solid ${C.redBorder}`,
-              }}
-              disabled={submitting} onClick={handleExecute}
-            >
-              {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الشحن من الرصيد…</>
-                : lastError
-                  ? <><RefreshCw className="w-4 h-4" />إعادة المحاولة</>
-                  : <><Zap className="w-4 h-4" />شحن من الرصيد الآن</>}
-            </button>
+            {/* ── مرحلة الخطأ (PHASE 8) ── */}
+            {step === 'error' && lastError && (
+              <>
+                <ErrorDetailCard
+                  errorRaw={lastError}
+                  opTime={opTime}
+                  onRetry={() => { setStep('details'); setLastError(null); }}
+                  onReLogin={handleReLogin}
+                  cooldownLeft={cooldownLeft}
+                  submitting={submitting}
+                />
+                {/* PHASE 5: رسالة cooldown واضحة */}
+                {cooldownLeft > 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl"
+                    style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
+                    <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.warning }} />
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                      لا يوجد رصيد كافٍ على خطك. يرجى شحن الخط أولاً ثم إعادة المحاولة.
+                      سيُتاح زر إعادة المحاولة خلال <span className="font-black text-white">{cooldownLeft}</span> ثانية.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
 
-            <p className="text-[10px] text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              <Shield className="w-3 h-3 inline ml-1" />
-              الشحن يتم من رصيد رقم {receiverPhone} مباشرة
-            </p>
+            {step !== 'executing' && (
+              <p className="text-[10px] text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                <Shield className="w-3 h-3 inline ml-1" />
+                الشحن يتم من رصيد رقم {receiverPhone} مباشرة — لا علاقة لـ Vodafone Cash
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1046,7 +1368,7 @@ export default function BalanceChargePage() {
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: C.redLight, border: `1px solid ${C.redBorder}` }}>
-            <Wallet className="w-4 h-4" style={{ color: C.red }} />
+            <Phone className="w-4 h-4" style={{ color: C.red }} />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-black text-white truncate">الشحن من الرصيد</p>
@@ -1172,6 +1494,9 @@ export default function BalanceChargePage() {
           </div>
         )}
       </div>
+
+      {/* ── بطاقة الانتقال لـ Vodafone Cash (PHASE 9) ── */}
+      <VodafoneCashCard onNavigate={() => navigate('/')} />
 
       {/* ── الـ Dialogs / Sheets ── */}
       <BalanceLoginDialog
