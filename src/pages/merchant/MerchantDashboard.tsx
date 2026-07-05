@@ -29,6 +29,7 @@ import {
   getMerchantMembersPaged, getMerchantMembersStats,
   activateMemberSubscription, renewMemberSubscription, setMemberStatus,
   cancelMemberSubscription, validateMerchantSubscriptionEligibility,
+  increaseMemberPoints, decreaseMemberPoints,
   updateMerchantSettings,
   type MerchantUsersResult,
 } from '@/lib/api';
@@ -433,9 +434,13 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
   const [pages,   setPages]     = useState(1);
   // إجراء مفعّل
   const [actionUser,    setActionUser]    = useState<MerchantMember | null>(null);
-  const [actionType,    setActionType]    = useState<'activate' | 'renew' | 'suspend' | 'resume' | 'cancel' | null>(null);
+  const [actionType,    setActionType]    = useState<
+    'activate' | 'renew' | 'suspend' | 'resume' | 'cancel' |
+    'increase_pts' | 'decrease_pts' | 'block' | 'unblock' | null
+  >(null);
   const [days,          setDays]          = useState(30);
   const [points,        setPoints]        = useState(0);
+  const [ptsDelta,      setPtsDelta]      = useState(10);
   const [actionLoading, setActionLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -462,7 +467,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
 
     let res: { success: boolean; error?: string };
 
-    // PHASE 9: Validation قبل التفعيل/التجديد
+    // PHASE 9+13: Validation قبل التفعيل/التجديد
     if (actionType === 'activate' || actionType === 'renew') {
       const validation = await validateMerchantSubscriptionEligibility(
         merchantId, actionUser.user_id, days, points,
@@ -481,24 +486,36 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
     } else if (actionType === 'suspend') {
       res = await setMemberStatus(merchantId, actionUser.user_id, 'suspended');
     } else if (actionType === 'cancel') {
-      // PHASE 10: إلغاء الاشتراك
       res = await cancelMemberSubscription(merchantId, actionUser.user_id);
+    } else if (actionType === 'block') {
+      // PHASE 14: حظر
+      res = await setMemberStatus(merchantId, actionUser.user_id, 'blocked');
+    } else if (actionType === 'unblock') {
+      // PHASE 14: فك الحظر
+      res = await setMemberStatus(merchantId, actionUser.user_id, 'active');
+    } else if (actionType === 'increase_pts') {
+      // PHASE 12: زيادة نقاط ذكية
+      res = await increaseMemberPoints(merchantId, actionUser.user_id, ptsDelta, 'زيادة يدوية');
+    } else if (actionType === 'decrease_pts') {
+      // PHASE 11: خصم نقاط ذكي
+      res = await decreaseMemberPoints(merchantId, actionUser.user_id, ptsDelta, 'خصم يدوي');
     } else {
       res = await setMemberStatus(merchantId, actionUser.user_id, 'active');
     }
 
     if (res.success) {
-      toast.success(
-        actionType === 'activate' ? 'تم تفعيل الاشتراك ✅' :
-        actionType === 'renew'    ? 'تم تجديد الاشتراك ✅' :
-        actionType === 'suspend'  ? 'تم تعليق الحساب ✅'  :
-        actionType === 'cancel'   ? 'تم إلغاء الاشتراك ✅' :
-                                    'تم استئناف الحساب ✅'
-      );
+      const labels: Record<string, string> = {
+        activate: 'تم تفعيل الاشتراك ✅', renew: 'تم تجديد الاشتراك ✅',
+        suspend: 'تم تعليق الحساب ✅', cancel: 'تم إلغاء الاشتراك ✅',
+        block: 'تم حظر العضو ✅', unblock: 'تم فك الحظر ✅',
+        increase_pts: 'تمت زيادة النقاط ✅', decrease_pts: 'تم خصم النقاط ✅',
+        resume: 'تم استئناف الحساب ✅',
+      };
+      toast.success(labels[actionType] ?? 'تمت العملية ✅');
       setActionUser(null); setActionType(null); setValidationError(null);
       load(page);
     } else {
-      toast.error(res.error ?? 'فشلت العملية — أعد المحاولة');
+      setValidationError(res.error ?? 'فشلت العملية — أعد المحاولة');
     }
     setActionLoading(false);
   };
@@ -610,13 +627,27 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                       <RefreshCw className="w-3 h-3" /> تجديد
                     </Button>
                   )}
-                  {/* PHASE 10: زر إلغاء الاشتراك */}
+                  {/* PHASE 10: إلغاء الاشتراك */}
                   {subKey === 'active' && (
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-destructive hover:text-destructive hover:border-destructive/50"
                       onClick={() => { setActionUser(m); setActionType('cancel'); setValidationError(null); }}>
                       <XIcon className="w-3 h-3" /> إلغاء الاشتراك
                     </Button>
                   )}
+                  {/* PHASE 11-12: نقاط ذكية */}
+                  {(statusKey === 'active' || statusKey === 'suspended') && (
+                    <>
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-success hover:text-success hover:border-success/50"
+                        onClick={() => { setActionUser(m); setActionType('increase_pts'); setPtsDelta(10); setValidationError(null); }}>
+                        <TrendingUp className="w-3 h-3" /> زيادة
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-warning hover:text-warning hover:border-warning/50"
+                        onClick={() => { setActionUser(m); setActionType('decrease_pts'); setPtsDelta(10); setValidationError(null); }}>
+                        <Shield className="w-3 h-3" /> خصم
+                      </Button>
+                    </>
+                  )}
+                  {/* PHASE 14: تعليق + استئناف */}
                   {statusKey === 'active' && (
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-warning hover:text-warning"
                       onClick={() => { setActionUser(m); setActionType('suspend'); setValidationError(null); }}>
@@ -627,6 +658,19 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-success hover:text-success"
                       onClick={() => { setActionUser(m); setActionType('resume'); setValidationError(null); }}>
                       <CheckCircle className="w-3 h-3" /> استئناف
+                    </Button>
+                  )}
+                  {/* PHASE 14: حظر + فك الحظر */}
+                  {statusKey !== 'blocked' && statusKey === 'active' && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-destructive hover:text-destructive"
+                      onClick={() => { setActionUser(m); setActionType('block'); setValidationError(null); }}>
+                      <UserX className="w-3 h-3" /> حظر
+                    </Button>
+                  )}
+                  {statusKey === 'blocked' && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-primary hover:text-primary"
+                      onClick={() => { setActionUser(m); setActionType('unblock'); setValidationError(null); }}>
+                      <UserCheck className="w-3 h-3" /> فك الحظر
                     </Button>
                   )}
                 </div>
@@ -654,32 +698,30 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/50" dir="rtl">
           <div className="bg-card rounded-2xl border border-border p-5 space-y-4 w-full max-w-sm max-w-[calc(100%-2rem)]">
             <h3 className="text-sm font-black">
-              {actionType === 'activate' ? `تفعيل اشتراك — ${actionUser.username}` :
-               actionType === 'renew'    ? `تجديد اشتراك — ${actionUser.username}` :
-               actionType === 'suspend'  ? `تعليق حساب — ${actionUser.username}` :
-               actionType === 'cancel'   ? `إلغاء الاشتراك — ${actionUser.username}` :
-                                           `استئناف حساب — ${actionUser.username}`}
+              {actionType === 'activate'     ? `تفعيل اشتراك — ${actionUser.username}` :
+               actionType === 'renew'        ? `تجديد اشتراك — ${actionUser.username}` :
+               actionType === 'suspend'      ? `تعليق حساب — ${actionUser.username}` :
+               actionType === 'cancel'       ? `إلغاء الاشتراك — ${actionUser.username}` :
+               actionType === 'block'        ? `حظر العضو — ${actionUser.username}` :
+               actionType === 'unblock'      ? `فك الحظر — ${actionUser.username}` :
+               actionType === 'increase_pts' ? `زيادة نقاط — ${actionUser.username}` :
+               actionType === 'decrease_pts' ? `خصم نقاط — ${actionUser.username}` :
+                                               `استئناف حساب — ${actionUser.username}`}
             </h3>
 
             {(actionType === 'activate' || actionType === 'renew') && (
               <div className="space-y-3">
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">عدد الأيام</label>
-                  <Input
-                    type="number" min={1} max={365}
-                    value={days}
+                  <Input type="number" min={1} max={365} value={days}
                     onChange={e => { setDays(Number(e.target.value)); setValidationError(null); }}
-                    className="h-9 text-sm"
-                  />
+                    className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">النقاط المخصصة</label>
-                  <Input
-                    type="number" min={0}
-                    value={points}
+                  <Input type="number" min={0} value={points}
                     onChange={e => { setPoints(Number(e.target.value)); setValidationError(null); }}
-                    className="h-9 text-sm"
-                  />
+                    className="h-9 text-sm" />
                 </div>
               </div>
             )}
@@ -692,18 +734,71 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
               </p>
             )}
 
+            {/* PHASE 11: خصم نقاط */}
+            {actionType === 'decrease_pts' && (
+              <div className="space-y-2">
+                <div className="rounded-xl border border-warning/25 bg-warning/5 px-3 py-2 text-xs text-warning font-medium">
+                  الرصيد الحالي: {actionUser.remaining_points ?? 0} نقطة
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">عدد النقاط المراد خصمها</label>
+                  <Input type="number" min={1} max={actionUser.remaining_points ?? 0} value={ptsDelta}
+                    onChange={e => { setPtsDelta(Number(e.target.value)); setValidationError(null); }}
+                    className="h-9 text-sm" />
+                </div>
+                {ptsDelta > (actionUser.remaining_points ?? 0) && (
+                  <p className="text-xs text-destructive font-medium">
+                    لا يمكن خصم قيمة أكبر من الرصيد الحالي
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* PHASE 12: زيادة نقاط */}
+            {actionType === 'increase_pts' && (
+              <div className="space-y-2">
+                <div className="rounded-xl border border-success/25 bg-success/5 px-3 py-2 text-xs text-success font-medium">
+                  رصيد العضو الحالي: {actionUser.remaining_points ?? 0} نقطة
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">عدد النقاط المراد إضافتها</label>
+                  <Input type="number" min={1} value={ptsDelta}
+                    onChange={e => { setPtsDelta(Number(e.target.value)); setValidationError(null); }}
+                    className="h-9 text-sm" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  ملاحظة: يتم خصم النقاط من رصيد محفظة التاجر تلقائياً.
+                </p>
+              </div>
+            )}
+
             {/* PHASE 10: تأكيد الإلغاء */}
             {actionType === 'cancel' && (
               <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 space-y-1">
                 <p className="text-xs font-semibold text-destructive">سيتم إلغاء الاشتراك فوراً</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   سيُوقف وصول المستخدم لجميع خدمات الشحن وتغيير حالته إلى «انتظار».
-                  لا يمكن التراجع عن هذا الإجراء إلا بتفعيل اشتراك جديد.
                 </p>
               </div>
             )}
 
-            {/* PHASE 9: رسالة خطأ التحقق */}
+            {/* PHASE 14: تأكيد الحظر */}
+            {actionType === 'block' && (
+              <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 space-y-1">
+                <p className="text-xs font-semibold text-destructive">سيتم حظر العضو نهائياً</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  لن يتمكن المستخدم من الوصول لأي خدمة حتى يتم فك الحظر يدوياً.
+                </p>
+              </div>
+            )}
+
+            {actionType === 'unblock' && (
+              <p className="text-xs text-muted-foreground">
+                سيتم فك الحظر وإعادة تفعيل وصول المستخدم.
+              </p>
+            )}
+
+            {/* رسالة خطأ التحقق (PHASE 9/11/12/16/17) */}
             {validationError && (
               <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2 flex items-start gap-2">
                 <Info className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
@@ -713,14 +808,22 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
 
             <div className="flex gap-2">
               <Button
-                className={cn('flex-1', actionType === 'cancel' && 'bg-destructive hover:bg-destructive/90 text-destructive-foreground')}
+                className={cn('flex-1',
+                  (actionType === 'cancel' || actionType === 'block') &&
+                  'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                )}
                 onClick={doAction}
-                disabled={actionLoading}
+                disabled={actionLoading ||
+                  (actionType === 'decrease_pts' && ptsDelta > (actionUser.remaining_points ?? 0))}
               >
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                  actionType === 'cancel' ? 'إلغاء الاشتراك نهائياً' : 'تأكيد'}
+                  actionType === 'cancel'       ? 'إلغاء الاشتراك نهائياً' :
+                  actionType === 'block'        ? 'حظر العضو' :
+                  actionType === 'increase_pts' ? 'تأكيد الزيادة' :
+                  actionType === 'decrease_pts' ? 'تأكيد الخصم' : 'تأكيد'}
               </Button>
-              <Button variant="outline" onClick={() => { setActionUser(null); setActionType(null); setValidationError(null); }}>
+              <Button variant="outline"
+                onClick={() => { setActionUser(null); setActionType(null); setValidationError(null); }}>
                 إغلاق
               </Button>
             </div>
