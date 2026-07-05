@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
 import { toast } from 'sonner';
-import { Eye, EyeOff, LogIn, UserPlus, Lock, User, Phone, Building2 } from 'lucide-react';
+import { Eye, EyeOff, LogIn, UserPlus, Lock, User, Phone, Building2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,9 @@ import {
 import { getDeviceId } from '@/lib/deviceId';
 import OnboardingTrialModal from '@/components/onboarding/OnboardingTrialModal';
 import { useAuth } from '@/contexts/AuthContext';
+
+// رقم واتساب الأدمن
+const ADMIN_WA_NUMBER = '201222692182';
 
 type Mode = 'login' | 'register';
 
@@ -469,6 +472,21 @@ export default function LoginPage() {
                 : <><UserPlus className="w-4 h-4 ml-2" />إنشاء حساب</>
             }
           </Button>
+
+          {/* ── زر نسيت كلمة السر — يظهر في وضع تسجيل الدخول فقط ── */}
+          {mode === 'login' && (
+            <a
+              href={`https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(
+                `السلام عليكم،\nأريد تغيير كلمة مرور حسابي.\naسم المستخدم: ${username.trim() || '(لم يُدخَل بعد)'}\nبرجاء المساعدة في إعادة تعيين كلمة المرور.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-10 rounded-lg border border-border flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all"
+            >
+              <MessageCircle className="w-4 h-4 text-green-500" />
+              نسيت كلمة السر؟ تواصل مع الإدارة
+            </a>
+          )}
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">

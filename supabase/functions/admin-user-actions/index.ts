@@ -369,6 +369,49 @@ Deno.serve(async (req) => {
       return json({ success: true, data: bans ?? [] });
     }
 
+    // ══ تغيير كلمة المرور ══════════════════════════════════════════════
+    if (action === 'change_password') {
+      if (!userId) return json({ error: 'userId مطلوب' }, 400);
+      if (userId === caller.id) return json({ error: 'لا يمكن تغيير كلمة مرور حسابك من هنا' }, 400);
+
+      const newPassword = value as string;
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
+        return json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }, 400);
+      }
+
+      const { data: targetProfile } = await supabaseAdmin
+        .from('profiles').select('id, username, email').eq('id', userId).single();
+      if (!targetProfile) return json({ error: 'المستخدم غير موجود' }, 404);
+
+      // تغيير كلمة المرور عبر Admin API
+      const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: newPassword.trim(),
+      });
+      if (pwErr) return json({ error: `فشل تغيير كلمة المرور: ${pwErr.message}` }, 500);
+
+      // تسجيل النشاط
+      await supabaseAdmin.from('activity_log').insert({
+        user_id: userId,
+        event_type: 'admin_change_password',
+        title: 'تغيير كلمة المرور',
+        description: `تم تغيير كلمة مرور المستخدم @${targetProfile.username ?? userId} بواسطة الأدمن`,
+      }).catch(() => {});
+
+      await supabaseAdmin.from('system_logs').insert({
+        user_id: caller.id,
+        level: 'warning',
+        action: 'admin_change_user_password',
+        message: `الأدمن غيّر كلمة مرور المستخدم @${targetProfile.username ?? userId}`,
+        metadata: { target_user_id: userId, target_username: targetProfile.username },
+      }).catch(() => {});
+
+      return json({
+        success: true,
+        message: `تم تغيير كلمة مرور @${targetProfile.username ?? userId} بنجاح`,
+        username: targetProfile.username ?? null,
+      });
+    }
+
     return json({ error: `إجراء غير معروف: ${action}` }, 400);
 
   } catch (err) {

@@ -7,21 +7,205 @@ import {
   XCircle, Smartphone, Wifi, Bell, BellOff,
   Trash2, UserX, Zap, CalendarDays, AlertCircle,
   BarChart2, Package, Hash, Wallet, Timer, Calendar,
-  Tag,
+  Tag, KeyRound, Eye, EyeOff, Send, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell, { SectionCard, InfoRow, StatusBadge } from '@/components/admin/AdminShell';
-import { getUserDetail, type UserDetail, deleteNotification, deleteAllUserNotifications } from '@/lib/api';
+import { getUserDetail, type UserDetail, deleteNotification, deleteAllUserNotifications, sendNotification } from '@/lib/api';
 import { supabase } from '@/db/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Operation } from '@/types/types';
+
+// ─── ChangePasswordDialog ────────────────────────────────────────────────────
+function ChangePasswordDialog({
+  open, onClose, userId, username, userPhone,
+}: {
+  open: boolean; onClose: () => void;
+  userId: string; username: string | null; userPhone: string | null;
+}) {
+  const [newPw, setNewPw]         = useState('');
+  const [showPw, setShowPw]       = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [success, setSuccess]     = useState(false);
+  const [sending, setSending]     = useState(false);
+  const [sent, setSent]           = useState(false);
+
+  // إعادة ضبط عند الفتح
+  useEffect(() => {
+    if (open) { setNewPw(''); setSuccess(false); setSent(false); setShowPw(false); }
+  }, [open]);
+
+  const handleChange = async () => {
+    if (newPw.trim().length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+    setLoading(true);
+    const { data, error: fnErr } = await supabase.functions.invoke<{
+      success: boolean; error?: string; message?: string; username?: string;
+    }>('admin-user-actions', {
+      body: { action: 'change_password', userId, value: newPw.trim() },
+    });
+    const errText = fnErr
+      ? (await fnErr?.context?.text?.().catch(() => null)
+          .then((t: string | null) => { try { return JSON.parse(t ?? '').error; } catch { return t; } })) ?? fnErr.message
+      : (data as { error?: string } | null)?.error ?? null;
+    setLoading(false);
+    if (errText) { toast.error(`فشل تغيير كلمة المرور: ${errText}`); return; }
+    toast.success(`✅ تم تغيير كلمة مرور @${username ?? userId} بنجاح`);
+    setSuccess(true);
+  };
+
+  const handleSendNotification = async () => {
+    setSending(true);
+    await sendNotification({
+      user_id: userId,
+      title: '🔑 تم تغيير كلمة مرور حسابك',
+      body: `مرحباً @${username ?? 'مستخدم'},\nتم تغيير كلمة مرور حسابك من قِبَل الإدارة.\nكلمة المرور الجديدة: ${newPw}\nيُرجى تسجيل الدخول بها وتغييرها فوراً.`,
+      type: 'system',
+      is_global: false,
+    }).catch(() => {});
+    setSending(false);
+    setSent(true);
+    toast.success('✅ تم إرسال كلمة المرور للمستخدم عبر الإشعارات');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v && !loading) onClose(); }}>
+      <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm">
+            <KeyRound className="w-4 h-4 text-primary" />
+            تغيير كلمة المرور
+            {username && <span className="text-muted-foreground font-normal">— @{username}</span>}
+          </DialogTitle>
+        </DialogHeader>
+
+        {!success ? (
+          <div className="space-y-4 pt-1">
+            {/* تحذير */}
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-destructive/8 border border-destructive/20">
+              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+              <p className="text-xs text-destructive leading-relaxed">
+                ستُغيَّر كلمة المرور فوراً في قاعدة البيانات.
+                سيحتاج المستخدم لاستخدامها لتسجيل الدخول مرة أخرى.
+              </p>
+            </div>
+
+            {/* حقل كلمة المرور */}
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">كلمة المرور الجديدة</Label>
+              <div className="relative">
+                <Input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="أدخل كلمة المرور الجديدة (6 أحرف على الأقل)"
+                  value={newPw}
+                  onChange={e => setNewPw(e.target.value)}
+                  className="pr-3 pl-10 text-right font-mono"
+                  onKeyDown={e => e.key === 'Enter' && !loading && handleChange()}
+                />
+                <button
+                  type="button"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPw(v => !v)}
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {newPw.length > 0 && newPw.length < 6 && (
+                <p className="text-xs text-destructive">يجب أن تكون 6 أحرف على الأقل</p>
+              )}
+            </div>
+
+            {/* أزرار */}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 h-10" onClick={onClose} disabled={loading}>
+                إلغاء
+              </Button>
+              <Button
+                className="flex-[2] h-10 gap-2"
+                onClick={handleChange}
+                disabled={loading || newPw.trim().length < 6}
+              >
+                {loading
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />جارٍ التغيير…</>
+                  : <><KeyRound className="w-4 h-4" />تغيير كلمة المرور</>}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 pt-1">
+            {/* بطاقة النجاح */}
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-success/8 border border-success/25">
+              <CheckCircle className="w-5 h-5 shrink-0 mt-0.5 text-success" />
+              <div className="space-y-1 min-w-0">
+                <p className="text-sm font-bold text-success">تم تغيير كلمة المرور بنجاح ✅</p>
+                <p className="text-xs text-muted-foreground">
+                  تم تحديث كلمة مرور <span className="font-bold text-foreground">@{username ?? userId}</span> فوراً في قاعدة البيانات.
+                </p>
+                <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border/40">
+                  <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-xs font-mono text-foreground select-all">{newPw}</span>
+                  <button
+                    className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => navigator.clipboard.writeText(newPw).then(() => toast.success('تم نسخ كلمة المرور'))}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* إرسال الإشعار — اختياري */}
+            {!sent ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground text-center">
+                  هل تريد إرسال كلمة المرور للمستخدم عبر الإشعارات؟
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 h-10 text-xs" onClick={onClose}>
+                    لا، إغلاق
+                  </Button>
+                  <Button
+                    className="flex-[2] h-10 gap-2 text-xs"
+                    onClick={handleSendNotification}
+                    disabled={sending}
+                  >
+                    {sending
+                      ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />جارٍ الإرسال…</>
+                      : <><Send className="w-3.5 h-3.5" />إرسال كلمة المرور للمستخدم</>}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/8 border border-primary/20">
+                  <Bell className="w-4 h-4 text-primary shrink-0" />
+                  <p className="text-xs text-primary">تم إرسال كلمة المرور للمستخدم عبر الإشعارات ✅</p>
+                </div>
+                <Button variant="outline" className="w-full h-10" onClick={onClose}>
+                  إغلاق
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ─── مكوّن تفاصيل العملية (Sheet سفلي مدمج) ────────────────────────────────
 function OpDetailsSheet({ op, open, onClose }: { op: Operation | null; open: boolean; onClose: () => void }) {
@@ -157,6 +341,8 @@ export default function AdminUserDetail() {
   const [deletingSimilar, setDeletingSimilar] = useState<string | null>(null);
   const [detailOp, setDetailOp] = useState<Operation | null>(null);
   const [opSheetOpen, setOpSheetOpen] = useState(false);
+  // تغيير كلمة المرور
+  const [changePwOpen, setChangePwOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -295,6 +481,14 @@ export default function AdminUserDetail() {
             {profile.email && <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => copy(profile.email!, 'البريد')}>
               <Copy className="w-3 h-3" /> نسخ البريد
             </Button>}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1 text-xs border-primary/30 text-primary hover:bg-primary/8"
+              onClick={() => setChangePwOpen(true)}
+            >
+              <KeyRound className="w-3 h-3" /> تغيير كلمة المرور
+            </Button>
           </div>
         </SectionCard>
 
@@ -567,6 +761,15 @@ export default function AdminUserDetail() {
 
       </div>
       <OpDetailsSheet op={detailOp} open={opSheetOpen} onClose={() => setOpSheetOpen(false)} />
+
+      {/* ── تغيير كلمة المرور ── */}
+      <ChangePasswordDialog
+        open={changePwOpen}
+        onClose={() => setChangePwOpen(false)}
+        userId={profile.id}
+        username={profile.username ?? null}
+        userPhone={profile.phone ?? null}
+      />
     </AdminShell>
   );
 }
