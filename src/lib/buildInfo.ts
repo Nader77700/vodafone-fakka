@@ -4,17 +4,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.254',
-  versionCode:    169,
-  buildTimestamp: '2026-07-05T12:00:00Z',
-  sourceHash:     'a1b2c3d4e5f60007',
-  bundleFile:     'VodafoneFakka-v3.0.254.apk',
-  bundleHash:     'apk_v3_0_254_code169',
-  apkHash:        'apk_v3_0_254_code169',
-  dbVersion:      'v3.0.254',
+  appVersion:     '3.0.255',
+  versionCode:    170,
+  buildTimestamp: '2026-06-21T12:00:00Z',
+  sourceHash:     'b2c3d4e5f6a70008',
+  bundleFile:     'VodafoneFakka-v3.0.255.apk',
+  bundleHash:     'apk_v3_0_255_code170',
+  apkHash:        'apk_v3_0_255_code170',
+  dbVersion:      'v3.0.255',
   releaseNotes: [
+    'v3.0.255: إصلاح جذري لواجهة عميل التاجر — تهنيج + حلقة تحميل + Realtime مكرر + overload DB + رابط إشعارات',
     'v3.0.254: إصلاح شامل لنظام التجار — توزيع النقاط، تفعيل الاشتراك، أزرار الحظر/الإيقاف، كود الدعوة، تحويل التاجر لمستخدم عادي',
-    'v3.0.252: إعادة تصميم كاملة لقسم الحسابات المكررة — قائمة منظمة + صفحة تفاصيل + إجراءات فردية وجماعية',
     'v3.0.235: إصلاح تحديث APK — تنزيل مباشر عبر GitHub Releases بدون مشاكل',
     'v3.0.234: حظر الجلسات المتعددة — جلسة واحدة لكل حساب (Single Session Enforcement)',
     'v3.0.233: إصلاح validation رقم الهاتف + منع تكرار الأرقام عند التسجيل + إصلاح merge conflicts 21 ملف',
