@@ -223,58 +223,60 @@ jobs:
           echo "GH_APK_URL=$GH_APK_URL" >> $GITHUB_ENV
           echo "✅ GitHub Release created: $GH_APK_URL"
 
-      # ─── [8] UPDATE DB — يستخدم Supabase URL دائماً (لا يعتمد على GitHub Release) ──
+      # ─── [8] UPDATE DB — يعمل فقط لو كل خطوات البناء والرفع نجحت ──────────
       - name: Update Database with Supabase Storage URL
-        if: always()   # يعمل دائماً — حتى لو فشل GitHub Release
         env:
           SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
         run: |
           echo "📝 Updating DB — v${{ env.APP_VERSION }}"
-
-          # الرابط الأساسي دائماً: Supabase Storage (مضمون 100%) — لا يعتمد على GitHub
           FINAL_URL="${{ env.APK_PUBLIC_URL }}"
           echo "✅ Using Supabase Storage URL: $FINAL_URL"
 
-          # تحديث/إدراج صف app_versions
+          # إيقاف is_latest للإصدارات القديمة أولاً
+          curl -s -X PATCH \
+            "${{ env.SUPABASE_URL }}/rest/v1/app_versions?is_latest=eq.true" \
+            -H "Authorization: Bearer $SB_SERVICE_KEY" \
+            -H "apikey: $SB_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"is_latest":false}'
+
+          # إدراج أو تحديث الإصدار الجديد (merge-duplicates يحدّث لو موجود)
           curl -s -X POST "${{ env.SUPABASE_URL }}/rest/v1/app_versions" \
             -H "Authorization: Bearer $SB_SERVICE_KEY" \
             -H "apikey: $SB_SERVICE_KEY" \
             -H "Content-Type: application/json" \
-            -H "Prefer: resolution=ignore-duplicates" \
-            -d "{\"version\":\"${{ env.APP_VERSION }}\",\"version_code\":${{ env.APP_VERSION_CODE }},\"apk_url\":\"$FINAL_URL\",\"is_latest\":true,\"update_type\":\"apk\",\"apk_deployed\":true,\"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "{
+              \"version\":\"${{ env.APP_VERSION }}\",
+              \"version_code\":${{ env.APP_VERSION_CODE }},
+              \"apk_url\":\"$FINAL_URL\",
+              \"is_latest\":true,
+              \"force_update\":false,
+              \"update_type\":\"apk\",
+              \"apk_deployed\":true,
+              \"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }"
 
-          curl -s -X PATCH \
-            "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=eq.${{ env.APP_VERSION_CODE }}" \
-            -H "Authorization: Bearer $SB_SERVICE_KEY" \
-            -H "apikey: $SB_SERVICE_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{\"apk_url\":\"$FINAL_URL\",\"is_latest\":true,\"apk_deployed\":true,\"apk_verified_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
-
-          # إيقاف is_latest للإصدارات القديمة
-          curl -s -X PATCH \
-            "${{ env.SUPABASE_URL }}/rest/v1/app_versions?version_code=lt.${{ env.APP_VERSION_CODE }}" \
-            -H "Authorization: Bearer $SB_SERVICE_KEY" \
-            -H "apikey: $SB_SERVICE_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{\"is_latest\":false}"
-
-          # تحديث app_config
-          for KEY in version_latest_name version_latest_code version_apk_url; do
-            if [ "$KEY" = "version_latest_name" ]; then VAL="${{ env.APP_VERSION }}"; fi
-            if [ "$KEY" = "version_latest_code" ]; then VAL="${{ env.APP_VERSION_CODE }}"; fi
-            if [ "$KEY" = "version_apk_url" ];     then VAL="$FINAL_URL"; fi
+          # تحديث app_config — جميع المفاتيح بما فيها version_force_update
+          for ENTRY in \
+            "version_latest_name=${{ env.APP_VERSION }}" \
+            "version_latest_code=${{ env.APP_VERSION_CODE }}" \
+            "version_apk_url=$FINAL_URL" \
+            "version_force_update=false"; do
+            KEY="${ENTRY%%=*}"
+            VAL="${ENTRY#*=}"
             curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
               -H "Authorization: Bearer $SB_SERVICE_KEY" \
               -H "apikey: $SB_SERVICE_KEY" \
               -H "Content-Type: application/json" \
               -d "{\"value\":\"$VAL\"}"
+            echo "✅ app_config[$KEY] = $VAL"
           done
 
-          echo "✅ DB updated — apk_url = $FINAL_URL"
+          echo "✅ DB fully updated — v${{ env.APP_VERSION }} → $FINAL_URL"
 
-      # ─── [9] SEND NOTIFICATION ────────────────────────────────────────────
+      # ─── [9] SEND NOTIFICATION ─────────────────────────────────────────────
       - name: Send Push Notification (LAST step — APK confirmed ready)
-        if: always()   # يعمل دائماً — حتى لو فشل GitHub Release
         env:
           SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
         run: |
