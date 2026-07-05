@@ -47,20 +47,25 @@ export interface MerchantClientData {
 }
 
 interface MerchantClientContextValue {
-  isMerchantClient: boolean;  // true = user is linked to a merchant
-  isLoading:        boolean;
-  data:             MerchantClientData | null;
-  merchantSuspended: boolean; // merchant is not 'active'
-  refresh:          () => void;
+  isMerchantClient:        boolean;
+  isLoading:               boolean;
+  data:                    MerchantClientData | null;
+  merchantSuspended:       boolean;
+  // ── PHASE 1-2: Single Source of Truth للصلاحيات ──
+  isSubActive:             boolean;  // true فقط عندما يكون الاشتراك active
+  subscriptionBlockReason: string;   // رسالة سبب الحجب
+  refresh:                 () => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const MerchantClientContext = createContext<MerchantClientContextValue>({
-  isMerchantClient:  false,
-  isLoading:         true,
-  data:              null,
-  merchantSuspended: false,
-  refresh:           () => {},
+  isMerchantClient:        false,
+  isLoading:               true,
+  data:                    null,
+  merchantSuspended:       false,
+  isSubActive:             false,
+  subscriptionBlockReason: 'اشتراكك غير نشط. يرجى التواصل مع التاجر.',
+  refresh:                 () => {},
 });
 
 export function useMerchantClient() {
@@ -166,6 +171,27 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
     };
   }, [userId, merchantId, load]);
 
+  // ── PHASE 1-2: Single Source of Truth ─────────────────────────────────────
+  // الاشتراك نشط فقط عندما: التاجر نشط + العضو نشط + الاشتراك active
+  const merchantActive = isMerchantClient && !!data && data.merchant?.status === 'active';
+  const memberActive   = merchantActive && data?.member?.member_status === 'active';
+  const subActive      = memberActive && data?.subscription?.status === 'active';
+  const isSubActive    = subActive;
+
+  // سبب الحجب بالعربي
+  const subscriptionBlockReason = (() => {
+    if (!isMerchantClient || isLoading) return '';
+    if (!data) return 'اشتراكك غير نشط. يرجى التواصل مع التاجر.';
+    if (data.merchant?.status !== 'active')
+      return 'التاجر غير نشط حالياً. يرجى التواصل مع التاجر لمعرفة سبب الإيقاف.';
+    const ms = data.member?.member_status;
+    if (ms === 'suspended') return 'تم إيقاف حسابك مؤقتاً. تواصل مع التاجر لاستئناف الخدمة.';
+    if (ms === 'blocked' || ms === 'disabled') return 'تم حظر حسابك. تواصل مع التاجر للمزيد من التفاصيل.';
+    if (!data.subscription || data.subscription.status !== 'active')
+      return 'اشتراكك غير نشط. يرجى التواصل مع التاجر لتفعيل الاشتراك.';
+    return 'اشتراكك غير نشط. يرجى التواصل مع التاجر.';
+  })();
+
   // حالة توقف التاجر
   const merchantSuspended = isMerchantClient && !!data &&
     !['active'].includes(data.merchant.status);
@@ -176,6 +202,8 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
       isLoading,
       data,
       merchantSuspended,
+      isSubActive,
+      subscriptionBlockReason,
       refresh: load,
     }}>
       {children}

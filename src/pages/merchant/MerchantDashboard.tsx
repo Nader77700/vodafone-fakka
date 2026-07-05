@@ -28,6 +28,7 @@ import {
   getMerchantWallet, getMerchantLedger,
   getMerchantMembersPaged, getMerchantMembersStats,
   activateMemberSubscription, renewMemberSubscription, setMemberStatus,
+  cancelMemberSubscription, validateMerchantSubscriptionEligibility,
   updateMerchantSettings,
   type MerchantUsersResult,
 } from '@/lib/api';
@@ -432,10 +433,11 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
   const [pages,   setPages]     = useState(1);
   // إجراء مفعّل
   const [actionUser,    setActionUser]    = useState<MerchantMember | null>(null);
-  const [actionType,    setActionType]    = useState<'activate' | 'renew' | 'suspend' | 'resume' | null>(null);
+  const [actionType,    setActionType]    = useState<'activate' | 'renew' | 'suspend' | 'resume' | 'cancel' | null>(null);
   const [days,          setDays]          = useState(30);
   const [points,        setPoints]        = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
@@ -456,23 +458,44 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
   const doAction = async () => {
     if (!actionUser || !actionType) return;
     setActionLoading(true);
+    setValidationError(null);
+
     let res: { success: boolean; error?: string };
+
+    // PHASE 9: Validation قبل التفعيل/التجديد
+    if (actionType === 'activate' || actionType === 'renew') {
+      const validation = await validateMerchantSubscriptionEligibility(
+        merchantId, actionUser.user_id, days, points,
+      );
+      if (!validation.eligible) {
+        setValidationError(validation.error ?? 'فشل التحقق من الأهلية');
+        setActionLoading(false);
+        return;
+      }
+    }
+
     if (actionType === 'activate') {
       res = await activateMemberSubscription(merchantId, actionUser.user_id, days, points);
     } else if (actionType === 'renew') {
       res = await renewMemberSubscription(merchantId, actionUser.user_id, days, points);
     } else if (actionType === 'suspend') {
       res = await setMemberStatus(merchantId, actionUser.user_id, 'suspended');
+    } else if (actionType === 'cancel') {
+      // PHASE 10: إلغاء الاشتراك
+      res = await cancelMemberSubscription(merchantId, actionUser.user_id);
     } else {
       res = await setMemberStatus(merchantId, actionUser.user_id, 'active');
     }
+
     if (res.success) {
       toast.success(
         actionType === 'activate' ? 'تم تفعيل الاشتراك ✅' :
         actionType === 'renew'    ? 'تم تجديد الاشتراك ✅' :
-        actionType === 'suspend'  ? 'تم تعليق الحساب ✅'   : 'تم استئناف الحساب ✅'
+        actionType === 'suspend'  ? 'تم تعليق الحساب ✅'  :
+        actionType === 'cancel'   ? 'تم إلغاء الاشتراك ✅' :
+                                    'تم استئناف الحساب ✅'
       );
-      setActionUser(null); setActionType(null);
+      setActionUser(null); setActionType(null); setValidationError(null);
       load(page);
     } else {
       toast.error(res.error ?? 'فشلت العملية — أعد المحاولة');
@@ -577,25 +600,32 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                 <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border/50">
                   {(subKey === 'pending' || subKey === 'expired' || subKey === 'cancelled' || !m.sub_status) && (
                     <Button size="sm" className="h-7 text-xs gap-1 px-2"
-                      onClick={() => { setActionUser(m); setActionType('activate'); setDays(30); setPoints(0); }}>
+                      onClick={() => { setActionUser(m); setActionType('activate'); setDays(30); setPoints(0); setValidationError(null); }}>
                       <Zap className="w-3 h-3" /> تفعيل
                     </Button>
                   )}
                   {subKey === 'active' && (
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2"
-                      onClick={() => { setActionUser(m); setActionType('renew'); setDays(30); setPoints(0); }}>
+                      onClick={() => { setActionUser(m); setActionType('renew'); setDays(30); setPoints(0); setValidationError(null); }}>
                       <RefreshCw className="w-3 h-3" /> تجديد
+                    </Button>
+                  )}
+                  {/* PHASE 10: زر إلغاء الاشتراك */}
+                  {subKey === 'active' && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-destructive hover:text-destructive hover:border-destructive/50"
+                      onClick={() => { setActionUser(m); setActionType('cancel'); setValidationError(null); }}>
+                      <XIcon className="w-3 h-3" /> إلغاء الاشتراك
                     </Button>
                   )}
                   {statusKey === 'active' && (
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-warning hover:text-warning"
-                      onClick={() => { setActionUser(m); setActionType('suspend'); }}>
+                      onClick={() => { setActionUser(m); setActionType('suspend'); setValidationError(null); }}>
                       <Ban className="w-3 h-3" /> تعليق
                     </Button>
                   )}
                   {statusKey === 'suspended' && (
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2 text-success hover:text-success"
-                      onClick={() => { setActionUser(m); setActionType('resume'); }}>
+                      onClick={() => { setActionUser(m); setActionType('resume'); setValidationError(null); }}>
                       <CheckCircle className="w-3 h-3" /> استئناف
                     </Button>
                   )}
@@ -627,6 +657,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
               {actionType === 'activate' ? `تفعيل اشتراك — ${actionUser.username}` :
                actionType === 'renew'    ? `تجديد اشتراك — ${actionUser.username}` :
                actionType === 'suspend'  ? `تعليق حساب — ${actionUser.username}` :
+               actionType === 'cancel'   ? `إلغاء الاشتراك — ${actionUser.username}` :
                                            `استئناف حساب — ${actionUser.username}`}
             </h3>
 
@@ -637,7 +668,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                   <Input
                     type="number" min={1} max={365}
                     value={days}
-                    onChange={e => setDays(Number(e.target.value))}
+                    onChange={e => { setDays(Number(e.target.value)); setValidationError(null); }}
                     className="h-9 text-sm"
                   />
                 </div>
@@ -646,7 +677,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                   <Input
                     type="number" min={0}
                     value={points}
-                    onChange={e => setPoints(Number(e.target.value))}
+                    onChange={e => { setPoints(Number(e.target.value)); setValidationError(null); }}
                     className="h-9 text-sm"
                   />
                 </div>
@@ -661,16 +692,36 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
               </p>
             )}
 
+            {/* PHASE 10: تأكيد الإلغاء */}
+            {actionType === 'cancel' && (
+              <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 space-y-1">
+                <p className="text-xs font-semibold text-destructive">سيتم إلغاء الاشتراك فوراً</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  سيُوقف وصول المستخدم لجميع خدمات الشحن وتغيير حالته إلى «انتظار».
+                  لا يمكن التراجع عن هذا الإجراء إلا بتفعيل اشتراك جديد.
+                </p>
+              </div>
+            )}
+
+            {/* PHASE 9: رسالة خطأ التحقق */}
+            {validationError && (
+              <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2 flex items-start gap-2">
+                <Info className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive font-medium leading-relaxed">{validationError}</p>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button
-                className="flex-1"
+                className={cn('flex-1', actionType === 'cancel' && 'bg-destructive hover:bg-destructive/90 text-destructive-foreground')}
                 onClick={doAction}
                 disabled={actionLoading}
               >
-                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد'}
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                  actionType === 'cancel' ? 'إلغاء الاشتراك نهائياً' : 'تأكيد'}
               </Button>
-              <Button variant="outline" onClick={() => { setActionUser(null); setActionType(null); }}>
-                إلغاء
+              <Button variant="outline" onClick={() => { setActionUser(null); setActionType(null); setValidationError(null); }}>
+                إغلاق
               </Button>
             </div>
           </div>

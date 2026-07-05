@@ -4311,6 +4311,29 @@ export async function setMemberStatus(
   return data as { success: boolean; error?: string };
 }
 
+/** إلغاء اشتراك عضو — PHASE 10 */
+export async function cancelMemberSubscription(
+  merchantId: string, userId: string, adminId?: string,
+): Promise<{ success: boolean; cancelled_sub_id?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('cancel_member_subscription', {
+    p_merchant_id: merchantId, p_user_id: userId,
+    p_admin_id: adminId ?? null,
+  });
+  if (error) return { success: false, error: error.message };
+  return data as { success: boolean; cancelled_sub_id?: string; error?: string };
+}
+
+/** التحقق من أهلية إنشاء اشتراك — PHASE 9 */
+export async function validateMerchantSubscriptionEligibility(
+  merchantId: string, userId: string, days: number, points: number,
+): Promise<{ eligible: boolean; error?: string; current_balance?: number; points_expire?: string }> {
+  const { data, error } = await supabase.rpc('validate_merchant_subscription_eligibility', {
+    p_merchant_id: merchantId, p_user_id: userId, p_days: days, p_points: points,
+  });
+  if (error) return { eligible: false, error: error.message };
+  return data as { eligible: boolean; error?: string; current_balance?: number; points_expire?: string };
+}
+
 /** حذف عضوية */
 export async function deleteMerchantMember(
   merchantId: string, userId: string, adminId?: string,

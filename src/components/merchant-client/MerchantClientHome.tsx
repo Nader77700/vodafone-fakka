@@ -2,11 +2,11 @@
 // كارت اشتراك المستخدم + شبكة الكروت الحقيقية + شحن الرصيد
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
 import type { VodafoneProduct } from '@/data/products';
+import InactiveSubscriptionDialog from './InactiveSubscriptionDialog';
 import {
   Battery, CheckCircle2, XCircle,
   Infinity, Clock, Zap, ChevronLeft, AlertTriangle,
@@ -334,7 +334,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
 // ─── الشاشة الرئيسية ──────────────────────────────────────────────────────────
 export default function MerchantClientHome() {
   const navigate    = useNavigate();
-  const { data }    = useMerchantClient();
+  const { data, isSubActive, subscriptionBlockReason } = useMerchantClient();
 
   const brandColor = data?.merchant?.brand_color ?? '#E60000';
   const sub        = data?.subscription;
@@ -346,24 +346,18 @@ export default function MerchantClientHome() {
     [allCards, activeTab],
   );
 
-  // الاشتراك نشط فقط إذا كان status === 'active' صراحةً
-  // أي حالة أخرى (pending / expired / cancelled / suspended / null) = محجوب
-  const isSubActive = sub?.status === 'active';
-  const isExpired   = !isSubActive; // متغير موحد للحجب
+  // PHASE 1-2: Dialog موحد — من SSoT
+  const [showBlockedDialog, setShowBlockedDialog] = useState(false);
+  const isExpired = !isSubActive;
 
   // عند الضغط على كارت
   const handleCardSelect = (product: VodafoneProduct) => {
-    if (!isSubActive) {
-      toast.error('اشتراكك غير مفعّل', {
-        description: 'تواصل مع التاجر الخاص بك لتفعيل الاشتراك',
-        duration: 4000,
-      });
-      return;
-    }
+    if (!isSubActive) { setShowBlockedDialog(true); return; }
     navigate('/home', { state: { preSelectProduct: product } });
   };
 
   return (
+    <>
     <div className="flex flex-col bg-background min-h-full pb-4" dir="rtl">
       {/* ─── خلفية ضوئية ─── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -436,13 +430,7 @@ export default function MerchantClientHome() {
           </p>
           <button
             onClick={() => {
-              if (!isSubActive) {
-                toast.error('اشتراكك غير مفعّل', {
-                  description: 'تواصل مع التاجر الخاص بك لتفعيل الاشتراك',
-                  duration: 4000,
-                });
-                return;
-              }
+              if (!isSubActive) { setShowBlockedDialog(true); return; }
               navigate('/balance-charge');
             }}
             className={cn(
@@ -471,5 +459,14 @@ export default function MerchantClientHome() {
 
       </div>
     </div>
+
+    {/* PHASE 1-2: Popup موحد للاشتراك غير النشط */}
+    <InactiveSubscriptionDialog
+      open={showBlockedDialog}
+      onClose={() => setShowBlockedDialog(false)}
+      reason={subscriptionBlockReason}
+      merchantName={data?.merchant?.name}
+    />
+    </>
   );
 }
