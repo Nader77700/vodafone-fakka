@@ -138,6 +138,20 @@ src = re.sub(r"(releaseNotes:\s*\[)", rf"\1\n    '{new_note}',", src, count=1)
 with open(path, 'w', encoding='utf-8') as f:
     f.write(src)
 
+# ── تحديث ForceUpdateScreen.tsx — رابط الـ fallback الثابت ──────────
+force_update_path = path.replace('lib/buildInfo.ts', 'components/common/ForceUpdateScreen.tsx')
+if os.path.exists(force_update_path):
+    with open(force_update_path, 'r', encoding='utf-8') as f:
+        fu_src = f.read()
+    fu_src = re.sub(
+        r"(VodafoneFakka-v)[\d.]+\.apk(?=['\"`])",
+        rf"\g<1>{new_ver}.apk",
+        fu_src
+    )
+    with open(force_update_path, 'w', encoding='utf-8') as f:
+        f.write(fu_src)
+    print(f"  ✅ ForceUpdateScreen.tsx fallback → v{new_ver}")
+
 c = open(path).read()
 assert f"'{new_ver}'" in c, "خطأ: appVersion"
 assert str(new_code) in c,  "خطأ: versionCode"
@@ -175,11 +189,11 @@ echo "✅ Vite build مكتمل — $FILE_COUNT ملف"
 
 # ── رفع dist/ إلى web-live (يُوصَّل تلقائياً للـ APK عبر serve-app) ──
 echo "⚙️  [3/7] رفع $FILE_COUNT ملف إلى web-live bucket..."
-python3 << 'PYEOF'
+SUPABASE_SERVICE_KEY_EXPORT="$SERVICE_KEY" python3 << 'PYEOF'
 import os, urllib.request
 
 BASE_URL  = "https://vchmsnavyhripakyvzom.supabase.co"
-SK        = "${SUPABASE_SERVICE_KEY:-REPLACE_WITH_SERVICE_KEY}"
+SK        = os.environ.get('SUPABASE_SERVICE_KEY_EXPORT','')
 DIST      = "/workspace/app-ck2v94t1nev5/dist"
 BUCKET    = "web-live"
 MIME      = {'.html':'text/html','.js':'application/javascript','.css':'text/css',
@@ -301,7 +315,7 @@ HEAD_CODE=$(curl -s -o /dev/null -w "%{http_code}" --head --max-time 10 "$APK_UR
   || echo "⚠️  رُفع لكن HEAD يعيد $HEAD_CODE — قد يحتاج دقيقة"
 
 # ──────────────────────────────────────────────────────────────────────
-# [6/7] تحديث قاعدة البيانات
+# [6/7] تحديث قاعدة البيانات (app_versions + app_config كاملاً)
 # ──────────────────────────────────────────────────────────────────────
 echo "⚙️  [6/7] تحديث قاعدة البيانات..."
 
@@ -312,7 +326,7 @@ curl -s -X PATCH "${SUPABASE_URL}/rest/v1/app_versions?is_latest=eq.true" \
   -H "Content-Type: application/json" \
   -d '{"is_latest":false}' > /dev/null
 
-# إدراج الإصدار الجديد
+# إدراج الإصدار الجديد (merge-duplicates = تحديث لو موجود)
 DB_HTTP=$(curl -s -o /tmp/db_resp.json -w "%{http_code}" \
   -X POST "${SUPABASE_URL}/rest/v1/app_versions" \
   -H "Authorization: Bearer ${SERVICE_KEY}" \
@@ -325,7 +339,9 @@ DB_HTTP=$(curl -s -o /tmp/db_resp.json -w "%{http_code}" \
     \"apk_url\":       \"${APK_URL}\",
     \"release_notes\": \"${NOTES}\",
     \"is_latest\":     true,
-    \"update_type\":   \"apk\"
+    \"force_update\":  false,
+    \"update_type\":   \"apk\",
+    \"apk_deployed\":  true
   }")
 
 if [[ "$DB_HTTP" != "200" && "$DB_HTTP" != "201" ]]; then
@@ -340,8 +356,30 @@ try:
   print(rows[0].get('id',''))
 except: print('')
 " 2>/dev/null || echo "")
+echo "✅ DB app_versions: v${NEW_VER} is_latest=true (id: ${VERSION_ID:-غير معروف})"
 
-echo "✅ DB: v${NEW_VER} is_latest=true (id: ${VERSION_ID:-غير معروف})"
+# ── تحديث app_config — جميع المفاتيح دفعة واحدة ──────────────────────
+echo "   تحديث app_config..."
+declare -A CONFIG_UPDATES=(
+  [version_latest_name]="${NEW_VER}"
+  [version_latest_code]="${NEW_CODE}"
+  [version_apk_url]="${APK_URL}"
+  [version_force_update]="false"
+)
+for KEY in "${!CONFIG_UPDATES[@]}"; do
+  VAL="${CONFIG_UPDATES[$KEY]}"
+  CFG_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X PATCH "${SUPABASE_URL}/rest/v1/app_config?key=eq.${KEY}" \
+    -H "Authorization: Bearer ${SERVICE_KEY}" \
+    -H "apikey: ${SERVICE_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{\"value\":\"${VAL}\"}")
+  if [[ "$CFG_HTTP" == "200" || "$CFG_HTTP" == "204" ]]; then
+    echo "   ✅ app_config[${KEY}] = ${VAL}"
+  else
+    echo "   ⚠️  app_config[${KEY}] HTTP ${CFG_HTTP}"
+  fi
+done
 
 # ──────────────────────────────────────────────────────────────────────
 # [7/7] إشعار Push — يُرسَل تلقائياً بواسطة Database Trigger
