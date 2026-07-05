@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import { getDeviceId } from '@/lib/deviceId';
 import OnboardingTrialModal from '@/components/onboarding/OnboardingTrialModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Mode = 'login' | 'register';
 
@@ -35,6 +36,7 @@ function isPhoneInput(val: string): boolean {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshProfile } = useAuth();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/home';
 
   const [mode, setMode] = useState<Mode>('login');
@@ -59,7 +61,15 @@ export default function LoginPage() {
     if (locState?.mode === 'register') setMode('register');
   }, []); // eslint-disable-line
 
-  const applyPendingInvites = async (userId: string) => {
+  // هل المستخدم الحالي قادم من دعوة تاجر؟
+  const hasMerchantInvite = (): boolean => {
+    if (inviteCodeInput.trim()) return true;
+    if (getPendingInviteToken()) return true;
+    if (pendingInvite) return true;
+    return false;
+  };
+
+  const applyPendingInvites = async (userId: string): Promise<boolean> => {
     // أولاً: كود مُدخَل يدوياً في حقل كود الدعوة
     if (inviteCodeInput.trim()) {
       const res = await linkUserToInviteToken(userId, inviteCodeInput.trim());
@@ -68,7 +78,7 @@ export default function LoginPage() {
       } else if (res.error === 'user_already_linked_to_other_merchant') {
         toast.warning('حسابك مرتبط بتاجر آخر بالفعل.');
       }
-      return;
+      return res.success ?? false;
     }
     // ثانياً: token محفوظ من رابط الدعوة
     const pendingToken = getPendingInviteToken();
@@ -78,14 +88,18 @@ export default function LoginPage() {
       if (res.success && !res.duplicate) {
         toast.success(`✅ تم ربط حسابك بـ ${pendingToken.merchant_name}`);
       }
-      return;
+      return res.success ?? false;
     }
     // ثالثاً: pending invite legacy
     if (pendingInvite) {
-      await assignUserToMerchantSecure(userId, pendingInvite.merchant_id, pendingInvite.invite_code, 'invite_link');
+      const res = await assignUserToMerchantSecure(userId, pendingInvite.merchant_id, pendingInvite.invite_code, 'invite_link');
       clearPendingInvite();
-      toast.success(`✅ تم ربط حسابك بـ ${pendingInvite.merchant_name}`);
+      if ((res as { success?: boolean })?.success !== false) {
+        toast.success(`✅ تم ربط حسابك بـ ${pendingInvite.merchant_name}`);
+        return true;
+      }
     }
+    return false;
   };
 
   const loginEmail = `${username.trim().toLowerCase()}@miaoda.com`;
@@ -126,7 +140,9 @@ export default function LoginPage() {
       if (matchedSession?.user?.id) {
         const deviceId = getDeviceId();
         supabase.from('profiles').update({ device_id: deviceId }).eq('id', matchedSession.user.id).then(() => {});
-        await applyPendingInvites(matchedSession.user.id);
+        const linked = await applyPendingInvites(matchedSession.user.id);
+        // تحديث الـ profile بعد الربط بالتاجر حتى يُوجَّه للواجهة الصحيحة
+        if (linked) await refreshProfile();
       }
       navigate(from, { replace: true });
       return;
@@ -149,7 +165,8 @@ export default function LoginPage() {
     if (signData?.user?.id) {
       const deviceId = getDeviceId();
       supabase.from('profiles').update({ device_id: deviceId }).eq('id', signData.user.id).then(() => {});
-      await applyPendingInvites(signData.user.id);
+      const linked = await applyPendingInvites(signData.user.id);
+      if (linked) await refreshProfile();
     }
     navigate(from, { replace: true });
   };
@@ -234,9 +251,19 @@ export default function LoginPage() {
       await supabase.from('profiles').update({
         username: username.trim(), phone: normalizedPhone,
       }).eq('id', data.user.id);
-      await applyPendingInvites(data.user.id);
+      const linked = await applyPendingInvites(data.user.id);
+      // تحديث الـ profile لضمان قراءة merchant_id الجديد
+      if (linked) await refreshProfile();
+      setLoading(false);
+      toast.success('تم إنشاء الحساب بنجاح! 🎉');
+      // عضو تاجر: انتقل مباشرة للواجهة الثانية — لا تُظهر onboarding التجربة المجانية
+      if (linked) {
+        navigate('/home', { replace: true });
+        return;
+      }
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
     toast.success('تم إنشاء الحساب بنجاح! 🎉');
     setShowOnboarding(true);
   };

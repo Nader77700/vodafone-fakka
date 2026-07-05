@@ -1730,13 +1730,11 @@ export default function HomePage() {
       }
       if (isMounted) setSubscription(effectiveSub);
 
-      if (!isAdmin && (!effectiveSub || effectiveSub.status !== 'active')) {
+      if (!isAdmin && !isMerchantClient && (!effectiveSub || effectiveSub.status !== 'active')) {
         // فحص فترة السماح
         if (effectiveSub?.in_grace_period && effectiveSub.grace_ends_at) {
           const graceExpired = new Date(effectiveSub.grace_ends_at) < new Date();
           if (graceExpired) {
-            // انتهت فترة السماح — انتقل لصفحة التفعيل بدون تسجيل خروج
-            // (المستخدم يبقى مسجل دخول حتى يجدد الاشتراك)
             if (isMounted) navigate('/activate', { replace: true });
             return;
           }
@@ -1928,7 +1926,7 @@ export default function HomePage() {
     [activeTab, mergedProducts]);
 
   const handleSelectProduct = (product: VodafoneProduct) => {
-    if (!subActive && !isAdmin) {
+    if (!subActive && !isAdmin && !isMerchantClient) {
       toast.error('اشتراكك غير نشط، يرجى التفعيل أولاً');
       navigate('/activate'); return;
     }
