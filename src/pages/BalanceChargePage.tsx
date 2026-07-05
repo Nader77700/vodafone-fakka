@@ -937,6 +937,11 @@ export default function BalanceChargePage() {
 
   const handleSelectProduct = (p: BalanceProduct) => {
     if (!session) { setLoginOpen(true); return; }
+    // فحص اشتراك عميل التاجر قبل فتح نافذة الشحن
+    if (isMerchantClient && !merchantValidation.loading && !merchantValidation.eligible) {
+      toast.error(merchantValidation.errorLabel ?? 'اشتراكك مع التاجر غير نشط. تواصل مع تاجرك.', { duration: 4000 });
+      return;
+    }
     setSelectedProduct(p); setExecuteOpen(true);
   };
 

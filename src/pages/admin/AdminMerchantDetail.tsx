@@ -148,7 +148,8 @@ export default function AdminMerchantDetail() {
   const [walletReason, setWalletReason]       = useState('');
   const [walletAction, setWalletAction]       = useState<'recharge' | 'deduct'>('recharge');
   const [walletLoading, setWalletLoading]     = useState(false);
-  const [walletExpiresAt, setWalletExpiresAt] = useState(''); // تاريخ انتهاء النقاط (اختياري)
+  const [walletDays, setWalletDays]       = useState(''); // عدد الأيام (يُحوَّل لتاريخ تلقائياً)
+  const walletExpiresAt = walletDays ? (() => { const d = new Date(); d.setDate(d.getDate() + parseInt(walletDays)); return d.toISOString().split('T')[0]; })() : '';
   const [allMerchants, setAllMerchants]       = useState<{ id: string; name: string }[]>([]);
   const [transferUserId, setTransferUserId]   = useState('');
   const [targetMerchant, setTargetMerchant]   = useState('');
@@ -237,7 +238,7 @@ export default function AdminMerchantDetail() {
     setWalletLoading(false);
     if (r.success) {
       toast.success(walletAction === 'recharge' ? `تم إضافة ${amt} نقطة ✅` : `تم خصم ${amt} نقطة ✅`);
-      setWalletAmt(''); setWalletReason(''); await load();
+      setWalletAmt(''); setWalletReason(''); setWalletDays(''); await load();
     } else toast.error(r.error ?? 'خطأ');
   };
 
@@ -582,15 +583,24 @@ export default function AdminMerchantDetail() {
               {walletAction === 'recharge' && (
                 <div className="space-y-1">
                   <label className="text-[11px] text-muted-foreground font-medium">
-                    تاريخ انتهاء النقاط <span className="opacity-60">(اتركه فارغاً = بدون انتهاء)</span>
+                    صلاحية النقاط بالأيام <span className="opacity-60">(اتركه فارغاً = بدون انتهاء)</span>
                   </label>
-                  <Input
-                    type="date"
-                    value={walletExpiresAt}
-                    onChange={e => setWalletExpiresAt(e.target.value)}
-                    className="h-9 text-sm"
-                    min={new Date().toISOString().split('T')[0]}
-                  />
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={3650}
+                      value={walletDays}
+                      onChange={e => setWalletDays(e.target.value)}
+                      placeholder="مثال: 30 يوم"
+                      className="h-9 text-sm pl-2 pr-24"
+                    />
+                    {walletDays && (
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                        ينتهي: {walletExpiresAt}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
               <Button className="w-full h-9 gap-2" variant={walletAction === 'deduct' ? 'destructive' : 'default'} onClick={handleWalletAction} disabled={walletLoading || !walletAmt}>
