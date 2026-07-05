@@ -2,6 +2,7 @@
 // كارت اشتراك المستخدم + شبكة الكروت الحقيقية + شحن الرصيد
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
@@ -345,11 +346,20 @@ export default function MerchantClientHome() {
     [allCards, activeTab],
   );
 
-  const isExpired = sub?.status === 'expired' || sub?.status === 'cancelled';
+  // الاشتراك نشط فقط إذا كان status === 'active' صراحةً
+  // أي حالة أخرى (pending / expired / cancelled / suspended / null) = محجوب
+  const isSubActive = sub?.status === 'active';
+  const isExpired   = !isSubActive; // متغير موحد للحجب
 
-  // عند الضغط على كارت — ننتقل لـ /home مع state.preSelectProduct لفتح نفس نافذة الشحن
+  // عند الضغط على كارت
   const handleCardSelect = (product: VodafoneProduct) => {
-    if (isExpired) return;
+    if (!isSubActive) {
+      toast.error('اشتراكك غير مفعّل', {
+        description: 'تواصل مع التاجر الخاص بك لتفعيل الاشتراك',
+        duration: 4000,
+      });
+      return;
+    }
     navigate('/home', { state: { preSelectProduct: product } });
   };
 
@@ -404,13 +414,8 @@ export default function MerchantClientHome() {
             ))}
           </div>
 
-          {/* شبكة الكروت */}
-          <div
-            className={cn(
-              'grid grid-cols-2 gap-2',
-              isExpired && 'opacity-40 pointer-events-none',
-            )}
-          >
+          {/* شبكة الكروت — مفعّلة فقط إذا كان الاشتراك نشطاً */}
+          <div className="grid grid-cols-2 gap-2">
             {visibleCards.map(product => (
               <ProductCard
                 key={product.id}
@@ -430,13 +435,21 @@ export default function MerchantClientHome() {
             شحن من رصيد أنا فودافون
           </p>
           <button
-            onClick={() => !isExpired && navigate('/balance-charge')}
+            onClick={() => {
+              if (!isSubActive) {
+                toast.error('اشتراكك غير مفعّل', {
+                  description: 'تواصل مع التاجر الخاص بك لتفعيل الاشتراك',
+                  duration: 4000,
+                });
+                return;
+              }
+              navigate('/balance-charge');
+            }}
             className={cn(
               'group relative flex items-center gap-4 p-4 rounded-2xl border border-border bg-card w-full text-right overflow-hidden transition-all',
-              isExpired ? 'opacity-40 cursor-not-allowed' : 'active:scale-95',
+              !isSubActive ? 'opacity-40' : 'active:scale-95',
             )}
             style={{ borderColor: 'rgba(34,197,94,0.25)' }}
-            disabled={isExpired}
           >
             <div
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
