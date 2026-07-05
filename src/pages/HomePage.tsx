@@ -1656,6 +1656,7 @@ function GracePeriodBanner({ graceEndsAt, onRenew }: { graceEndsAt: string; onRe
 export default function HomePage() {
   const { user, profile, refreshProfile } = useAuth();
   const { isMerchantClient } = useMerchantClient();
+  const { isSubActive, subscriptionBlockReason } = useMerchantClient();
   const navigate = useNavigate();
   const location = useLocation();
   const { getUrl } = useAssets();
@@ -1929,6 +1930,11 @@ export default function HomePage() {
     if (!subActive && !isAdmin && !isMerchantClient) {
       toast.error('اشتراكك غير نشط، يرجى التفعيل أولاً');
       navigate('/activate'); return;
+    }
+    // فحص اشتراك التاجر لعملاء التجار
+    if (isMerchantClient && !isSubActive) {
+      toast.error(subscriptionBlockReason || 'اشتراكك مع التاجر غير نشط. تواصل مع تاجرك.', { duration: 4000 });
+      return;
     }
 
     // ── فحص حالة الكارت من DB (product_config) ─────────────────────────

@@ -18,19 +18,25 @@ export interface MCMerchant {
 }
 
 export interface MCMember {
-  member_status: string;
-  joined_at:     string;
-  last_op_at:    string | null;
+  member_status:    string;
+  joined_at:        string;
+  last_op_at:       string | null;
+  activated_at:     string | null;
+  assigned_points:  number;
+  consumed_points:  number;
+  remaining_points: number;
 }
 
 export interface MCSubscription {
   id:              string;
   status:          string;
-  sub_type:        'unlimited' | 'ops_limited' | 'time_limited' | 'both_limited' | 'active';
+  sub_type:        'unlimited' | 'ops_limited' | 'time_limited' | 'both_limited' | 'points' | 'active';
   ops_count:       number;
   ops_limit:       number | null;
   ops_remaining:   number | null;
   expires_at:      string | null;
+  start_date:      string | null;
+  end_date:        string | null;
   days_remaining:  number | null;
   hours_remaining: number | null;
   in_grace_period: boolean;
@@ -38,6 +44,10 @@ export interface MCSubscription {
   code_type:       string | null;
   ops_success:     number;
   ops_failed:      number;
+  // نقاط الاشتراك (sub_type='points')
+  assigned_points:  number;
+  remaining_points: number;
+  consumed_points:  number;
 }
 
 export interface MerchantClientData {

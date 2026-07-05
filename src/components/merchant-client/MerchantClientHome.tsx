@@ -48,14 +48,26 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
 
   if (!sub) return null;
 
-  const isExpired = sub.status === 'expired' || sub.status === 'cancelled' || countdown?.expired;
+  const isExpired   = sub.status === 'expired' || sub.status === 'cancelled' || countdown?.expired;
   const isUnlimited = sub.sub_type === 'unlimited';
-  const isOpsLimited = sub.sub_type === 'ops_limited' || sub.sub_type === 'both_limited';
+  const isOpsLimited  = sub.sub_type === 'ops_limited'  || sub.sub_type === 'both_limited';
   const isTimeLimited = sub.sub_type === 'time_limited' || sub.sub_type === 'both_limited';
-  const opsUsed = sub.ops_success ?? sub.ops_count ?? 0;
-  const opsFail = sub.ops_failed ?? 0;
+  // sub_type='points' — اشتراك قائم على نقاط (النظام المستخدم حالياً)
+  const isPointsBased = sub.sub_type === 'points';
+
+  const opsUsed  = sub.ops_success ?? sub.ops_count ?? 0;
+  const opsFail  = sub.ops_failed  ?? 0;
   const opsLimit = sub.ops_limit;
   const opsLeft  = sub.ops_remaining;
+
+  // نقاط الاشتراك (للنوع points)
+  const subPtsAssigned  = sub.assigned_points  ?? 0;
+  const subPtsRemaining = sub.remaining_points ?? 0;
+  const subPtsConsumed  = sub.consumed_points  ?? 0;
+  // نقاط العضو (من merchant_members)
+  const memberPts = data?.member?.remaining_points ?? 0;
+  // النقاط الفعلية المتاحة: يستخدم نقاط العضو إن لم تكن في الاشتراك
+  const displayPts = subPtsAssigned > 0 ? subPtsRemaining : memberPts;
 
   // شريط التقدم
   const progressPct = isOpsLimited && opsLimit
@@ -96,6 +108,14 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
               <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]">
                 منتهي
               </Badge>
+            ) : isPointsBased ? (
+              <div
+                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold"
+                style={{ background: `${brandColor}15`, borderColor: `${brandColor}30`, color: brandColor }}
+              >
+                <Zap className="w-3 h-3" />
+                {displayPts} نقطة
+              </div>
             ) : isUnlimited ? (
               <div
                 className="flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-black"
@@ -175,23 +195,40 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
           </div>
         )}
 
-        {/* ─── إحصائيات سريعة ─── */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-muted/30 border border-border">
-            <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
-            <div className="min-w-0">
-              <p className="text-base font-black text-success leading-none">{opsUsed}</p>
-              <p className="text-[9px] text-muted-foreground">ناجحة</p>
+        {/* ─── إحصائيات سريعة — نقاط أو عمليات ─── */}
+        {isPointsBased ? (
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="flex flex-col items-center px-2 py-2 rounded-xl bg-muted/30 border border-border">
+              <p className="text-base font-black leading-none" style={{ color: brandColor }}>{subPtsAssigned > 0 ? subPtsAssigned : (data?.member?.assigned_points ?? 0)}</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">المخصصة</p>
+            </div>
+            <div className="flex flex-col items-center px-2 py-2 rounded-xl bg-muted/30 border border-border">
+              <p className="text-base font-black text-success leading-none">{displayPts}</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">المتبقية</p>
+            </div>
+            <div className="flex flex-col items-center px-2 py-2 rounded-xl bg-muted/30 border border-border">
+              <p className="text-base font-black text-destructive leading-none">{subPtsAssigned > 0 ? subPtsConsumed : (data?.member?.consumed_points ?? 0)}</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">المستهلكة</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-muted/30 border border-border">
-            <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
-            <div className="min-w-0">
-              <p className="text-base font-black text-destructive leading-none">{opsFail}</p>
-              <p className="text-[9px] text-muted-foreground">فاشلة</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-muted/30 border border-border">
+              <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
+              <div className="min-w-0">
+                <p className="text-base font-black text-success leading-none">{opsUsed}</p>
+                <p className="text-[9px] text-muted-foreground">ناجحة</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-muted/30 border border-border">
+              <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+              <div className="min-w-0">
+                <p className="text-base font-black text-destructive leading-none">{opsFail}</p>
+                <p className="text-[9px] text-muted-foreground">فاشلة</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -148,6 +148,7 @@ export default function AdminMerchantDetail() {
   const [walletReason, setWalletReason]       = useState('');
   const [walletAction, setWalletAction]       = useState<'recharge' | 'deduct'>('recharge');
   const [walletLoading, setWalletLoading]     = useState(false);
+  const [walletExpiresAt, setWalletExpiresAt] = useState(''); // تاريخ انتهاء النقاط (اختياري)
   const [allMerchants, setAllMerchants]       = useState<{ id: string; name: string }[]>([]);
   const [transferUserId, setTransferUserId]   = useState('');
   const [targetMerchant, setTargetMerchant]   = useState('');
@@ -230,7 +231,9 @@ export default function AdminMerchantDetail() {
     if (isNaN(amt) || amt <= 0) { toast.error('أدخل قيمة صحيحة'); return; }
     setWalletLoading(true);
     const fn = walletAction === 'recharge' ? merchantWalletRecharge : merchantWalletDeduct;
-    const r = await fn(id, amt, walletReason || 'admin_direct', undefined, adminProfile?.id);
+    const r = walletAction === 'recharge'
+      ? await merchantWalletRecharge(id, amt, walletReason || 'admin_direct', undefined, adminProfile?.id, walletExpiresAt || null)
+      : await merchantWalletDeduct(id, amt, walletReason || 'admin_direct', undefined, adminProfile?.id);
     setWalletLoading(false);
     if (r.success) {
       toast.success(walletAction === 'recharge' ? `تم إضافة ${amt} نقطة ✅` : `تم خصم ${amt} نقطة ✅`);
@@ -576,6 +579,20 @@ export default function AdminMerchantDetail() {
               </div>
               <Input type="number" min={1} value={walletAmt} onChange={e => setWalletAmt(e.target.value)} placeholder="عدد النقاط" className="h-9 text-sm" />
               <Input value={walletReason} onChange={e => setWalletReason(e.target.value)} placeholder="السبب (اختياري)" className="h-9 text-sm" />
+              {walletAction === 'recharge' && (
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground font-medium">
+                    تاريخ انتهاء النقاط <span className="opacity-60">(اتركه فارغاً = بدون انتهاء)</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={walletExpiresAt}
+                    onChange={e => setWalletExpiresAt(e.target.value)}
+                    className="h-9 text-sm"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              )}
               <Button className="w-full h-9 gap-2" variant={walletAction === 'deduct' ? 'destructive' : 'default'} onClick={handleWalletAction} disabled={walletLoading || !walletAmt}>
                 {walletLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 {walletAction === 'recharge' ? 'إضافة النقاط' : 'خصم النقاط'}

@@ -4082,22 +4082,24 @@ export async function getMerchantWallet(merchantId: string): Promise<{ success: 
   return { success: r.success, wallet: r.wallet };
 }
 
-/** شحن نقاط للتاجر */
+/** شحن نقاط للتاجر — مع دعم تاريخ انتهاء النقاط */
 export async function merchantWalletRecharge(
   merchantId: string,
   amount: number,
   reason?: string,
   notes?: string,
   adminId?: string,
+  pointsExpiresAt?: string | null,
 ): Promise<{ success: boolean; transaction_id?: string; balance_before?: number; balance_after?: number; error?: string }> {
   const idempotencyKey = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   const { data, error } = await supabase.rpc('merchant_wallet_recharge', {
-    p_merchant_id: merchantId,
-    p_amount: amount,
-    p_reason: reason ?? null,
-    p_notes: notes ?? null,
-    p_idempotency_key: idempotencyKey,
-    p_admin_id: adminId ?? null,
+    p_merchant_id:      merchantId,
+    p_amount:           amount,
+    p_admin_id:         adminId          ?? null,
+    p_reason:           reason           ?? 'admin_recharge',
+    p_notes:            notes            ?? null,
+    p_idempotency_key:  idempotencyKey,
+    p_points_expires_at: pointsExpiresAt ?? null,
   });
   if (error) return { success: false, error: error.message };
   return data as { success: boolean; transaction_id?: string; balance_before?: number; balance_after?: number; error?: string };
