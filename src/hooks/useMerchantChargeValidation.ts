@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/db/supabase';
 import { validateMerchantChargeEligibility } from '@/lib/api';
 import type { MerchantChargeEligibility } from '@/lib/api';
 
@@ -45,18 +44,21 @@ export function useMerchantChargeValidation(): MerchantChargeValidationState {
   const [eligibility, setEligibility] = useState<MerchantChargeEligibility | null>(null);
   const mountedRef = useRef(true);
 
+  const userId     = user?.id     ?? null;
+  const merchantId = profile?.merchant_id ?? null;
+
   const fetch = useCallback(async () => {
-    if (!user?.id || !profile?.merchant_id) {
+    if (!userId || !merchantId) {
       setEligibility(null);
       setLoading(false);
       return;
     }
     setLoading(true);
-    const result = await validateMerchantChargeEligibility(user.id);
+    const result = await validateMerchantChargeEligibility(userId);
     if (!mountedRef.current) return;
     setEligibility(result);
     setLoading(false);
-  }, [user?.id, profile?.merchant_id]);
+  }, [userId, merchantId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -64,32 +66,8 @@ export function useMerchantChargeValidation(): MerchantChargeValidationState {
     return () => { mountedRef.current = false; };
   }, [fetch]);
 
-  // Realtime: استمع لتغييرات تؤثر على الأهلية
-  useEffect(() => {
-    if (!user?.id || !profile?.merchant_id) return;
-
-    const channel = supabase
-      .channel('merchant-charge-validation')
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'merchants',
-        filter: `id=eq.${profile.merchant_id}`,
-      }, () => void fetch())
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'profiles',
-        filter: `id=eq.${user.id}`,
-      }, () => void fetch())
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'subscriptions',
-        filter: `user_id=eq.${user.id}`,
-      }, () => void fetch())
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'merchant_members',
-        filter: `user_id=eq.${user.id}`,
-      }, () => void fetch())
-      .subscribe();
-
-    return () => { void supabase.removeChannel(channel); };
-  }, [user?.id, profile?.merchant_id, fetch]);
+  // ملاحظة: لا Realtime هنا — MerchantClientContext يغطي كل التغييرات
+  // هذا يمنع تضارب channels وإعادة التحميل المزدوجة
 
   const eligible   = eligibility?.eligible ?? false;
   const errorLabel = (!loading && eligibility && !eligible)

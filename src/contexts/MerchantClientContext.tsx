@@ -73,77 +73,98 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
 
   const [isLoading, setIsLoading] = useState(true);
   const [data,      setData]      = useState<MerchantClientData | null>(null);
-  const realtimeRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // اكتشاف الوضع: المستخدم مرتبط بتاجر إذا merchant_id != null والدور = user
-  const isMerchantClient = !!(
-    profile?.merchant_id &&
-    profile.role === 'user'
-  );
+  // استخدم primitives فقط في deps لتجنب إعادة الإنشاء عند تغيّر مرجع الكائن
+  const userId     = user?.id     ?? null;
+  const merchantId = profile?.merchant_id ?? null;
+  const isMerchantClient = !!(merchantId && profile?.role === 'user');
 
-  // تحميل بيانات وضع العميل
+  // منع التحميل المتزامن
+  const isFetchingRef = useRef(false);
+  // حفظ أحدث قيم userId/merchantId بدون إعادة إنشاء load
+  const userIdRef     = useRef(userId);
+  const merchantIdRef = useRef(merchantId);
+  const isMCRef       = useRef(isMerchantClient);
+  useEffect(() => { userIdRef.current     = userId;         }, [userId]);
+  useEffect(() => { merchantIdRef.current = merchantId;     }, [merchantId]);
+  useEffect(() => { isMCRef.current       = isMerchantClient; }, [isMerchantClient]);
+
   const load = useCallback(async () => {
-    if (!user || !isMerchantClient) {
+    const uid = userIdRef.current;
+    const isMC = isMCRef.current;
+    if (!uid || !isMC) {
       setData(null);
       setIsLoading(false);
       return;
     }
+    // منع طلبات متزامنة
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsLoading(true);
-    const { data: rpcData, error } = await supabase.rpc('get_merchant_client_data', {
-      p_user_id: user.id,
-    });
-    if (!error && rpcData?.success) {
-      setData({
-        merchant:     rpcData.merchant,
-        member:       rpcData.member   ?? null,
-        subscription: rpcData.subscription ?? null,
+    try {
+      const { data: rpcData, error } = await supabase.rpc('get_merchant_client_data', {
+        p_user_id: uid,
       });
-    } else {
-      setData(null);
+      if (!error && rpcData?.success) {
+        setData({
+          merchant:     rpcData.merchant,
+          member:       rpcData.member   ?? null,
+          subscription: rpcData.subscription ?? null,
+        });
+      } else {
+        setData(null);
+      }
+    } finally {
+      isFetchingRef.current = false;
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [user, isMerchantClient]);
+  }, []); // deps فارغة — يستخدم refs لقراءة القيم الحديثة
 
+  // تحميل أولي عند تغيّر userId أو isMerchantClient فعلياً
   useEffect(() => {
-    load();
-  }, [load]);
+    void load();
+  }, [userId, isMerchantClient, load]);
 
   // ─── Realtime Security ────────────────────────────────────────────────────
-  // يراقب حالة التاجر وملف المستخدم لاكتشاف:
-  // • التاجر أُوقف/علّق → merchantSuspended = true
-  // • المستخدم فقد ارتباطه بالتاجر → يعيد تحميل البيانات (يخرج من الوضع)
   useEffect(() => {
-    if (!user || !profile?.merchant_id) return;
+    if (!userId || !merchantId) return;
 
-    const merchantId = profile.merchant_id;
+    // debounce: تجنب طلبات متعددة عند تدفق الأحداث
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const debouncedLoad = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { void load(); }, 600);
+    };
 
-    realtimeRef.current = supabase
-      .channel(`mc_security_${user.id}`)
-      // ── تغيير حالة التاجر ──────────────────────────────────────────────────
+    const channel = supabase
+      .channel(`mc_security_${userId}`)
+      // تغيير حالة التاجر
       .on('postgres_changes', {
-        event:  'UPDATE',
-        schema: 'public',
-        table:  'merchants',
+        event: 'UPDATE', schema: 'public', table: 'merchants',
         filter: `id=eq.${merchantId}`,
-      }, () => { load(); })
-      // ── تغيير ملف المستخدم (merchant_id قد يُزال) ──────────────────────────
+      }, debouncedLoad)
+      // تغيير ملف المستخدم (قد يُزال merchant_id)
       .on('postgres_changes', {
-        event:  'UPDATE',
-        schema: 'public',
-        table:  'profiles',
-        filter: `id=eq.${user.id}`,
-      }, () => { load(); })
-      // ── تغيير الاشتراك ──────────────────────────────────────────────────────
+        event: 'UPDATE', schema: 'public', table: 'profiles',
+        filter: `id=eq.${userId}`,
+      }, debouncedLoad)
+      // تغيير اشتراك عضو التاجر (الجدول الصحيح)
       .on('postgres_changes', {
-        event:  '*',
-        schema: 'public',
-        table:  'subscriptions',
-        filter: `user_id=eq.${user.id}`,
-      }, () => { load(); })
+        event: '*', schema: 'public', table: 'merchant_member_subscriptions',
+        filter: `user_id=eq.${userId}`,
+      }, debouncedLoad)
+      // تغيير حالة العضوية
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'merchant_members',
+        filter: `user_id=eq.${userId}`,
+      }, debouncedLoad)
       .subscribe();
 
-    return () => { realtimeRef.current?.unsubscribe(); };
-  }, [user?.id, profile?.merchant_id, load]);
+    return () => {
+      clearTimeout(debounceTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, merchantId, load]);
 
   // حالة توقف التاجر
   const merchantSuspended = isMerchantClient && !!data &&
