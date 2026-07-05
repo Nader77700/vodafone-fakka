@@ -31,7 +31,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { useMerchantChargeValidation } from '@/hooks/useMerchantChargeValidation';
+import { useMerchantClient } from '@/contexts/MerchantClientContext';
 
 // ── ألوان هوية التطبيق الأحمر/الأسود ──
 const C = {
@@ -889,8 +889,8 @@ export default function BalanceChargePage() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const isMerchantClient = !!(profile?.merchant_id && profile.role === 'user');
 
-  // ── تحقق أهلية عميل التاجر — يُستدعى دائماً (Rules of Hooks) ──────────────
-  const merchantValidation = useMerchantChargeValidation();
+  // ── بيانات أهلية التاجر — من Context المشترك (محمّل مسبقاً في MerchantClientLayout) ──
+  const { isSubActive, subscriptionBlockReason, isLoading: merchantLoading } = useMerchantClient();
 
   const [session, setSession]           = useState<BalanceSession | null>(null);
   const [allSessions, setAllSessions]   = useState<BalanceSession[]>([]);
@@ -937,9 +937,14 @@ export default function BalanceChargePage() {
 
   const handleSelectProduct = (p: BalanceProduct) => {
     if (!session) { setLoginOpen(true); return; }
-    // فحص اشتراك عميل التاجر قبل فتح نافذة الشحن
-    if (isMerchantClient && !merchantValidation.loading && !merchantValidation.eligible) {
-      toast.error(merchantValidation.errorLabel ?? 'اشتراكك مع التاجر غير نشط. تواصل مع تاجرك.', { duration: 4000 });
+    // منع الشحن إذا كان Context لم ينتهِ التحميل بعد
+    if (isMerchantClient && merchantLoading) {
+      toast.info('جارٍ التحقق من اشتراكك… انتظر لحظة.', { duration: 2000 });
+      return;
+    }
+    // فحص أهلية الاشتراك
+    if (isMerchantClient && !isSubActive) {
+      toast.error(subscriptionBlockReason || 'اشتراكك مع التاجر غير نشط. تواصل مع تاجرك.', { duration: 4000 });
       return;
     }
     setSelectedProduct(p); setExecuteOpen(true);
@@ -978,8 +983,20 @@ export default function BalanceChargePage() {
     );
   }
 
+  // ── حماية أثناء التحقق من الاشتراك (منع ظهور الكروت قبل انتهاء التحقق) ──
+  if (isMerchantClient && merchantLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }} dir="rtl">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${C.red}60`, borderTopColor: 'transparent' }} />
+          <p className="text-xs text-muted-foreground">جارٍ التحقق من الاشتراك…</p>
+        </div>
+      </div>
+    );
+  }
+
   // ── حماية عمليات عميل التاجر ──────────────────────────────────────────────
-  if (isMerchantClient && !merchantValidation.loading && !merchantValidation.eligible) {
+  if (isMerchantClient && !isSubActive) {
     return (
       <div className="min-h-screen flex flex-col" style={{ background: C.bg }} dir="rtl">
         <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b"
@@ -998,13 +1015,13 @@ export default function BalanceChargePage() {
           <div className="space-y-2">
             <h2 className="text-base font-black text-white">لا يمكن تنفيذ عمليات الشحن</h2>
             <p className="text-sm font-medium leading-relaxed" style={{ color: C.red }}>
-              {merchantValidation.errorLabel ?? 'حسابك غير مفعل حالياً. يرجى التواصل مع التاجر الخاص بك لتفعيل الاشتراك.'}
+              {subscriptionBlockReason || 'حسابك غير مفعل حالياً. يرجى التواصل مع التاجر الخاص بك لتفعيل الاشتراك.'}
             </p>
           </div>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
             style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
-            onClick={merchantValidation.refresh}
+            onClick={() => window.location.reload()}
           >
             <RefreshCw className="w-3.5 h-3.5" />
             إعادة التحقق
