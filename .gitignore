@@ -1,0 +1,43 @@
+node_modules
+dist
+.vite
+*.log
+<<<<<<< HEAD
+<<<<<<< HEAD
+.sync/
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
+=======
+.sync/
+>>>>>>> 389ef3c ()
+android/app/build
+android/build
+android/.gradle
+android/local.properties
+*.jks
+keystore.txt
+.env
+.env.*
+*.local
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+coverage
+playwright-report
+test-results
+<<<<<<< HEAD
+<<<<<<< HEAD
+/.skills
+/tasks
+package.json.[0-9]*
+=======
+>>>>>>> 5aac87b (Initial miaoda project setup with React TypeScript Vite template)
+=======
+/.skills
+/tasks
+package.json.[0-9]*
+>>>>>>> 389ef3c ()

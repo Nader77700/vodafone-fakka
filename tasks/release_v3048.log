@@ -1,0 +1,56 @@
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-06-28 06:03  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.47 (code 100)
+🚀 الإصدار الجديد  : v3.0.48 (code 101)
+📝 ملاحظات         : إعادة تصميم لوحة الإدارة — واجهة بسيطة + Core Engine ذكي
+
+openjdk version "17.0.11" 2024-04-16
+✅ JDK جاهز
+✅ Android SDK جاهز
+
+⚙️  [1/7] تحديث build.gradle...
+✅ build.gradle: v3.0.48 (code 101)
+⚙️  [2/7] تحديث buildInfo.ts...
+  ✅ buildInfo.ts: v3.0.48 (code 101)
+⚙️  [3/7] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+⚙️  [3/7] مزامنة Capacitor...
+✅ Vite + Capacitor جاهز
+  ✔ package= أُزيل من AndroidManifest.xml
+⚙️  [4/7] بناء APK (Gradle assembleRelease)...
+Note: Recompile with -Xlint:deprecation for details.
+Note: /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+push-notifications@8.1.1_@capacitor+core@8.4.1/node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications/PushNotificationsPlugin.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /workspace/app-ck2v94t1nev5/android/app/src/main/java/com/naderakram/vodafonefakka/VodafoneDetectorPlugin.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+✅ APK مبني: 12M
+✅ APK موقَّع v1+v2+v3
+✅ تحقق APK: v3.0.48 (code 101) — مطابق 100%
+⚙️  [5/7] رفع APK إلى Supabase Storage...
+✅ رُفع ويعمل: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.48.apk
+⚙️  [6/7] تحديث قاعدة البيانات...
+✅ DB: v3.0.48 is_latest=true (id: 9af2bfd8-9c09-4344-994f-885649b8a814)
+⚙️  [7/7] إرسال Push Notification...
+✅ Push أُرسل لـ 9 جهاز
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ تم الإصدار بنجاح!                               ║
+║  📦 الإصدار   : v3.0.48 (code 101)                  ║
+║  🔗 رابط APK  : VodafoneFakka-v3.0.48.apk
+║  📣 إشعار     : 9   جهاز                           ║
+║  📝 ملاحظات   : إعادة تصميم لوحة الإدارة — واجهة بس ║
+║  🕐 وقت البناء: 2026-06-28 06:04                     ║
+╚══════════════════════════════════════════════════════╝
+💡 لإصدار جديد: bash tasks/release.sh "ملاحظات الإصدار"
