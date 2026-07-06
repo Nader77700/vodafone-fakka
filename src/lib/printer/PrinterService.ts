@@ -1,20 +1,22 @@
 /**
- * PrinterService — نظام الطباعة الاحترافي
+ * PrinterService — نظام الطباعة الاحترافي v2
  *
- * يدعم:
- *  1. Bluetooth (ESC/POS عبر Web Bluetooth API)
- *  2. WiFi / Network / USB (عبر Android Print Dialog)
- *  3. الطابعات المدمجة (Built-in) عبر Android Print Dialog
- *  4. طوابير طباعة مع منع التكرار
+ * يعتمد على PrintPlugin.java عبر NativePrintBridge.
+ * لا يستخدم window.open / navigator.bluetooth / Intent للمتصفح.
  *
- * لا يكسر أي API أو Service قائم.
+ * الطرق المدعومة:
+ *  1. Android PrintManager (WiFi/USB/Network/Built-in) — printHtml
+ *  2. Bluetooth ESC/POS — printEscPos عبر SPP Classic
+ *  3. الطابعة المدمجة (Sunmi/PAX/Newland) — تكتشف تلقائياً وتستخدم printHtml
  */
-import type { SavedPrinter, PrinterType, PaperWidth, PrintResult, PrintJob, InvoiceData } from './types';
+import type { SavedPrinter, PaperWidth, PrintResult, PrintJob, InvoiceData } from './types';
 import { getSavedPrinter, savePrinter } from './printerStorage';
 import { buildInvoiceEscPos } from './EscPosBuilder';
 import { buildPrintHtml } from './PrintHtmlBuilder';
+import PrintBridge from './NativePrintBridge';
+import type { PaperSizeKey } from './NativePrintBridge';
 
-// ── طابور الطباعة لمنع التكرار ─────────────────────────────────────────────
+// ── طابور الطباعة — منع التكرار ──────────────────────────────────────────
 const printQueue = new Map<string, PrintJob>();
 
 function makeJobId(invoice: InvoiceData): string {
@@ -23,146 +25,152 @@ function makeJobId(invoice: InvoiceData): string {
     : `corr-${invoice.correlationId ?? invoice.receiverPhone + invoice.time}`;
 }
 
-// ── Bluetooth ESC/POS ─────────────────────────────────────────────────────────
-const BT_SERVICE_UUID  = '000018f0-0000-1000-8000-00805f9b34fb';
-const BT_CHAR_UUID     = '00002af1-0000-1000-8000-00805f9b34fb';
-const BT_SERVICE_SPP   = '00001101-0000-1000-8000-00805f9b34fb'; // SPP Classic BT
+function paperKey(w: PaperWidth): PaperSizeKey {
+  return w === 58 ? 'THERMAL_58' : 'THERMAL_80';
+}
 
-async function printViaBluetooth(
-  printer: SavedPrinter,
-  data: Uint8Array,
-): Promise<PrintResult> {
-  if (!navigator.bluetooth) {
-    return { success: false, error: 'Web Bluetooth غير مدعوم على هذا الجهاز' };
+// ── تحويل Uint8Array إلى Base64 ──────────────────────────────────────────
+function uint8ToBase64(data: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]);
   }
+  return btoa(binary);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  [A] Android Print (PrintManager — بدون متصفح)
+// ═══════════════════════════════════════════════════════════════════
+export async function printViaAndroid(
+  invoice: InvoiceData,
+  paperWidth: PaperWidth = 80,
+): Promise<PrintResult> {
   try {
-    const device = await navigator.bluetooth.requestDevice({
-      filters: [{ name: printer.name }],
-      optionalServices: [BT_SERVICE_UUID, BT_SERVICE_SPP],
+    const html   = buildPrintHtml(invoice, paperWidth);
+    const result = await PrintBridge.printHtml({
+      html,
+      jobName: `فاتورة #${invoice.opNumber ?? invoice.receiverPhone}`,
+      paper:   paperKey(paperWidth),
     });
-    const server  = await device.gatt!.connect();
-    let characteristic: BluetoothRemoteGATTCharacteristic | null = null;
+    if (result.cancelled) return { success: false, error: 'تم إلغاء الطباعة' };
+    if (result.failed)    return { success: false, error: 'فشلت مهمة الطباعة' };
+    return { success: result.success };
+  } catch (e: unknown) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
 
-    // جرّب BLE أولاً ثم SPP
-    for (const svcUuid of [BT_SERVICE_UUID, BT_SERVICE_SPP]) {
-      try {
-        const svc  = await server.getPrimaryService(svcUuid);
-        const char = await svc.getCharacteristic(BT_CHAR_UUID).catch(() => null);
-        if (char) { characteristic = char; break; }
-      } catch { /* جرّب الـ UUID التالي */ }
-    }
-
-    if (!characteristic) {
-      await device.gatt!.disconnect();
-      return { success: false, error: 'تعذّر الوصول لـ GATT Characteristic' };
-    }
-
-    // إرسال البيانات على شكل chunks بحجم 512 بايت
-    const CHUNK = 512;
-    for (let i = 0; i < data.length; i += CHUNK) {
-      await characteristic.writeValueWithoutResponse(data.slice(i, i + CHUNK));
-      await new Promise(r => setTimeout(r, 30)); // استراحة بين الـ chunks
-    }
-    await device.gatt!.disconnect();
-    return { success: true };
+// ═══════════════════════════════════════════════════════════════════
+//  [B] Bluetooth ESC/POS (SPP — بدون Web Bluetooth)
+// ═══════════════════════════════════════════════════════════════════
+export async function printViaBluetooth(
+  invoice:    InvoiceData,
+  address:    string,
+  paperWidth: PaperWidth = 80,
+): Promise<PrintResult> {
+  try {
+    const escBytes = buildInvoiceEscPos(invoice, paperWidth);
+    const b64      = uint8ToBase64(escBytes);
+    const result   = await PrintBridge.printEscPos({ address, data: b64 });
+    if (result.success) return { success: true };
+    return { success: false, error: 'فشل إرسال البيانات للطابعة' };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes('User cancelled') || msg.includes('chooser')) {
-      return { success: false, error: 'تم إلغاء اختيار الطابعة' };
-    }
-    return { success: false, error: `فشل اتصال Bluetooth: ${msg}` };
+    if (msg === 'BT_DISABLED')        return { success: false, error: 'Bluetooth مغلق — يرجى تشغيله' };
+    if (msg === 'NO_BT_PERMISSION')   return { success: false, error: 'مطلوب صلاحية Bluetooth' };
+    if (msg.startsWith('BT_CONNECT')) return { success: false, error: `فشل الاتصال: ${msg.replace('BT_CONNECT_FAILED: ', '')}` };
+    return { success: false, error: msg };
   }
 }
 
-// ── Android Print Dialog (WiFi / USB / Network / Built-in) ─────────────────
-function printViaAndroidDialog(invoice: InvoiceData, paperWidth: PaperWidth): Promise<PrintResult> {
-  return new Promise(resolve => {
-    try {
-      const html = buildPrintHtml(invoice, paperWidth);
-      const printWin = window.open('', '_blank', 'width=400,height=600');
-      if (!printWin) {
-        // Capacitor WebView — استخدم iframe مؤقت
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;left:-9999px;top:-9999px;';
-        document.body.appendChild(iframe);
-        iframe.contentDocument!.open();
-        iframe.contentDocument!.write(html);
-        iframe.contentDocument!.close();
-        iframe.contentWindow!.focus();
-        iframe.contentWindow!.print();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          resolve({ success: true });
-        }, 1500);
-        return;
-      }
-      printWin.document.write(html);
-      printWin.document.close();
-      printWin.focus();
-      printWin.print();
-      printWin.close();
-      resolve({ success: true });
-    } catch (e: unknown) {
-      resolve({ success: false, error: e instanceof Error ? e.message : String(e) });
-    }
-  });
+// ═══════════════════════════════════════════════════════════════════
+//  [C] فحص حالة Bluetooth
+// ═══════════════════════════════════════════════════════════════════
+export async function checkBluetoothStatus() {
+  try {
+    return await PrintBridge.checkBluetooth();
+  } catch {
+    return { supported: false, enabled: false, hasPermission: false, reason: 'NO_BT_HARDWARE' as const };
+  }
 }
 
-// ── البحث عن طابعات BT متاحة ─────────────────────────────────────────────
-export async function scanBluetoothPrinters(): Promise<{ id: string; name: string }[]> {
-  if (!navigator.bluetooth) return [];
+// ═══════════════════════════════════════════════════════════════════
+//  [D] البحث عن الطابعات المقترنة
+// ═══════════════════════════════════════════════════════════════════
+export async function scanPairedPrinters() {
   try {
-    const device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [BT_SERVICE_UUID, BT_SERVICE_SPP],
-    });
-    if (device) return [{ id: device.id, name: device.name ?? 'Bluetooth Printer' }];
-    return [];
+    const result = await PrintBridge.scanPairedPrinters();
+    return result.devices ?? [];
   } catch {
     return [];
   }
 }
 
-// ── الدالة الرئيسية للطباعة ──────────────────────────────────────────────
-export interface PrintOptions {
-  printer?:      SavedPrinter;        // يُستخدم إذا مُرِّر، وإلا يُجلب المحفوظ
-  paperWidth?:   PaperWidth;
-  forcePicker?:  boolean;             // أجبر شاشة اختيار الطابعة
+// ═══════════════════════════════════════════════════════════════════
+//  [E] طلب تشغيل Bluetooth
+// ═══════════════════════════════════════════════════════════════════
+export async function requestEnableBluetooth(): Promise<boolean> {
+  try {
+    const r = await PrintBridge.requestEnableBt();
+    return r.enabled;
+  } catch {
+    return false;
+  }
 }
 
-/** الحالة التي تحتاجها الـ UI لعرض شاشة اختيار الطابعة */
-export interface PrintNeedsPicker {
-  needsPicker: true;
+// ═══════════════════════════════════════════════════════════════════
+//  [F] طلب صلاحيات Bluetooth
+// ═══════════════════════════════════════════════════════════════════
+export async function requestBluetoothPermissions(): Promise<boolean> {
+  try {
+    const r = await PrintBridge.requestBtPermissions();
+    return r.granted;
+  } catch {
+    return false;
+  }
 }
-export interface PrintDone {
-  needsPicker: false;
-  result:      PrintResult;
+
+// ═══════════════════════════════════════════════════════════════════
+//  [G] كشف الطابعة المدمجة
+// ═══════════════════════════════════════════════════════════════════
+export async function checkBuiltinPrinter() {
+  try {
+    return await PrintBridge.checkBuiltinPrinter();
+  } catch {
+    return { available: false, packageFound: '', name: '', manufacturer: '', model: '' };
+  }
 }
-export type PrintOutcome = PrintNeedsPicker | PrintDone;
+
+// ═══════════════════════════════════════════════════════════════════
+//  [H] الدالة الرئيسية — printInvoice
+// ═══════════════════════════════════════════════════════════════════
+export interface PrintOptions {
+  printer?:     SavedPrinter;
+  paperWidth?:  PaperWidth;
+  forcePicker?: boolean;
+}
+
+export type PrintOutcome =
+  | { needsPicker: true }
+  | { needsPicker: false; result: PrintResult };
 
 export async function printInvoice(
   invoice: InvoiceData,
   options: PrintOptions = {},
 ): Promise<PrintOutcome> {
-  const jobId = makeJobId(invoice);
-
-  // منع التكرار — Job نشط بالفعل؟
+  const jobId   = makeJobId(invoice);
   const existing = printQueue.get(jobId);
-  if (existing && existing.status === 'printing') {
-    return { needsPicker: false, result: { success: false, error: 'جارٍ الطباعة بالفعل — يرجى الانتظار' } };
+  if (existing?.status === 'printing') {
+    return { needsPicker: false, result: { success: false, error: 'جارٍ الطباعة بالفعل' } };
   }
 
-  // تسجيل Job
-  const job: PrintJob = { id: jobId, invoiceId: jobId, createdAt: Date.now(), status: 'pending' };
+  const job: PrintJob = { id: jobId, invoiceId: jobId, createdAt: Date.now(), status: 'printing' };
   printQueue.set(jobId, job);
-  job.status = 'printing';
 
   try {
-    // جلب الطابعة المحفوظة
     const printer = options.printer ?? await getSavedPrinter();
     const width   = options.paperWidth ?? printer?.paperWidth ?? 80;
 
-    // إذا لا توجد طابعة محفوظة ولم تُمرَّر → اطلب الاختيار
     if (!printer || options.forcePicker) {
       job.status = 'done';
       return { needsPicker: true };
@@ -170,11 +178,10 @@ export async function printInvoice(
 
     let result: PrintResult;
     if (printer.type === 'bluetooth') {
-      const escData = buildInvoiceEscPos(invoice, width);
-      result = await printViaBluetooth(printer, escData);
+      result = await printViaBluetooth(invoice, printer.id, width);
     } else {
-      // wifi / usb / network / builtin → Android Print Dialog
-      result = await printViaAndroidDialog(invoice, width);
+      // android / wifi / usb / network / builtin → كلها عبر Android PrintManager
+      result = await printViaAndroid(invoice, width);
     }
 
     job.status = result.success ? 'done' : 'failed';
@@ -183,28 +190,36 @@ export async function printInvoice(
     job.status = 'failed';
     return {
       needsPicker: false,
-      result: { success: false, error: e instanceof Error ? e.message : 'خطأ غير متوقع في الطباعة' },
+      result: { success: false, error: e instanceof Error ? e.message : 'خطأ غير متوقع' },
     };
   }
 }
 
-/** طباعة مباشرة عبر Android Print Dialog بدون حاجة طابعة محفوظة */
-export async function printViaDialog(invoice: InvoiceData, paperWidth: PaperWidth = 80): Promise<PrintResult> {
-  const jobId = makeJobId(invoice);
+/** طباعة مباشرة عبر Android PrintManager بدون طابعة محفوظة */
+export async function printViaDialog(
+  invoice: InvoiceData,
+  paperWidth: PaperWidth = 80,
+): Promise<PrintResult> {
+  const jobId   = makeJobId(invoice);
   const existing = printQueue.get(jobId);
-  if (existing && existing.status === 'printing') {
+  if (existing?.status === 'printing') {
     return { success: false, error: 'جارٍ الطباعة بالفعل' };
   }
   const job: PrintJob = { id: jobId, invoiceId: jobId, createdAt: Date.now(), status: 'printing' };
   printQueue.set(jobId, job);
-  const result = await printViaAndroidDialog(invoice, paperWidth);
+  const result = await printViaAndroid(invoice, paperWidth);
   job.status = result.success ? 'done' : 'failed';
   return result;
 }
 
-/** حفظ طابعة جديدة */
+/** حفظ طابعة كافتراضية */
 export async function savePrinterConfig(printer: SavedPrinter): Promise<void> {
   await savePrinter(printer);
 }
 
 export { getSavedPrinter };
+
+// re-export scanBluetoothPrinters باسم متوافق مع الكود القديم
+export { scanPairedPrinters as scanBluetoothPrinters };
+
+

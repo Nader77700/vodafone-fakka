@@ -1,121 +1,120 @@
 /**
- * PrintButton — زر طباعة الفاتورة
- * يظهر في شاشة النجاح + تفاصيل العملية + Sheet السجل
+ * PrintButton v2 — زر طباعة الفاتورة
  *
- * سلوك:
- *  - إذا طابعة محفوظة → يطبع مباشرة
- *  - إذا لا توجد → يفتح شاشة اختيار الطابعة مرة واحدة ثم يحفظ
- *  - منع التكرار داخلياً عبر PrinterService
+ * يعتمد على PrintPlugin.java (عبر NativePrintBridge) — لا يفتح أي متصفح.
+ * حالات العرض: idle → printing → success/error
  */
-import { useState } from 'react';
-import { Printer, Loader2 } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { Printer, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import type { InvoiceData } from '@/lib/printer/types';
-import { printInvoice, printViaDialog } from '@/lib/printer/PrinterService';
+import { printInvoice } from '@/lib/printer/PrinterService';
 import PrinterSetupModal from './PrinterSetupModal';
 
+type PrintState = 'idle' | 'printing' | 'success' | 'error';
+
 interface PrintButtonProps {
-  invoice:   InvoiceData;
-  /** طريقة العرض */
-  variant?: 'full' | 'icon';
+  invoice:    InvoiceData;
+  variant?:   'full' | 'icon';
   className?: string;
 }
 
 export default function PrintButton({ invoice, variant = 'full', className = '' }: PrintButtonProps) {
-  const [loading,      setLoading]      = useState(false);
-  const [pickerOpen,   setPickerOpen]   = useState(false);
+  const [printState,  setPrintState]  = useState<PrintState>('idle');
+  const [stateMsg,    setStateMsg]    = useState('');
+  const [pickerOpen,  setPickerOpen]  = useState(false);
+  const isPrinting = useRef(false);
 
-  async function handlePrint() {
-    if (loading) return;
-
-    // التحقق من اكتمال بيانات العملية
+  const executePrint = useCallback(async (forcePicker = false) => {
+    if (isPrinting.current) return;
     if (!invoice.receiverPhone || !invoice.productName) {
       toast.error('بيانات الفاتورة غير مكتملة');
       return;
     }
+    isPrinting.current = true;
+    setPrintState('printing');
+    setStateMsg('جارٍ إرسال الفاتورة…');
 
-    setLoading(true);
     try {
-      const outcome = await printInvoice(invoice);
-      if ('needsPicker' in outcome && outcome.needsPicker) {
-        // لا توجد طابعة محفوظة → فتح شاشة الاختيار
+      const outcome = await printInvoice(invoice, { forcePicker });
+      if (outcome.needsPicker) {
+        setPrintState('idle');
         setPickerOpen(true);
-      } else if (!outcome.needsPicker) {
-        if (outcome.result.success) {
-          toast.success('✅ تمت الطباعة بنجاح');
-        } else {
-          toast.error(`فشل الطباعة: ${outcome.result.error ?? 'خطأ غير معروف'}`);
-        }
+        return;
+      }
+      const { result } = outcome;
+      if (result.success) {
+        setPrintState('success');
+        setStateMsg('تمت الطباعة');
+        toast.success('✅ تمت الطباعة بنجاح');
+        setTimeout(() => { setPrintState('idle'); setStateMsg(''); }, 2500);
+      } else {
+        const msg = result.error ?? 'خطأ غير معروف';
+        setPrintState('error');
+        setStateMsg(msg);
+        toast.error(`فشل الطباعة: ${msg}`);
+        setTimeout(() => { setPrintState('idle'); setStateMsg(''); }, 3500);
       }
     } catch (e: unknown) {
-      toast.error(`خطأ في الطباعة: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      setPrintState('error');
+      setStateMsg(msg);
+      toast.error(`خطأ في الطباعة: ${msg}`);
+      setTimeout(() => { setPrintState('idle'); setStateMsg(''); }, 3500);
     } finally {
-      setLoading(false);
+      isPrinting.current = false;
     }
-  }
+  }, [invoice]);
 
-  async function handlePrinterSelected() {
+  const handlePrinterSaved = useCallback(() => {
     setPickerOpen(false);
-    // بعد الحفظ — أعد المحاولة تلقائياً
-    setLoading(true);
-    try {
-      const outcome = await printInvoice(invoice);
-      if (!outcome.needsPicker) {
-        if (outcome.result.success) {
-          toast.success('✅ تمت الطباعة بنجاح');
-        } else {
-          toast.error(`فشل الطباعة: ${outcome.result.error ?? 'خطأ غير معروف'}`);
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+    setTimeout(() => executePrint(false), 300);
+  }, [executePrint]);
 
-  async function handleAndroidPrint() {
+  const handleAndroidPrint = useCallback(() => {
     setPickerOpen(false);
-    setLoading(true);
-    try {
-      const result = await printViaDialog(invoice, 80);
-      if (result.success) {
-        toast.success('✅ فُتح مربع حوار الطباعة');
-      } else {
-        toast.error(`فشل الطباعة: ${result.error ?? 'خطأ'}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+    setTimeout(() => executePrint(false), 300);
+  }, [executePrint]);
+
+  const Icon =
+    printState === 'printing' ? Loader2 :
+    printState === 'success'  ? CheckCircle2 :
+    printState === 'error'    ? AlertCircle :
+    Printer;
+
+  const label =
+    printState === 'printing' ? (stateMsg || 'جارٍ الطباعة…') :
+    printState === 'success'  ? 'تمت الطباعة' :
+    printState === 'error'    ? 'أعد المحاولة' :
+    'طباعة الفاتورة';
+
+  const colorClass =
+    printState === 'success' ? 'border-green-500/30 text-green-400 bg-green-500/10' :
+    printState === 'error'   ? 'border-red-500/30 text-red-400 bg-red-500/10' :
+    'border-blue-500/30 text-blue-300 bg-blue-500/10';
 
   return (
     <>
       <button
-        onClick={handlePrint}
-        disabled={loading}
-        className={`flex items-center justify-center gap-2 rounded-2xl font-semibold text-sm transition-all active:scale-[0.97] disabled:opacity-60 ${
+        onClick={() => executePrint(false)}
+        disabled={printState === 'printing'}
+        aria-label="طباعة الفاتورة"
+        className={`flex items-center justify-center gap-2 rounded-2xl font-semibold text-sm border transition-all active:scale-[0.97] disabled:opacity-60 ${colorClass} ${
           variant === 'full' ? 'w-full h-11 px-4' : 'w-10 h-10'
         } ${className}`}
-        style={{
-          background: 'rgba(59,130,246,0.12)',
-          border:     '1px solid rgba(59,130,246,0.3)',
-          color:      '#93c5fd',
-        }}
       >
-        {loading
-          ? <Loader2 className="w-4 h-4 animate-spin" />
-          : <Printer className="w-4 h-4" />
-        }
-        {variant === 'full' && <span>{loading ? 'جارٍ الطباعة…' : 'طباعة الفاتورة'}</span>}
+        <Icon className={`w-4 h-4 shrink-0 ${printState === 'printing' ? 'animate-spin' : ''}`} />
+        {variant === 'full' && <span className="truncate">{label}</span>}
       </button>
 
-      {/* شاشة اختيار الطابعة */}
       <PrinterSetupModal
         open={pickerOpen}
         invoice={invoice}
         onClose={() => setPickerOpen(false)}
-        onSaved={handlePrinterSelected}
+        onSaved={handlePrinterSaved}
         onAndroidPrint={handleAndroidPrint}
       />
     </>
   );
 }
+

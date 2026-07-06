@@ -52,6 +52,7 @@ public class MainActivity extends BridgeActivity {
         // ── FIX #2: تسجيل البلوجنات قبل super ──
         registerPlugin(VodafoneDetectorPlugin.class);
         registerPlugin(ApkInstallerPlugin.class);
+        registerPlugin(PrintPlugin.class);
 
         // ── FIX #1: null يمنع Capacitor من استعادة حالة Activity قديمة ──
         super.onCreate(null);
