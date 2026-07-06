@@ -53,6 +53,7 @@ const AdminFeatureManagement = lazy(() => import('./pages/admin/AdminFeatureMana
 const AdminMerchantDetail    = lazy(() => import('./pages/admin/AdminMerchantDetail'));
 const AdminDuplicateAccounts = lazy(() => import('./pages/admin/AdminDuplicateAccounts'));
 const AdminDuplicateGroupDetail = lazy(() => import('./pages/admin/AdminDuplicateGroupDetail'));
+const AdminThrottleLogs      = lazy(() => import('./pages/admin/AdminThrottleLogs'));
 const MerchantDashboard      = lazy(() => import('./pages/merchant/MerchantDashboard'));
 const MerchantClientLayout   = lazy(() => import('@/components/merchant-client/MerchantClientLayout'));
 const JoinPage               = lazy(() => import('./pages/JoinPage'));
@@ -455,6 +456,7 @@ function AppInner() {
         <Route path="/admin/feature-management"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-features"><S><AdminFeatureManagement /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicates"><S><AdminDuplicateAccounts /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts/:fp" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicate-detail"><S><AdminDuplicateGroupDetail /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/throttle-logs"          element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-throttle-logs"><S><AdminThrottleLogs /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="*"            element={<Navigate to="/home" replace />} />

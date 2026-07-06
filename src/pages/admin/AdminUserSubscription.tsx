@@ -28,7 +28,7 @@ function fmt(d?: string | null) {
 }
 function calcDays(e?: string | null) {
   if (!e) return null;
-  return Math.ceil((new Date(e).getTime() - Date.now()) / 86400000);
+  return Math.floor((new Date(e).getTime() - Date.now()) / 86400000);
 }
 
 export default function AdminUserSubscription() {

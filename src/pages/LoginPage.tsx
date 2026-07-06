@@ -179,6 +179,17 @@ export default function LoginPage() {
       toast.error('يرجى ملء جميع الحقول');
       return;
     }
+    // ── فحص حظر الجهاز قبل التسجيل ──
+    const deviceId = getDeviceId();
+    {
+      const { data: banCheck } = await supabase.functions.invoke<{banned:boolean;reason?:string}>('admin-user-actions', {
+        body: { action: 'check_device_ban', device_id: deviceId, device_fp: deviceId },
+      });
+      if ((banCheck as {banned?:boolean}|null)?.banned) {
+        toast.error(`🚫 هذا الجهاز محظور من إنشاء حسابات جديدة.\nالسبب: ${(banCheck as {reason?:string}).reason ?? 'تعدد الحسابات'}`);
+        return;
+      }
+    }
     if (username.trim().length < 4) {
       toast.error('اسم المستخدم يجب أن يكون 4 أحرف على الأقل');
       return;

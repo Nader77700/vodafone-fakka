@@ -481,13 +481,27 @@ export default function AdminUserActions() {
             {/* حذف الحساب — خطر شديد */}
             <div className="pt-2 border-t border-border/40">
               <ActionBtn icon={Trash2} label="حذف الحساب نهائياً" description="حذف كامل لا يمكن التراجع عنه" variant="destructive"
-                onClick={() => confirm(
-                  '⚠️ حذف الحساب نهائياً',
-                  `سيُحذف حساب "${username}" وجميع بياناته بشكل نهائي ولا يمكن استعادتها. هل أنت متأكد تماماً؟`,
-                  () => deleteUserComplete(id!),
-                  'تم حذف الحساب نهائياً',
-                  'destructive',
-                )} />
+                onClick={() => setConfirmData({
+                  open: true,
+                  title: '⚠️ حذف الحساب نهائياً',
+                  desc: `سيُحذف حساب "${username}" وجميع بياناته بشكل نهائي ولا يمكن استعادتها. هل أنت متأكد تماماً؟`,
+                  variant: 'destructive',
+                  action: async () => {
+                    setSaving(true);
+                    try {
+                      const res = await deleteUserComplete(id!);
+                      if (res.success) {
+                        toast.success('✅ تم حذف الحساب نهائياً');
+                        navigate('/admin', { replace: true });
+                      } else {
+                        toast.error(res.error || 'فشل حذف الحساب');
+                      }
+                    } finally {
+                      setSaving(false);
+                      setConfirmData(p => ({ ...p, open: false }));
+                    }
+                  },
+                })} />
             </div>
           </div>
         </SectionCard>

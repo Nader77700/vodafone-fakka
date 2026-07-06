@@ -369,8 +369,8 @@ export async function getTrialUsageForUser(userId: string): Promise<{ opsUsed: n
 export function calcDaysRemaining(expiresAt: string | null): number {
   if (!expiresAt) return 0;
   const diff = new Date(expiresAt).getTime() - Date.now();
-  // P2 FIX: استخدام Math.ceil حتى لا تظهر "0 أيام" بينما لا تزال ساعات متبقية
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  // Math.floor للتوحيد مع القيمة التي تحسبها قاعدة البيانات — يمنع اختلاف 26 vs 27
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
 // PHASE 2: Countdown حقيقي — من expiry_date - now
@@ -1560,6 +1560,9 @@ export async function executeVodafoneOrder(payload: {
         headers: {
           ...(payload.idempotencyKey ? { 'X-Idempotency-Key': payload.idempotencyKey } : {}),
           ...(payload.correlationId  ? { 'X-Correlation-Id':  payload.correlationId  } : {}),
+          'X-Device-Fp': typeof window !== 'undefined'
+            ? (localStorage.getItem('vf_device_id') ?? '')
+            : '',
         },
       }
     );

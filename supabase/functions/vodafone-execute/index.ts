@@ -146,6 +146,34 @@ serve(async (req: Request) => {
 
     logStep("subscription", "ok", `status=${sub?.status ?? "admin"}`);
 
+    // ── جلب device_fp من الـ header (اختياري) ─────────────────────────────
+    const deviceFp = req.headers.get("x-device-fp") ?? null;
+
+    // ── فحص تقييد الشحن (تضارب الأجهزة) ─────────────────────────────────
+    {
+      const { data: activeThrottle } = await supabaseAdmin
+        .from("charge_throttles")
+        .select("id, expires_at, reason")
+        .eq("user_id", caller.id)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (activeThrottle) {
+        const minsLeft = Math.ceil(
+          (new Date((activeThrottle as { expires_at: string }).expires_at).getTime() - Date.now()) / 60000
+        );
+        logStep("throttle_check", "fail", `user throttled, ${minsLeft}min left`);
+        return json({
+          success: false,
+          error: `⛔ حسابك مقيَّد مؤقتاً لمدة ${minsLeft} دقيقة\nالسبب: ${(activeThrottle as { reason: string }).reason}\nسيتم رفع التقييد تلقائياً بعد انتهاء المدة.`,
+          error_code: "CHARGE_THROTTLED",
+          layer: "ConflictProtection",
+          minutes_left: minsLeft,
+        }, 429);
+      }
+    }
+
     // ── Idempotency Check — يمنع تنفيذ نفس العملية مرتين ──
     if (idempotencyKey) {
       const { data: existing } = await supabaseAdmin
@@ -344,13 +372,68 @@ serve(async (req: Request) => {
             correlation_id:    correlationId,
             latency_ms:        latencyMs,
             registered_by:     "edge_function",
+            device_fp:         deviceFp ?? null,
           },
         })
         .select("operation_number")
         .maybeSingle();
 
       const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
+      const opId     = (opData as { id?: string } | null)?.id ?? null;
       logStep("op_insert", "ok", `op_number=${opNumber}`);
+
+      // ── كشف التضارب: هل ثمة عملية أخرى لنفس المستخدم من جهاز مختلف خلال 60 ثانية؟ ──
+      try {
+        const since60s = new Date(Date.now() - 60_000).toISOString();
+        const { data: recentOps } = await supabaseAdmin
+          .from("operations")
+          .select("id, performed_at, card_data")
+          .eq("user_id", caller.id)
+          .gte("performed_at", since60s)
+          .neq("id", opId ?? "")
+          .limit(5);
+
+        const concurrent = (recentOps ?? []).filter((o: Record<string,unknown>) => {
+          const cd = o.card_data as Record<string,unknown> | null;
+          const otherFp = cd?.device_fp as string | null;
+          return deviceFp && otherFp && otherFp !== deviceFp;
+        });
+
+        if (concurrent.length > 0) {
+          const otherOp = concurrent[0] as Record<string,unknown>;
+          const otherCd = otherOp.card_data as Record<string,unknown> | null;
+          const other2Fp = otherCd?.device_fp as string | null;
+          const throttleReason = "تضارب عمليات متزامنة من أجهزة متعددة";
+
+          // أنشئ سجل التقييد
+          await supabaseAdmin.from("charge_throttles").insert({
+            user_id:     caller.id,
+            throttled_at: new Date().toISOString(),
+            expires_at:   new Date(Date.now() + 10 * 60_000).toISOString(),
+            is_active:    true,
+            reason:       throttleReason,
+            device1_fp:   deviceFp,
+            device2_fp:   other2Fp ?? null,
+            op1_id:       opId ?? null,
+            op2_id:       otherOp.id as string ?? null,
+            ops_count:    concurrent.length + 1,
+          });
+
+          // أرسل إشعاراً للمستخدم
+          await supabaseAdmin.from("notifications").insert({
+            user_id:     caller.id,
+            title:       "⛔ تقييد مؤقت للحساب",
+            body:        `تم تقييد حسابك لمدة 10 دقائق بسبب اكتشاف عمليات متزامنة من أجهزة متعددة. سيُرفع التقييد تلقائياً.\nإذا لم تكن أنت، تواصل مع الإدارة فوراً.`,
+            type:        "warning",
+            is_global:   false,
+            priority:    "high",
+          });
+
+          logStep("concurrent_conflict", "fail", `throttled user=${caller.id} devices=${deviceFp}/${other2Fp}`);
+        }
+      } catch (conflictErr) {
+        logStep("concurrent_check", "skip", `error: ${String(conflictErr)}`);
+      }
 
       // سجّل activity_log
       await supabaseAdmin.from("activity_log").insert({

@@ -91,7 +91,7 @@ type AdminTab =
   | 'overview' | 'users' | 'subscriptions' | 'licenses' | 'codelogs'
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
-  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts';
+  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles';
 
 interface TabMeta {
   id: AdminTab;
@@ -123,6 +123,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'merchants',       label: 'التجار',           desc: 'إدارة حسابات التجار وإنشائها',      icon: Building2 },
   { id: 'member_monitor',  label: 'أعضاء التجار',     desc: 'مراقبة أعضاء واشتراكات التجار',     icon: Users },
   { id: 'duplicate_accounts', label: 'الحسابات المكررة', desc: 'كشف الأجهزة المتعددة الحسابات وحظرها', icon: ShieldAlert },
+  { id: 'charge_throttles',   label: 'سجلات التقييد',   desc: 'سجلات تقييد الشحن وتضارب الأجهزة',    icon: ShieldX },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -3590,6 +3591,13 @@ export default function AdminDashboard() {
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى إدارة الميزات...</p>
               {(() => { navigate('/admin/feature-management'); return null; })()}
+            </div>
+          )}
+
+          {activeTab === 'charge_throttles' && (
+            <div className="py-8 text-center space-y-4 page-enter">
+              <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى سجلات التقييد...</p>
+              {(() => { navigate('/admin/throttle-logs'); return null; })()}
             </div>
           )}
 

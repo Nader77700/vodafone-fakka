@@ -311,7 +311,7 @@ function fmt(d?: string | null) {
 }
 function calcDays(expiresAt?: string | null) {
   if (!expiresAt) return null;
-  return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000);
+  return Math.floor((new Date(expiresAt).getTime() - Date.now()) / 86400000);
 }
 
 function MiniStat({ icon: Icon, label, value, color = 'text-primary' }: {

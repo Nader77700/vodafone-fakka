@@ -232,6 +232,8 @@ export default function AdminUserOperations() {
   const [search,      setSearch]      = useState('');
   const [statusF,     setStatusF]     = useState('all');
   const [sourceF,     setSourceF]     = useState('all');
+  const [cardTypeF,   setCardTypeF]   = useState('all');
+  const [activeTab,   setActiveTab]   = useState<'all'|'success'|'failed'>('all');
   const [detailOp,    setDetailOp]    = useState<Operation | null>(null);
   const [sheetOpen,   setSheetOpen]   = useState(false);
   const [adjustDelta, setAdjustDelta] = useState('0');
@@ -241,14 +243,22 @@ export default function AdminUserOperations() {
     action: () => Promise<void>; variant?: 'default' | 'destructive';
   }>({ open: false, title: '', action: async () => {} });
 
-  // تحميل كل العمليات للإحصائيات (مرة واحدة)
+  // تحميل كل العمليات للإحصائيات وقائمة أنواع الكروت (مرة واحدة)
   const loadAllOps = useCallback(async () => {
     if (!id) return;
     const { data } = await supabase
-      .from('operations').select('status, amount, operation_source, card_data')
+      .from('operations').select('status, amount, operation_source, card_data, card_type')
       .eq('user_id', id);
     setAllOps(Array.isArray(data) ? data as unknown as Operation[] : []);
   }, [id]);
+
+  // أنواع الكروت الفريدة من كل العمليات
+  const uniqueCardTypes = useMemo(() => {
+    const types = Array.from(
+      new Set(allOps.map(o => o.card_type).filter(Boolean))
+    ) as string[];
+    return types.sort();
+  }, [allOps]);
 
   // تحميل صفحة العمليات مع فلاتر
   const loadOps = useCallback(async () => {
@@ -262,16 +272,22 @@ export default function AdminUserOperations() {
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
       if (search) q = q.or(`phone_number.ilike.%${search}%,card_type.ilike.%${search}%`);
-      if (statusF !== 'all') q = q.eq('status', statusF);
+
+      // activeTab يحكم الحالة (يعلو على statusF)
+      const effectiveStatus = activeTab !== 'all' ? activeTab : (statusF !== 'all' ? statusF : null);
+      if (effectiveStatus === 'success') q = q.eq('status', 'success');
+      else if (effectiveStatus === 'failed') q = q.neq('status', 'success');
+
       if (sourceF === 'balance') q = q.eq('operation_source', 'ana_vodafone_balance');
       if (sourceF === 'vcash')   q = q.eq('operation_source', 'vodafone_cash');
+      if (cardTypeF !== 'all')   q = q.eq('card_type', cardTypeF);
 
       const { data, count } = await q;
       setOps(Array.isArray(data) ? data as unknown as Operation[] : []);
       setTotal(count ?? 0);
     } catch { toast.error('فشل تحميل العمليات'); }
     finally { setLoading(false); }
-  }, [id, page, search, statusF, sourceF]);
+  }, [id, page, search, statusF, sourceF, cardTypeF, activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -406,6 +422,27 @@ export default function AdminUserOperations() {
           </div>
         </SectionCard>
 
+        {/* ── تبويبات الحالة ── */}
+        <div className="flex gap-1 rounded-xl bg-muted/50 p-1 border border-border/40">
+          {([
+            { key: 'all',     label: `الكل (${stats.total})`,       icon: '📋' },
+            { key: 'success', label: `ناجحة (${stats.success})`,    icon: '✅' },
+            { key: 'failed',  label: `فاشلة (${stats.failed})`,     icon: '❌' },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setPage(1); }}
+              className={`flex-1 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+                activeTab === tab.key
+                  ? 'bg-card text-foreground shadow-sm border border-border/40'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* ── فلاتر ── */}
         <div className="space-y-2">
           <div className="relative">
@@ -418,16 +455,6 @@ export default function AdminUserOperations() {
             />
           </div>
           <div className="flex gap-2">
-            <Select value={statusF} onValueChange={v => { setStatusF(v); setPage(1); }}>
-              <SelectTrigger className="h-9 flex-1">
-                <SelectValue placeholder="الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">كل الحالات</SelectItem>
-                <SelectItem value="success">✅ ناجحة</SelectItem>
-                <SelectItem value="failed">❌ فاشلة</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={sourceF} onValueChange={v => { setSourceF(v); setPage(1); }}>
               <SelectTrigger className="h-9 flex-1">
                 <SelectValue placeholder="المصدر" />
@@ -438,10 +465,21 @@ export default function AdminUserOperations() {
                 <SelectItem value="vcash">💳 Vodafone Cash</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={cardTypeF} onValueChange={v => { setCardTypeF(v); setPage(1); }}>
+              <SelectTrigger className="h-9 flex-1">
+                <SelectValue placeholder="نوع الكارت" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الكروت</SelectItem>
+                {uniqueCardTypes.map(ct => (
+                  <SelectItem key={ct} value={ct}>{ct}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          {(search || statusF !== 'all' || sourceF !== 'all') && (
+          {(search || sourceF !== 'all' || cardTypeF !== 'all') && (
             <button
-              onClick={() => { setSearch(''); setStatusF('all'); setSourceF('all'); setPage(1); }}
+              onClick={() => { setSearch(''); setSourceF('all'); setCardTypeF('all'); setPage(1); }}
               className="text-[11px] text-primary flex items-center gap-1 hover:opacity-70">
               <X className="w-3 h-3" /> مسح الفلاتر
             </button>
