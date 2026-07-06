@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "839863331347",
+    "project_id": "vodafone-fakka",
+    "storage_bucket": "vodafone-fakka.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:839863331347:android:99e063b49e3e9cf58fede6",
+        "android_client_info": {
+          "package_name": "com.naderakram.vodafonefakka"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4W0WfFueYJlmhH6HJKafymC1rqDhYgfM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
