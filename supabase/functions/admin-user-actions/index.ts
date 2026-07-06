@@ -389,21 +389,25 @@ Deno.serve(async (req) => {
       });
       if (pwErr) return json({ error: `فشل تغيير كلمة المرور: ${pwErr.message}` }, 500);
 
-      // تسجيل النشاط
-      await supabaseAdmin.from('activity_log').insert({
-        user_id: userId,
-        event_type: 'admin_change_password',
-        title: 'تغيير كلمة المرور',
-        description: `تم تغيير كلمة مرور المستخدم @${targetProfile.username ?? userId} بواسطة الأدمن`,
-      }).catch(() => {});
+      // تسجيل النشاط (fire-and-forget)
+      try {
+        await supabaseAdmin.from('activity_log').insert({
+          user_id: userId,
+          event_type: 'admin_change_password',
+          title: 'تغيير كلمة المرور',
+          description: `تم تغيير كلمة مرور المستخدم @${targetProfile.username ?? userId} بواسطة الأدمن`,
+        });
+      } catch { /* تجاهل أخطاء التسجيل */ }
 
-      await supabaseAdmin.from('system_logs').insert({
-        user_id: caller.id,
-        level: 'warning',
-        action: 'admin_change_user_password',
-        message: `الأدمن غيّر كلمة مرور المستخدم @${targetProfile.username ?? userId}`,
-        metadata: { target_user_id: userId, target_username: targetProfile.username },
-      }).catch(() => {});
+      try {
+        await supabaseAdmin.from('system_logs').insert({
+          user_id: caller.id,
+          level: 'warning',
+          action: 'admin_change_user_password',
+          message: `الأدمن غيّر كلمة مرور المستخدم @${targetProfile.username ?? userId}`,
+          metadata: { target_user_id: userId, target_username: targetProfile.username },
+        });
+      } catch { /* تجاهل أخطاء التسجيل */ }
 
       return json({
         success: true,

@@ -477,7 +477,7 @@ export default function LoginPage() {
           {mode === 'login' && (
             <a
               href={`https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(
-                `السلام عليكم،\nأريد تغيير كلمة مرور حسابي.\naسم المستخدم: ${username.trim() || '(لم يُدخَل بعد)'}\nبرجاء المساعدة في إعادة تعيين كلمة المرور.`
+                `أريد تغيير كلمة مرور حسابي.\nاسم المستخدم: ${username.trim() || '(لم يُدخَل بعد)'}\nبرجاء المساعدة في إعادة تعيين كلمة المرور.`
               )}`}
               target="_blank"
               rel="noopener noreferrer"

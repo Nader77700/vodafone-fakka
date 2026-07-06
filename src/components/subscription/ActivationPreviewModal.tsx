@@ -160,7 +160,7 @@ export default function ActivationPreviewModal({ open, onOpenChange, userId, onS
                 <p className="text-xs text-muted-foreground text-center mb-2">ليس لديك كود تفعيل؟</p>
                 <a
                   href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
-                    `السلام عليكم\nأرغب في الحصول على اشتراك Vodafone Fakka Premium.\n` +
+                    `أرغب في الحصول على اشتراك Vodafone Fakka Premium.\n` +
                     `اسم المستخدم: ${profile?.username ?? 'غير محدد'}\n` +
                     `رقم الهاتف: ${profile?.phone ?? 'غير محدد'}\n` +
                     `برجاء إرسال تفاصيل التفعيل.`

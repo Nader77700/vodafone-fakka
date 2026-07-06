@@ -20,7 +20,7 @@ import { MyGiftsSection } from '@/components/subscription/WelcomeGiftBox';
 const WA_NUMBER = '201222692182';
 // الرسالة الافتراضية — ستُستبدل ديناميكياً عند وجود profile
 const WA_MSG_SUBSCRIBE_DEFAULT = encodeURIComponent(
-  'السلام عليكم\nأرغب في الحصول على اشتراك Vodafone Fakka Premium.\nبرجاء إرسال تفاصيل التفعيل.'
+  'أرغب في الحصول على اشتراك Vodafone Fakka Premium.\nبرجاء إرسال تفاصيل التفعيل.'
 );
 const WA_LINK_SUBSCRIBE = `https://wa.me/${WA_NUMBER}?text=${WA_MSG_SUBSCRIBE_DEFAULT}`;
 
@@ -268,7 +268,7 @@ export default function ActivationPage() {
                 <p className="text-xs text-primary font-semibold">تواصل مع تاجرك لتجديد الاشتراك</p>
               </div>
             ) : (
-              <WhatsAppButton label="تفعيل اشتراك مدفوع — واتساب" href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`السلام عليكم\nأرغب في الحصول على اشتراك Vodafone Fakka Premium.\nاسم المستخدم: ${profile?.username ?? 'غير محدد'}\nرقم الهاتف: ${profile?.phone ?? 'غير محدد'}\nبرجاء إرسال تفاصيل التفعيل.`)}`} />
+              <WhatsAppButton label="تفعيل اشتراك مدفوع — واتساب" href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`أرغب في الحصول على اشتراك Vodafone Fakka Premium.\nاسم المستخدم: ${profile?.username ?? 'غير محدد'}\nرقم الهاتف: ${profile?.phone ?? 'غير محدد'}\nبرجاء إرسال تفاصيل التفعيل.`)}`} />
             )}
           </div>
         )}
@@ -312,7 +312,7 @@ export default function ActivationPage() {
                 ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <><Key className="w-4 h-4 ml-2" />تفعيل الاشتراك</>}
             </Button>
-            <WhatsAppButton label="تواصل للحصول على كود التفعيل" href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`السلام عليكم\nأرغب في الحصول على اشتراك Vodafone Fakka Premium.\nاسم المستخدم: ${profile?.username ?? 'غير محدد'}\nرقم الهاتف: ${profile?.phone ?? 'غير محدد'}\nبرجاء إرسال تفاصيل التفعيل.`)}`} />
+            <WhatsAppButton label="تواصل للحصول على كود التفعيل" href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`أرغب في الحصول على اشتراك Vodafone Fakka Premium.\nاسم المستخدم: ${profile?.username ?? 'غير محدد'}\nرقم الهاتف: ${profile?.phone ?? 'غير محدد'}\nبرجاء إرسال تفاصيل التفعيل.`)}`} />
           </div>
         )}
 

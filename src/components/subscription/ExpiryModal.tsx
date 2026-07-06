@@ -66,7 +66,7 @@ export default function ExpiryModal({ open, reason = 'expired' }: Props) {
             className="w-full border-success/30 text-success hover:bg-success/10 hover:text-success gap-2 h-11 text-sm font-semibold"
             onClick={() => {
               const msg = encodeURIComponent(
-                `السلام عليكم\nأريد تجديد اشتراك Vodafone Fakka Premium.\n` +
+                `أريد تجديد اشتراك Vodafone Fakka Premium.\n` +
                 `اسم المستخدم: ${profile?.username ?? 'غير محدد'}\n` +
                 `رقم الهاتف: ${profile?.phone ?? 'غير محدد'}`
               );

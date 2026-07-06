@@ -70,7 +70,7 @@ export default function TrialExhaustedPopup({ open, opsUsed, maxOps }: Props) {
             {/* زر واتساب */}
             <a
               href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
-                `السلام عليكم\nأرغب في تفعيل اشتراك Vodafone Fakka Premium.\n` +
+                `أرغب في تفعيل اشتراك Vodafone Fakka Premium.\n` +
                 `اسم المستخدم: ${profile?.username ?? 'غير محدد'}\n` +
                 `رقم الهاتف: ${profile?.phone ?? 'غير محدد'}\n` +
                 `برجاء إرسال تفاصيل الدفع.`

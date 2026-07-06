@@ -75,7 +75,7 @@ export default function ESimDetailPage() {
 
   const waNumber = settings?.whatsapp_number ?? '201222692182';
   const waMsg = encodeURIComponent(
-    `السلام عليكم\nأرغب في شراء عرض ${offer.title} بسعر ${offer.price} جنيه\nبرجاء إرسال تفاصيل الطلب.`
+    `أرغب في شراء عرض ${offer.title} بسعر ${offer.price} جنيه\nبرجاء إرسال تفاصيل الطلب.`
   );
   const waUrl = `https://wa.me/${waNumber}?text=${waMsg}`;
 
