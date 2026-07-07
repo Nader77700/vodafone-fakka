@@ -25,7 +25,7 @@ import {
   getSubscriptionOperations, type SubscriptionOperation,
   suspendSubscriptionPro, unsuspendSubscriptionPro,
   cancelSubscriptionPro, reactivateSubscriptionPro,
-  archiveSubscriptionPro, restoreArchivedSubscription,
+  archiveSubscriptionPro, restoreArchivedSubscription, restoreReplacedSubscription,
   getArchivedSubscriptions, getAllUserSubscriptions,
   renewSubscriptionPro, extendSubscriptionPro,
 } from '@/lib/api';
@@ -727,6 +727,7 @@ export default function AdminUserSubscription() {
               <div className="space-y-2">
                 {allSubs.map((s, i) => {
                   const sExt = s as Subscription & { code_used?: string | null; is_archived?: boolean };
+                  const isReplaced = s.status === 'replaced';
                   return (
                     <div key={s.id} className={`p-3 rounded-xl border ${i === 0 ? 'border-primary/20 bg-primary/5' : 'border-border'}`}>
                       <div className="flex items-center gap-2 flex-wrap justify-between">
@@ -738,7 +739,24 @@ export default function AdminUserSubscription() {
                           {sExt.is_archived && <span className="text-[10px] bg-muted/30 border border-border text-muted-foreground px-2 py-0.5 rounded-full font-medium">مؤرشف</span>}
                           {i === 0 && <span className="text-[10px] text-primary font-bold">الأحدث</span>}
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{fmt(s.expires_at)}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-muted-foreground">{fmt(s.expires_at)}</span>
+                          {isReplaced && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[10px] gap-1 border-primary/40 text-primary hover:bg-primary/10 px-2"
+                              disabled={saving}
+                              onClick={() => runConfirm(
+                                'استعادة الاشتراك المستبدل',
+                                `سيتم إلغاء الاشتراك الحالي واستعادة الكود "${sExt.code_used ?? s.id.slice(0, 8)}" بنفس الأيام المتبقية.`,
+                                () => restoreReplacedSubscription(id!, s.id, adminProfile?.id, adminName),
+                                'تم استعادة الاشتراك المستبدل بنجاح',
+                              )}>
+                              <Undo2 className="w-3 h-3" /> استعادة
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

@@ -449,6 +449,7 @@ function AppInner() {
         <Route path="/admin/users/:id/actions"      element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-actions"><S><AdminUserActions /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/merchants/:id"          element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-merchant-detail"><S><AdminMerchantDetail /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/users/:id/subscription" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-sub"><S><AdminUserSubscription /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/users/:id/subscription-history" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-sub-history"><S><AdminUserSubscription /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/users/:id/operations"   element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-ops"><S><AdminUserOperations /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/operations"             element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-ops"><S><AdminOperationsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/version-center"         element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-version"><S><AdminVersionCenter /></S></PageErrorBoundary></RouteGuard>} />

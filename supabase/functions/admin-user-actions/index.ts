@@ -106,42 +106,51 @@ Deno.serve(async (req) => {
           return json({ success: true, message: `تم تعيين الحد إلى ${newLimit} عملية` });
         }
 
-        // ══ حذف الحساب نهائياً — مُحسَّن ══════════════════════════════
+        // ══ حذف الحساب نهائياً — مُحسَّن مع كل FK constraints ══════════
         case 'delete_account': {
           const errors: string[] = [];
+          const now = new Date().toISOString();
 
-          // 1) حذف جميع الجداول المرتبطة بـ user_id (بالترتيب الآمن)
+          // ── الخطوة 1: nullify كل FK columns بـ NO ACTION قبل حذف profile ──
+          await supabaseAdmin.from('license_keys')
+            .update({ used_by: null, status: 'active', updated_at: now })
+            .eq('used_by', userId)
+            .then(({ error: e }) => e && errors.push(`lk.used_by: ${e.message}`));
+
+          await supabaseAdmin.from('license_keys')
+            .update({ created_by: null, updated_at: now })
+            .eq('created_by', userId)
+            .then(({ error: e }) => e && errors.push(`lk.created_by: ${e.message}`));
+
+          await supabaseAdmin.from('merchant_member_ledger')
+            .update({ created_by: null })
+            .eq('created_by', userId)
+            .then(({ error: e }) => e && errors.push(`mml.created_by: ${e.message}`));
+
+          // ── الخطوة 2: حذف كل الجداول المرتبطة بـ user_id ────────────────
           const relatedTables = [
-            'notification_seen',   // FK → auth.users ON DELETE CASCADE
-            'notification_deliveries', // FK → auth.users ON DELETE CASCADE
-            'notifications',       // FK → profiles ON DELETE CASCADE
-            'activity_log',        // FK → profiles ON DELETE CASCADE
-            'system_logs',         // قد لا تحتوي FK — نحذف للتنظيف
-            'favorites',           // FK → profiles
-            'operations',          // FK → profiles
-            'fcm_tokens',          // FK → profiles
-            'gift_claims',         // FK → auth.users ON DELETE CASCADE
-            'trial_usage',         // FK → profiles ON DELETE SET NULL (آمن)
-            'code_logs',           // FK → auth.users ON DELETE SET NULL
-            'device_gift_activations', // FK → auth.users ON DELETE SET NULL
+            'notification_seen', 'notification_deliveries',
+            'notifications', 'merchant_notifications', 'scheduled_notifications',
+            'activity_log', 'system_logs', 'admin_audit_logs', 'code_logs', 'invite_usage_logs',
+            'subscription_history', 'subscription_operations',
+            'merchant_member_ops', 'merchant_member_subscriptions',
+            'merchant_members', 'merchant_member_ledger', 'merchant_wallets',
+            'merchant_heartbeats', 'merchant_welcome_seen', 'merchant_member_welcomed',
+            'device_registry', 'device_sessions', 'device_gift_activations', 'fcm_tokens',
+            'favorites', 'operations', 'gift_claims', 'trial_usage',
+            'phone_analytics', 'charge_throttles', 'promotion_views', 'welcome_gifts',
           ];
 
           for (const table of relatedTables) {
             const { error: tErr } = await supabaseAdmin
               .from(table).delete().eq('user_id', userId);
-            if (tErr && !tErr.message.includes('does not exist')) {
+            if (tErr && !tErr.message.includes('does not exist') && !tErr.message.includes('relation')) {
               console.warn(`⚠️ [delete] ${table}: ${tErr.message}`);
               errors.push(`${table}: ${tErr.message}`);
             }
           }
 
-          // 2) تحرير license_keys المرتبطة بهذا المستخدم
-          const { error: lkErr } = await supabaseAdmin.from('license_keys')
-            .update({ used_by: null, status: 'active', updated_at: new Date().toISOString() })
-            .eq('used_by', userId);
-          if (lkErr) errors.push(`license_keys: ${lkErr.message}`);
-
-          // 3) حذف subscriptions بعد تحرير license_keys
+          // ── الخطوة 3: حذف subscriptions بعد تحرير license_keys ──────────
           const { error: subErr } = await supabaseAdmin.from('subscriptions')
             .delete().eq('user_id', userId);
           if (subErr) {
@@ -149,10 +158,10 @@ Deno.serve(async (req) => {
             return json({ error: `فشل حذف الاشتراكات: ${subErr.message}` }, 500);
           }
 
-          // 4) حذف من merchants إن كان تاجراً
+          // ── الخطوة 4: حذف بيانات التاجر (المالك) ────────────────────────
           await supabaseAdmin.from('merchants').delete().eq('owner_id', userId).catch(() => {});
 
-          // 5) حذف الـ profile
+          // ── الخطوة 5: حذف الـ profile ────────────────────────────────────
           const { error: profErr } = await supabaseAdmin
             .from('profiles').delete().eq('id', userId);
           if (profErr) {
@@ -160,12 +169,13 @@ Deno.serve(async (req) => {
             return json({ error: `فشل حذف الملف الشخصي: ${profErr.message}` }, 500);
           }
 
-          // 6) حذف من Auth
+          // ── الخطوة 6: حذف من Auth ─────────────────────────────────────────
           const { error: authDelErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
           if (authDelErr) {
-            if (!authDelErr.message.includes('not found') && !authDelErr.message.includes('User not found')) {
-              console.error(`❌ [delete] auth: ${authDelErr.message}`);
-              return json({ error: `فشل حذف المستخدم من Auth: ${authDelErr.message}` }, 500);
+            const msg = authDelErr.message ?? '';
+            if (!msg.includes('not found') && !msg.includes('User not found')) {
+              console.error(`❌ [delete] auth: ${msg}`);
+              return json({ error: `فشل حذف المستخدم من Auth: ${msg}` }, 500);
             }
           }
 
