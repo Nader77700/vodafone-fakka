@@ -1484,26 +1484,42 @@ export default function AdminDashboard() {
     if (!redPkgEdit) return;
     setRedPkgSaving(true);
     try {
+      const defaultShowFields = { gb: true, minutes: true, duration: true, renewal: true, features: true, requirements: true, terms: true, instructions: true, pre_msg: true, post_msg: true };
       const payload = {
-        name:                 redPkgEdit.name ?? '',
-        description:          redPkgEdit.description ?? '',
-        data_gb:              Number(redPkgEdit.data_gb ?? 0),
-        minutes:              Number(redPkgEdit.minutes ?? 0),
-        base_price:           Number(redPkgEdit.base_price ?? 0),
-        discounted_price:     redPkgEdit.discounted_price != null ? Number(redPkgEdit.discounted_price) : null,
-        status:               (redPkgEdit.status ?? 'available') as RedPackage['status'],
-        sort_order:           Number(redPkgEdit.sort_order ?? 0),
-        is_visible:           redPkgEdit.is_visible ?? true,
-        subscription_enabled: redPkgEdit.subscription_enabled ?? true,
-        whatsapp_link:        redPkgEdit.whatsapp_link ?? '',
-        terms:                redPkgEdit.terms ?? [],
-        features:             redPkgEdit.features ?? [],
-        requirements:         redPkgEdit.requirements ?? [],
-        subscription_method:  redPkgEdit.subscription_method ?? '',
-        image_url:            redPkgEdit.image_url ?? '',
-        color_primary:        redPkgEdit.color_primary ?? '#E60000',
-        color_secondary:      redPkgEdit.color_secondary ?? '#B30000',
-        badge_label:          redPkgEdit.badge_label ?? '',
+        name:                      redPkgEdit.name ?? '',
+        network_name:              redPkgEdit.network_name ?? 'Vodafone',
+        description:               redPkgEdit.description ?? '',
+        short_description:         redPkgEdit.short_description ?? '',
+        full_description:          redPkgEdit.full_description ?? '',
+        data_gb:                   Number(redPkgEdit.data_gb ?? 0),
+        minutes:                   Number(redPkgEdit.minutes ?? 0),
+        base_price:                Number(redPkgEdit.base_price ?? 0),
+        discounted_price:          redPkgEdit.discounted_price != null ? Number(redPkgEdit.discounted_price) : null,
+        duration:                  redPkgEdit.duration ?? 'شهر',
+        renewal_type:              redPkgEdit.renewal_type ?? 'تجديد تلقائي',
+        status:                    (redPkgEdit.status ?? 'available') as RedPackage['status'],
+        sort_order:                Number(redPkgEdit.sort_order ?? 0),
+        is_visible:                redPkgEdit.is_visible ?? true,
+        subscription_enabled:      redPkgEdit.subscription_enabled ?? true,
+        whatsapp_number:           redPkgEdit.whatsapp_number ?? '',
+        whatsapp_link:             redPkgEdit.whatsapp_link ?? '',
+        terms:                     redPkgEdit.terms ?? [],
+        features:                  redPkgEdit.features ?? [],
+        requirements:              redPkgEdit.requirements ?? [],
+        subscription_method:       redPkgEdit.subscription_method ?? '',
+        subscription_instructions: redPkgEdit.subscription_instructions ?? '',
+        pre_subscription_msg:      redPkgEdit.pre_subscription_msg ?? '',
+        post_subscription_msg:     redPkgEdit.post_subscription_msg ?? 'تم إرسال طلبك بنجاح! سيتم التواصل معك قريباً.',
+        show_fields:               redPkgEdit.show_fields ?? defaultShowFields,
+        image_url:                 redPkgEdit.image_url ?? '',
+        card_color:                redPkgEdit.card_color ?? '#E60000',
+        bg_color:                  redPkgEdit.bg_color ?? '#1a0000',
+        btn_color:                 redPkgEdit.btn_color ?? '#E60000',
+        text_color:                redPkgEdit.text_color ?? '#ffffff',
+        icon:                      redPkgEdit.icon ?? 'wifi',
+        color_primary:             redPkgEdit.color_primary ?? '#E60000',
+        color_secondary:           redPkgEdit.color_secondary ?? '#B30000',
+        badge_label:               redPkgEdit.badge_label ?? '',
       };
       if (redPkgIsNew) { await adminCreateRedPackage(payload); toast.success('تم إنشاء الباقة'); }
       else if (redPkgEdit.id) { await adminUpdateRedPackage(redPkgEdit.id, payload); toast.success('تم حفظ التعديلات'); }
@@ -4473,116 +4489,258 @@ export default function AdminDashboard() {
                     </DialogTitle>
                   </DialogHeader>
                   {redPkgEdit && (
-                    <div className="space-y-4 mt-2">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">اسم الباقة *</Label>
-                          <Input value={redPkgEdit.name ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, name: e.target.value } : p)} placeholder="مثال: RED 20 جيجا" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">وسام البادج</Label>
-                          <Input value={redPkgEdit.badge_label ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, badge_label: e.target.value } : p)} placeholder="مثال: الأكثر طلباً" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">الوصف</Label>
-                        <Textarea value={redPkgEdit.description ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, description: e.target.value } : p)} rows={2} />
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">الإنترنت (GB)</Label>
-                          <Input type="number" min="0" value={redPkgEdit.data_gb ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, data_gb: +e.target.value } : p)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">الدقائق</Label>
-                          <Input type="number" min="0" value={redPkgEdit.minutes ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, minutes: +e.target.value } : p)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">السعر الأساسي</Label>
-                          <Input type="number" min="0" step="0.01" value={redPkgEdit.base_price ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, base_price: +e.target.value } : p)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">السعر بعد الخصم</Label>
-                          <Input type="number" min="0" step="0.01" placeholder="اتركه فارغاً لإلغاء الخصم"
-                            value={redPkgEdit.discounted_price ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, discounted_price: e.target.value === '' ? null : +e.target.value } : p)} />
-                        </div>
-                      </div>
-                      {/* معاينة الخصم */}
-                      {(redPkgEdit.base_price ?? 0) > 0 && (redPkgEdit.discounted_price ?? 0) > 0 && (
-                        <div className="rounded-xl px-3 py-2 text-xs flex gap-4"
-                          style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.20)' }}>
-                          {(() => {
-                            const orig = redPkgEdit.base_price ?? 0;
-                            const disc = redPkgEdit.discounted_price ?? orig;
-                            const pct  = orig > 0 ? Math.round(((orig - disc) / orig) * 100) : 0;
-                            return <>
-                              <span className="text-muted-foreground">السعر الحالي: <strong className="text-foreground">{disc} جنيه</strong></span>
-                              <span className="text-muted-foreground">الخصم: <strong style={{ color: '#00C896' }}>{pct}%</strong></span>
-                              <span className="text-muted-foreground">التوفير: <strong style={{ color: '#00C896' }}>{orig - disc} جنيه</strong></span>
-                            </>;
-                          })()}
-                        </div>
-                      )}
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">الحالة</Label>
-                          <Select value={redPkgEdit.status ?? 'available'} onValueChange={v => setRedPkgEdit(p => p ? { ...p, status: v as RedPackage['status'] } : p)}>
-                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="available">متاحة</SelectItem>
-                              <SelectItem value="featured">مميزة</SelectItem>
-                              <SelectItem value="coming_soon">قريباً</SelectItem>
-                              <SelectItem value="disabled">معطّلة</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">الترتيب</Label>
-                          <Input type="number" min="0" value={redPkgEdit.sort_order ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, sort_order: +e.target.value } : p)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">رابط واتساب</Label>
-                          <Input value={redPkgEdit.whatsapp_link ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, whatsapp_link: e.target.value } : p)} placeholder="https://wa.me/..." />
+                    <div className="space-y-5 mt-2">
+
+                      {/* ── القسم 1: المعلومات الأساسية ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">المعلومات الأساسية</p>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">اسم الباقة *</Label>
+                              <Input value={redPkgEdit.name ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, name: e.target.value } : p)} placeholder="مثال: RED 20" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">اسم الشبكة</Label>
+                              <Input value={redPkgEdit.network_name ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, network_name: e.target.value } : p)} placeholder="مثال: Vodafone" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">وسام البادج</Label>
+                              <Input value={redPkgEdit.badge_label ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, badge_label: e.target.value } : p)} placeholder="مثال: الأكثر طلباً" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">أيقونة الباقة</Label>
+                              <Input value={redPkgEdit.icon ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, icon: e.target.value } : p)} placeholder="wifi / phone / star" />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">الوصف المختصر</Label>
+                            <Input value={redPkgEdit.short_description ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, short_description: e.target.value } : p)} placeholder="وصف قصير يظهر على الكارت" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">الوصف الكامل</Label>
+                            <Textarea rows={2} value={redPkgEdit.full_description ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, full_description: e.target.value } : p)} placeholder="وصف تفصيلي كامل يظهر في صفحة التفاصيل" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">الوصف (عام)</Label>
+                            <Textarea rows={2} value={redPkgEdit.description ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, description: e.target.value } : p)} placeholder="وصف عام للباقة" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">رابط صورة الباقة</Label>
+                            <Input value={redPkgEdit.image_url ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, image_url: e.target.value } : p)} placeholder="https://..." />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <button className="flex items-center gap-2 text-sm" onClick={() => setRedPkgEdit(p => p ? { ...p, is_visible: !p.is_visible } : p)}>
-                          {redPkgEdit.is_visible ? <ToggleOn className="w-5 h-5 text-green-400" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
-                          <span className="text-xs">{redPkgEdit.is_visible ? 'ظاهرة' : 'مخفية'}</span>
-                        </button>
-                        <button className="flex items-center gap-2 text-sm" onClick={() => setRedPkgEdit(p => p ? { ...p, subscription_enabled: !p.subscription_enabled } : p)}>
-                          {redPkgEdit.subscription_enabled ? <ToggleOn className="w-5 h-5 text-primary" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
-                          <span className="text-xs">{redPkgEdit.subscription_enabled ? 'الاشتراك مفعّل' : 'الاشتراك معطّل'}</span>
-                        </button>
+
+                      {/* ── القسم 2: البيانات الرقمية ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">البيانات الرقمية</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">الإنترنت (GB)</Label>
+                            <Input type="number" min="0" value={redPkgEdit.data_gb ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, data_gb: +e.target.value } : p)} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">الدقائق</Label>
+                            <Input type="number" min="0" value={redPkgEdit.minutes ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, minutes: +e.target.value } : p)} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">السعر الأساسي</Label>
+                            <Input type="number" min="0" step="0.01" value={redPkgEdit.base_price ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, base_price: +e.target.value } : p)} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">السعر بعد الخصم</Label>
+                            <Input type="number" min="0" step="0.01" placeholder="فارغ = بدون خصم"
+                              value={redPkgEdit.discounted_price ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, discounted_price: e.target.value === '' ? null : +e.target.value } : p)} />
+                          </div>
+                        </div>
+                        {(redPkgEdit.base_price ?? 0) > 0 && (redPkgEdit.discounted_price ?? 0) > 0 && (
+                          <div className="rounded-xl px-3 py-2 text-xs flex flex-wrap gap-4 mt-2"
+                            style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.20)' }}>
+                            {(() => {
+                              const orig = redPkgEdit.base_price ?? 0;
+                              const disc = redPkgEdit.discounted_price ?? orig;
+                              const pct  = orig > 0 ? Math.round(((orig - disc) / orig) * 100) : 0;
+                              return <>
+                                <span className="text-muted-foreground">السعر الحالي: <strong className="text-foreground">{disc} جنيه</strong></span>
+                                <span className="text-muted-foreground">الخصم: <strong style={{ color: '#00C896' }}>{pct}%</strong></span>
+                                <span className="text-muted-foreground">التوفير: <strong style={{ color: '#00C896' }}>{orig - disc} جنيه</strong></span>
+                              </>;
+                            })()}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">مدة الباقة</Label>
+                            <Input value={redPkgEdit.duration ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, duration: e.target.value } : p)} placeholder="مثال: شهر / 30 يوم" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">نوع التجديد</Label>
+                            <Input value={redPkgEdit.renewal_type ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, renewal_type: e.target.value } : p)} placeholder="مثال: تجديد تلقائي" />
+                          </div>
+                        </div>
                       </div>
-                      {/* الشروط */}
-                      <div className="space-y-1">
-                        <Label className="text-xs">شروط الاشتراك (سطر لكل شرط)</Label>
-                        <Textarea rows={4}
-                          value={(redPkgEdit.terms ?? []).join('\n')}
-                          onChange={e => setRedPkgEdit(p => p ? { ...p, terms: e.target.value.split('\n').filter(Boolean) } : p)}
-                          placeholder="الخط يكون أفراد&#10;يكون مسجل باسمك&#10;..." />
+
+                      {/* ── القسم 3: الإعدادات ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">الإعدادات والترتيب</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">الحالة</Label>
+                            <Select value={redPkgEdit.status ?? 'available'} onValueChange={v => setRedPkgEdit(p => p ? { ...p, status: v as RedPackage['status'] } : p)}>
+                              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="available">متاحة</SelectItem>
+                                <SelectItem value="featured">مميزة</SelectItem>
+                                <SelectItem value="coming_soon">قريباً</SelectItem>
+                                <SelectItem value="disabled">معطّلة</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">ترتيب الظهور</Label>
+                            <Input type="number" min="0" value={redPkgEdit.sort_order ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, sort_order: +e.target.value } : p)} />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 mt-3">
+                          <button className="flex items-center gap-2" onClick={() => setRedPkgEdit(p => p ? { ...p, is_visible: !p.is_visible } : p)}>
+                            {redPkgEdit.is_visible ? <ToggleOn className="w-5 h-5 text-green-400" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                            <span className="text-xs">{redPkgEdit.is_visible ? 'ظاهرة' : 'مخفية'}</span>
+                          </button>
+                          <button className="flex items-center gap-2" onClick={() => setRedPkgEdit(p => p ? { ...p, subscription_enabled: !p.subscription_enabled } : p)}>
+                            {redPkgEdit.subscription_enabled ? <ToggleOn className="w-5 h-5 text-primary" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                            <span className="text-xs">{redPkgEdit.subscription_enabled ? 'الاشتراك مفعّل' : 'الاشتراك معطّل'}</span>
+                          </button>
+                        </div>
                       </div>
-                      {/* المميزات */}
-                      <div className="space-y-1">
-                        <Label className="text-xs">المميزات (سطر لكل ميزة)</Label>
-                        <Textarea rows={3}
-                          value={(redPkgEdit.features ?? []).join('\n')}
-                          onChange={e => setRedPkgEdit(p => p ? { ...p, features: e.target.value.split('\n').filter(Boolean) } : p)}
-                          placeholder="20 جيجا عالي السرعة&#10;1500 دقيقة&#10;..." />
+
+                      {/* ── القسم 4: الألوان ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">الألوان</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {[
+                            { label: 'لون الكارت',    key: 'card_color',      def: '#E60000' },
+                            { label: 'لون الخلفية',   key: 'bg_color',        def: '#1a0000' },
+                            { label: 'لون الأزرار',   key: 'btn_color',       def: '#E60000' },
+                            { label: 'لون النصوص',    key: 'text_color',      def: '#ffffff' },
+                            { label: 'لون رئيسي',     key: 'color_primary',   def: '#E60000' },
+                            { label: 'لون ثانوي',     key: 'color_secondary', def: '#B30000' },
+                          ].map(({ label, key, def }) => (
+                            <div key={key} className="space-y-1">
+                              <Label className="text-[10px]">{label}</Label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={(redPkgEdit as Record<string,string>)[key] ?? def}
+                                  onChange={e => setRedPkgEdit(p => p ? { ...p, [key]: e.target.value } : p)}
+                                  className="w-8 h-8 rounded cursor-pointer border border-border p-0.5 bg-transparent"
+                                />
+                                <Input
+                                  className="h-8 text-xs font-mono flex-1"
+                                  value={(redPkgEdit as Record<string,string>)[key] ?? def}
+                                  onChange={e => setRedPkgEdit(p => p ? { ...p, [key]: e.target.value } : p)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      {/* المتطلبات */}
-                      <div className="space-y-1">
-                        <Label className="text-xs">المتطلبات (سطر لكل متطلب)</Label>
-                        <Textarea rows={2}
-                          value={(redPkgEdit.requirements ?? []).join('\n')}
-                          onChange={e => setRedPkgEdit(p => p ? { ...p, requirements: e.target.value.split('\n').filter(Boolean) } : p)}
-                          placeholder="خط فردي مسجل باسمك&#10;..." />
+
+                      {/* ── القسم 5: واتساب ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">إعدادات واتساب</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">رقم واتساب</Label>
+                            <Input value={redPkgEdit.whatsapp_number ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, whatsapp_number: e.target.value } : p)} placeholder="مثال: 201012345678" dir="ltr" />
+                            <p className="text-[9px] text-muted-foreground">بدون + — يُستخدم لبناء رابط wa.me تلقائياً</p>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">رابط واتساب مخصص (اختياري)</Label>
+                            <Input value={redPkgEdit.whatsapp_link ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, whatsapp_link: e.target.value } : p)} placeholder="https://wa.me/..." dir="ltr" />
+                          </div>
+                        </div>
+                        <div className="space-y-1 mt-3">
+                          <Label className="text-xs">رسالة قبل الاشتراك</Label>
+                          <Textarea rows={2} value={redPkgEdit.pre_subscription_msg ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, pre_subscription_msg: e.target.value } : p)} placeholder="تنبيه يظهر للمستخدم قبل إرسال الطلب" />
+                        </div>
+                        <div className="space-y-1 mt-3">
+                          <Label className="text-xs">رسالة بعد الاشتراك</Label>
+                          <Textarea rows={2} value={redPkgEdit.post_subscription_msg ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, post_subscription_msg: e.target.value } : p)} placeholder="رسالة نجاح تظهر بعد الإرسال" />
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">طريقة الاشتراك</Label>
-                        <Textarea rows={2} value={redPkgEdit.subscription_method ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, subscription_method: e.target.value } : p)} />
+
+                      {/* ── القسم 6: المحتوى ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">المحتوى والشروط</p>
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">المميزات (سطر لكل ميزة)</Label>
+                            <Textarea rows={3} value={(redPkgEdit.features ?? []).join('\n')}
+                              onChange={e => setRedPkgEdit(p => p ? { ...p, features: e.target.value.split('\n').filter(Boolean) } : p)}
+                              placeholder="20 جيجا عالي السرعة&#10;1500 دقيقة&#10;..." />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">المتطلبات (سطر لكل متطلب)</Label>
+                            <Textarea rows={2} value={(redPkgEdit.requirements ?? []).join('\n')}
+                              onChange={e => setRedPkgEdit(p => p ? { ...p, requirements: e.target.value.split('\n').filter(Boolean) } : p)}
+                              placeholder="خط فردي مسجل باسمك&#10;..." />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">شروط الاشتراك (سطر لكل شرط)</Label>
+                            <Textarea rows={3} value={(redPkgEdit.terms ?? []).join('\n')}
+                              onChange={e => setRedPkgEdit(p => p ? { ...p, terms: e.target.value.split('\n').filter(Boolean) } : p)}
+                              placeholder="الخط يكون أفراد&#10;يكون مسجل باسمك&#10;..." />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">طريقة الاشتراك</Label>
+                            <Textarea rows={2} value={redPkgEdit.subscription_method ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, subscription_method: e.target.value } : p)} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">تعليمات الاشتراك التفصيلية</Label>
+                            <Textarea rows={3} value={redPkgEdit.subscription_instructions ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, subscription_instructions: e.target.value } : p)} placeholder="خطوات تفصيلية لعملية الاشتراك" />
+                          </div>
+                        </div>
                       </div>
+
+                      {/* ── القسم 7: إظهار/إخفاء العناصر ── */}
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">إظهار / إخفاء العناصر</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {([
+                            { key: 'gb',           label: 'الجيجا' },
+                            { key: 'minutes',      label: 'الدقائق' },
+                            { key: 'duration',     label: 'مدة الباقة' },
+                            { key: 'renewal',      label: 'نوع التجديد' },
+                            { key: 'features',     label: 'المميزات' },
+                            { key: 'requirements', label: 'المتطلبات' },
+                            { key: 'terms',        label: 'الشروط' },
+                            { key: 'instructions', label: 'التعليمات' },
+                            { key: 'pre_msg',      label: 'رسالة قبل' },
+                            { key: 'post_msg',     label: 'رسالة بعد' },
+                          ] as { key: keyof NonNullable<typeof redPkgEdit['show_fields']>; label: string }[]).map(({ key, label }) => {
+                            const sf  = redPkgEdit.show_fields ?? {};
+                            const val = (sf as Record<string, boolean>)[key] !== false;
+                            return (
+                              <button key={key}
+                                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors text-left"
+                                style={{ background: val ? 'rgba(0,200,150,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? 'rgba(0,200,150,0.25)' : 'rgba(255,255,255,0.08)'}` }}
+                                onClick={() => setRedPkgEdit(p => {
+                                  if (!p) return p;
+                                  const cur = { ...(p.show_fields ?? {}) } as Record<string, boolean>;
+                                  cur[key as string] = !val;
+                                  return { ...p, show_fields: cur as unknown as RedPackage['show_fields'] };
+                                })}>
+                                {val ? <ToggleOn className="w-4 h-4 shrink-0 text-green-400" /> : <ToggleOff className="w-4 h-4 shrink-0 text-muted-foreground" />}
+                                <span className="text-[11px]">{label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                     </div>
                   )}
                   <DialogFooter className="mt-4 gap-2">

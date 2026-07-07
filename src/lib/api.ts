@@ -4918,29 +4918,57 @@ export async function adminGetMerchantsOverview(): Promise<MerchantOverviewItem[
 // ── Red Packages API ───────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+export interface RedPackageShowFields {
+  gb:           boolean;
+  minutes:      boolean;
+  duration:     boolean;
+  renewal:      boolean;
+  features:     boolean;
+  requirements: boolean;
+  terms:        boolean;
+  instructions: boolean;
+  pre_msg:      boolean;
+  post_msg:     boolean;
+}
+
 export interface RedPackage {
-  id:                  string;
-  name:                string;
-  description:         string;
-  data_gb:             number;
-  minutes:             number;
-  base_price:          number;
-  discounted_price:    number | null;
-  status:              'available' | 'coming_soon' | 'featured' | 'disabled';
-  sort_order:          number;
-  is_visible:          boolean;
-  subscription_enabled: boolean;
-  whatsapp_link:       string;
-  terms:               string[];
-  features:            string[];
-  requirements:        string[];
-  subscription_method: string;
-  image_url:           string;
-  color_primary:       string;
-  color_secondary:     string;
-  badge_label:         string;
-  created_at:          string;
-  updated_at:          string;
+  id:                      string;
+  name:                    string;
+  network_name:            string;
+  description:             string;
+  short_description:       string;
+  full_description:        string;
+  data_gb:                 number;
+  minutes:                 number;
+  base_price:              number;
+  discounted_price:        number | null;
+  duration:                string;
+  renewal_type:            string;
+  status:                  'available' | 'coming_soon' | 'featured' | 'disabled';
+  sort_order:              number;
+  is_visible:              boolean;
+  subscription_enabled:    boolean;
+  whatsapp_number:         string;
+  whatsapp_link:           string;
+  terms:                   string[];
+  features:                string[];
+  requirements:            string[];
+  subscription_method:     string;
+  subscription_instructions: string;
+  pre_subscription_msg:    string;
+  post_subscription_msg:   string;
+  show_fields:             RedPackageShowFields;
+  image_url:               string;
+  card_color:              string;
+  bg_color:                string;
+  btn_color:               string;
+  text_color:              string;
+  icon:                    string;
+  color_primary:           string;
+  color_secondary:         string;
+  badge_label:             string;
+  created_at:              string;
+  updated_at:              string;
 }
 
 export function calcPackageDiscount(pkg: RedPackage): {
