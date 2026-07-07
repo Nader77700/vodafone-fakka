@@ -244,6 +244,19 @@ export interface Subscription {
   serial_number: string | null;
   created_at: string;
   updated_at: string;
+  // PHASE حقول الإدارة الاحترافية
+  suspend_reason:      string | null;
+  cancel_reason:       string | null;
+  replace_reason:      string | null;
+  replace_notes:       string | null;
+  suspended_at:        string | null;
+  cancelled_at:        string | null;
+  replaced_at:         string | null;
+  replaced_by_sub_id:  string | null;
+  is_archived:         boolean;
+  archived_at:         string | null;
+  modified_by:         string | null;
+  code_type:           string | null;
 }
 
 export interface TrialUsage {

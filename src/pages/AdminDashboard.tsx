@@ -61,7 +61,7 @@ import {
   Package, Globe, ToggleLeft as ToggleOff, ToggleRight as ToggleOn,
   AlertCircle, Pencil, Save, X as XIcon,
   Link as LinkIcon, ShieldCheck, ShieldAlert, ShieldX,
-  User, Share2, Check, Building2,
+  User, Share2, Check, Building2, ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -148,18 +148,31 @@ const INTERNAL_TABS: TabMeta[] = [
 const TABS: TabMeta[] = [...VISIBLE_TABS, ...INTERNAL_TABS];
 
 // ─────────────────────────────────────────────
-// ثوابت الحالات — مع الألوان المطلوبة
+// ثوابت الحالات — 8 حالات كاملة PHASE 12
 // ─────────────────────────────────────────────
 const CODE_STATUS_MAP: Record<string, { label: string; cls: string; dot: string }> = {
-  active:   { label: 'غير مستخدم', cls: 'text-muted-foreground bg-muted/60 border-border',              dot: 'bg-muted-foreground' },
-  used:     { label: 'نشط',        cls: 'text-success bg-success/10 border-success/20',                  dot: 'bg-success' },
-  expired:  { label: 'منتهي',      cls: 'text-destructive bg-destructive/10 border-destructive/20',       dot: 'bg-destructive' },
-  disabled: { label: 'ملغي',       cls: 'text-foreground bg-foreground/10 border-foreground/30',          dot: 'bg-foreground' },
-  closed:   { label: 'مغلق',       cls: 'text-foreground bg-foreground/10 border-foreground/30',          dot: 'bg-foreground' },
+  active:    { label: 'غير مستخدم', cls: 'text-muted-foreground bg-muted/60 border-border',                    dot: 'bg-muted-foreground' },
+  unused:    { label: 'غير مستخدم', cls: 'text-muted-foreground bg-muted/60 border-border',                    dot: 'bg-muted-foreground' },
+  used:      { label: 'نشط',        cls: 'text-success bg-success/10 border-success/20',                       dot: 'bg-success' },
+  expired:   { label: 'منتهي',      cls: 'text-destructive bg-destructive/10 border-destructive/20',            dot: 'bg-destructive' },
+  suspended: { label: 'معلق',       cls: 'text-warning bg-warning/10 border-warning/20',                       dot: 'bg-warning' },
+  cancelled: { label: 'ملغي',       cls: 'text-destructive/70 bg-destructive/5 border-destructive/20',         dot: 'bg-destructive/60' },
+  archived:  { label: 'مؤرشف',      cls: 'text-muted-foreground bg-muted/40 border-border/60',                 dot: 'bg-muted-foreground/60' },
+  replaced:  { label: 'مستبدل',     cls: 'text-primary/70 bg-primary/5 border-primary/20',                    dot: 'bg-primary/60' },
+  trial:     { label: 'تجريبي',     cls: 'text-warning bg-warning/10 border-warning/20',                       dot: 'bg-warning' },
+  disabled:  { label: 'معطل',       cls: 'text-foreground bg-foreground/10 border-foreground/30',               dot: 'bg-foreground' },
+  closed:    { label: 'مغلق',       cls: 'text-foreground bg-foreground/10 border-foreground/30',               dot: 'bg-foreground' },
 };
 
-// كود "نشط + اشتراك لم ينتهِ" → يُعدّ "نشط فعلياً" لأغراض العرض
+// كود → يحل حالة العرض الحقيقية بما فيها التعليق والإلغاء PHASE 12
 function resolveDisplayStatus(k: LicenseKey): string {
+  // إذا كان الاشتراك المرتبط له حالة خاصة → نعكسها على الكود
+  const subStatus = (k as LicenseKey & { subscription_status?: string }).subscription_status;
+  if (subStatus === 'suspended') return 'suspended';
+  if (subStatus === 'cancelled') return 'cancelled';
+  if (subStatus === 'archived')  return 'archived';
+  if (subStatus === 'replaced')  return 'replaced';
+
   if (k.status === 'used') {
     // تحقق هل الاشتراك انتهى؟ نعتمد على expires_at إن وُجد في الكائن (join)
     const expiry = (k as LicenseKey & { expires_at?: string | null }).expires_at;
@@ -2773,14 +2786,25 @@ export default function AdminDashboard() {
                               </div>
                             )}
 
-                            {/* Row 4: Linked user */}
-                            {linked.profiles && (
-                              <div className="flex items-center gap-2 bg-success/5 border border-success/20 rounded-lg px-3 py-2">
+                            {/* Row 4: Linked user — PHASE 1,2 قابل للضغط */}
+                            {linked.profiles ? (
+                              <button
+                                className="w-full flex items-center gap-2 bg-success/5 border border-success/20 rounded-lg px-3 py-2 hover:bg-success/10 transition-colors text-right"
+                                onClick={() => navigate(`/admin/users/${linked.profiles!.id}`)}
+                              >
                                 <UserCheck className="w-3.5 h-3.5 text-success shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-semibold text-success">مرتبط بـ: {linked.profiles.full_name ?? linked.profiles.username ?? linked.profiles.email ?? '—'}</p>
+                                  <p className="text-[11px] font-semibold text-success truncate">
+                                    {(linked.profiles as typeof linked.profiles & { full_name?: string }).full_name ?? linked.profiles.username ?? linked.profiles.email ?? '—'}
+                                  </p>
                                   {linked.profiles.email && <p className="text-[10px] text-muted-foreground truncate">{linked.profiles.email}</p>}
                                 </div>
+                                <ExternalLink className="w-3 h-3 text-success/70 shrink-0" />
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-2 bg-muted/10 border border-border/40 rounded-lg px-3 py-2">
+                                <UserCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <p className="text-[11px] text-muted-foreground">غير مرتبط بأي مستخدم</p>
                               </div>
                             )}
 
@@ -5694,18 +5718,41 @@ export default function AdminDashboard() {
                       return (
                         <div key={tu.user_id} className="px-3 py-2.5 bg-muted/20 rounded-xl border border-border/30 space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <div>
-                              <p className="text-xs font-semibold">
-                                {tu.profile?.username ?? tu.profile?.email ?? tu.user_id.slice(0, 8) + '...'}
-                              </p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-semibold truncate">
+                                  {tu.profile?.username ?? tu.profile?.email ?? tu.user_id.slice(0, 8) + '...'}
+                                </p>
+                                {/* PHASE 14: زر فتح صفحة المستخدم */}
+                                {tu.profile?.id && (
+                                  <button
+                                    className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                                    title="فتح صفحة المستخدم"
+                                    onClick={() => navigate(`/admin/users/${tu.profile!.id}`)}
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                              {/* PHASE 1: بيانات المستخدم */}
+                              {tu.profile?.email && (
+                                <p className="text-[10px] text-muted-foreground truncate">{tu.profile.email}</p>
+                              )}
                               <p className="text-[10px] text-muted-foreground">
                                 تفعيل: {formatEgyptDate(tu.activated_at)}
                               </p>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
-                                {isActive ? 'نشط' : 'منتهي'}
-                              </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {/* PHASE 12: badge بالحالة الحقيقية */}
+                              {(() => {
+                                const st = tu.subscription_status ?? 'expired';
+                                const stMap = CODE_STATUS_MAP[st] ?? CODE_STATUS_MAP.expired;
+                                return (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${stMap.cls}`}>
+                                    {stMap.label}
+                                  </span>
+                                );
+                              })()}
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${maxOps !== null && tu.ops_used >= maxOps ? 'text-destructive bg-destructive/10' : 'text-success bg-success/10'}`}>
                                 {tu.ops_used}/{maxOps ?? '♾️'}
                               </span>

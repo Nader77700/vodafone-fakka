@@ -629,8 +629,16 @@ export interface SubscriptionHistoryEntry {
   notes: string | null;
   created_at: string;
   // حقول الحالة الجديدة
-  status: 'active' | 'expired' | 'cancelled' | 'replaced' | 'pending';
+  status: 'active' | 'expired' | 'cancelled' | 'replaced' | 'pending' | 'suspended';
   end_reason: 'operations_finished' | 'duration_finished' | 'cancelled_by_admin' | 'replaced_by_new_subscription' | 'manual_cancel' | 'trial_finished' | null;
+  // PHASE 32: حقول العمليات الاحترافية
+  operation_type?: string | null;
+  suspend_reason?: string | null;
+  cancel_reason?:  string | null;
+  replace_reason?: string | null;
+  performed_by?:   string | null;
+  performed_by_name?: string | null;
+  days_remaining_at_end?: number | null;
 }
 
 export async function getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryEntry[]> {
@@ -5140,6 +5148,408 @@ export async function dismissPromotion(promotionId: string, userId: string): Pro
       last_viewed:  new Date().toISOString(),
     }, { onConflict: 'promotion_id,user_id' });
 }
+
+// ══════════════════════════════════════════════════════════════════
+// نظام الاشتراكات الاحترافي — PHASE 1-17
+// ══════════════════════════════════════════════════════════════════
+
+export interface SubscriptionOperation {
+  id: string;
+  user_id: string;
+  subscription_id: string | null;
+  license_key_id: string | null;
+  code: string | null;
+  operation_type: string;
+  reason: string | null;
+  notes: string | null;
+  days_before: number | null;
+  days_after: number | null;
+  expires_before: string | null;
+  expires_after: string | null;
+  performed_by: string | null;
+  performed_by_name: string | null;
+  performed_at: string;
+  metadata: Record<string, unknown>;
+}
+
+/** إدراج عملية في سجل subscription_operations */
+async function insertSubOperation(payload: Omit<SubscriptionOperation, 'id' | 'performed_at'>) {
+  await supabase.from('subscription_operations').insert(payload);
+}
+
+/** جلب سجل عمليات اشتراك مستخدم */
+export async function getSubscriptionOperations(userId: string): Promise<SubscriptionOperation[]> {
+  const { data } = await supabase
+    .from('subscription_operations')
+    .select('*')
+    .eq('user_id', userId)
+    .order('performed_at', { ascending: false })
+    .limit(100);
+  return Array.isArray(data) ? data : [];
+}
+
+/** تعليق الاشتراك مع السبب — PHASE 6 */
+export async function suspendSubscriptionPro(
+  userId: string,
+  reason: string,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) return { success: false, error: 'لا يوجد اشتراك لهذا المستخدم' };
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'suspended',
+    suspend_reason: reason,
+    suspended_at: now,
+    modified_by: adminId ?? null,
+    updated_at: now,
+  }).eq('id', sub.id);
+  if (error) return { success: false, error: error.message };
+  await syncHistoryStatus(userId, 'active', null); // keep history active, just sub is suspended
+  await insertSubOperation({
+    user_id: userId, subscription_id: sub.id,
+    license_key_id: sub.license_key_id,
+    code: sub.code_used,
+    operation_type: 'suspension',
+    reason,
+    notes: null, days_before: null, days_after: null,
+    expires_before: sub.expires_at, expires_after: sub.expires_at,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: sub.id, prev_status: sub.status },
+  });
+  await supabase.from('activity_log').insert({ user_id: userId, event_type: 'suspended', title: 'تعليق اشتراك', description: `السبب: ${reason}` });
+  await insertSystemLog({ user_id: userId, level: 'warning', action: 'admin_suspend_subscription', message: `السبب: ${reason}`, metadata: { sub_id: sub.id, reason } });
+  if (adminId) await logAdminAction({ adminId, action: 'suspend_subscription', targetUserId: userId, details: { sub_id: sub.id, reason } });
+  // إشعار PHASE 8
+  await sendNotification({
+    user_id: userId, is_global: false,
+    title: '⏸️ تم تعليق اشتراكك',
+    body: `تم تعليق اشتراكك بواسطة الإدارة. السبب: ${reason}. تواصل مع الدعم لمزيد من المعلومات.`,
+    type: 'security', priority: 'urgent',
+    action_url: '/subscription',
+    send_push: true,
+    dedup_key: `suspend_${sub.id}_${now}`,
+  });
+  return { success: true };
+}
+
+/** فك تعليق الاشتراك — PHASE 9 */
+export async function unsuspendSubscriptionPro(
+  userId: string,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const { data: sub } = await supabase.from('subscriptions')
+    .select('*').eq('user_id', userId).eq('status', 'suspended')
+    .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+  if (!sub) return { success: false, error: 'لا يوجد اشتراك معلق لهذا المستخدم' };
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'active',
+    suspend_reason: null,
+    suspended_at: null,
+    modified_by: adminId ?? null,
+    updated_at: now,
+  }).eq('id', sub.id);
+  if (error) return { success: false, error: error.message };
+  await insertSubOperation({
+    user_id: userId, subscription_id: sub.id,
+    license_key_id: sub.license_key_id,
+    code: sub.code_used,
+    operation_type: 'unsuspension',
+    reason: 'فك التعليق من الإدارة',
+    notes: null, days_before: null, days_after: null,
+    expires_before: sub.expires_at, expires_after: sub.expires_at,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: sub.id },
+  });
+  await supabase.from('activity_log').insert({ user_id: userId, event_type: 'reactivated', title: 'فك تعليق اشتراك', description: 'تم فك التعليق بواسطة الإدارة' });
+  await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_unsuspend_subscription', metadata: { sub_id: sub.id } });
+  if (adminId) await logAdminAction({ adminId, action: 'unsuspend_subscription', targetUserId: userId, details: { sub_id: sub.id } });
+  // إشعار PHASE 8
+  await sendNotification({
+    user_id: userId, is_global: false,
+    title: '✅ تم إعادة تفعيل اشتراكك',
+    body: 'تم رفع التعليق عن اشتراكك وإعادة تفعيله. يمكنك الآن استخدام التطبيق بشكل طبيعي.',
+    type: 'subscription_activated', priority: 'important',
+    action_url: '/subscription',
+    send_push: true,
+    dedup_key: `unsuspend_${sub.id}_${now}`,
+  });
+  return { success: true };
+}
+
+/** إلغاء الاشتراك مع السبب — PHASE 10 */
+export async function cancelSubscriptionPro(
+  userId: string,
+  reason: string,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) return { success: false, error: 'لا يوجد اشتراك لهذا المستخدم' };
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'cancelled',
+    cancel_reason: reason,
+    cancelled_at: now,
+    modified_by: adminId ?? null,
+    updated_at: now,
+  }).eq('id', sub.id);
+  if (error) return { success: false, error: error.message };
+  await syncHistoryStatus(userId, 'cancelled', 'cancelled_by_admin');
+  await insertSubOperation({
+    user_id: userId, subscription_id: sub.id,
+    license_key_id: sub.license_key_id,
+    code: sub.code_used,
+    operation_type: 'cancellation',
+    reason,
+    notes: null, days_before: null, days_after: null,
+    expires_before: sub.expires_at, expires_after: now,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: sub.id, prev_status: sub.status },
+  });
+  await supabase.from('activity_log').insert({ user_id: userId, event_type: 'cancellation', title: 'إلغاء اشتراك', description: `السبب: ${reason}` });
+  await insertSystemLog({ user_id: userId, level: 'warning', action: 'admin_cancel_subscription_pro', message: `السبب: ${reason}`, metadata: { sub_id: sub.id } });
+  if (adminId) await logAdminAction({ adminId, action: 'cancel_subscription', targetUserId: userId, details: { sub_id: sub.id, reason } });
+  return { success: true };
+}
+
+/** إعادة تفعيل الاشتراك الملغي مع الاحتفاظ بالبيانات — PHASE 11 */
+export async function reactivateSubscriptionPro(
+  userId: string,
+  durationDays: number,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const { data: sub } = await supabase.from('subscriptions')
+    .select('*').eq('user_id', userId)
+    .in('status', ['cancelled', 'expired', 'replaced'])
+    .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+  if (!sub) return { success: false, error: 'لا يوجد اشتراك يمكن إعادة تفعيله' };
+  const now = new Date();
+  const newExpiry = new Date(now.getTime() + durationDays * 86400000);
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'active',
+    expires_at: newExpiry.toISOString(),
+    cancel_reason: null, cancelled_at: null,
+    replace_reason: null, replaced_at: null, replaced_by_sub_id: null,
+    is_archived: false, archived_at: null,
+    modified_by: adminId ?? null,
+    updated_at: now.toISOString(),
+  }).eq('id', sub.id);
+  if (error) return { success: false, error: error.message };
+  const dBefore = sub.expires_at ? Math.floor((new Date(sub.expires_at).getTime() - Date.now()) / 86400000) : 0;
+  await insertSubOperation({
+    user_id: userId, subscription_id: sub.id,
+    license_key_id: sub.license_key_id,
+    code: sub.code_used,
+    operation_type: 'reactivation',
+    reason: 'إعادة تفعيل يدوي من الإدارة',
+    notes: null,
+    days_before: dBefore,
+    days_after: durationDays,
+    expires_before: sub.expires_at,
+    expires_after: newExpiry.toISOString(),
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: sub.id, prev_status: sub.status, durationDays },
+  });
+  await supabase.from('activity_log').insert({ user_id: userId, event_type: 'reactivated', title: 'إعادة تفعيل اشتراك', description: `تم إعادة التفعيل لمدة ${durationDays} يوم` });
+  await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_reactivate_subscription_pro', metadata: { sub_id: sub.id, durationDays } });
+  if (adminId) await logAdminAction({ adminId, action: 'reactivate_subscription', targetUserId: userId, details: { sub_id: sub.id, durationDays } });
+  await sendNotification({
+    user_id: userId, is_global: false,
+    title: '🎉 تم إعادة تفعيل اشتراكك',
+    body: `تم إعادة تفعيل اشتراكك لمدة ${durationDays} يوم. يمكنك الآن الاستمتاع بجميع الخدمات.`,
+    type: 'subscription_activated', priority: 'important',
+    action_url: '/subscription',
+    send_push: true,
+  });
+  return { success: true };
+}
+
+/** أرشفة الاشتراك (نقله للأرشيف دون حذف) — PHASE 4 */
+export async function archiveSubscriptionPro(
+  userId: string,
+  subId: string,
+  reason: string,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('subscriptions').update({
+    is_archived: true,
+    archived_at: now,
+    replace_reason: reason,
+    replaced_at: now,
+    modified_by: adminId ?? null,
+    updated_at: now,
+  }).eq('id', subId);
+  if (error) return { success: false, error: error.message };
+  await insertSubOperation({
+    user_id: userId, subscription_id: subId,
+    license_key_id: null, code: null,
+    operation_type: 'archival', reason,
+    notes: null, days_before: null, days_after: null,
+    expires_before: null, expires_after: null,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: subId },
+  });
+  await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_archive_subscription', metadata: { sub_id: subId } });
+  return { success: true };
+}
+
+/** استعادة اشتراك مؤرشف — PHASE 4,15 */
+export async function restoreArchivedSubscription(
+  userId: string,
+  subId: string,
+  mode: 'restore_only' | 'restore_and_cancel_current' | 'merge',
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const { data: archivedSub } = await supabase.from('subscriptions').select('*').eq('id', subId).maybeSingle();
+  if (!archivedSub) return { success: false, error: 'الاشتراك المؤرشف غير موجود' };
+  const now = new Date().toISOString();
+
+  if (mode === 'restore_and_cancel_current') {
+    const currentSub = await getUserSubscription(userId);
+    if (currentSub && currentSub.id !== subId) {
+      await supabase.from('subscriptions').update({ status: 'cancelled', cancelled_at: now, cancel_reason: 'استُبدل باشتراك محفوظ', modified_by: adminId ?? null, updated_at: now }).eq('id', currentSub.id);
+    }
+  } else if (mode === 'merge') {
+    const currentSub = await getUserSubscription(userId);
+    if (currentSub && currentSub.id !== subId && currentSub.expires_at && archivedSub.expires_at) {
+      const mergedExpiry = new Date(
+        Math.max(new Date(currentSub.expires_at).getTime(), new Date(archivedSub.expires_at).getTime())
+      );
+      await supabase.from('subscriptions').update({ expires_at: mergedExpiry.toISOString(), updated_at: now }).eq('id', currentSub.id);
+      await insertSubOperation({
+        user_id: userId, subscription_id: currentSub.id,
+        license_key_id: currentSub.license_key_id, code: currentSub.code_used,
+        operation_type: 'merge', reason: 'دمج مع اشتراك محفوظ',
+        notes: null, days_before: null, days_after: null,
+        expires_before: currentSub.expires_at, expires_after: mergedExpiry.toISOString(),
+        performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+        metadata: { archived_sub_id: subId },
+      });
+    }
+  }
+
+  const { error } = await supabase.from('subscriptions').update({
+    is_archived: false, archived_at: null,
+    replace_reason: null, replaced_at: null,
+    status: 'active',
+    modified_by: adminId ?? null,
+    updated_at: now,
+  }).eq('id', subId);
+  if (error) return { success: false, error: error.message };
+  await insertSubOperation({
+    user_id: userId, subscription_id: subId,
+    license_key_id: archivedSub.license_key_id, code: archivedSub.code_used,
+    operation_type: 'restoration', reason: `استعادة (${mode})`,
+    notes: null, days_before: null, days_after: null,
+    expires_before: null, expires_after: archivedSub.expires_at,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: subId, mode },
+  });
+  await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_restore_subscription', metadata: { sub_id: subId, mode } });
+  if (adminId) await logAdminAction({ adminId, action: 'restore_subscription', targetUserId: userId, details: { sub_id: subId, mode } });
+  return { success: true };
+}
+
+/** جلب الاشتراكات المؤرشفة لمستخدم — PHASE 4 */
+export async function getArchivedSubscriptions(userId: string): Promise<Subscription[]> {
+  const { data } = await supabase.from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_archived', true)
+    .order('archived_at', { ascending: false });
+  return Array.isArray(data) ? data as Subscription[] : [];
+}
+
+/** جلب كل الاشتراكات (الكاملة) لمستخدم */
+export async function getAllUserSubscriptions(userId: string): Promise<Subscription[]> {
+  const { data } = await supabase.from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  return Array.isArray(data) ? data as Subscription[] : [];
+}
+
+/** تجديد مع سجل كامل */
+export async function renewSubscriptionPro(
+  userId: string,
+  extraDays: number,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) return { success: false, error: 'لا يوجد اشتراك لهذا المستخدم' };
+  const base = sub.expires_at && new Date(sub.expires_at) > new Date() ? new Date(sub.expires_at) : new Date();
+  const newExpiry = new Date(base);
+  newExpiry.setDate(newExpiry.getDate() + extraDays);
+  const daysBefore = sub.expires_at ? Math.max(0, Math.floor((new Date(sub.expires_at).getTime() - Date.now()) / 86400000)) : 0;
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'active', expires_at: newExpiry.toISOString(),
+    in_grace_period: false, grace_started_at: null, grace_ends_at: null,
+    modified_by: adminId ?? null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', sub.id);
+  if (error) return { success: false, error: error.message };
+  await insertSubOperation({
+    user_id: userId, subscription_id: sub.id,
+    license_key_id: sub.license_key_id, code: sub.code_used,
+    operation_type: 'renewal',
+    reason: `تجديد بـ ${extraDays} يوم`,
+    notes: null,
+    days_before: daysBefore, days_after: daysBefore + extraDays,
+    expires_before: sub.expires_at, expires_after: newExpiry.toISOString(),
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: sub.id, extraDays },
+  });
+  await supabase.from('activity_log').insert({ user_id: userId, event_type: 'renewal', title: 'تجديد اشتراك', description: `تم تجديد الاشتراك بـ ${extraDays} يوم` });
+  await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_renew_subscription_pro', message: `تجديد ${extraDays} يوم`, metadata: { sub_id: sub.id, extraDays } });
+  if (adminId) await logAdminAction({ adminId, action: 'renew_subscription', targetUserId: userId, details: { sub_id: sub.id, extraDays, new_expiry: newExpiry.toISOString() } });
+  return { success: true };
+}
+
+/** تمديد حتى تاريخ محدد مع سجل */
+export async function extendSubscriptionPro(
+  userId: string,
+  newExpiresAt: string,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) return { success: false, error: 'لا يوجد اشتراك لهذا المستخدم' };
+  const daysBefore = sub.expires_at ? Math.max(0, Math.floor((new Date(sub.expires_at).getTime() - Date.now()) / 86400000)) : 0;
+  const daysAfter = Math.max(0, Math.floor((new Date(newExpiresAt).getTime() - Date.now()) / 86400000));
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'active', expires_at: newExpiresAt,
+    modified_by: adminId ?? null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', sub.id);
+  if (error) return { success: false, error: error.message };
+  await insertSubOperation({
+    user_id: userId, subscription_id: sub.id,
+    license_key_id: sub.license_key_id, code: sub.code_used,
+    operation_type: 'extension',
+    reason: `تمديد حتى ${new Date(newExpiresAt).toLocaleDateString('ar-EG')}`,
+    notes: null,
+    days_before: daysBefore, days_after: daysAfter,
+    expires_before: sub.expires_at, expires_after: newExpiresAt,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: sub.id, newExpiresAt },
+  });
+  await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_extend_subscription_pro', metadata: { sub_id: sub.id, newExpiresAt } });
+  if (adminId) await logAdminAction({ adminId, action: 'extend_subscription', targetUserId: userId, details: { sub_id: sub.id, newExpiresAt } });
+  return { success: true };
+}
+
+// ══════════════════════════════════════════════════════════════════
+// END نظام الاشتراكات الاحترافي
+// ══════════════════════════════════════════════════════════════════
 
 /** جلب تفاصيل تاجر واحد: أعضاء + عمليات + نقاط + اشتراكات + أكواد + logs */
 export async function adminGetMerchantDetail(merchantId: string): Promise<{

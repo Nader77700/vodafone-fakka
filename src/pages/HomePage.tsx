@@ -1752,17 +1752,21 @@ export default function HomePage() {
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [subscription?.expires_at, subActive]); // eslint-disable-line react-hooks/exhaustive-deps
-  const isExpired      = !isAdmin && subscription?.status !== 'active';
+  const isSuspendedSub = !isAdmin && subscription?.status === 'suspended';
+  const isExpired      = !isAdmin && subscription?.status !== 'active' && !isSuspendedSub;
 
-  // P3: badge نوع الاشتراك — يعرض الاسم الحقيقي للخطة من planLabel
+  // P3: badge نوع الاشتراك — يعرض الاسم الحقيقي للخطة من planLabel + PHASE 12 كل الحالات
   const subBadge: { label: string; color: string; bg: string } = (() => {
     if (isAdmin) return { label: '👑 مسؤول', color: '#00E5FF', bg: 'rgba(0,229,255,0.12)' };
-    if (!subActive) return { label: '❌ منتهي', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
+    // PHASE 12: حالات خاصة قبل الفحص العام
+    if (isSuspendedSub)                               return { label: '⏸ معلق',   color: '#F7C948', bg: 'rgba(247,201,72,0.12)' };
+    if (subscription?.status === 'cancelled')         return { label: '🚫 ملغي',  color: '#ef4444', bg: 'rgba(239,68,68,0.10)' };
+    if (!subActive)                                    return { label: '❌ منتهي', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
     const ct = opsInfo?.codeType;
     const planName = opsInfo?.planLabel;
     if (ct === 'trial') return { label: `⚡ ${planName ?? 'تجريبي'}`, color: '#F7C948', bg: 'rgba(247,201,72,0.12)' };
     if (ct === 'gift')  return { label: `🎁 ${planName ?? 'هدية'}`,   color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' };
-    if (ct === 'paid')  return { label: `📅 ${planName ?? 'شهري'}`,  color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' };
+    if (ct === 'paid')  return { label: `📅 ${planName ?? 'شهري'}`,   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' };
     return { label: `💎 ${planName ?? 'بريميوم'}`, color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' };
   })();
 
@@ -1887,6 +1891,12 @@ export default function HomePage() {
   return (
     <div className="pb-6 space-y-0 page-enter" dir="rtl">
       <ExpiryModal open={!isMerchantClient && isExpired && !subscription?.in_grace_period} reason="expired" />
+      {/* PHASE 7: نافذة التعليق — تظهر بدل "انتهى اشتراكك" عند التعليق */}
+      <ExpiryModal
+        open={!isMerchantClient && isSuspendedSub}
+        reason="suspended"
+        suspendReason={(subscription as (typeof subscription & { suspend_reason?: string | null }))?.suspend_reason}
+      />
 
       {/* ── شريط فترة السماح — يظهر للمستخدمين الذين انتهى اشتراكهم ولم تنته ساعة السماح ── */}
       {!isAdmin && !isMerchantClient && subscription?.in_grace_period && subscription.grace_ends_at && (

@@ -147,18 +147,20 @@ export function InfoRow({ label, value, copyable }: { label: string; value?: str
 }
 
 // ── Section Card ───────────────────────────────────────────────────────────
-export function SectionCard({ title, icon: Icon, children, className }: {
+export function SectionCard({ title, icon: Icon, children, className, actions }: {
   title: string;
   icon?: React.ElementType;
   children: React.ReactNode;
   className?: string;
+  actions?: React.ReactNode;
 }) {
   return (
     <div className={cn('rounded-2xl border border-border bg-card overflow-hidden', className)}>
       {(title || Icon) && (
         <div className="flex items-center gap-2 px-4 py-3 bg-muted/30 border-b border-border">
           {Icon && <Icon className="w-4 h-4 text-primary shrink-0" />}
-          <span className="font-bold text-sm">{title}</span>
+          <span className="font-bold text-sm flex-1">{title}</span>
+          {actions && <div className="shrink-0">{actions}</div>}
         </div>
       )}
       <div className="p-4">{children}</div>
