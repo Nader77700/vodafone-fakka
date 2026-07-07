@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.275',
-  versionCode:    190,
-  buildTimestamp: '2026-07-07T07:02:37Z',
-  sourceHash:     'c3d4e5f6a7b80009',
-  bundleFile:     'VodafoneFakka-v3.0.275.apk',
-  bundleHash:     'apk_v3_0_275_code190',
-  apkHash:        'apk_v3_0_275_code190',
-  dbVersion:      'v3.0.275',
+  appVersion:     '3.0.276',
+  versionCode:    191,
+  buildTimestamp: '2026-06-21T00:00:00Z',
+  sourceHash:     'd4e5f6a7b8c90011',
+  bundleFile:     'VodafoneFakka-v3.0.276.apk',
+  bundleHash:     'apk_v3_0_276_code191',
+  apkHash:        'apk_v3_0_276_code191',
+  dbVersion:      'v3.0.276',
   releaseNotes: [
+    'v3.0.276: PHASE 5 — تحكم كامل في محتوى الباقة + ربط WhatsApp الفعلي + تحقق شامل من بيانات المستخدم',
     'v3.0.275: نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي',
     'v3.0.274: نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي',
     'v3.0.273: نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي',
