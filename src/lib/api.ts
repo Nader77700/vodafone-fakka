@@ -149,7 +149,20 @@ export async function activateLicenseKey(
   code: string,
   deviceFp?: string,
 ): Promise<{ success: boolean; error?: string; errorCode?: string; isTrial?: boolean; blockerUsername?: string }> {
-  // ── قبل التفعيل: سجّل الاشتراك القديم كـ replaced ──
+  // ── قبل التفعيل: احفظ الأيام المتبقية ثم سجّل الاشتراك القديم كـ replaced ──
+  const { data: oldSub } = await supabase
+    .from('subscriptions')
+    .select('id, expires_at, duration_days')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (oldSub?.id && oldSub.expires_at) {
+    const msLeft = Math.max(0, new Date(oldSub.expires_at).getTime() - Date.now());
+    const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+    await supabase.from('subscriptions')
+      .update({ days_remaining: daysLeft, status: 'replaced', updated_at: new Date().toISOString() })
+      .eq('id', oldSub.id);
+  }
   await syncHistoryStatus(userId, 'replaced', 'replaced_by_new_subscription');
 
   // ── كل التفعيل يتم عبر RPC مع SECURITY DEFINER (يتجاوز RLS تمامًا) ──
@@ -5397,6 +5410,79 @@ export async function archiveSubscriptionPro(
     metadata: { sub_id: subId },
   });
   await insertSystemLog({ user_id: userId, level: 'info', action: 'admin_archive_subscription', metadata: { sub_id: subId } });
+  return { success: true };
+}
+
+/** استعادة اشتراك مستبدل (replaced) وإلغاء الحالي — PHASE 32 */
+export async function restoreReplacedSubscription(
+  userId: string,
+  replacedSubId: string,
+  adminId?: string,
+  adminName?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const now = new Date().toISOString();
+
+  // 1. جلب الاشتراك المستبدل
+  const { data: replacedSub } = await supabase
+    .from('subscriptions').select('*').eq('id', replacedSubId).maybeSingle();
+  if (!replacedSub) return { success: false, error: 'الاشتراك المستبدل غير موجود' };
+
+  // 2. حساب الأيام المتبقية (من days_remaining المحفوظ أو من المدة الأصلية)
+  const daysRemaining: number = replacedSub.days_remaining ?? replacedSub.duration_days ?? 1;
+  const newExpiry = new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000).toISOString();
+
+  // 3. إلغاء الاشتراك الحالي النشط (إن وُجد)
+  const { data: currentSub } = await supabase
+    .from('subscriptions')
+    .select('id, expires_at')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (currentSub && currentSub.id !== replacedSubId) {
+    await supabase.from('subscriptions').update({
+      status: 'cancelled', cancelled_at: now,
+      cancel_reason: 'استُبدل باشتراك مُستعاد بواسطة الأدمن',
+      modified_by: adminId ?? null, updated_at: now,
+    }).eq('id', currentSub.id);
+    await syncHistoryStatus(userId, 'cancelled', 'cancelled_by_admin');
+  }
+
+  // 4. استعادة الاشتراك المستبدل — تعيينه نشطاً بالأيام المتبقية
+  const { error } = await supabase.from('subscriptions').update({
+    status: 'active', expires_at: newExpiry,
+    replace_reason: null, replaced_at: null, replaced_by_sub_id: null,
+    is_archived: false, archived_at: null, days_remaining: null,
+    modified_by: adminId ?? null, updated_at: now,
+  }).eq('id', replacedSubId);
+  if (error) return { success: false, error: error.message };
+
+  // 5. مزامنة السجل التاريخي
+  await syncHistoryStatus(userId, 'active', null);
+
+  // 6. تسجيل العملية
+  await insertSubOperation({
+    user_id: userId, subscription_id: replacedSubId,
+    license_key_id: replacedSub.license_key_id, code: replacedSub.code_used,
+    operation_type: 'restoration',
+    reason: `استعادة اشتراك مستبدل (${daysRemaining} يوم متبقي)`,
+    notes: null, days_before: null, days_after: daysRemaining,
+    expires_before: replacedSub.expires_at, expires_after: newExpiry,
+    performed_by: adminId ?? null, performed_by_name: adminName ?? null,
+    metadata: { sub_id: replacedSubId, restored_from: 'replaced', days_remaining: daysRemaining },
+  });
+
+  await sendNotification({
+    user_id: userId, is_global: false,
+    title: '🔄 تم استعادة اشتراكك',
+    body: `تم استعادة اشتراكك المستبدل بمدة ${daysRemaining} يوم. ينتهي في ${new Date(newExpiry).toLocaleDateString('ar-EG')}.`,
+    type: 'subscription_activated', priority: 'important',
+    action_url: '/subscription', send_push: true,
+  });
+
+  if (adminId) await logAdminAction({
+    adminId, action: 'restore_replaced_subscription', targetUserId: userId,
+    details: { sub_id: replacedSubId, days_remaining: daysRemaining, new_expiry: newExpiry },
+  });
   return { success: true };
 }
 

@@ -4,17 +4,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.277',
-  versionCode:    192,
+  appVersion:     '3.0.278',
+  versionCode:    193,
   buildTimestamp: '2026-07-07T00:00:00Z',
-  sourceHash:     'e5f6a7b8c9001234',
-  bundleFile:     'VodafoneFakka-v3.0.277.apk',
-  bundleHash:     'apk_v3_0_277_code192',
-  apkHash:        'apk_v3_0_277_code192',
-  dbVersion:      'v3.0.277',
+  sourceHash:     'f6g7h8i9j0112233',
+  bundleFile:     'VodafoneFakka-v3.0.278.apk',
+  bundleHash:     'apk_v3_0_278_code193',
+  apkHash:        'apk_v3_0_278_code193',
+  dbVersion:      'v3.0.278',
   releaseNotes: [
-    'v3.0.277: PHASE 32 — نظام إدارة الاشتراكات الاحترافي: تعليق/إلغاء/أرشفة + 8 حالات Badges + شاشة التعليق',
-    'v3.0.276: PHASE 5 — تحكم كامل في محتوى الباقة + ربط WhatsApp الفعلي + تحقق شامل من بيانات المستخدم',
+    'v3.0.278: إصلاح حذف الحساب + استعادة الاشتراك المستبدل + منع تكرار الهاتف + route سجل الاشتراكات',
+    'v3.0.277: PHASE 32 — نظام إدارة الاشتراكات الاحترافي: تعليق/إلغاء/أرشفة + 8 حالات Badges',
+    'v3.0.276: PHASE 5 — تحكم كامل في محتوى الباقة + ربط WhatsApp الفعلي',
     'v3.0.275: نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي',
     'v3.0.274: نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي',
     'v3.0.273: نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي',
