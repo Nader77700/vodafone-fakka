@@ -2688,3 +2688,218 @@ openjdk version "17.0.19" 2026-04-21
   ✔ namespace مُصحَّح في build.gradle
   ✔ package= أُزيل من AndroidManifest.xml
 ⚙️  [4/7] بناء APK (Gradle assembleRelease)...
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-07-07 14:40  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.272 (code 187)
+🚀 الإصدار الجديد  : v3.0.273 (code 188)
+📝 ملاحظات         : نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي
+
+⬇️  تنزيل JDK 17 الكامل (Temurin)...
+javac 17.0.19
+✅ JDK جاهز (مع javac)
+⬇️  تثبيت Android SDK build-tools...
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-07-07 14:43  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.272 (code 187)
+🚀 الإصدار الجديد  : v3.0.273 (code 188)
+📝 ملاحظات         : نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي
+
+javac 17.0.19
+✅ JDK جاهز (مع javac)
+✅ Android SDK جاهز
+
+⚙️  [1/7] تحديث build.gradle...
+✅ build.gradle: v3.0.273 (code 188)
+⚙️  [2/7] تحديث buildInfo.ts...
+  ✅ ForceUpdateScreen.tsx fallback → v3.0.273
+  ✅ buildInfo.ts: v3.0.273 (code 188)
+⚙️  [3/7] نشر serve-app Edge Function (no JWT)...
+⚠️  تخطي نشر serve-app (لا يوجد SUPABASE_ACCESS_TOKEN) — Edge Function تعمل بالفعل
+⚙️  [3/7] بناء Vite...
+✗ Build failed in 2.00s
+error during build:
+Build failed with 6 errors:
+
+[31m[builtin:vite-transform] Error:[0m Encountered diff marker
+    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/AdminDashboard.tsx:41:1 [38;5;246m][0m
+    [38;5;246m│[0m
+ [38;5;246m41 │[0m <<<<<<<[38;5;249m [0m[38;5;249mH[0m[38;5;249mE[0m[38;5;249mA[0m[38;5;249mD[0m
+ [38;5;240m   │[0m ───┬───  
+ [38;5;240m   │[0m    ╰───── between this marker and `=======` is the code that we're merging into
+ [38;5;240m   │[0m 
+ [38;5;246m47 │[0m =======
+ [38;5;240m   │[0m ───┬───  
+ [38;5;240m   │[0m    ╰───── between this marker and `>>>>>>>` is the incoming code
+ [38;5;246m48 │[0m >>>>>>>[38;5;249m [0m[38;5;249m9[0m[38;5;249ma[0m[38;5;249m6[0m[38;5;249m2[0m[38;5;249md[0m[38;5;249m5[0m[38;5;249m4[0m[38;5;249m [0m[38;5;249m([0m[38;5;249m)[0m
+ [38;5;240m   │[0m ───┬───  
+ [38;5;240m   │[0m    ╰───── this marker concludes the conflict region
+ [38;5;240m   │[0m 
+ [38;5;240m   │[0m [38;5;115mHelp[0m: Conflict markers indicate that a merge was started but could not be completed due to merge conflicts.
+ [38;5;240m   │[0m       To resolve a conflict, keep only the code you want and then delete the lines containing conflict markers.
+ [38;5;240m   │[0m       If you're having merge conflicts after pulling new code, the top section is the code you already had and the bottom section is the remote code.
+ [38;5;240m   │[0m       If you're in the middle of a rebase, the top section is the code being rebased onto and the bottom section is the code coming from the current commit being rebased.
+ [38;5;240m   │[0m       If you have nested conflicts, resolve the outermost conflict first.
+[38;5;246m────╯[0m
+
+[31m[builtin:vite-transform] Error:[0m Encountered diff marker
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/networks/VodafonePage.tsx:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m <<<<<<<[38;5;249m [0m[38;5;249mH[0m[38;5;249mE[0m[38;5;249mA[0m[38;5;249mD[0m
+ [38;5;240m  │[0m ───┬───  
+ [38;5;240m  │[0m    ╰───── between this marker and `=======` is the code that we're merging into
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: This conflict marker appears to be incomplete (missing `=======` or `>>>>>>>`).
+ [38;5;240m  │[0m       Check if the conflict markers were accidentally modified or partially deleted.
+[38;5;246m───╯[0m
+
+[31m[builtin:vite-transform] Error:[0m Encountered diff marker
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/lib/notificationRouter.ts:51:1 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m 51 │[0m <<<<<<<[38;5;249m [0m[38;5;249mH[0m[38;5;249mE[0m[38;5;249mA[0m[38;5;249mD[0m
+ [38;5;240m    │[0m ───┬───  
+ [38;5;240m    │[0m    ╰───── between this marker and `=======` is the code that we're merging into
+ [38;5;240m    │[0m 
+ [38;5;246m 86 │[0m =======
+ [38;5;240m    │[0m ───┬───  
+ [38;5;240m    │[0m    ╰───── between this marker and `>>>>>>>` is the incoming code
+ [38;5;240m    │[0m 
+ [38;5;246m110 │[0m >>>>>>>[38;5;249m [0m[38;5;249m9[0m[38;5;249ma[0m[38;5;249m6[0m[38;5;249m2[0m[38;5;249md[0m[38;5;249m5[0m[38;5;249m4[0m[38;5;249m [0m[38;5;249m([0m[38;5;249m)[0m
+ [38;5;240m    │[0m ───┬───  
+ [38;5;240m    │[0m    ╰───── this marker concludes the conflict region
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Conflict markers indicate that a merge was started but could not be completed due to merge conflicts.
+ [38;5;240m    │[0m       To resolve a conflict, keep only the code you want and then delete the lines containing conflict markers.
+ [38;5;240m    │[0m       If you're having merge conflicts after pulling new code, the top section is the code you already had and the bottom section is the remote code.
+ [38;5;240m    │[0m       If you're in the middle of a rebase, the top section is the code being rebased onto and the bottom section is the code coming from the current commit being rebased.
+ [38;5;240m    │[0m       If you have nested conflicts, resolve the outermost conflict first.
+[38;5;246m─────╯[0m
+
+[31m[builtin:vite-transform] Error:[0m Encountered diff marker
+    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/HomePage.tsx:56:1 [38;5;246m][0m
+    [38;5;246m│[0m
+ [38;5;246m56 │[0m <<<<<<<[38;5;249m [0m[38;5;249mH[0m[38;5;249mE[0m[38;5;249mA[0m[38;5;249mD[0m
+ [38;5;240m   │[0m ───┬───  
+ [38;5;240m   │[0m    ╰───── between this marker and `=======` is the code that we're merging into
+ [38;5;240m   │[0m 
+ [38;5;246m58 │[0m =======
+ [38;5;240m   │[0m ───┬───  
+ [38;5;240m   │[0m    ╰───── between this marker and `>>>>>>>` is the incoming code
+ [38;5;246m59 │[0m >>>>>>>[38;5;249m [0m[38;5;249m9[0m[38;5;249ma[0m[38;5;249m6[0m[38;5;249m2[0m[38;5;249md[0m[38;5;249m5[0m[38;5;249m4[0m[38;5;249m [0m[38;5;249m([0m[38;5;249m)[0m
+ [38;5;240m   │[0m ───┬───  
+ [38;5;240m   │[0m    ╰───── this marker concludes the conflict region
+ [38;5;240m   │[0m 
+ [38;5;240m   │[0m [38;5;115mHelp[0m: Conflict markers indicate that a merge was started but could not be completed due to merge conflicts.
+ [38;5;240m   │[0m       To resolve a conflict, keep only the code you want and then delete the lines containing conflict markers.
+ [38;5;240m   │[0m       If you're having merge conflicts after pulling new code, the top section is the code you already had and the bottom section is the remote code.
+ [38;5;240m   │[0m       If you're in the middle of a rebase, the top section is the code being rebased onto and the bottom section is the code coming from the current commit being rebased.
+ [38;5;240m   │[0m       If you have nested conflicts, resolve the outermost conflict first.
+[38;5;246m────╯[0m
+
+[31m[builtin:vite-transform] Error:[0m Encountered diff marker
+      [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/lib/api.ts:4917:1 [38;5;246m][0m
+      [38;5;246m│[0m
+ [38;5;246m4917 │[0m <<<<<<<[38;5;249m [0m[38;5;249mH[0m[38;5;249mE[0m[38;5;249mA[0m[38;5;249mD[0m
+ [38;5;240m     │[0m ───┬───  
+ [38;5;240m     │[0m    ╰───── between this marker and `=======` is the code that we're merging into
+ [38;5;240m     │[0m 
+ [38;5;240m     │[0m [38;5;115mHelp[0m: This conflict marker appears to be incomplete (missing `=======` or `>>>>>>>`).
+ [38;5;240m     │[0m       Check if the conflict markers were accidentally modified or partially deleted.
+[38;5;246m──────╯[0m
+
+...
+    at aggregateBindingErrorsIntoJsError (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown@1.0.0-beta.53_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1/node_modules/rolldown/dist/shared/bindingify-input-options-Bk0BBr2s.mjs:56:18)
+    at unwrapBindingResult (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown@1.0.0-beta.53_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1/node_modules/rolldown/dist/shared/bindingify-input-options-Bk0BBr2s.mjs:31:128)
+    at #build (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown@1.0.0-beta.53_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1/node_modules/rolldown/dist/shared/rolldown-build-BEU8N80I.mjs:2260:34)
+    at async buildEnvironment (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown-vite@7.3.1_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1_@types+node@26.0.0_jiti@1.21.7/node_modules/rolldown-vite/dist/node/chunks/node.js:32805:64)
+    at async Object.build (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown-vite@7.3.1_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1_@types+node@26.0.0_jiti@1.21.7/node_modules/rolldown-vite/dist/node/chunks/node.js:33208:19)
+    at async Object.buildApp (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown-vite@7.3.1_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1_@types+node@26.0.0_jiti@1.21.7/node_modules/rolldown-vite/dist/node/chunks/node.js:33205:153)
+    at async CAC.<anonymous> (file:///workspace/app-ck2v94t1nev5/node_modules/.pnpm/rolldown-vite@7.3.1_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1_@types+node@26.0.0_jiti@1.21.7/node_modules/rolldown-vite/dist/node/cli.js:629:3)
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-07-07 14:45  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.273 (code 188)
+🚀 الإصدار الجديد  : v3.0.274 (code 189)
+📝 ملاحظات         : نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي
+
+javac 17.0.19
+✅ JDK جاهز (مع javac)
+✅ Android SDK جاهز
+
+⚙️  [1/7] تحديث build.gradle...
+✅ build.gradle: v3.0.274 (code 189)
+⚙️  [2/7] تحديث buildInfo.ts...
+  ✅ ForceUpdateScreen.tsx fallback → v3.0.274
+  ✅ buildInfo.ts: v3.0.274 (code 189)
+⚙️  [3/7] نشر serve-app Edge Function (no JWT)...
+⚠️  تخطي نشر serve-app (لا يوجد SUPABASE_ACCESS_TOKEN) — Edge Function تعمل بالفعل
+⚙️  [3/7] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/api.ts, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+✅ Vite build مكتمل — 99 ملف
+⚙️  [3/7] رفع 99 ملف إلى web-live bucket...
+  ✅ web-live: 99 ملف رُفع
+⚙️  [3/7] مزامنة Capacitor (Live URL Mode — server.url مفعَّل)...
+✅ Vite + web-live + Capacitor جاهز
+  ✔ namespace مُصحَّح في build.gradle
+  ✔ package= أُزيل من AndroidManifest.xml
+⚙️  [4/7] بناء APK (Gradle assembleRelease)...
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 40s
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-07-07 15:02  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.274 (code 189)
+🚀 الإصدار الجديد  : v3.0.275 (code 190)
+📝 ملاحظات         : نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي
+
+⬇️  تنزيل JDK 17 الكامل (Temurin)...
+javac 17.0.19
+✅ JDK جاهز (مع javac)
+⬇️  تثبيت Android SDK build-tools...
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-07-07 15:02  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.274 (code 189)
+🚀 الإصدار الجديد  : v3.0.275 (code 190)
+📝 ملاحظات         : نظام باقات Vodafone RED + العروض الديناميكية + بانر العروض الذكي
+
+javac 17.0.19
+✅ JDK جاهز (مع javac)
+✅ Android SDK جاهز
+
+⚙️  [1/7] تحديث build.gradle...
+✅ build.gradle: v3.0.275 (code 190)
+⚙️  [2/7] تحديث buildInfo.ts...
+  ✅ ForceUpdateScreen.tsx fallback → v3.0.275
+  ✅ buildInfo.ts: v3.0.275 (code 190)
+⚙️  [3/7] نشر serve-app Edge Function (no JWT)...
+⚠️  تخطي نشر serve-app (لا يوجد SUPABASE_ACCESS_TOKEN) — Edge Function تعمل بالفعل
+⚙️  [3/7] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/api.ts, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+✅ Vite build مكتمل — 99 ملف
+⚙️  [3/7] رفع 99 ملف إلى web-live bucket...
+  ✅ web-live: 99 ملف رُفع
+⚙️  [3/7] مزامنة Capacitor (Live URL Mode — server.url مفعَّل)...
+✅ Vite + web-live + Capacitor جاهز
+  ✔ namespace مُصحَّح في build.gradle
+  ✔ package= أُزيل من AndroidManifest.xml
+⚙️  [4/7] بناء APK (Gradle assembleRelease)...
