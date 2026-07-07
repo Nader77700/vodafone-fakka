@@ -38,6 +38,11 @@ import AdminMembersMonitor from '@/pages/admin/AdminMembersMonitor';
 import AdminInvitePanel from '@/components/admin/AdminInvitePanel';
 import { logAdminAction, getAdminAuditLogs, type AdminAuditLog } from '@/lib/api';
 import { getAllMerchants, createMerchant, updateMerchantStatus, generateMerchantInviteLink, regenerateInviteCode, promoteToMerchant, demoteToUser, updateMerchantStatusAdmin, updateMerchantInviteStatus, getAllMerchantsWithStats } from '@/lib/api';
+import {
+  adminGetAllRedPackages, adminCreateRedPackage, adminUpdateRedPackage, adminDeleteRedPackage, calcPackageDiscount,
+  adminGetAllPromotions, adminCreatePromotion, adminUpdatePromotion, adminDeletePromotion,
+} from '@/lib/api';
+import type { RedPackage, Promotion } from '@/lib/api';
 import type { Merchant, MerchantStatus, MerchantFull } from '@/types/types';
 import { toast } from 'sonner';
 import {
@@ -91,7 +96,8 @@ type AdminTab =
   | 'overview' | 'users' | 'subscriptions' | 'licenses' | 'codelogs'
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
-  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles';
+  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
+  | 'red_packages' | 'promotions';
 
 interface TabMeta {
   id: AdminTab;
@@ -124,6 +130,8 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'member_monitor',  label: 'أعضاء التجار',     desc: 'مراقبة أعضاء واشتراكات التجار',     icon: Users },
   { id: 'duplicate_accounts', label: 'الحسابات المكررة', desc: 'كشف الأجهزة المتعددة الحسابات وحظرها', icon: ShieldAlert },
   { id: 'charge_throttles',   label: 'سجلات التقييد',   desc: 'سجلات تقييد الشحن وتضارب الأجهزة',    icon: ShieldX },
+  { id: 'red_packages',       label: 'باقات RED',        desc: 'إدارة باقات Vodafone RED ديناميكياً',   icon: Package },
+  { id: 'promotions',         label: 'العروض والبانرات', desc: 'إنشاء وإدارة العروض والبانرات',          icon: Tag },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -1164,6 +1172,23 @@ export default function AdminDashboard() {
   const [copiedInvite, setCopiedInvite]               = useState<string | null>(null);
   // Phase 4: Promote/Remove inline dans Users tab
   const [merchantActionLoading, setMerchantActionLoading] = useState<string | null>(null);
+
+  // ── Red Packages state ───────────────────────────────────────────────────────
+  const [redPackages, setRedPackages]           = useState<RedPackage[]>([]);
+  const [redPkgsLoading, setRedPkgsLoading]     = useState(false);
+  const [redPkgEdit, setRedPkgEdit]             = useState<Partial<RedPackage> | null>(null);
+  const [redPkgSaving, setRedPkgSaving]         = useState(false);
+  const [redPkgIsNew, setRedPkgIsNew]           = useState(false);
+  const [redPkgDeleteTarget, setRedPkgDeleteTarget] = useState<RedPackage | null>(null);
+
+  // ── Promotions state ─────────────────────────────────────────────────────────
+  const [promotions, setPromotions]             = useState<Promotion[]>([]);
+  const [promoLoading, setPromoLoading]         = useState(false);
+  const [promoEdit, setPromoEdit]               = useState<Partial<Promotion> | null>(null);
+  const [promoSaving, setPromoSaving]           = useState(false);
+  const [promoIsNew, setPromoIsNew]             = useState(false);
+  const [promoDeleteTarget, setPromoDeleteTarget] = useState<Promotion | null>(null);
+
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(false);
   const [deletingAsset,  setDeletingAsset]  = useState<string | null>(null);
@@ -1446,6 +1471,108 @@ export default function AdminDashboard() {
     setMerchantsLoading(false);
   }, []);
   useEffect(() => { if (activeTab === 'merchants') loadMerchants(); }, [activeTab, loadMerchants]);
+
+  // ── Red Packages loaders ─────────────────────────────────────────────────────
+  const loadRedPackages = useCallback(async () => {
+    setRedPkgsLoading(true);
+    try { setRedPackages(await adminGetAllRedPackages()); } catch { /**/ }
+    setRedPkgsLoading(false);
+  }, []);
+  useEffect(() => { if (activeTab === 'red_packages') loadRedPackages(); }, [activeTab, loadRedPackages]);
+
+  const handleSaveRedPackage = async () => {
+    if (!redPkgEdit) return;
+    setRedPkgSaving(true);
+    try {
+      const payload = {
+        name:                 redPkgEdit.name ?? '',
+        description:          redPkgEdit.description ?? '',
+        data_gb:              Number(redPkgEdit.data_gb ?? 0),
+        minutes:              Number(redPkgEdit.minutes ?? 0),
+        base_price:           Number(redPkgEdit.base_price ?? 0),
+        discounted_price:     redPkgEdit.discounted_price != null ? Number(redPkgEdit.discounted_price) : null,
+        status:               (redPkgEdit.status ?? 'available') as RedPackage['status'],
+        sort_order:           Number(redPkgEdit.sort_order ?? 0),
+        is_visible:           redPkgEdit.is_visible ?? true,
+        subscription_enabled: redPkgEdit.subscription_enabled ?? true,
+        whatsapp_link:        redPkgEdit.whatsapp_link ?? '',
+        terms:                redPkgEdit.terms ?? [],
+        features:             redPkgEdit.features ?? [],
+        requirements:         redPkgEdit.requirements ?? [],
+        subscription_method:  redPkgEdit.subscription_method ?? '',
+        image_url:            redPkgEdit.image_url ?? '',
+        color_primary:        redPkgEdit.color_primary ?? '#E60000',
+        color_secondary:      redPkgEdit.color_secondary ?? '#B30000',
+        badge_label:          redPkgEdit.badge_label ?? '',
+      };
+      if (redPkgIsNew) { await adminCreateRedPackage(payload); toast.success('تم إنشاء الباقة'); }
+      else if (redPkgEdit.id) { await adminUpdateRedPackage(redPkgEdit.id, payload); toast.success('تم حفظ التعديلات'); }
+      setRedPkgEdit(null);
+      loadRedPackages();
+    } catch (e: unknown) { toast.error(`خطأ: ${String(e)}`); }
+    setRedPkgSaving(false);
+  };
+
+  // ── Promotions loaders ───────────────────────────────────────────────────────
+  const loadPromotions = useCallback(async () => {
+    setPromoLoading(true);
+    try { setPromotions(await adminGetAllPromotions()); } catch { /**/ }
+    setPromoLoading(false);
+  }, []);
+  useEffect(() => { if (activeTab === 'promotions') loadPromotions(); }, [activeTab, loadPromotions]);
+
+  const handleSavePromo = async () => {
+    if (!promoEdit) return;
+    setPromoSaving(true);
+    try {
+      const payload = {
+        title:             promoEdit.title ?? '',
+        description:       promoEdit.description ?? '',
+        image_url:         promoEdit.image_url ?? '',
+        color_primary:     promoEdit.color_primary ?? '#E60000',
+        color_secondary:   promoEdit.color_secondary ?? '#B30000',
+        icon:              promoEdit.icon ?? 'zap',
+        sort_order:        Number(promoEdit.sort_order ?? 0),
+        priority:          Number(promoEdit.priority ?? 0),
+        start_date:        promoEdit.start_date ?? null,
+        end_date:          promoEdit.end_date ?? null,
+        cta_label:         promoEdit.cta_label ?? 'اكتشف الآن',
+        internal_route:    promoEdit.internal_route ?? '',
+        external_url:      promoEdit.external_url ?? '',
+        status:            (promoEdit.status ?? 'active') as Promotion['status'],
+        display_frequency: (promoEdit.display_frequency ?? 'always') as Promotion['display_frequency'],
+        dismiss_behavior:  (promoEdit.dismiss_behavior ?? 'permanent') as Promotion['dismiss_behavior'],
+        dismiss_hours:     Number(promoEdit.dismiss_hours ?? 24),
+        send_push:         promoEdit.send_push ?? false,
+        is_active:         promoEdit.is_active ?? true,
+        show_on_home:      promoEdit.show_on_home ?? true,
+      };
+      if (promoIsNew) {
+        const created = await adminCreatePromotion(payload);
+        toast.success('تم إنشاء العرض');
+        // إرسال إشعار push إذا طُلب
+        if (payload.send_push) {
+          await sendNotification({
+            title: `🔥 عرض جديد: ${payload.title}`,
+            body: payload.description || payload.title,
+            type: 'offer',
+            is_global: true,
+            send_push: true,
+            action_url: payload.internal_route || '/home',
+            dedup_key: `promo_${created.id}`,
+          });
+          await adminUpdatePromotion(created.id, { push_sent: true });
+          toast.success('تم إرسال الإشعار للمستخدمين');
+        }
+      } else if (promoEdit.id) {
+        await adminUpdatePromotion(promoEdit.id, payload);
+        toast.success('تم حفظ التعديلات');
+      }
+      setPromoEdit(null);
+      loadPromotions();
+    } catch (e: unknown) { toast.error(`خطأ: ${String(e)}`); }
+    setPromoSaving(false);
+  };
 
   const handleSaveBalanceProd = async () => {
     if (!balanceProdEdit) return;
@@ -4222,6 +4349,563 @@ export default function AdminDashboard() {
           {activeTab === 'member_monitor' && (
             <div className="page-enter">
               <AdminMembersMonitor />
+            </div>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              باقات Vodafone RED — PHASE 1-5 إدارة ديناميكية
+              ════════════════════════════════════════════════ */}
+          {activeTab === 'red_packages' && (
+            <div className="space-y-5 page-enter">
+              <SectionHeader icon={Package} title="باقات Vodafone RED"
+                description="إنشاء وتعديل وإدارة جميع باقات RED ديناميكياً — بدون تعديل الكود"
+                count={redPackages.length}
+                action={
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={loadRedPackages} className="gap-1.5 h-8">
+                      <RefreshCw className="w-3.5 h-3.5" /> تحديث
+                    </Button>
+                    <Button size="sm" className="gap-1.5 h-8" onClick={() => {
+                      setRedPkgIsNew(true);
+                      setRedPkgEdit({
+                        name: '', description: '', data_gb: 20, minutes: 1500,
+                        base_price: 100, discounted_price: null, status: 'available',
+                        sort_order: redPackages.length + 1, is_visible: true,
+                        subscription_enabled: true, whatsapp_link: '', terms: [],
+                        features: [], requirements: [], subscription_method: '',
+                        image_url: '', color_primary: '#E60000', color_secondary: '#B30000',
+                        badge_label: '',
+                      });
+                    }}>
+                      <Plus className="w-3.5 h-3.5" /> باقة جديدة
+                    </Button>
+                  </div>
+                }
+              />
+
+              {redPkgsLoading ? <Spinner /> : redPackages.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  لا توجد باقات — اضغط "باقة جديدة" لإضافة أول باقة
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {redPackages.map(pkg => {
+                    const { pct, currentPrice, originalPrice } = calcPackageDiscount(pkg);
+                    const statusColors: Record<string, string> = {
+                      available: 'text-green-400 bg-green-400/10 border-green-400/30',
+                      featured:  'text-yellow-400 bg-yellow-400/10 border-yellow-400/30',
+                      coming_soon:'text-purple-400 bg-purple-400/10 border-purple-400/30',
+                      disabled:  'text-muted-foreground bg-muted border-border',
+                    };
+                    const statusLabels: Record<string, string> = {
+                      available: 'متاحة', featured: 'مميزة', coming_soon: 'قريباً', disabled: 'معطّلة',
+                    };
+                    return (
+                      <div key={pkg.id} className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                              style={{ background: 'rgba(230,0,0,0.15)', border: '1.5px solid rgba(230,0,0,0.35)' }}>
+                              <span className="text-xs font-black" style={{ color: '#E60000' }}>VF</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm truncate">{pkg.name}</p>
+                              {pkg.badge_label && (
+                                <span className="text-[10px] text-muted-foreground">{pkg.badge_label}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${statusColors[pkg.status] ?? ''}`}>
+                              {statusLabels[pkg.status] ?? pkg.status}
+                            </span>
+                            <button
+                              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={async () => {
+                                await adminUpdateRedPackage(pkg.id, { is_visible: !pkg.is_visible });
+                                loadRedPackages();
+                              }}>
+                              {pkg.is_visible
+                                ? <ToggleOn  className="w-5 h-5 text-green-400" />
+                                : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                            </button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                              onClick={() => { setRedPkgIsNew(false); setRedPkgEdit({ ...pkg }); }}>
+                              <Pencil className="w-3 h-3" /> تعديل
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                              onClick={() => setRedPkgDeleteTarget(pkg)}>
+                              <Trash2 className="w-3 h-3" /> حذف
+                            </Button>
+                          </div>
+                        </div>
+                        {/* تفاصيل */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          {[
+                            { label: 'الإنترنت',   value: `${pkg.data_gb} GB` },
+                            { label: 'الدقائق',    value: `${pkg.minutes}` },
+                            { label: 'السعر',      value: `${currentPrice} جنيه` },
+                            { label: 'الخصم',      value: pct > 0 ? `${pct}% (${originalPrice}→${currentPrice})` : 'لا يوجد' },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="bg-muted/30 rounded-lg px-2.5 py-1.5">
+                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                              <p className="font-semibold truncate">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {pkg.description && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-1">{pkg.description}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── حوار تعديل / إنشاء باقة ── */}
+              <Dialog open={!!redPkgEdit} onOpenChange={v => { if (!v && !redPkgSaving) setRedPkgEdit(null); }}>
+                <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-2xl bg-card border-border overflow-y-auto max-h-[90dvh]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-primary" />
+                      {redPkgIsNew ? 'إضافة باقة جديدة' : 'تعديل الباقة'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  {redPkgEdit && (
+                    <div className="space-y-4 mt-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">اسم الباقة *</Label>
+                          <Input value={redPkgEdit.name ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, name: e.target.value } : p)} placeholder="مثال: RED 20 جيجا" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">وسام البادج</Label>
+                          <Input value={redPkgEdit.badge_label ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, badge_label: e.target.value } : p)} placeholder="مثال: الأكثر طلباً" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">الوصف</Label>
+                        <Textarea value={redPkgEdit.description ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, description: e.target.value } : p)} rows={2} />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">الإنترنت (GB)</Label>
+                          <Input type="number" min="0" value={redPkgEdit.data_gb ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, data_gb: +e.target.value } : p)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">الدقائق</Label>
+                          <Input type="number" min="0" value={redPkgEdit.minutes ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, minutes: +e.target.value } : p)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">السعر الأساسي</Label>
+                          <Input type="number" min="0" step="0.01" value={redPkgEdit.base_price ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, base_price: +e.target.value } : p)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">السعر بعد الخصم</Label>
+                          <Input type="number" min="0" step="0.01" placeholder="اتركه فارغاً لإلغاء الخصم"
+                            value={redPkgEdit.discounted_price ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, discounted_price: e.target.value === '' ? null : +e.target.value } : p)} />
+                        </div>
+                      </div>
+                      {/* معاينة الخصم */}
+                      {(redPkgEdit.base_price ?? 0) > 0 && (redPkgEdit.discounted_price ?? 0) > 0 && (
+                        <div className="rounded-xl px-3 py-2 text-xs flex gap-4"
+                          style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.20)' }}>
+                          {(() => {
+                            const orig = redPkgEdit.base_price ?? 0;
+                            const disc = redPkgEdit.discounted_price ?? orig;
+                            const pct  = orig > 0 ? Math.round(((orig - disc) / orig) * 100) : 0;
+                            return <>
+                              <span className="text-muted-foreground">السعر الحالي: <strong className="text-foreground">{disc} جنيه</strong></span>
+                              <span className="text-muted-foreground">الخصم: <strong style={{ color: '#00C896' }}>{pct}%</strong></span>
+                              <span className="text-muted-foreground">التوفير: <strong style={{ color: '#00C896' }}>{orig - disc} جنيه</strong></span>
+                            </>;
+                          })()}
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">الحالة</Label>
+                          <Select value={redPkgEdit.status ?? 'available'} onValueChange={v => setRedPkgEdit(p => p ? { ...p, status: v as RedPackage['status'] } : p)}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="available">متاحة</SelectItem>
+                              <SelectItem value="featured">مميزة</SelectItem>
+                              <SelectItem value="coming_soon">قريباً</SelectItem>
+                              <SelectItem value="disabled">معطّلة</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">الترتيب</Label>
+                          <Input type="number" min="0" value={redPkgEdit.sort_order ?? 0} onChange={e => setRedPkgEdit(p => p ? { ...p, sort_order: +e.target.value } : p)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">رابط واتساب</Label>
+                          <Input value={redPkgEdit.whatsapp_link ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, whatsapp_link: e.target.value } : p)} placeholder="https://wa.me/..." />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <button className="flex items-center gap-2 text-sm" onClick={() => setRedPkgEdit(p => p ? { ...p, is_visible: !p.is_visible } : p)}>
+                          {redPkgEdit.is_visible ? <ToggleOn className="w-5 h-5 text-green-400" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                          <span className="text-xs">{redPkgEdit.is_visible ? 'ظاهرة' : 'مخفية'}</span>
+                        </button>
+                        <button className="flex items-center gap-2 text-sm" onClick={() => setRedPkgEdit(p => p ? { ...p, subscription_enabled: !p.subscription_enabled } : p)}>
+                          {redPkgEdit.subscription_enabled ? <ToggleOn className="w-5 h-5 text-primary" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                          <span className="text-xs">{redPkgEdit.subscription_enabled ? 'الاشتراك مفعّل' : 'الاشتراك معطّل'}</span>
+                        </button>
+                      </div>
+                      {/* الشروط */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">شروط الاشتراك (سطر لكل شرط)</Label>
+                        <Textarea rows={4}
+                          value={(redPkgEdit.terms ?? []).join('\n')}
+                          onChange={e => setRedPkgEdit(p => p ? { ...p, terms: e.target.value.split('\n').filter(Boolean) } : p)}
+                          placeholder="الخط يكون أفراد&#10;يكون مسجل باسمك&#10;..." />
+                      </div>
+                      {/* المميزات */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">المميزات (سطر لكل ميزة)</Label>
+                        <Textarea rows={3}
+                          value={(redPkgEdit.features ?? []).join('\n')}
+                          onChange={e => setRedPkgEdit(p => p ? { ...p, features: e.target.value.split('\n').filter(Boolean) } : p)}
+                          placeholder="20 جيجا عالي السرعة&#10;1500 دقيقة&#10;..." />
+                      </div>
+                      {/* المتطلبات */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">المتطلبات (سطر لكل متطلب)</Label>
+                        <Textarea rows={2}
+                          value={(redPkgEdit.requirements ?? []).join('\n')}
+                          onChange={e => setRedPkgEdit(p => p ? { ...p, requirements: e.target.value.split('\n').filter(Boolean) } : p)}
+                          placeholder="خط فردي مسجل باسمك&#10;..." />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">طريقة الاشتراك</Label>
+                        <Textarea rows={2} value={redPkgEdit.subscription_method ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, subscription_method: e.target.value } : p)} />
+                      </div>
+                    </div>
+                  )}
+                  <DialogFooter className="mt-4 gap-2">
+                    <Button className="flex-1 h-10 gap-1.5" onClick={handleSaveRedPackage} disabled={redPkgSaving}>
+                      {redPkgSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {redPkgIsNew ? 'إنشاء الباقة' : 'حفظ التعديلات'}
+                    </Button>
+                    <Button variant="outline" className="h-10" onClick={() => setRedPkgEdit(null)} disabled={redPkgSaving}>
+                      <XIcon className="w-4 h-4" /> إلغاء
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* ── حوار حذف الباقة ── */}
+              <AlertDialog open={!!redPkgDeleteTarget} onOpenChange={v => { if (!v) setRedPkgDeleteTarget(null); }}>
+                <AlertDialogContent className="max-w-[calc(100%-2rem)] md:max-w-md bg-card border-border">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>حذف الباقة</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      هل أنت متأكد من حذف باقة <strong>{redPkgDeleteTarget?.name}</strong>؟ لا يمكن التراجع.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        if (!redPkgDeleteTarget) return;
+                        await adminDeleteRedPackage(redPkgDeleteTarget.id);
+                        toast.success('تم حذف الباقة');
+                        setRedPkgDeleteTarget(null);
+                        loadRedPackages();
+                      }}>
+                      حذف
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              العروض والبانرات — PHASE 8-14 نظام العروض الذكي
+              ════════════════════════════════════════════════ */}
+          {activeTab === 'promotions' && (
+            <div className="space-y-5 page-enter">
+              <SectionHeader icon={Tag} title="العروض والبانرات"
+                description="إنشاء وإدارة العروض التي تظهر في البانر الرئيسي — تحكم كامل في التكرار والإغلاق"
+                count={promotions.length}
+                action={
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={loadPromotions} className="gap-1.5 h-8">
+                      <RefreshCw className="w-3.5 h-3.5" /> تحديث
+                    </Button>
+                    <Button size="sm" className="gap-1.5 h-8" onClick={() => {
+                      setPromoIsNew(true);
+                      setPromoEdit({
+                        title: '', description: '', image_url: '',
+                        color_primary: '#E60000', color_secondary: '#B30000',
+                        icon: 'zap', sort_order: promotions.length + 1, priority: 0,
+                        start_date: null, end_date: null,
+                        cta_label: 'اكتشف الآن', internal_route: '', external_url: '',
+                        status: 'active', display_frequency: 'always',
+                        dismiss_behavior: 'permanent', dismiss_hours: 24,
+                        send_push: false, is_active: true, show_on_home: true,
+                      });
+                    }}>
+                      <Plus className="w-3.5 h-3.5" /> عرض جديد
+                    </Button>
+                  </div>
+                }
+              />
+
+              {promoLoading ? <Spinner /> : promotions.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  لا توجد عروض — اضغط "عرض جديد" لإنشاء أول عرض
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {promotions.map(promo => {
+                    const statusColors: Record<string, string> = {
+                      active:    'text-green-400 bg-green-400/10 border-green-400/30',
+                      scheduled: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30',
+                      ended:     'text-muted-foreground bg-muted border-border',
+                      draft:     'text-blue-400 bg-blue-400/10 border-blue-400/30',
+                    };
+                    const statusLabels: Record<string, string> = {
+                      active: 'نشط', scheduled: 'مجدول', ended: 'منتهي', draft: 'مسودة',
+                    };
+                    const freqLabels: Record<string, string> = {
+                      always: 'دائماً', once: 'مرة واحدة', daily: 'يومياً', weekly: 'أسبوعياً', monthly: 'شهرياً',
+                    };
+                    return (
+                      <div key={promo.id} className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                              style={{ background: `${promo.color_primary}20`, border: `1.5px solid ${promo.color_primary}40` }}>
+                              <Tag className="w-4 h-4" style={{ color: promo.color_primary }} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm truncate">{promo.title}</p>
+                              {promo.description && <p className="text-[10px] text-muted-foreground truncate">{promo.description}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${statusColors[promo.status] ?? ''}`}>
+                              {statusLabels[promo.status] ?? promo.status}
+                            </span>
+                            <button
+                              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={async () => {
+                                await adminUpdatePromotion(promo.id, { is_active: !promo.is_active });
+                                loadPromotions();
+                              }}>
+                              {promo.is_active
+                                ? <ToggleOn  className="w-5 h-5 text-green-400" />
+                                : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                            </button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                              onClick={() => { setPromoIsNew(false); setPromoEdit({ ...promo }); }}>
+                              <Pencil className="w-3 h-3" /> تعديل
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                              onClick={() => setPromoDeleteTarget(promo)}>
+                              <Trash2 className="w-3 h-3" /> حذف
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          {[
+                            { label: 'الظهور',   value: freqLabels[promo.display_frequency] ?? promo.display_frequency },
+                            { label: 'الأولوية', value: String(promo.priority) },
+                            { label: 'الرابط',   value: promo.internal_route || promo.external_url || '—' },
+                            { label: 'Push',     value: promo.send_push ? (promo.push_sent ? 'أُرسل ✓' : 'سيُرسل') : 'لا' },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="bg-muted/30 rounded-lg px-2.5 py-1.5">
+                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                              <p className="font-semibold truncate">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── حوار تعديل / إنشاء عرض ── */}
+              <Dialog open={!!promoEdit} onOpenChange={v => { if (!v && !promoSaving) setPromoEdit(null); }}>
+                <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-2xl bg-card border-border overflow-y-auto max-h-[90dvh]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-primary" />
+                      {promoIsNew ? 'إنشاء عرض جديد' : 'تعديل العرض'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  {promoEdit && (
+                    <div className="space-y-4 mt-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">العنوان *</Label>
+                          <Input value={promoEdit.title ?? ''} onChange={e => setPromoEdit(p => p ? { ...p, title: e.target.value } : p)} placeholder="عنوان العرض" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">نص زر الدعوة</Label>
+                          <Input value={promoEdit.cta_label ?? ''} onChange={e => setPromoEdit(p => p ? { ...p, cta_label: e.target.value } : p)} placeholder="اكتشف الآن" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">الوصف</Label>
+                        <Textarea value={promoEdit.description ?? ''} onChange={e => setPromoEdit(p => p ? { ...p, description: e.target.value } : p)} rows={2} />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">رابط داخلي (مسار الصفحة)</Label>
+                          <Select value={promoEdit.internal_route || '__none__'} onValueChange={v => setPromoEdit(p => p ? { ...p, internal_route: v === '__none__' ? '' : v } : p)}>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="اختر صفحة..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">— لا يوجد رابط داخلي —</SelectItem>
+                              <SelectItem value="/home">الصفحة الرئيسية</SelectItem>
+                              <SelectItem value="/networks">قسم الشبكات</SelectItem>
+                              <SelectItem value="/networks/vodafone">Vodafone RED</SelectItem>
+                              <SelectItem value="/networks/orange">Orange</SelectItem>
+                              <SelectItem value="/networks/etisalat">Etisalat</SelectItem>
+                              <SelectItem value="/networks/we">WE</SelectItem>
+                              <SelectItem value="/networks/esim">eSIM</SelectItem>
+                              <SelectItem value="/recharge">الشحن</SelectItem>
+                              <SelectItem value="/favorites">المفضلة</SelectItem>
+                              <SelectItem value="/operations">العمليات</SelectItem>
+                              <SelectItem value="/statistics">الإحصائيات</SelectItem>
+                              <SelectItem value="/notifications">الإشعارات</SelectItem>
+                              <SelectItem value="/settings">الإعدادات</SelectItem>
+                              <SelectItem value="/subscription-history">تاريخ الاشتراكات</SelectItem>
+                              <SelectItem value="/balance-charge">شحن الرصيد</SelectItem>
+                              <SelectItem value="/updates">التحديثات</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">رابط خارجي</Label>
+                          <Input value={promoEdit.external_url ?? ''} onChange={e => setPromoEdit(p => p ? { ...p, external_url: e.target.value } : p)} placeholder="https://..." />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">الحالة</Label>
+                          <Select value={promoEdit.status ?? 'active'} onValueChange={v => setPromoEdit(p => p ? { ...p, status: v as Promotion['status'] } : p)}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">نشط</SelectItem>
+                              <SelectItem value="scheduled">مجدول</SelectItem>
+                              <SelectItem value="draft">مسودة</SelectItem>
+                              <SelectItem value="ended">منتهي</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">تكرار الظهور</Label>
+                          <Select value={promoEdit.display_frequency ?? 'always'} onValueChange={v => setPromoEdit(p => p ? { ...p, display_frequency: v as Promotion['display_frequency'] } : p)}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="always">دائماً</SelectItem>
+                              <SelectItem value="once">مرة واحدة فقط</SelectItem>
+                              <SelectItem value="daily">مرة يومياً</SelectItem>
+                              <SelectItem value="weekly">مرة أسبوعياً</SelectItem>
+                              <SelectItem value="monthly">مرة شهرياً</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">سلوك زر X</Label>
+                          <Select value={promoEdit.dismiss_behavior ?? 'permanent'} onValueChange={v => setPromoEdit(p => p ? { ...p, dismiss_behavior: v as Promotion['dismiss_behavior'] } : p)}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="permanent">إخفاء نهائي</SelectItem>
+                              <SelectItem value="till_tomorrow">إخفاء حتى الغد</SelectItem>
+                              <SelectItem value="hours">إخفاء لعدد ساعات</SelectItem>
+                              <SelectItem value="always_show">إعادة الظهور دائماً</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      {promoEdit.dismiss_behavior === 'hours' && (
+                        <div className="space-y-1">
+                          <Label className="text-xs">عدد ساعات الإخفاء</Label>
+                          <Input type="number" min="1" value={promoEdit.dismiss_hours ?? 24} onChange={e => setPromoEdit(p => p ? { ...p, dismiss_hours: +e.target.value } : p)} />
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">الأولوية (عدد كبير = يظهر أولاً)</Label>
+                          <Input type="number" value={promoEdit.priority ?? 0} onChange={e => setPromoEdit(p => p ? { ...p, priority: +e.target.value } : p)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">الترتيب</Label>
+                          <Input type="number" value={promoEdit.sort_order ?? 0} onChange={e => setPromoEdit(p => p ? { ...p, sort_order: +e.target.value } : p)} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">تاريخ البداية</Label>
+                          <Input type="datetime-local" value={promoEdit.start_date ? promoEdit.start_date.slice(0, 16) : ''} onChange={e => setPromoEdit(p => p ? { ...p, start_date: e.target.value || null } : p)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">تاريخ النهاية</Label>
+                          <Input type="datetime-local" value={promoEdit.end_date ? promoEdit.end_date.slice(0, 16) : ''} onChange={e => setPromoEdit(p => p ? { ...p, end_date: e.target.value || null } : p)} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <button className="flex items-center gap-2 text-sm" onClick={() => setPromoEdit(p => p ? { ...p, is_active: !p.is_active } : p)}>
+                          {promoEdit.is_active ? <ToggleOn className="w-5 h-5 text-green-400" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                          <span className="text-xs">{promoEdit.is_active ? 'نشط' : 'معطّل'}</span>
+                        </button>
+                        <button className="flex items-center gap-2 text-sm" onClick={() => setPromoEdit(p => p ? { ...p, show_on_home: !p.show_on_home } : p)}>
+                          {promoEdit.show_on_home ? <ToggleOn className="w-5 h-5 text-primary" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                          <span className="text-xs">{promoEdit.show_on_home ? 'يظهر في الرئيسية' : 'مخفي من الرئيسية'}</span>
+                        </button>
+                        {promoIsNew && (
+                          <button className="flex items-center gap-2 text-sm" onClick={() => setPromoEdit(p => p ? { ...p, send_push: !p.send_push } : p)}>
+                            {promoEdit.send_push ? <ToggleOn className="w-5 h-5 text-yellow-400" /> : <ToggleOff className="w-5 h-5 text-muted-foreground" />}
+                            <span className="text-xs">{promoEdit.send_push ? 'إرسال إشعار Push' : 'بدون إشعار'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <DialogFooter className="mt-4 gap-2">
+                    <Button className="flex-1 h-10 gap-1.5" onClick={handleSavePromo} disabled={promoSaving}>
+                      {promoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {promoIsNew ? 'إنشاء العرض' : 'حفظ التعديلات'}
+                    </Button>
+                    <Button variant="outline" className="h-10" onClick={() => setPromoEdit(null)} disabled={promoSaving}>
+                      <XIcon className="w-4 h-4" /> إلغاء
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* ── حوار حذف العرض ── */}
+              <AlertDialog open={!!promoDeleteTarget} onOpenChange={v => { if (!v) setPromoDeleteTarget(null); }}>
+                <AlertDialogContent className="max-w-[calc(100%-2rem)] md:max-w-md bg-card border-border">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>حذف العرض</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      هل أنت متأكد من حذف عرض <strong>{promoDeleteTarget?.title}</strong>؟
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        if (!promoDeleteTarget) return;
+                        await adminDeletePromotion(promoDeleteTarget.id);
+                        toast.success('تم حذف العرض');
+                        setPromoDeleteTarget(null);
+                        loadPromotions();
+                      }}>
+                      حذف
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
 

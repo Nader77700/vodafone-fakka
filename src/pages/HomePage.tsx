@@ -53,6 +53,7 @@ import TrialExhaustedPopup from '@/components/TrialExhaustedPopup';
 import { fmtTimeLeft } from '@/lib/formatUtils';
 import { toast } from 'sonner';
 import { Radio, ArrowLeft, Wallet } from 'lucide-react';
+import PromotionBanner from '@/components/common/PromotionBanner';
 
 // ── كارت Premium — عروض باقي الشبكات ──
 function NetworksPremiumCard() {
@@ -2163,6 +2164,11 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* ══════════════════════════════════════
+          بانر العروض الديناميكي
+         ══════════════════════════════════════ */}
+      <PromotionBanner />
 
       {/* ══════════════════════════════════════
           4. NETWORKS PREMIUM CARD

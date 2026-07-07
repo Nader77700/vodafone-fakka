@@ -21,6 +21,8 @@ const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));
 const SystemLogsPage        = lazy(() => import('./pages/SystemLogsPage'));
 const NetworksPage          = lazy(() => import('./pages/NetworksPage'));
 const VodafonePage          = lazy(() => import('./pages/networks/VodafonePage'));
+const PackageDetailPage     = lazy(() => import('./pages/networks/PackageDetailPage'));
+const SubscribePackagePage  = lazy(() => import('./pages/networks/SubscribePackagePage'));
 const OrangePage            = lazy(() => import('./pages/networks/OrangePage'));
 const EtisalatPage          = lazy(() => import('./pages/networks/EtisalatPage'));
 const WEPage                = lazy(() => import('./pages/networks/WEPage'));
@@ -65,7 +67,9 @@ export const routes: RouteConfig[] = [
       { name: 'Networks',            path: '/networks',             element: <S><NetworksPage /></S> },
       { name: 'NetworkESim',         path: '/networks/esim',        element: <S><ESimPage /></S> },
       { name: 'NetworkESimDetail',   path: '/networks/esim/:id',    element: <S><ESimDetailPage /></S> },
-      { name: 'NetworkVodafone',     path: '/networks/vodafone',    element: <S><VodafonePage /></S> },
+      { name: 'NetworkVodafone',          path: '/networks/vodafone',              element: <S><VodafonePage /></S> },
+      { name: 'NetworkVodafonePackage',    path: '/networks/vodafone/package/:id',  element: <S><PackageDetailPage /></S> },
+      { name: 'NetworkVodafoneSubscribe',  path: '/networks/vodafone/subscribe/:id',element: <S><SubscribePackagePage /></S> },
       { name: 'NetworkOrange',       path: '/networks/orange',      element: <S><OrangePage /></S> },
       { name: 'NetworkEtisalat',     path: '/networks/etisalat',    element: <S><EtisalatPage /></S> },
       { name: 'NetworkWE',           path: '/networks/we',          element: <S><WEPage /></S> },

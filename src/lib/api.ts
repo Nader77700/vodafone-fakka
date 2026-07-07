@@ -4914,6 +4914,205 @@ export async function adminGetMerchantsOverview(): Promise<MerchantOverviewItem[
   return data as MerchantOverviewItem[];
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ── Red Packages API ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+export interface RedPackage {
+  id:                  string;
+  name:                string;
+  description:         string;
+  data_gb:             number;
+  minutes:             number;
+  base_price:          number;
+  discounted_price:    number | null;
+  status:              'available' | 'coming_soon' | 'featured' | 'disabled';
+  sort_order:          number;
+  is_visible:          boolean;
+  subscription_enabled: boolean;
+  whatsapp_link:       string;
+  terms:               string[];
+  features:            string[];
+  requirements:        string[];
+  subscription_method: string;
+  image_url:           string;
+  color_primary:       string;
+  color_secondary:     string;
+  badge_label:         string;
+  created_at:          string;
+  updated_at:          string;
+}
+
+export function calcPackageDiscount(pkg: RedPackage): {
+  savings: number;
+  pct: number;
+  currentPrice: number;
+  originalPrice: number;
+} {
+  const original = pkg.base_price;
+  const current  = pkg.discounted_price ?? pkg.base_price;
+  const savings  = original - current;
+  const pct      = original > 0 ? Math.round((savings / original) * 100) : 0;
+  return { savings, pct, currentPrice: current, originalPrice: original };
+}
+
+export async function getRedPackages(): Promise<RedPackage[]> {
+  const { data, error } = await supabase
+    .from('red_packages')
+    .select('*')
+    .eq('is_visible', true)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as RedPackage[];
+}
+
+export async function getRedPackageById(id: string): Promise<RedPackage | null> {
+  const { data, error } = await supabase
+    .from('red_packages')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) return null;
+  return data as RedPackage;
+}
+
+export async function adminGetAllRedPackages(): Promise<RedPackage[]> {
+  const { data, error } = await supabase
+    .from('red_packages')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as RedPackage[];
+}
+
+export async function adminCreateRedPackage(pkg: Omit<RedPackage, 'id' | 'created_at' | 'updated_at'>): Promise<RedPackage> {
+  const { data, error } = await supabase
+    .from('red_packages')
+    .insert([{ ...pkg, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as RedPackage;
+}
+
+export async function adminUpdateRedPackage(id: string, updates: Partial<Omit<RedPackage, 'id' | 'created_at'>>): Promise<void> {
+  const { error } = await supabase
+    .from('red_packages')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function adminDeleteRedPackage(id: string): Promise<void> {
+  const { error } = await supabase.from('red_packages').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── Promotions API ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+export interface Promotion {
+  id:                string;
+  title:             string;
+  description:       string;
+  image_url:         string;
+  color_primary:     string;
+  color_secondary:   string;
+  icon:              string;
+  sort_order:        number;
+  priority:          number;
+  start_date:        string | null;
+  end_date:          string | null;
+  cta_label:         string;
+  internal_route:    string;
+  external_url:      string;
+  status:            'active' | 'scheduled' | 'ended' | 'draft';
+  display_frequency: 'always' | 'once' | 'daily' | 'weekly' | 'monthly';
+  dismiss_behavior:  'permanent' | 'till_tomorrow' | 'hours' | 'always_show';
+  dismiss_hours:     number;
+  send_push:         boolean;
+  push_sent:         boolean;
+  is_active:         boolean;
+  show_on_home:      boolean;
+  created_at:        string;
+  updated_at:        string;
+}
+
+export async function getActivePromotions(): Promise<Promotion[]> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('promotions')
+    .select('*')
+    .eq('is_active', true)
+    .eq('show_on_home', true)
+    .in('status', ['active'])
+    .or(`start_date.is.null,start_date.lte.${now}`)
+    .or(`end_date.is.null,end_date.gte.${now}`)
+    .order('priority', { ascending: false })
+    .order('sort_order', { ascending: true });
+  if (error) return [];
+  return (data ?? []) as Promotion[];
+}
+
+export async function adminGetAllPromotions(): Promise<Promotion[]> {
+  const { data, error } = await supabase
+    .from('promotions')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Promotion[];
+}
+
+export async function adminCreatePromotion(promo: Omit<Promotion, 'id' | 'created_at' | 'updated_at' | 'push_sent'>): Promise<Promotion> {
+  const { data, error } = await supabase
+    .from('promotions')
+    .insert([{ ...promo, push_sent: false, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Promotion;
+}
+
+export async function adminUpdatePromotion(id: string, updates: Partial<Omit<Promotion, 'id' | 'created_at'>>): Promise<void> {
+  const { error } = await supabase
+    .from('promotions')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function adminDeletePromotion(id: string): Promise<void> {
+  const { error } = await supabase.from('promotions').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function recordPromotionView(promotionId: string, userId: string): Promise<void> {
+  await supabase.rpc('upsert_promotion_view', { p_promotion_id: promotionId, p_user_id: userId }).maybeSingle();
+}
+
+export async function getPromotionView(promotionId: string, userId: string): Promise<{ view_count: number; dismissed: boolean; last_viewed: string } | null> {
+  const { data } = await supabase
+    .from('promotion_views')
+    .select('view_count, dismissed, last_viewed')
+    .eq('promotion_id', promotionId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return data as { view_count: number; dismissed: boolean; last_viewed: string } | null;
+}
+
+export async function dismissPromotion(promotionId: string, userId: string): Promise<void> {
+  await supabase
+    .from('promotion_views')
+    .upsert({
+      promotion_id: promotionId,
+      user_id:      userId,
+      dismissed:    true,
+      dismissed_at: new Date().toISOString(),
+      last_viewed:  new Date().toISOString(),
+    }, { onConflict: 'promotion_id,user_id' });
+}
+
 /** جلب تفاصيل تاجر واحد: أعضاء + عمليات + نقاط + اشتراكات + أكواد + logs */
 export async function adminGetMerchantDetail(merchantId: string): Promise<{
   merchant:      MerchantFull | null;
