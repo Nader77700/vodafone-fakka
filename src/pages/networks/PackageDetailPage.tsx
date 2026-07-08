@@ -1,4 +1,4 @@
-// صفحة تفاصيل الباقة — PHASE 5 (كامل)
+// صفحة تفاصيل الباقة — Phase 4 (كامل)
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import AppFooter from '@/components/common/AppFooter';
 import { getRedPackageById, calcPackageDiscount } from '@/lib/api';
 import type { RedPackage } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl, validateRedSubscription } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
 
 
@@ -21,21 +23,10 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   disabled:    { label: 'غير متاح', color: '#888'    },
 };
 
-function buildWhatsAppUrl(pkg: RedPackage, msg?: string): string {
-  const num = pkg.whatsapp_number?.replace(/\D/g, '') || '';
-  const text = msg || `أريد الاستفسار عن باقة ${pkg.name}`;
-  if (num) return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
-  if (pkg.whatsapp_link) {
-    return pkg.whatsapp_link.includes('?text=')
-      ? pkg.whatsapp_link
-      : `${pkg.whatsapp_link}?text=${encodeURIComponent(text)}`;
-  }
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
-}
-
 export default function PackageDetailPage() {
   const { id }    = useParams<{ id: string }>();
   const navigate  = useNavigate();
+  const { user, profile } = useAuth();
   const [pkg, setPkg]           = useState<RedPackage | null>(null);
   const [loading, setLoading]   = useState(true);
 
@@ -64,7 +55,22 @@ export default function PackageDetailPage() {
   const darkColor   = pkg.color_secondary || '#B30000';
   const sf          = pkg.show_fields ?? {};
 
-  const waUrl = buildWhatsAppUrl(pkg, `أريد الاستفسار عن باقة ${pkg.name} — ${pkg.network_name || 'Vodafone'}`);
+  const userInfo = { userId: user?.id ?? '', fullName: profile?.full_name, username: profile?.username, phone: profile?.phone };
+
+  // زر اشترك الآن → واتساب مباشرة برسالة احترافية كاملة
+  const handleSubscribe = () => {
+    const { ok, errors } = validateRedSubscription(pkg, user ? userInfo : null);
+    if (!ok) { errors.forEach(e => toast.error(e)); return; }
+    const url = buildRedWhatsAppUrl(pkg, userInfo);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast.success(pkg.post_subscription_msg || 'تم فتح واتساب — أرسل الرسالة لتفعيل الباقة ✅');
+  };
+
+  // زر واتساب → واتساب استفسار
+  const handleWhatsapp = () => {
+    const url = buildRedWhatsAppQueryUrl(pkg);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="min-h-screen pb-6 page-enter" dir="rtl">
@@ -279,7 +285,7 @@ export default function PackageDetailPage() {
         <div className="space-y-2 pt-2 pb-4">
           {canSubscribe ? (
             <button
-              onClick={() => navigate(`/networks/vodafone/subscribe/${pkg.id}`)}
+              onClick={handleSubscribe}
               className="w-full h-12 rounded-xl text-base font-black text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2"
               style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})` }}>
               <CheckCircle className="w-5 h-5" />اشترك الآن
@@ -292,7 +298,7 @@ export default function PackageDetailPage() {
             </button>
           )}
           <button
-            onClick={() => window.open(waUrl, '_blank', 'noopener,noreferrer')}
+            onClick={handleWhatsapp}
             className="w-full h-11 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
             style={{ background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.30)', color: '#25d366' }}>
             <MessageCircle className="w-4 h-4" />تواصل عبر واتساب

@@ -1,4 +1,4 @@
-// صفحة الاشتراك في الباقة — PHASE 5 (تحقق كامل + WhatsApp فعلي)
+// صفحة الاشتراك في الباقة — Phase 3 (رسالة واتساب احترافية كاملة)
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -10,57 +10,12 @@ import AppFooter from '@/components/common/AppFooter';
 import { getRedPackageById, calcPackageDiscount } from '@/lib/api';
 import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildRedWhatsAppUrl, validateRedSubscription } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
 import { formatEgyptDate } from '@/lib/egyptTime';
 
 const VF_RED  = '#E60000';
 const VF_DARK = '#B30000';
-
-interface ValidationResult {
-  ok:      boolean;
-  field:   string;
-  message: string;
-}
-
-function validate(
-  user:    ReturnType<typeof useAuth>['user'],
-  profile: ReturnType<typeof useAuth>['profile'],
-  pkg:     RedPackage | null,
-): ValidationResult[] {
-  const checks: ValidationResult[] = [
-    {
-      ok:      !!user,
-      field:   'user',
-      message: 'يجب تسجيل الدخول أولاً',
-    },
-    {
-      ok:      !!(profile?.full_name || profile?.username),
-      field:   'name',
-      message: 'يجب إضافة اسمك في الإعدادات',
-    },
-    {
-      ok:      !!profile?.phone,
-      field:   'phone',
-      message: 'يجب إضافة رقم الهاتف في الإعدادات',
-    },
-    {
-      ok:      !!pkg,
-      field:   'package',
-      message: 'الباقة غير موجودة',
-    },
-    {
-      ok:      pkg?.status === 'available' || pkg?.status === 'featured',
-      field:   'status',
-      message: pkg?.status === 'coming_soon' ? 'هذه الباقة ستكون متاحة قريباً' : 'هذه الباقة غير متاحة حالياً',
-    },
-    {
-      ok:      !!pkg?.subscription_enabled,
-      field:   'subscription',
-      message: 'الاشتراك في هذه الباقة غير مفعّل حالياً',
-    },
-  ];
-  return checks;
-}
 
 export default function SubscribePackagePage() {
   const { id }                  = useParams<{ id: string }>();
@@ -84,67 +39,26 @@ export default function SubscribePackagePage() {
       .finally(() => setLoading(false));
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const checks   = validate(user, profile, pkg);
-  const allOk    = checks.every(c => c.ok);
-  const failures = checks.filter(c => !c.ok);
+  const userInfo = {
+    userId:   user?.id         ?? '',
+    fullName: profile?.full_name,
+    username: profile?.username,
+    phone:    profile?.phone,
+  };
 
-  const cardColor = pkg?.card_color  || VF_RED;
-  const darkColor = pkg?.color_secondary || VF_DARK;
+  const { ok: allOk, errors: failures } = validateRedSubscription(pkg, user ? userInfo : null);
+
+  const cardColor = pkg?.card_color        || VF_RED;
+  const darkColor = pkg?.color_secondary   || VF_DARK;
 
   const handleSubscribe = () => {
-    if (!allOk) {
-      failures.forEach(f => toast.error(f.message));
-      return;
-    }
-    if (!pkg || !user || !profile) return;
-
+    if (!allOk) { failures.forEach(e => toast.error(e)); return; }
+    if (!pkg || !user) return;
     setSubmitting(true);
-
-    const { currentPrice, originalPrice, pct } = calcPackageDiscount(pkg);
-    const userName = profile.full_name || profile.username || 'غير محدد';
-    const phone    = profile.phone     || 'غير محدد';
-    const userId   = user.id;
-    const now      = formatEgyptDate(new Date().toISOString());
-
-    const preMsg = pkg.pre_subscription_msg ? `\n⚠️ ${pkg.pre_subscription_msg}` : '';
-
-    const msg = [
-      `🔴 طلب اشتراك — ${pkg.network_name || 'Vodafone'} RED`,
-      ``,
-      `📦 الباقة:        ${pkg.name}`,
-      `🌐 الشبكة:        ${pkg.network_name || 'Vodafone'}`,
-      `📶 الإنترنت:      ${pkg.data_gb} جيجابايت`,
-      `📞 الدقائق:       ${pkg.minutes} دقيقة`,
-      `⏱️ مدة الباقة:    ${pkg.duration || 'شهر'}`,
-      `💰 السعر الأساسي: ${originalPrice} جنيه`,
-      `✅ السعر المدفوع:  ${currentPrice} جنيه${pct > 0 ? ` (خصم ${pct}%)` : ''}`,
-      ``,
-      `👤 الاسم:         ${userName}`,
-      `📱 الهاتف:        ${phone}`,
-      `🆔 معرف المستخدم: ${userId}`,
-      `📅 تاريخ الطلب:   ${now}`,
-      preMsg,
-    ].filter(l => l !== undefined).join('\n');
-
-    const num = pkg.whatsapp_number?.replace(/\D/g, '') || '';
-    let url: string;
-    if (num) {
-      url = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
-    } else if (pkg.whatsapp_link) {
-      url = pkg.whatsapp_link.includes('?text=')
-        ? pkg.whatsapp_link
-        : `${pkg.whatsapp_link}?text=${encodeURIComponent(msg)}`;
-    } else {
-      toast.error('لم يتم تعيين رقم واتساب لهذه الباقة — تواصل مع الدعم');
-      setSubmitting(false);
-      return;
-    }
-
+    const url = buildRedWhatsAppUrl(pkg, userInfo);
     window.open(url, '_blank', 'noopener,noreferrer');
     setSubmitting(false);
-
-    const postMsg = pkg.post_subscription_msg || 'تم فتح واتساب — أرسل الرسالة لتفعيل الباقة ✅';
-    toast.success(postMsg);
+    toast.success(pkg.post_subscription_msg || 'تم فتح واتساب — أرسل الرسالة لتفعيل الباقة ✅');
   };
 
   if (loading) return (
@@ -283,11 +197,11 @@ export default function SubscribePackagePage() {
           {/* مشاكل التحقق */}
           {failures.length > 0 && (
             <div className="space-y-1.5">
-              {failures.map(f => (
-                <div key={f.field} className="flex items-start gap-2 rounded-xl p-2.5"
+              {failures.map((msg, i) => (
+                <div key={i} className="flex items-start gap-2 rounded-xl p-2.5"
                   style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.22)' }}>
                   <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: VF_RED }} />
-                  <p className="text-[10px] text-muted-foreground">{f.message}</p>
+                  <p className="text-[10px] text-muted-foreground">{msg}</p>
                 </div>
               ))}
             </div>
@@ -325,7 +239,7 @@ export default function SubscribePackagePage() {
             {submitting ? 'جارٍ الإرسال…' : 'إرسال الطلب عبر واتساب'}
           </button>
 
-          {failures.some(f => f.field === 'name' || f.field === 'phone') && (
+          {failures.some(e => e.includes('اسم') || e.includes('هاتف')) && (
             <button
               onClick={() => navigate('/settings')}
               className="w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.97]"

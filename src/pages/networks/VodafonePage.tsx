@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import AppFooter from '@/components/common/AppFooter';
 import { getRedPackages, calcPackageDiscount } from '@/lib/api';
 import type { RedPackage } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl, validateRedSubscription } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -19,23 +21,13 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   disabled:    { label: 'غير متاح', color: '#888',    bg: 'rgba(136,136,136,0.10)' },
 };
 
-function buildWhatsAppUrl(pkg: RedPackage, extraMsg?: string): string {
-  const num = pkg.whatsapp_number?.replace(/\D/g, '') || '';
-  const text = extraMsg || `أريد الاشتراك في ${pkg.name}`;
-  if (num) return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
-  if (pkg.whatsapp_link) {
-    return pkg.whatsapp_link.includes('?text=')
-      ? pkg.whatsapp_link
-      : `${pkg.whatsapp_link}?text=${encodeURIComponent(text)}`;
-  }
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
-}
-
 function PackageCard({ pkg, onDetails, onSubscribe, onWhatsapp }: {
   pkg:         RedPackage;
   onDetails:   (p: RedPackage) => void;
   onSubscribe: (p: RedPackage) => void;
   onWhatsapp:  (p: RedPackage) => void;
+  // onSubscribe → فتح واتساب مباشرة بالرسالة الاحترافية
+  // onWhatsapp  → فتح واتساب للاستفسار
 }) {
   const { pct, currentPrice, originalPrice } = calcPackageDiscount(pkg);
   const isFeatured = pkg.status === 'featured';
@@ -188,7 +180,8 @@ function PackageCard({ pkg, onDetails, onSubscribe, onWhatsapp }: {
 }
 
 export default function VodafonePage() {
-  const navigate = useNavigate();
+  const navigate           = useNavigate();
+  const { user, profile }  = useAuth();
   const [packages, setPackages] = useState<RedPackage[]>([]);
   const [loading, setLoading]   = useState(true);
 
@@ -199,10 +192,22 @@ export default function VodafonePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDetails   = (p: RedPackage) => navigate(`/networks/vodafone/package/${p.id}`);
-  const handleSubscribe = (p: RedPackage) => navigate(`/networks/vodafone/subscribe/${p.id}`);
-  const handleWhatsapp  = (p: RedPackage) => {
-    const url = buildWhatsAppUrl(p, `أريد الاستفسار عن باقة ${p.name}`);
+  // زر تفاصيل الباقة → صفحة التفاصيل
+  const handleDetails = (p: RedPackage) => navigate(`/networks/vodafone/package/${p.id}`);
+
+  // زر اشترك الآن → واتساب مباشرة برسالة احترافية كاملة
+  const handleSubscribe = (p: RedPackage) => {
+    const userInfo = { userId: user?.id ?? '', fullName: profile?.full_name, username: profile?.username, phone: profile?.phone };
+    const { ok, errors } = validateRedSubscription(p, user ? userInfo : null);
+    if (!ok) { errors.forEach(e => toast.error(e)); return; }
+    const url = buildRedWhatsAppUrl(p, userInfo);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast.success(p.post_subscription_msg || 'تم فتح واتساب — أرسل الرسالة لتفعيل الباقة ✅');
+  };
+
+  // زر واتساب → واتساب استفسار
+  const handleWhatsapp = (p: RedPackage) => {
+    const url = buildRedWhatsAppQueryUrl(p);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
