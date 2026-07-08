@@ -1,7 +1,7 @@
 // الصفحة الرئيسية — كروت الشحن + معلومات المستخدم
 
-// لوجو احتياطي فوري إذا لم تُحمَّل أصول DB بعد
-const HEADER_FALLBACK_LOGO = 'https://miaoda-conversation-file.s3cdn.medo.dev/user-bkii4kb9ihvk/app-ck2v94t1nev5/20260623/file_00000000191471f49ddde7c1651efc02.png';
+// لوجو احتياطي — محلي دائمًا، لا يعتمد على الشبكة
+const HEADER_FALLBACK_LOGO = '/vfp-logo.png';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ import {
   getExpiryNotificationSentToday, getSubscriptionOpsInfo, insertSystemLog,
   getProductConfig, type ProductConfig,
 } from '@/lib/api';
-import { staleWhileRevalidate } from '@/lib/appCache';
+import { staleWhileRevalidate, cacheGetStale, cacheSet } from '@/lib/appCache';
 import type { ActivityEntry, SubscriptionOpsInfo, OpsCheckResult } from '@/lib/api';
 import type { ChargeDebugStep } from '@/lib/api';
 import type { Subscription, Operation } from '@/types/types';
@@ -1612,6 +1612,17 @@ export default function HomePage() {
   const loadData = () => {
     if (!user || !profile) return;
     let isMounted = true;
+
+    // ── cache-first: اعرض البيانات المخزنة فوراً قبل أي network call ──
+    Promise.all([
+      cacheGetStale<ReturnType<typeof getUserSubscription> extends Promise<infer T> ? T : never>(`cache_subscription_${user.id}`),
+      cacheGetStale<{ data: Operation[]; count: number }>(`cache_ops_p1_${user.id}`),
+    ]).then(([cachedSub, cachedOps]) => {
+      if (!isMounted) return;
+      if (cachedSub !== null) { setSubscription(cachedSub); setLoading(false); }
+      if (cachedOps !== null) { setLastOp(cachedOps.data[0] ?? null); setOpsCount(cachedOps.count); }
+    }).catch(() => {});
+
     Promise.all([
       getUserSubscription(user.id),
       getUserOperations(user.id, 1),
@@ -1620,6 +1631,9 @@ export default function HomePage() {
       getSubscriptionOpsInfo(user.id),
     ]).then(async ([sub, ops, acts, unread, ops_info]) => {
       if (!isMounted) return;
+      // حفظ في الكاش لاستخدامه عند إعادة الفتح
+      cacheSet(`cache_subscription_${user.id}`, sub, undefined).catch(() => {});
+      cacheSet(`cache_ops_p1_${user.id}`, ops, undefined).catch(() => {});
       setLastOp(ops.data[0] ?? null);
       setOpsCount(ops.count);
       setActivities(acts);
@@ -1917,14 +1931,13 @@ export default function HomePage() {
           {/* اسم التطبيق + شعار ديناميكي */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
-          {/* P8: لوجو Hero الديناميكي — fallback فوري إذا لم يُحمَّل بعد */}
-          {(headerLogoUrl || heroLogoUrl || HEADER_FALLBACK_LOGO) ? (
-            <img
-              src={heroLogoUrl || headerLogoUrl || HEADER_FALLBACK_LOGO}
-              alt="Logo"
-              className="w-10 h-10 rounded-xl object-cover shrink-0 border border-primary/20"
-            />
-          ) : null}
+          {/* P8: لوجو Hero الديناميكي — fallback فوري محلي بدون شبكة */}
+          <img
+            src={heroLogoUrl || headerLogoUrl || HEADER_FALLBACK_LOGO}
+            alt="Logo"
+            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-primary/20"
+            onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }}
+          />
               <div className="space-y-0.5">
                 <h1 className="text-xl font-black tracking-tight text-balance" style={{
                   background: 'linear-gradient(90deg,#00E5FF,#F7C948)',
@@ -2040,7 +2053,8 @@ export default function HomePage() {
               >
                 {(heroLogoUrl || headerLogoUrl || welcomeIconUrl) ? (
                   <img src={heroLogoUrl || headerLogoUrl || welcomeIconUrl!} alt="logo"
-                    className="w-full h-full object-cover" />
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }} />
                 ) : (
                   <VFLogo size={32} />
                 )}

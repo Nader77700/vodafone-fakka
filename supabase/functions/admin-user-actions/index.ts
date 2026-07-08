@@ -70,11 +70,11 @@ Deno.serve(async (req) => {
           await supabaseAdmin.from('fcm_tokens')
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
-          await supabaseAdmin.from('activity_log').insert({
+          try { await supabaseAdmin.from('activity_log').insert({
             user_id: userId, event_type: 'admin_sign_out_all',
             title: 'تسجيل خروج من جميع الأجهزة',
             description: `بواسطة الأدمن ${caller.id}`,
-          }).catch(() => {});
+          }); } catch {}
           return json({ success: true, message: 'تم تسجيل الخروج من جميع الأجهزة' });
         }
 
@@ -83,11 +83,11 @@ Deno.serve(async (req) => {
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
           if (error) return json({ error: `فشل إعادة التعيين: ${error.message}` }, 500);
-          await supabaseAdmin.from('activity_log').insert({
+          try { await supabaseAdmin.from('activity_log').insert({
             user_id: userId, event_type: 'admin_reset_device',
             title: 'إعادة تعيين بيانات الجهاز',
             description: `بواسطة الأدمن ${caller.id}`,
-          }).catch(() => {});
+          }); } catch {}
           return json({ success: true, message: 'تم إعادة تعيين بيانات الجهاز' });
         }
 
@@ -98,11 +98,11 @@ Deno.serve(async (req) => {
             .update({ ops_limit: newLimit, ops_remaining: newLimit, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
           if (error) return json({ error: `فشل التعديل: ${error.message}` }, 500);
-          await supabaseAdmin.from('activity_log').insert({
+          try { await supabaseAdmin.from('activity_log').insert({
             user_id: userId, event_type: 'admin_set_ops_limit',
             title: 'تعديل الحد اليومي للعمليات',
             description: `تم تعيين الحد إلى ${newLimit} بواسطة الأدمن ${caller.id}`,
-          }).catch(() => {});
+          }); } catch {}
           return json({ success: true, message: `تم تعيين الحد إلى ${newLimit} عملية` });
         }
 
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
           }
 
           // ── الخطوة 4: حذف بيانات التاجر (المالك) ────────────────────────
-          await supabaseAdmin.from('merchants').delete().eq('owner_id', userId).catch(() => {});
+          try { await supabaseAdmin.from('merchants').delete().eq('owner_id', userId); } catch {}
 
           // ── الخطوة 5: حذف الـ profile ────────────────────────────────────
           const { error: profErr } = await supabaseAdmin
@@ -285,11 +285,11 @@ Deno.serve(async (req) => {
 
       if (banErr) return json({ error: `فشل حظر الجهاز: ${banErr.message}` }, 500);
 
-      await supabaseAdmin.from('admin_audit_logs').insert({
+      try { await supabaseAdmin.from('admin_audit_logs').insert({
         action: 'ban_device', performed_by: caller.id,
         target_user_id: (associated_user_ids as string[] | null)?.[0] ?? null,
         details: { device_fp, device_id, ban_reason, ban_id: (banData as { id?: string } | null)?.id },
-      }).catch(() => {});
+      }); } catch {}
 
       return json({ success: true, ban_id: (banData as { id?: string } | null)?.id, message: 'تم حظر الجهاز نهائياً' });
     }
@@ -303,9 +303,9 @@ Deno.serve(async (req) => {
         unbanned_by: caller.id, updated_at: new Date().toISOString(),
       }).eq('id', ban_id);
       if (ubErr) return json({ error: `فشل رفع الحظر: ${ubErr.message}` }, 500);
-      await supabaseAdmin.from('admin_audit_logs').insert({
+      try { await supabaseAdmin.from('admin_audit_logs').insert({
         action: 'unban_device', performed_by: caller.id, details: { ban_id },
-      }).catch(() => {});
+      }); } catch {}
       return json({ success: true, message: 'تم رفع حظر الجهاز' });
     }
 
@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
         hardware_hash: hardware_hash ?? null, ip_address: ip_address ?? null,
         device_model: device_model ?? null, platform: platform ?? null,
         app_version: app_version ?? null, last_seen_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,device_fp', ignoreDuplicates: false }).catch(() => {});
+      }, { onConflict: 'user_id,device_fp', ignoreDuplicates: false });
       return json({ success: true });
     }
 

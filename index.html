@@ -30,7 +30,7 @@
         script-src 'self' 'unsafe-inline' 'unsafe-eval';
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data: blob: https://vchmsnavyhripakyvzom.supabase.co https://*.supabase.co;
+        img-src 'self' data: blob: https://vchmsnavyhripakyvzom.supabase.co https://*.supabase.co https://miaoda-conversation-file.s3cdn.medo.dev https://*.medo.dev;
         connect-src 'self' https://vchmsnavyhripakyvzom.supabase.co wss://vchmsnavyhripakyvzom.supabase.co https://fcm.googleapis.com;
         frame-ancestors 'none';
         base-uri 'self';
@@ -41,7 +41,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   </head>
-  <body>
+  <body style="background:#050000;margin:0;padding:0;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

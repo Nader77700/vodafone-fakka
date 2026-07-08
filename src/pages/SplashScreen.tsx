@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/db/supabase';
 
 export const OFFICIAL_LOGO = '/vfp-logo.png';
-const MIN_DISPLAY_MS = 5000;
+const MIN_DISPLAY_MS = 2500;
 
 // ── تحسين الأداء: تقليل الأنيميشن على الأجهزة الضعيفة ─────────────────────
 // على Android الأجهزة الحقيقية → تعطيل الـ particles لتوفير CPU/GPU
