@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.282',
-  versionCode:    197,
-  buildTimestamp: '2026-07-08T12:00:00Z',
+  appVersion:     '3.0.283',
+  versionCode:    198,
+  buildTimestamp: '2026-07-08T10:34:32Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.282.apk',
-  bundleHash:     'apk_v3_0_282_code197',
-  apkHash:        'apk_v3_0_282_code197',
-  dbVersion:      'v3.0.282',
+  bundleFile:     'VodafoneFakka-v3.0.283.apk',
+  bundleHash:     'apk_v3_0_283_code198',
+  apkHash:        'apk_v3_0_283_code198',
+  dbVersion:      'v3.0.283',
   releaseNotes: [
+    'v3.0.283: تحديث نظام اشتراك Vodafone RED — ربط واتساب مباشر + رسالة احترافية كاملة',
     'v3.0.282: إصلاح نظام التحديث التلقائي — workflow يُحدِّث DB صح + إصلاح delete_account + شاشة سوداء + لوجو محلي',
     'v3.0.280: إصلاح جميع merge conflicts (السبب الجذري) + تحديث فوري عبر web-live + admin-user-actions مُعاد نشرها',
     'v3.0.278: إصلاح حذف الحساب + استعادة الاشتراك المستبدل + منع تكرار الهاتف',
