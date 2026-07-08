@@ -80,14 +80,35 @@ serve(async (req: Request) => {
     if (!hasActive && !isAdmin) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 403);
 
     // ── استقبال بيانات الطلب ──
-    const { product_id, receiver, access_token, msisdn } = await req.json();
+    const { product_id, receiver, access_token, msisdn, tx_uuid } = await req.json();
 
     if (!product_id || !receiver || !access_token || !msisdn)
       return json({ success: false, error: "بيانات غير مكتملة — يرجى تسجيل الدخول مجدداً" }, 400);
     if (!receiver.startsWith("01") || receiver.length !== 11)
       return json({ success: false, error: "رقم المستفيد غير صحيح — 11 رقم يبدأ بـ 01" }, 400);
 
-    console.log("[balance-charge] start", { product_id, receiver, msisdn: msisdn.slice(0,6)+"XXXXX" });
+    // ══ IDEMPOTENCY CHECK: إذا كان tx_uuid موجوداً تحقق هل سُجِّلت العملية بالفعل ══
+    // يمنع التسجيل المزدوج في حالة retry من العميل
+    if (tx_uuid) {
+      const { data: existing } = await supabaseAdmin
+        .from("operations")
+        .select("operation_number, status")
+        .contains("card_data", { tx_uuid })
+        .eq("user_id", caller.id)
+        .maybeSingle();
+      if (existing) {
+        console.log("[balance-charge] idempotency hit — already registered", { tx_uuid, op: existing.operation_number });
+        return json({
+          success:          existing.status === "success",
+          message:          "✅ العملية مسجّلة بالفعل",
+          operation_number: existing.operation_number,
+          registered:       true,
+          idempotent:       true,
+        });
+      }
+    }
+
+    console.log("[balance-charge] start", { product_id, receiver, msisdn: msisdn.slice(0,6)+"XXXXX", tx_uuid });
 
     // ── تنفيذ طلب الشحن — مطابق 100% للسكربت المرجعي ──
     // payload بسيط بدون PaymentMethod/USE_EMONEY — كما في get_fakka_cards_dict()
@@ -150,6 +171,7 @@ serve(async (req: Request) => {
             via:             "native",
             latency_ms:      latencyMs,
             registered_by:   "edge_function",
+            tx_uuid:         tx_uuid ?? null,
           },
         })
         .select("operation_number")

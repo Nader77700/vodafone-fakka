@@ -9,6 +9,9 @@ import {
   insertOperation, checkAndConsumeOperation, refundOperation,
   logActivity, insertSystemLog, sendNotification,
 } from '@/lib/api';
+import {
+  checkRealConnectivity, enqueuePendingOp, markOpSynced, syncPendingOps,
+} from '@/lib/pendingOpsQueue';
 import type { OpsCheckResult } from '@/lib/api';
 import {
   saveBalanceSession, getBalanceSession, clearBalanceSession,
@@ -875,16 +878,20 @@ function BalanceExecuteDialog({
 
   const handleExecute = async () => {
     if (!user || !product || !session || !receiverPhone) return;
-    if (executingRef.current) return; // PHASE 14: منع تكرار
-    if (cooldownLeft > 0) return;     // PHASE 5: منع خلال cooldown
+    if (executingRef.current) return;
+    if (cooldownLeft > 0) return;
 
-    // PHASE 4: Pre-Validation قبل إرسال الطلب
-    if (!navigator.onLine) {
-      setLastError('تعذر الاتصال بالخادم');
+    // ══ SECURITY GATE 1: فحص اتصال حقيقي بالسيرفر (ليس navigator.onLine فقط) ══
+    // navigator.onLine يُرجع true حتى لو الشبكة لا تصل للسيرفر.
+    // نفحص ping حقيقي لـ Supabase قبل أي خطوة — بدون اتصال = توقف فوري.
+    const isConnected = await checkRealConnectivity();
+    if (!isConnected) {
+      setLastError('لا يوجد اتصال بالإنترنت\n\nتأكد من تشغيل بيانات شريحة Vodafone Cash\nثم أعد المحاولة');
       setStep('error');
       setOpTime(new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
       return;
     }
+
     if (!isBalanceSessionActive()) {
       clearBalanceSession();
       toast.error('انتهت صلاحية جلسة تسجيل الدخول — يرجى تسجيل الدخول مرة أخرى');
@@ -907,11 +914,47 @@ function BalanceExecuteDialog({
       }
     }
 
+    // ══ SECURITY GATE 2: توليد UUID فريد قبل الاتصال — يمنع التكرار ══
+    const txUuid = crypto.randomUUID();
+    const performedAt = new Date().toISOString();
+
+    // ══ SECURITY GATE 3: حفظ العملية محلياً قبل أي اتصال ══
+    // هذا يضمن عدم فقدان العملية حتى لو انقطع الإنترنت أثناء الاستجابة.
+    enqueuePendingOp({
+      uuid:             txUuid,
+      created_at:       performedAt,
+      user_id:          user.id,
+      phone_number:     receiverPhone,
+      card_type:        product.display_name,
+      card_data: {
+        product_id:       product.product_id,
+        price:            product.price,
+        units_label:      product.units_label,
+        net_charge_label: product.net_charge_label,
+        validity:         product.validity,
+        source:           'ana_vodafone_balance',
+        tx_uuid:          txUuid,
+      },
+      category:         product.category === 'fakka' ? 'فكة' : 'مارد',
+      amount:           product.price,
+      charge_success:   false, // سيُحدَّث بعد تأكيد السيرفر
+      error_message:    null,
+      performed_at:     performedAt,
+      api_response:     null,
+      operation_source: 'ana_vodafone_balance',
+    });
+
     const { data, error: fnErr } = await supabase.functions.invoke<{
       success: boolean; error?: string; session_expired?: boolean;
       operation_number?: number | null; registered?: boolean;
     }>('ana-balance-charge', {
-      body: { product_id: product.product_id, receiver: receiverPhone, access_token: session.access_token, msisdn: session.msisdn },
+      body: {
+        product_id:   product.product_id,
+        receiver:     receiverPhone,
+        access_token: session.access_token,
+        msisdn:       session.msisdn,
+        tx_uuid:      txUuid, // idempotency key للسيرفر
+      },
     });
 
     const now = new Date();
@@ -925,7 +968,6 @@ function BalanceExecuteDialog({
       const msg = await fnErr?.context?.text?.().catch(() => null);
       try { errorMsg = JSON.parse(msg ?? '').error ?? 'فشل الاتصال بالخادم'; } catch { errorMsg = 'فشل الاتصال بالخادم'; }
     } else if (!data?.success) {
-      // PHASE 2: قراءة سبب الفشل الحقيقي من السيرفر
       errorMsg = data?.error ?? 'فشل الشحن من الرصيد';
       if (data?.session_expired) {
         clearBalanceSession();
@@ -934,38 +976,55 @@ function BalanceExecuteDialog({
       }
     } else { success = true; }
 
-    // PHASE 5: تفعيل cooldown 30 ثانية عند فشل الرصيد
     if (!success && errorMsg) {
       const errInfo = mapServerError(errorMsg);
-      if (errInfo.isBalanceError) {
-        setCooldownUntil(Date.now() + 30_000);
-      }
+      if (errInfo.isBalanceError) setCooldownUntil(Date.now() + 30_000);
     }
 
+    // ══ SECURITY GATE 4: السيرفر سجّل العملية (registered=true) → احذفها من القائمة ══
     const serverRegistered = data?.registered === true;
-    const performedAt = now.toISOString();
+    if (serverRegistered) {
+      markOpSynced(txUuid); // العملية مسجّلة سيرفر-سايد — لا حاجة للـ queue
+    }
 
     if (!serverRegistered) {
       const { error: opErr, data: opData } = await insertOperation({
-        user_id: user.id, phone_number: receiverPhone, card_type: product.display_name,
+        user_id:          user.id,
+        phone_number:     receiverPhone,
+        card_type:        product.display_name,
         card_data: {
-          product_id: product.product_id, price: product.price,
-          units_label: product.units_label, net_charge_label: product.net_charge_label,
-          validity: product.validity, source: 'ana_vodafone_balance',
+          product_id:       product.product_id,
+          price:            product.price,
+          units_label:      product.units_label,
+          net_charge_label: product.net_charge_label,
+          validity:         product.validity,
+          source:           'ana_vodafone_balance',
+          tx_uuid:          txUuid, // idempotency: منع التسجيل المزدوج
         } as Record<string, unknown>,
-        category: product.category === 'fakka' ? 'فكة' : 'مارد',
-        amount: product.price,
-        status: success ? 'success' : 'failed',
-        error_message: errorMsg ?? null, performed_at: performedAt,
-        api_response: success ? 'Completed via AnaVodafone Balance' : (errorMsg?.split('\n')[0] ?? null),
+        category:         product.category === 'fakka' ? 'فكة' : 'مارد',
+        amount:           product.price,
+        status:           success ? 'success' : 'failed',
+        error_message:    errorMsg ?? null,
+        performed_at:     performedAt,
+        api_response:     success ? 'Completed via AnaVodafone Balance' : (errorMsg?.split('\n')[0] ?? null),
         operation_source: 'ana_vodafone_balance',
       } as Parameters<typeof insertOperation>[0]);
 
       if (opErr) {
-        if (success) toast.warning('✅ تم الشحن — سيُسجَّل عند عودة الإنترنت', { duration: 8000 });
-        else { await refundOperation(user.id); toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية'); }
+        // ══ SECURITY GATE 5: فشل التسجيل — العملية محفوظة في queue ستُزامَن تلقائياً ══
+        // لا تُرسَل رسالة "سيُسجَّل لاحقاً" إلا إذا كان الشحن ناجحاً فعلاً
+        if (success) {
+          toast.warning('✅ تم الشحن — جارٍ حفظ السجل، سيظهر تلقائياً عند استقرار الاتصال', { duration: 10000 });
+          // العملية في queue وستُزامَن عند رجوع الإنترنت
+        } else {
+          await refundOperation(user.id);
+          markOpSynced(txUuid); // إلغاء queue لأن الشحن فاشل والعملية مُستردة
+          toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية');
+        }
         setSubmitting(false); executingRef.current = false; return;
       }
+      // تسجيل ناجح → احذف من queue
+      markOpSynced(txUuid);
       if (!success && !isAdmin) await refundOperation(user.id);
 
       const clientOpNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
