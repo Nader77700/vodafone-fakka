@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.285',
-  versionCode:    200,
-  buildTimestamp: '2026-07-08T11:08:53Z',
+  appVersion:     '3.0.286',
+  versionCode:    201,
+  buildTimestamp: '2026-07-08T11:22:55Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.285.apk',
-  bundleHash:     'apk_v3_0_285_code200',
-  apkHash:        'apk_v3_0_285_code200',
-  dbVersion:      'v3.0.285',
+  bundleFile:     'VodafoneFakka-v3.0.286.apk',
+  bundleHash:     'apk_v3_0_286_code201',
+  apkHash:        'apk_v3_0_286_code201',
+  dbVersion:      'v3.0.286',
   releaseNotes: [
+    'v3.0.286: إصلاح ثغرة فقدان العمليات — real connectivity check + UUID + pending queue + idempotency',
     'v3.0.285: إصلاح جذري لـ navigation — HashRouter بدل BrowserRouter لحل مشكلة تفاصيل الباقة في Capacitor',
     'v3.0.284: إصلاح 3 مشاكل — كرت فودافون متاح + زر تفاصيل الباقة صح + اشترك الآن بدون validation الهاتف',
     'v3.0.283: تحديث نظام اشتراك Vodafone RED — ربط واتساب مباشر + رسالة احترافية كاملة',

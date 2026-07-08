@@ -31,6 +31,7 @@ import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 import { registerDeviceFingerprint } from '@/lib/api';
 import { MerchantProvider } from '@/contexts/MerchantContext';
 import { MerchantClientProvider, useMerchantClient } from '@/contexts/MerchantClientContext';
+import { attachNetworkRecoveryListener, syncPendingOps, getPendingCount } from '@/lib/pendingOpsQueue';
 
 // ── استيراد كسول لكل الصفحات الأخرى (تُحمَّل عند الحاجة فقط) ──
 const ActivationPage         = lazy(() => import('./pages/ActivationPage'));
@@ -84,6 +85,28 @@ const PageSpinner = () => (
 const S = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<PageSpinner />}>{children}</Suspense>
 );
+
+// ─── NetworkRecoverySync ──────────────────────────────────────────────────────
+// يُشغَّل عند بدء التطبيق وعند رجوع الإنترنت.
+// يزامن أي عمليات شحن معلقة لم تُسجَّل بسبب انقطاع الإنترنت.
+function NetworkRecoverySync() {
+  useEffect(() => {
+    // تسجيل مستمع رجوع الإنترنت مرة واحدة طوال عمر التطبيق
+    attachNetworkRecoveryListener(({ synced }) => {
+      if (synced > 0) {
+        toast.success(`✅ تمت مزامنة ${synced} عملية معلقة بنجاح`, { duration: 6000 });
+      }
+    });
+    // محاولة مزامنة فورية عند بدء التطبيق (لو كان هناك عمليات معلقة من جلسة سابقة)
+    const pending = getPendingCount();
+    if (pending > 0) {
+      syncPendingOps().then(({ synced }) => {
+        if (synced > 0) toast.success(`✅ تمت مزامنة ${synced} عملية معلقة`, { duration: 6000 });
+      });
+    }
+  }, []);
+  return null;
+}
 
 // ─── NotificationDeepLinkHandler ──────────────────────────────────────────────
 // يقرأ deep link من Cold Start (App URL open) ويوجّه للصفحة الصحيحة
@@ -406,6 +429,7 @@ function AppInner() {
 
       <AppResumeHandler />
       <AndroidBackHandler />
+      <NetworkRecoverySync />
       <NotificationDeepLinkHandler />
       <NavigationStateManager />
       <IntersectObserver />
