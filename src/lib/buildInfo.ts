@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.286',
-  versionCode:    201,
-  buildTimestamp: '2026-07-08T11:22:55Z',
+  appVersion:     '3.0.287',
+  versionCode:    202,
+  buildTimestamp: '2026-07-08T18:50:12Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.286.apk',
-  bundleHash:     'apk_v3_0_286_code201',
-  apkHash:        'apk_v3_0_286_code201',
-  dbVersion:      'v3.0.286',
+  bundleFile:     'VodafoneFakka-v3.0.287.apk',
+  bundleHash:     'apk_v3_0_287_code202',
+  apkHash:        'apk_v3_0_287_code202',
+  dbVersion:      'v3.0.287',
   releaseNotes: [
+    'v3.0.287: إصلاح الشاشة السوداء + Device Intelligence + lazy loading + تسريع التشغيل',
     'v3.0.286: إصلاح ثغرة فقدان العمليات — real connectivity check + UUID + pending queue + idempotency',
     'v3.0.285: إصلاح جذري لـ navigation — HashRouter بدل BrowserRouter لحل مشكلة تفاصيل الباقة في Capacitor',
     'v3.0.284: إصلاح 3 مشاكل — كرت فودافون متاح + زر تفاصيل الباقة صح + اشترك الآن بدون validation الهاتف',

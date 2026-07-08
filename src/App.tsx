@@ -20,11 +20,12 @@ import { insertOperation } from '@/lib/api';
 import { checkDeviceBan, registerDeviceInRegistry } from '@/lib/api';
 // ── استيراد ثابت للصفحات التي تظهر فور فتح التطبيق ──
 import SplashScreen, { SplashOverlay } from './pages/SplashScreen';
+// ── lazy load للصفحات الثقيلة — تُحمَّل بعد Splash فقط ──
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import MainLayout from './components/layouts/MainLayout';
-import SessionConflictScreen from './pages/SessionConflictScreen';
-import DeviceBannedScreen from './pages/DeviceBannedScreen';
+const HomePage  = lazy(() => import('./pages/HomePage'));
+const MainLayout = lazy(() => import('./components/layouts/MainLayout'));
+const SessionConflictScreen = lazy(() => import('./pages/SessionConflictScreen'));
+const DeviceBannedScreen    = lazy(() => import('./pages/DeviceBannedScreen'));
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { resolveRoute, notifLog } from '@/lib/notificationRouter';
 import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';

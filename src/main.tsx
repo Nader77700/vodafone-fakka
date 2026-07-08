@@ -192,6 +192,17 @@ createRoot(document.getElementById("root")!).render(
   </Sentry.ErrorBoundary>
 );
 
+// ── إخفاء boot-loader الفوري بعد أن يبدأ React في الرسم ──────────────────
+// يُزيل الـ spinner الأبيض ويُظهر React DOM
+requestAnimationFrame(() => {
+  const bl = document.getElementById('boot-loader');
+  if (bl) {
+    bl.classList.add('hidden');
+    // احذفه من DOM بعد انتهاء الـ transition (300ms)
+    setTimeout(() => bl.remove(), 350);
+  }
+});
+
 // ── إشعار Android Native بأن التطبيق حُمِّل بنجاح ────────────────────────
 // MainActivity.java يستمع لهذه الإشارة ويُلغي fallback overlay الخاص به
 // لو هذا الكود نفّذ → JavaScript يعمل → التطبيق شغّال

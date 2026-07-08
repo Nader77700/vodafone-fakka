@@ -6,11 +6,42 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/db/supabase';
 
 export const OFFICIAL_LOGO = '/vfp-logo.png';
-const MIN_DISPLAY_MS = 2500;
 
-// ── تحسين الأداء: تقليل الأنيميشن على الأجهزة الضعيفة ─────────────────────
-// على Android الأجهزة الحقيقية → تعطيل الـ particles لتوفير CPU/GPU
-const IS_NATIVE = Capacitor.isNativePlatform();
+// ══ DEVICE INTELLIGENCE — تشغيل التطبيق حسب قوة الجهاز ══════════════════════
+// يقيس: عدد الأنوية + RAM + سرعة JS + نوع الاتصال
+// يُحدد مستوى الأداء: high / mid / low
+// ويضبط تلقائياً: delays + animations + MIN_DISPLAY_MS
+function measureDeviceTier(): 'high' | 'mid' | 'low' {
+  try {
+    const cores  = (navigator as Navigator & { hardwareConcurrency?: number }).hardwareConcurrency ?? 4;
+    const ram    = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4;
+    // قياس سرعة JS: كم عملية رياضية في 5ms
+    const t0 = performance.now();
+    let n = 0; while (performance.now() - t0 < 5) n++;
+    const jsSpeed = n; // كلما زاد = أسرع
+
+    if (cores >= 6 && ram >= 4 && jsSpeed > 2_000_000) return 'high';
+    if (cores >= 4 && ram >= 2 && jsSpeed > 800_000)   return 'mid';
+    return 'low';
+  } catch {
+    return 'mid'; // fallback آمن
+  }
+}
+
+const DEVICE_TIER = measureDeviceTier();
+const IS_NATIVE   = Capacitor.isNativePlatform();
+
+// MIN_DISPLAY_MS حسب قوة الجهاز — الأجهزة الضعيفة تُقلّل وقت الانتظار
+const MIN_DISPLAY_MS =
+  DEVICE_TIER === 'high' ? 2000 :
+  DEVICE_TIER === 'mid'  ? 1500 :
+  /* low */                 1000;
+
+// timeout أقل على الأجهزة الضعيفة — لا تستنزف وقت المعالج
+const NET_TIMEOUT_MS =
+  DEVICE_TIER === 'high' ? 3000 :
+  DEVICE_TIER === 'mid'  ? 2000 :
+  /* low */                 1500;
 
 // ── خطوات التهيئة الحقيقية ─────────────────────────────────────────────────
 interface InitStep {
@@ -20,29 +51,43 @@ interface InitStep {
   run: () => Promise<void>;
 }
 
-function buildSteps(): InitStep[] {
-  return [
-    { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 8,  run: async () => { await delay(80); } },
-    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 10, run: async () => { try { localStorage.getItem('vf_theme'); } catch {} await delay(60); } },
-    { id: 'internet',     label: 'التحقق من الاتصال…',     weight: 10, run: async () => { await delay(navigator.onLine ? 50 : 200); } },
-    { id: 'firebase',     label: 'تهيئة Firebase…',        weight: 12, run: async () => { await delay(Capacitor.isNativePlatform() ? 280 : 80); } },
-    { id: 'fcm',          label: 'تسجيل الإشعارات…',       weight: 10, run: async () => { await delay(180); } },
-    { id: 'auth',         label: 'التحقق من الحساب…',      weight: 12, run: async () => { try { await withTimeout(supabase.auth.getSession(), 3000); } catch {} } },
-    { id: 'subscription', label: 'فحص الاشتراك…',          weight: 12, run: async () => { await delay(150); } },
-    { id: 'update',       label: 'فحص التحديثات…',         weight: 10, run: async () => { try { const q = supabase.from('app_versions').select('version').eq('is_latest', true).maybeSingle(); await withTimeout(Promise.resolve(q), 3000); } catch {} } },
-    { id: 'user_data',    label: 'تحميل بيانات المستخدم…', weight: 10, run: async () => { await delay(100); } },
-    { id: 'complete',     label: 'جاري التحميل…',          weight: 6,  run: async () => { await delay(80); } },
-  ];
-}
-
 const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 // timeout wrapper — لا يسمح لأي network call بالـ hang أكثر من MAX_MS
-const withTimeout = <T,>(promise: Promise<T>, ms = 3000): Promise<T | null> =>
+const withTimeout = <T,>(promise: Promise<T>, ms = NET_TIMEOUT_MS): Promise<T | null> =>
   Promise.race([
     promise.then(v => v),
     delay(ms).then(() => null),
   ]);
+
+// delays مضبوطة حسب الجهاز — أجهزة low تحصل على delays أقصر
+const D = {
+  init:     DEVICE_TIER === 'high' ? 80  : DEVICE_TIER === 'mid' ? 50  : 20,
+  settings: DEVICE_TIER === 'high' ? 60  : DEVICE_TIER === 'mid' ? 40  : 15,
+  internet: DEVICE_TIER === 'high' ? 50  : DEVICE_TIER === 'mid' ? 30  : 10,
+  firebase: IS_NATIVE
+    ? (DEVICE_TIER === 'high' ? 200 : DEVICE_TIER === 'mid' ? 120 : 60)
+    : 60,
+  fcm:      DEVICE_TIER === 'high' ? 120 : DEVICE_TIER === 'mid' ? 80  : 40,
+  sub:      DEVICE_TIER === 'high' ? 100 : DEVICE_TIER === 'mid' ? 60  : 25,
+  user:     DEVICE_TIER === 'high' ? 80  : DEVICE_TIER === 'mid' ? 50  : 20,
+  complete: DEVICE_TIER === 'high' ? 60  : DEVICE_TIER === 'mid' ? 40  : 15,
+} as const;
+
+function buildSteps(): InitStep[] {
+  return [
+    { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 8,  run: async () => { await delay(D.init); } },
+    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 10, run: async () => { try { localStorage.getItem('vf_theme'); } catch {} await delay(D.settings); } },
+    { id: 'internet',     label: 'التحقق من الاتصال…',     weight: 10, run: async () => { await delay(navigator.onLine ? D.internet : D.internet * 3); } },
+    { id: 'firebase',     label: 'تهيئة Firebase…',        weight: 12, run: async () => { await delay(D.firebase); } },
+    { id: 'fcm',          label: 'تسجيل الإشعارات…',       weight: 10, run: async () => { await delay(D.fcm); } },
+    { id: 'auth',         label: 'التحقق من الحساب…',      weight: 12, run: async () => { try { await withTimeout(supabase.auth.getSession()); } catch {} } },
+    { id: 'subscription', label: 'فحص الاشتراك…',          weight: 12, run: async () => { await delay(D.sub); } },
+    { id: 'update',       label: 'فحص التحديثات…',         weight: 10, run: async () => { try { const q = supabase.from('app_versions').select('version').eq('is_latest', true).maybeSingle(); await withTimeout(Promise.resolve(q)); } catch {} } },
+    { id: 'user_data',    label: 'تحميل بيانات المستخدم…', weight: 10, run: async () => { await delay(D.user); } },
+    { id: 'complete',     label: 'جاري التحميل…',          weight: 6,  run: async () => { await delay(D.complete); } },
+  ];
+}
 
 // ── Network Constellation Lines (SVG) ─────────────────────────────────────
 // نقاط الشبكة المضيئة وخطوط الاتصال — مطابق للصورة المرجعية
@@ -80,11 +125,11 @@ function ConstellationBg() {
       {NODES.map((n, i) => (
         <circle key={i} cx={`${n.x}%`} cy={`${n.y}%`} r="0.5"
           fill="#E60000" opacity="0.7"
-          style={IS_NATIVE ? { opacity: 0.6 } : { animation: `node-pulse ${2 + (i % 3)}s ${(i * 0.3) % 2}s ease-in-out infinite alternate` }}
+          style={(IS_NATIVE || DEVICE_TIER === 'low') ? { opacity: 0.6 } : { animation: `node-pulse ${2 + (i % 3)}s ${(i * 0.3) % 2}s ease-in-out infinite alternate` }}
         />
       ))}
       {/* نقاط صغيرة منتشرة (Particles) — تُعطَّل على الأجهزة الحقيقية لتوفير CPU */}
-      {!IS_NATIVE && [...Array(22)].map((_, i) => (
+      {!IS_NATIVE && DEVICE_TIER !== 'low' && [...Array(22)].map((_, i) => (
         <circle key={`p${i}`}
           cx={`${(i * 17 + 7) % 97}%`} cy={`${(i * 11 + 13) % 88}%`}
           r="0.25" fill="rgba(200,0,0,0.45)"
@@ -183,7 +228,7 @@ function RedWave() {
         <path d="M300 180 C270 150, 230 170, 200 145 C170 120, 150 155, 120 140 C90 125, 50 160, 30 150 L0 160 L0 180 Z"
           fill="rgba(180,0,0,0.35)"/>
         {/* نقاط متوهجة فوق الموجة — تُعطَّل على الأجهزة الحقيقية */}
-        {!IS_NATIVE && [...Array(8)].map((_, i) => (
+        {!IS_NATIVE && DEVICE_TIER !== 'low' && [...Array(8)].map((_, i) => (
           <circle key={i}
             cx={180 + i * 16} cy={140 - (i % 3) * 12}
             r="1.2" fill="rgba(230,0,0,0.8)"
@@ -240,15 +285,17 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
     return () => { clearTimeout(tShow); clearTimeout(tMin); };
   }, [tryLeave]);
 
-  // ── Smooth visual progress ─────────────────────────────────────────────
+  // ── Smooth visual progress — interval مضبوط حسب قوة الجهاز ───────────────
   useEffect(() => {
+    // أجهزة low: 50ms (20fps كافي) — أجهزة high: 16ms (60fps)
+    const tickMs = DEVICE_TIER === 'high' ? 16 : DEVICE_TIER === 'mid' ? 33 : 50;
     const id = setInterval(() => {
       setDisplayProg(prev => {
         if (prev >= progress) return prev;
         const diff = progress - prev;
         return Math.min(progress, prev + Math.max(0.4, diff * 0.1));
       });
-    }, 16);
+    }, tickMs);
     return () => clearInterval(id);
   }, [progress]);
 
@@ -295,7 +342,7 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
           position: 'relative',
           marginBottom: 28,
           // تعطيل أنيميشن اللوجو على الأجهزة الحقيقية لتوفير GPU
-          animation: IS_NATIVE ? 'none' : 'logo-float 4s ease-in-out infinite',
+          animation: (IS_NATIVE || DEVICE_TIER === 'low') ? 'none' : 'logo-float 4s ease-in-out infinite',
         }}>
           {/* توهج خلفي أحمر */}
           <div style={{

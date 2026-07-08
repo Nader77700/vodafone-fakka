@@ -12,6 +12,32 @@
     <meta name="background-color" content="#000000" />
     <meta name="msapplication-TileColor" content="#000000" />
     <meta name="msapplication-TileImage" content="/icons/icon-144x144.png?v=2.6.4" />
+    <!-- ══ CRITICAL: منع الشاشة البيضاء قبل React — يُظهر الخلفية السوداء فوراً ══ -->
+    <style>
+      html, body, #root {
+        background: #050000 !important;
+        background-color: #050000 !important;
+        margin: 0; padding: 0;
+        min-height: 100dvh;
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* Inline loading indicator — يظهر قبل React بالكامل */
+      #boot-loader {
+        position: fixed; inset: 0; z-index: 99999;
+        background: #050000;
+        display: flex; align-items: center; justify-content: center;
+        transition: opacity 0.3s ease;
+      }
+      #boot-loader.hidden { opacity: 0; pointer-events: none; }
+      #boot-loader-spinner {
+        width: 36px; height: 36px;
+        border: 3px solid rgba(230,0,0,0.25);
+        border-top-color: #E60000;
+        border-radius: 50%;
+        animation: bl-spin 0.8s linear infinite;
+      }
+      @keyframes bl-spin { to { transform: rotate(360deg); } }
+    </style>
     <!-- P3: Web Manifest link -->
     <link rel="manifest" href="/manifest.json?v=2.6.4" />
     <!-- ── حماية أمنية: Security Headers ──────────────────────────────── -->
@@ -42,6 +68,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   </head>
   <body style="background:#050000;margin:0;padding:0;">
+    <!-- boot-loader: يظهر فوراً قبل React — يمنع الشاشة السوداء الفارغة -->
+    <div id="boot-loader">
+      <div id="boot-loader-spinner"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
