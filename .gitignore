@@ -43,3 +43,4 @@ package.json.[0-9]*
 >>>>>>> 389ef3c ()
 historical_context.txt
 tasks/historical_context.txt
+tasks/release.log

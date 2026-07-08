@@ -1,6 +1,6 @@
 // صفحة Vodafone RED — نظام الباقات الاحترافي الديناميكي
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   ChevronRight, Wifi, Phone, Zap, Star, MessageCircle,
   Info, RefreshCw, Loader2, CheckCircle, Clock, Lock,
@@ -21,13 +21,10 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   disabled:    { label: 'غير متاح', color: '#888',    bg: 'rgba(136,136,136,0.10)' },
 };
 
-function PackageCard({ pkg, onDetails, onSubscribe, onWhatsapp }: {
+function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
   pkg:         RedPackage;
-  onDetails:   (p: RedPackage) => void;
   onSubscribe: (p: RedPackage) => void;
   onWhatsapp:  (p: RedPackage) => void;
-  // onSubscribe → فتح واتساب مباشرة بالرسالة الاحترافية
-  // onWhatsapp  → فتح واتساب للاستفسار
 }) {
   const { pct, currentPrice, originalPrice } = calcPackageDiscount(pkg);
   const isFeatured = pkg.status === 'featured';
@@ -159,13 +156,13 @@ function PackageCard({ pkg, onDetails, onSubscribe, onWhatsapp }: {
           </button>
         )}
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => onDetails(pkg)}
+          <Link
+            to={`/networks/vodafone/package/${pkg.id}`}
             className="h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
             style={{ background: `${cardColor}14`, border: `1px solid ${cardColor}33`, color: cardColor }}>
             <Info className="w-3.5 h-3.5" />
             تفاصيل الباقة
-          </button>
+          </Link>
           <button
             onClick={() => onWhatsapp(pkg)}
             className="h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
@@ -192,14 +189,12 @@ export default function VodafonePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // زر تفاصيل الباقة → صفحة التفاصيل
-  const handleDetails = (p: RedPackage) => navigate(`/networks/vodafone/package/${p.id}`);
-
-  // زر اشترك الآن → واتساب مباشرة برسالة احترافية كاملة
+  // زر اشترك الآن → واتساب مباشرة برسالة احترافية كاملة (بدون validation الهاتف)
   const handleSubscribe = (p: RedPackage) => {
-    const userInfo = { userId: user?.id ?? '', fullName: profile?.full_name, username: profile?.username, phone: profile?.phone };
-    const { ok, errors } = validateRedSubscription(p, user ? userInfo : null);
-    if (!ok) { errors.forEach(e => toast.error(e)); return; }
+    if (!user) { toast.error('يجب تسجيل الدخول أولاً'); return; }
+    if (p.status === 'coming_soon') { toast.error('هذه الباقة ستكون متاحة قريباً'); return; }
+    if (p.status === 'disabled' || !p.subscription_enabled) { toast.error('هذه الباقة غير متاحة حالياً'); return; }
+    const userInfo = { userId: user.id, fullName: profile?.full_name, username: profile?.username, phone: profile?.phone };
     const url = buildRedWhatsAppUrl(p, userInfo);
     window.open(url, '_blank', 'noopener,noreferrer');
     toast.success(p.post_subscription_msg || 'تم فتح واتساب — أرسل الرسالة لتفعيل الباقة ✅');
@@ -280,7 +275,7 @@ export default function VodafonePage() {
           <div className="space-y-4">
             {packages.map(pkg => (
               <PackageCard key={pkg.id} pkg={pkg}
-                onDetails={handleDetails} onSubscribe={handleSubscribe} onWhatsapp={handleWhatsapp} />
+                onSubscribe={handleSubscribe} onWhatsapp={handleWhatsapp} />
             ))}
           </div>
         )}

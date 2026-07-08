@@ -10,7 +10,7 @@ import AppFooter from '@/components/common/AppFooter';
 import { getRedPackageById, calcPackageDiscount } from '@/lib/api';
 import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { buildRedWhatsAppUrl, validateRedSubscription } from '@/lib/redWhatsApp';
+import { buildRedWhatsAppUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
 import { formatEgyptDate } from '@/lib/egyptTime';
 
@@ -46,13 +46,18 @@ export default function SubscribePackagePage() {
     phone:    profile?.phone,
   };
 
-  const { ok: allOk, errors: failures } = validateRedSubscription(pkg, user ? userInfo : null);
+  // التحقق البسيط: فقط تسجيل الدخول + الباقة متاحة (بدون validation الهاتف)
+  const isBlocked = !user || !pkg || pkg.status === 'coming_soon' || pkg.status === 'disabled' || !pkg.subscription_enabled;
+  const blockMsg  = !user ? 'يجب تسجيل الدخول أولاً'
+                  : (pkg?.status === 'coming_soon') ? 'هذه الباقة ستكون متاحة قريباً'
+                  : (!pkg?.subscription_enabled || pkg?.status === 'disabled') ? 'هذه الباقة غير متاحة حالياً'
+                  : '';
 
-  const cardColor = pkg?.card_color        || VF_RED;
-  const darkColor = pkg?.color_secondary   || VF_DARK;
+  const cardColor = pkg?.card_color      || VF_RED;
+  const darkColor = pkg?.color_secondary || VF_DARK;
 
   const handleSubscribe = () => {
-    if (!allOk) { failures.forEach(e => toast.error(e)); return; }
+    if (isBlocked) { toast.error(blockMsg); return; }
     if (!pkg || !user) return;
     setSubmitting(true);
     const url = buildRedWhatsAppUrl(pkg, userInfo);
@@ -194,16 +199,12 @@ export default function SubscribePackagePage() {
             </div>
           </div>
 
-          {/* مشاكل التحقق */}
-          {failures.length > 0 && (
-            <div className="space-y-1.5">
-              {failures.map((msg, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-xl p-2.5"
-                  style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.22)' }}>
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: VF_RED }} />
-                  <p className="text-[10px] text-muted-foreground">{msg}</p>
-                </div>
-              ))}
+          {/* رسالة الحظر إن وجدت */}
+          {isBlocked && blockMsg && (
+            <div className="flex items-start gap-2 rounded-xl p-2.5"
+              style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.22)' }}>
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: VF_RED }} />
+              <p className="text-[10px] text-muted-foreground">{blockMsg}</p>
             </div>
           )}
         </div>
@@ -232,14 +233,14 @@ export default function SubscribePackagePage() {
         <div className="space-y-2 pt-2 pb-4">
           <button
             onClick={handleSubscribe}
-            disabled={!allOk || submitting}
+            disabled={isBlocked || submitting}
             className="w-full h-12 rounded-xl text-base font-black text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})` }}>
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
             {submitting ? 'جارٍ الإرسال…' : 'إرسال الطلب عبر واتساب'}
           </button>
 
-          {failures.some(e => e.includes('اسم') || e.includes('هاتف')) && (
+          {!user && (
             <button
               onClick={() => navigate('/settings')}
               className="w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.97]"

@@ -12,7 +12,7 @@ import AppFooter from '@/components/common/AppFooter';
 import { getRedPackageById, calcPackageDiscount } from '@/lib/api';
 import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl, validateRedSubscription } from '@/lib/redWhatsApp';
+import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
 
 
@@ -57,10 +57,12 @@ export default function PackageDetailPage() {
 
   const userInfo = { userId: user?.id ?? '', fullName: profile?.full_name, username: profile?.username, phone: profile?.phone };
 
-  // زر اشترك الآن → واتساب مباشرة برسالة احترافية كاملة
+  // زر اشترك الآن → واتساب مباشرة (بدون validation الهاتف)
   const handleSubscribe = () => {
-    const { ok, errors } = validateRedSubscription(pkg, user ? userInfo : null);
-    if (!ok) { errors.forEach(e => toast.error(e)); return; }
+    if (!user) { toast.error('يجب تسجيل الدخول أولاً'); return; }
+    if (!pkg) return;
+    if (pkg.status === 'coming_soon') { toast.error('هذه الباقة ستكون متاحة قريباً'); return; }
+    if (pkg.status === 'disabled' || !pkg.subscription_enabled) { toast.error('هذه الباقة غير متاحة حالياً'); return; }
     const url = buildRedWhatsAppUrl(pkg, userInfo);
     window.open(url, '_blank', 'noopener,noreferrer');
     toast.success(pkg.post_subscription_msg || 'تم فتح واتساب — أرسل الرسالة لتفعيل الباقة ✅');

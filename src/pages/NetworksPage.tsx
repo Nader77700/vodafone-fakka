@@ -110,7 +110,7 @@ export const NETWORKS: NetworkConfig[] = [
     bgGradient: 'linear-gradient(135deg,rgba(230,0,0,0.15),rgba(180,0,0,0.05))',
     borderColor: 'rgba(230,0,0,0.35)',
     logo: '🔴',
-    serviceCount: 0,
+    serviceCount: 4,
     route: '/networks/vodafone',
   },
   {
@@ -192,13 +192,15 @@ function NetworkCard({ network }: { network: NetworkConfig }) {
             <div className="flex items-center gap-1">
               <Zap className="w-3 h-3" style={{ color: network.color }} />
               <span className="text-[10px] font-semibold" style={{ color: network.color }}>
-                {network.serviceCount > 0 ? `${network.serviceCount} خدمة` : 'تحت التطوير'}
+                {network.serviceCount > 0 ? `${network.serviceCount} باقة متاحة` : 'تحت التطوير'}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">قريباً</span>
-            </div>
+            {network.serviceCount === 0 && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">قريباً</span>
+              </div>
+            )}
           </div>
         </div>
 
