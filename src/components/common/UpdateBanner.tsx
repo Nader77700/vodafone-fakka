@@ -176,8 +176,8 @@ export default function UpdateBanner() {
                       {isNative ? 'تحميل التحديث داخلياً' : 'تنزيل التحديث'}
                     </button>
                   )}
-                  <a href="/updates"
-                    onClick={(e) => { e.preventDefault(); window.location.hash = ''; window.history.pushState({}, '', '/updates'); window.dispatchEvent(new PopStateEvent('popstate')); dismiss(); }}
+                  <a href="#/updates"
+                    onClick={(e) => { e.preventDefault(); window.location.hash = '/updates'; dismiss(); }}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.65)', border: '1px solid rgba(255,255,255,0.15)' }}>
                     التفاصيل ←
