@@ -305,9 +305,9 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"is_latest":false}'
 
-          # إدراج أو تحديث الإصدار الجديد (merge-duplicates يحدّث لو موجود)
+          # إدراج أو تحديث الإصدار الجديد (on_conflict=version_code يحدّث لو موجود)
           NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          curl -s -X POST "${{ env.SUPABASE_URL }}/rest/v1/app_versions" \
+          curl -s -X POST "${{ env.SUPABASE_URL }}/rest/v1/app_versions?on_conflict=version_code" \
             -H "Authorization: Bearer $SB_SERVICE_KEY" \
             -H "apikey: $SB_SERVICE_KEY" \
             -H "Content-Type: application/json" \

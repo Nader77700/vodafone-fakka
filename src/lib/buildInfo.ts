@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.280',
-  versionCode:    195,
-  buildTimestamp: '2026-07-08T00:00:00Z',
-  sourceHash:     'h8i9j0k1l2334455',
-  bundleFile:     'VodafoneFakka-v3.0.280.apk',
-  bundleHash:     'apk_v3_0_280_code195',
-  apkHash:        'apk_v3_0_280_code195',
-  dbVersion:      'v3.0.280',
+  appVersion:     '3.0.282',
+  versionCode:    197,
+  buildTimestamp: '2026-07-08T12:00:00Z',
+  sourceHash:     'i9j0k1l2m3445566',
+  bundleFile:     'VodafoneFakka-v3.0.282.apk',
+  bundleHash:     'apk_v3_0_282_code197',
+  apkHash:        'apk_v3_0_282_code197',
+  dbVersion:      'v3.0.282',
   releaseNotes: [
+    'v3.0.282: إصلاح نظام التحديث التلقائي — workflow يُحدِّث DB صح + إصلاح delete_account + شاشة سوداء + لوجو محلي',
     'v3.0.280: إصلاح جميع merge conflicts (السبب الجذري) + تحديث فوري عبر web-live + admin-user-actions مُعاد نشرها',
     'v3.0.278: إصلاح حذف الحساب + استعادة الاشتراك المستبدل + منع تكرار الهاتف',
     'v3.0.277: PHASE 32 — نظام إدارة الاشتراكات الاحترافي: تعليق/إلغاء/أرشفة + 8 حالات Badges',
