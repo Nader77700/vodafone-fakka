@@ -74,10 +74,20 @@ serve(async (req: Request) => {
     if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 403);
 
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
+      .from("subscriptions").select("status, expires_at, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
     const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
-    const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
-    if (!hasActive && !isAdmin) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 403);
+    // ══ BUG FIX: الاشتراكات بدون expires_at (محدودة بالعمليات لا بالوقت) كانت تُحجب
+    // الفحص الصحيح: status=active + (لا يوجد expires_at أو expires_at مستقبلي) + الحصة لم تنفد
+    const subActive = sub && sub.status === "active" &&
+      (!sub.expires_at || new Date(sub.expires_at) > new Date());
+    const opsExhausted = sub?.ops_limit != null && (sub.ops_count ?? 0) >= sub.ops_limit;
+    const hasActive = subActive && !opsExhausted;
+    if (!hasActive && !isAdmin) {
+      const errMsg = opsExhausted
+        ? "نفدت حصة العمليات الشهرية — يرجى تجديد الاشتراك"
+        : "اشتراكك منتهٍ — يرجى تجديد الاشتراك";
+      return json({ success: false, error: errMsg }, 403);
+    }
 
     // ── استقبال بيانات الطلب ──
     const { product_id, receiver, access_token, msisdn, tx_uuid } = await req.json();

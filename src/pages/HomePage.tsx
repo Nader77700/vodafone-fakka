@@ -2080,15 +2080,25 @@ export default function HomePage() {
                   glow: false,
                 },
                 {
-                  label: 'الحد الشهري',
+                  // ── BUG FIX: يعرض المتبقي إذا كان محدوداً، وغير محدود فقط إذا opsLimit===null ──
+                  label: isAdmin
+                    ? 'الحد الشهري'
+                    : opsInfo?.opsLimit !== null && opsInfo?.opsLimit != null
+                      ? 'المتبقي من العمليات'
+                      : 'الحد الشهري',
                   value: isAdmin
                     ? 'غير محدود ♾️'
-                    : opsInfo?.opsLimit === null
+                    : opsInfo?.opsLimit == null
                       ? 'غير محدود ♾️'
-                      : opsInfo?.opsLimit != null
-                        ? String(opsInfo.opsLimit)
+                      : opsInfo.opsLimit != null
+                        ? `${Math.max(0, opsInfo.opsLimit - (opsInfo.opsUsed ?? 0))} / ${opsInfo.opsLimit}`
                         : '—',
-                  color: isAdmin || opsInfo?.opsLimit === null ? '#00C896' : '#00C896',
+                  color: isAdmin || opsInfo?.opsLimit == null ? '#00C896'
+                    : (opsInfo.opsLimit - (opsInfo.opsUsed ?? 0)) <= Math.ceil(opsInfo.opsLimit * 0.1)
+                      ? '#ef4444'  // أحمر إذا تبقى أقل من 10%
+                      : (opsInfo.opsLimit - (opsInfo.opsUsed ?? 0)) <= Math.ceil(opsInfo.opsLimit * 0.3)
+                        ? '#F7C948' // أصفر إذا تبقى أقل من 30%
+                        : '#00C896',
                   icon: Zap,
                   glow: false,
                 },

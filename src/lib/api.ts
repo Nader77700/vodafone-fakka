@@ -787,10 +787,19 @@ export async function getSubscriptionOpsInfo(userId: string): Promise<Subscripti
     .eq('id', sub.license_key_id)
     .maybeSingle();
 
+  // ══ BUG FIX: أولوية القراءة ══════════════════════════════════════════════
+  // 1. subscriptions.ops_limit   — القيمة الفعلية المخصصة للمستخدم (الأعلى أولوية)
+  // 2. license_keys.operations_per_user — الحد الافتراضي للكود
+  // 3. license_keys.max_ops_per_user    — بديل قديم
   // القاعدة: 0 = غير محدود تماماً مثل NULL
   // uses_per_user = activation limit (NOT ops) — do NOT fall back to it for ops
-  const rawOpsLimit2 = (key?.operations_per_user ?? key?.max_ops_per_user) ?? null;
-  const opsLimit: number | null = (rawOpsLimit2 === 0) ? null : rawOpsLimit2;
+  const subOpsLimit = (sub as unknown as Record<string, unknown>).ops_limit as number | null | undefined;
+  const keyOpsRaw   = (key?.operations_per_user ?? key?.max_ops_per_user) ?? null;
+  const rawOpsLimit = subOpsLimit !== undefined && subOpsLimit !== null
+    ? subOpsLimit
+    : keyOpsRaw;
+  const opsLimit: number | null = (rawOpsLimit === 0) ? null : (rawOpsLimit ?? null);
+
   const codeType = (key?.code_type as SubscriptionOpsInfo['codeType']) ?? 'unknown';
   const expirationMode = key?.expiration_mode ?? null;
   const durationDays: number | null = key?.duration_days ?? null;
