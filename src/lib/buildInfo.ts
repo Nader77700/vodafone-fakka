@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.288',
-  versionCode:    203,
-  buildTimestamp: '2026-07-09T21:39:09Z',
+  appVersion:     '3.0.289',
+  versionCode:    204,
+  buildTimestamp: '2026-07-09T21:56:40Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.288.apk',
-  bundleHash:     'apk_v3_0_288_code203',
-  apkHash:        'apk_v3_0_288_code203',
-  dbVersion:      'v3.0.288',
+  bundleFile:     'VodafoneFakka-v3.0.289.apk',
+  bundleHash:     'apk_v3_0_289_code204',
+  apkHash:        'apk_v3_0_289_code204',
+  dbVersion:      'v3.0.289',
   releaseNotes: [
+    'v3.0.289: تنظيف merge conflicts + إصلاح نهائي لشحن الرصيد وعرض العمليات',
     'v3.0.288: إصلاح عرض عدد العمليات المتبقي + إصلاح شحن الرصيد للاشتراكات المحدودة',
     'v3.0.287: إصلاح الشاشة السوداء + Device Intelligence + lazy loading + تسريع التشغيل',
     'v3.0.286: إصلاح ثغرة فقدان العمليات — real connectivity check + UUID + pending queue + idempotency',
