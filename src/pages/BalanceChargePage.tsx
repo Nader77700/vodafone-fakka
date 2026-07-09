@@ -965,8 +965,14 @@ function BalanceExecuteDialog({
     let errorMsg: string | null = null;
 
     if (fnErr) {
-      const msg = await fnErr?.context?.text?.().catch(() => null);
-      try { errorMsg = JSON.parse(msg ?? '').error ?? 'فشل الاتصال بالخادم'; } catch { errorMsg = 'فشل الاتصال بالخادم'; }
+      // fnErr الآن = خطأ شبكة حقيقي (الـ edge function يُرجع 200 دائماً)
+      // نحاول نقرأ الـ body أولاً — لو نجح نعرض الخطأ الصح، لو لأ = شبكة
+      let parsedErr: string | null = null;
+      try {
+        const txt = await fnErr?.context?.text?.();
+        if (txt) parsedErr = JSON.parse(txt).error ?? null;
+      } catch { /* ignore */ }
+      errorMsg = parsedErr ?? 'لا يوجد اتصال بالإنترنت أو انتهت مهلة الاتصال — تأكد من الإنترنت وأعد المحاولة';
     } else if (!data?.success) {
       errorMsg = data?.error ?? 'فشل الشحن من الرصيد';
       if (data?.session_expired) {

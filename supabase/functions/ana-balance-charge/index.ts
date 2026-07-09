@@ -50,12 +50,18 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutSec: numb
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
+  // ══ الدالة دائماً تُرجع 200 مع success:true/false ══
+  // هذا يضمن أن الكلاينت يقرأ الجواب من data وليس fnErr
   const requestStartedAt = Date.now();
+  console.log("[balance-charge] invoked", new Date().toISOString());
 
   try {
     // ── التحقق من المصادقة ──
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ success: false, error: "غير مصرح — يجب تسجيل الدخول" }, 401);
+    if (!authHeader) {
+      console.log("[balance-charge] no auth header");
+      return json({ success: false, error: "غير مصرح — يجب تسجيل الدخول" });
+    }
 
     const callerClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -63,7 +69,12 @@ serve(async (req: Request) => {
       { global: { headers: { Authorization: authHeader } } }
     );
     const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser();
-    if (authErr || !caller) return json({ success: false, error: "جلسة غير صحيحة — يرجى إعادة تسجيل الدخول" }, 401);
+    if (authErr || !caller) {
+      console.log("[balance-charge] auth failed", authErr?.message);
+      return json({ success: false, error: "جلسة غير صحيحة — يرجى إعادة تسجيل الدخول", session_expired: true });
+    }
+
+    console.log("[balance-charge] caller:", caller.id);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -71,22 +82,28 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
     const { data: prof } = await supabaseAdmin.from("profiles").select("role, is_active").eq("id", caller.id).single();
-    if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 403);
+    if (!prof?.is_active) {
+      console.log("[balance-charge] banned user:", caller.id);
+      return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" });
+    }
 
     const { data: sub } = await supabaseAdmin
       .from("subscriptions").select("status, expires_at, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
     const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
-    // ══ BUG FIX: الاشتراكات بدون expires_at (محدودة بالعمليات لا بالوقت) كانت تُحجب
-    // الفحص الصحيح: status=active + (لا يوجد expires_at أو expires_at مستقبلي) + الحصة لم تنفد
+
+    // الفحص: status=active + (لا يوجد expires_at أو expires_at مستقبلي) + الحصة لم تنفد
     const subActive = sub && sub.status === "active" &&
       (!sub.expires_at || new Date(sub.expires_at) > new Date());
     const opsExhausted = sub?.ops_limit != null && (sub.ops_count ?? 0) >= sub.ops_limit;
     const hasActive = subActive && !opsExhausted;
+
+    console.log("[balance-charge] sub check:", { subStatus: sub?.status, subActive, opsExhausted, hasActive, isAdmin });
+
     if (!hasActive && !isAdmin) {
       const errMsg = opsExhausted
         ? "نفدت حصة العمليات الشهرية — يرجى تجديد الاشتراك"
         : "اشتراكك منتهٍ — يرجى تجديد الاشتراك";
-      return json({ success: false, error: errMsg }, 403);
+      return json({ success: false, error: errMsg });
     }
 
     // ── استقبال بيانات الطلب ──
@@ -250,10 +267,10 @@ serve(async (req: Request) => {
       error_code:     errCode,
       session_expired:isSessionExpired,
       registered:     true,
-    }, 422);
+    });
 
   } catch (err) {
     console.error("[balance-charge] fatal:", String(err));
-    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى" }, 500);
+    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى" });
   }
 });
