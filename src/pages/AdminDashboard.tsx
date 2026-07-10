@@ -88,6 +88,8 @@ import NavLinksManager from '@/components/admin/NavLinksManager';
 import NotifAutomation from '@/components/admin/NotifAutomation';
 import ServerConfigTab from '@/components/admin/ServerConfigTab';
 import AdminSmartEngine from '@/components/admin/AdminSmartEngine';
+import { formatError } from '@/lib/formatError';
+
 
 // ─────────────────────────────────────────────
 // أنواع التبويبات
@@ -1538,7 +1540,7 @@ export default function AdminDashboard() {
       else if (redPkgEdit.id) { await adminUpdateRedPackage(redPkgEdit.id, payload); toast.success('تم حفظ التعديلات'); }
       setRedPkgEdit(null);
       loadRedPackages();
-    } catch (e: unknown) { toast.error(`خطأ: ${String(e)}`); }
+    } catch (e: unknown) { toast.error(`خطأ: ${formatError(e)}`); }
     setRedPkgSaving(false);
   };
 
@@ -1599,7 +1601,7 @@ export default function AdminDashboard() {
       }
       setPromoEdit(null);
       loadPromotions();
-    } catch (e: unknown) { toast.error(`خطأ: ${String(e)}`); }
+    } catch (e: unknown) { toast.error(`خطأ: ${formatError(e)}`); }
     setPromoSaving(false);
   };
 

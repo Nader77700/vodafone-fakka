@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import type { InvoiceData } from '@/lib/printer/types';
 import { printInvoice } from '@/lib/printer/PrinterService';
 import PrinterSetupModal from './PrinterSetupModal';
+import { formatError } from '@/lib/formatError';
+
 
 type PrintState = 'idle' | 'printing' | 'success' | 'error';
 
@@ -56,7 +58,7 @@ export default function PrintButton({ invoice, variant = 'full', className = '' 
         setTimeout(() => { setPrintState('idle'); setStateMsg(''); }, 3500);
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = formatError(e);
       setPrintState('error');
       setStateMsg(msg);
       toast.error(`خطأ في الطباعة: ${msg}`);

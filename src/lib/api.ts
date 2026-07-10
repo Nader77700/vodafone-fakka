@@ -477,6 +477,53 @@ export async function getUserOperations(userId: string, page = 1): Promise<Pagin
   return { data: Array.isArray(data) ? data : [], count: count ?? 0, page, pageSize: PAGE_SIZE };
 }
 
+export async function insertOperationTransaction(
+  payload: Omit<Operation, 'id' | 'created_at' | 'operation_number'> & { duration_ms?: number | null; api_response?: string | null; operation_source?: string | null },
+  isAdminOverride = false
+): Promise<{ success: boolean; error?: string; data?: Operation; exhausted?: boolean; opsUsed?: number; opsLimit?: number }> {
+  const { data, error } = await supabase.rpc('execute_operation_transaction', { p_payload: payload, p_admin_override: isAdminOverride });
+  if (error) return { success: false, error: error.message };
+  const res = data as { success: boolean; error?: string; exhausted?: boolean; operation?: Operation; consume_details?: unknown };
+  
+  if (res.success && res.exhausted) {
+    const r = res.consume_details as any;
+    if (r && r.allowed && r.exhausted) {
+      void (async () => {
+        const userId = payload.user_id;
+        const { data: sub } = await supabase
+          .from('subscriptions').select('id, status, license_key_id').eq('user_id', userId).eq('status', 'active').maybeSingle();
+        if (!sub) return;
+        const { data: key } = await supabase
+          .from('license_keys').select('expiration_mode, code_type').eq('id', sub.license_key_id).maybeSingle();
+        if (key?.expiration_mode !== 'BY_USAGE') return;
+        const graceEnds = new Date(Date.now() + 60 * 60 * 1000);
+        await supabase.from('subscriptions').update({
+          status: 'expired', in_grace_period: true,
+          grace_started_at: new Date().toISOString(), grace_ends_at: graceEnds.toISOString(),
+        }).eq('id', sub.id);
+        const endReason = r.is_trial ? 'trial_finished' : 'operations_finished';
+        await syncHistoryStatus(userId, 'expired', endReason);
+        await supabase.from('notifications').insert({
+          user_id: userId, title: '⏳ انتهت حصتك من العمليات',
+          body: 'استنفدت عدد العمليات المتاحة. لديك مهلة ساعة لتجديد اشتراكك قبل تسجيل الخروج.',
+          type: 'subscription_renewal', is_read: false, is_global: false,
+          created_at: new Date().toISOString()
+        });
+      })();
+    }
+  }
+
+  const r = res.consume_details as any;
+  return { 
+    success: res.success, 
+    error: res.error, 
+    data: res.operation, 
+    exhausted: res.exhausted,
+    opsUsed: r?.ops_used,
+    opsLimit: r?.ops_limit
+  };
+}
+
 export async function insertOperation(
   payload: Omit<Operation, 'id' | 'created_at' | 'operation_number'> & { duration_ms?: number | null; api_response?: string | null; operation_source?: string | null }
 ): Promise<{ error: unknown; data: Operation | null }> {
@@ -1037,7 +1084,7 @@ function buildInspect(
       try {
         parsedJson = JSON.parse(trimmed);
       } catch (e) {
-        parseError = e instanceof Error ? `JSON parse failed: ${e.message}` : String(e);
+        parseError = e instanceof Error ? `JSON parse failed: ${e.message}` : formatError(e);
       }
     } else if (trimmed.startsWith('<')) {
       parseError = `HTML/XML response — not JSON (starts with <). Possible redirect to login page.`;
@@ -1278,7 +1325,7 @@ async function executeNativeVodafoneOrder(payload: {
         }
         // isRetryable && هناك محاولات متبقية → تابع الحلقة
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg = formatError(e);
         log(1, 'Seamless Token', 'fail', `Network error (attempt ${seamlessAttempt}/${MAX_SEAMLESS_RETRIES}): ${msg}`);
 
         if (seamlessAttempt === MAX_SEAMLESS_RETRIES) {
@@ -1349,7 +1396,7 @@ async function executeNativeVodafoneOrder(payload: {
         };
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = formatError(e);
       log(2, 'Access Token', 'fail', `Network error: ${msg}`);
       return {
         success: false,
@@ -1416,7 +1463,7 @@ async function executeNativeVodafoneOrder(payload: {
         : JSON.stringify(orderRes.data ?? '').slice(0, 500);
       result = parseCapacitorData(orderRes.data);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = formatError(e);
       log(4, 'Product Order Request', 'fail', `Network error: ${msg}`);
       return {
         success: false,
@@ -1471,7 +1518,7 @@ async function executeNativeVodafoneOrder(payload: {
     };
 
   } catch (e) {
-    const errMsg = e instanceof Error ? e.message : String(e);
+    const errMsg = formatError(e);
     console.error('[vf] native fatal error:', errMsg);
     return {
       success: false,
@@ -2905,54 +2952,12 @@ export interface AdminChartPoint {
 }
 
 export async function getAdminChartData(period: ChartPeriod): Promise<AdminChartPoint[]> {
-  const now = new Date();
-  const points: AdminChartPoint[] = [];
-
-  if (period === 'daily') {
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      const from = new Date(d); from.setHours(0, 0, 0, 0);
-      const to   = new Date(d); to.setHours(23, 59, 59, 999);
-      const [opsStats, usersR] = await Promise.all([
-        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
-      ]);
-      points.push({ label: d.toLocaleDateString('en-GB', { weekday: 'short' }), operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
-    }
-  } else if (period === 'weekly') {
-    for (let i = 7; i >= 0; i--) {
-      const from = new Date(now); from.setDate(from.getDate() - i * 7 - 6); from.setHours(0, 0, 0, 0);
-      const to   = new Date(now); to.setDate(to.getDate() - i * 7);         to.setHours(23, 59, 59, 999);
-      const [opsStats, usersR] = await Promise.all([
-        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
-      ]);
-      points.push({ label: `أسبوع ${8 - i}`, operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
-    }
-  } else if (period === 'monthly') {
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const from = new Date(d.getFullYear(), d.getMonth(), 1);
-      const to   = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-      const [opsStats, usersR] = await Promise.all([
-        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
-      ]);
-      points.push({ label: d.toLocaleDateString('en-GB', { month: 'short' }), operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
-    }
-  } else {
-    for (let i = 4; i >= 0; i--) {
-      const yr = now.getFullYear() - i;
-      const from = new Date(yr, 0, 1);
-      const to   = new Date(yr, 11, 31, 23, 59, 59);
-      const [opsStats, usersR] = await Promise.all([
-        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
-      ]);
-      points.push({ label: String(yr), operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
-    }
+  const { data, error } = await supabase.rpc('get_admin_chart_data_v2', { p_period: period });
+  if (error) {
+    console.error('Error in getAdminChartData:', error);
+    return [];
   }
-  return points;
+  return data || [];
 }
 
 // ==========================================
@@ -3052,70 +3057,16 @@ export async function getAdminOverview(): Promise<{
   total_codes: number;
   used_codes: number;
 }> {
-  const now = new Date().toISOString();
-
-  const [
-    usersRes,
-    activeSubsRes,    // حالة active في DB
-    expiredSubsRes,   // حالة expired في DB
-    expiredByDateRes, // حالة active لكن ends_at انتهت (منتهية فعلياً)
-    opsSuccessRes,
-    opsFailedRes,
-    cardsRes,
-    codesRes,
-  ] = await Promise.all([
-    // إجمالي المستخدمين
-    supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    // مشتركون نشطون فعلياً: حالتهم active وتاريخ الانتهاء لم يحِن بعد
-    supabase.from('subscriptions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .or('ends_at.is.null,ends_at.gte.' + now),
-    // منتهيون بالحالة المسجّلة
-    supabase.from('subscriptions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'expired'),
-    // نشطون لكن ends_at انتهت (لم تُحدَّث حالتهم بعد)
-    supabase.from('subscriptions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .not('ends_at', 'is', null)
-      .lt('ends_at', now),
-    // العمليات الناجحة فقط
-    supabase.from('operations')
-      .select('id, amount', { count: 'exact' })
-      .eq('status', 'success'),
-    // العمليات الفاشلة فقط
-    supabase.from('operations')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['failed', 'error', 'insufficient_balance', 'timeout']),
-    // عدد الكروت (العمليات الناجحة هي الكروت المشحونة)
-    supabase.from('operations')
-      .select('id, amount', { count: 'exact' })
-      .eq('status', 'success'),
-    // الأكواد
-    supabase.from('license_keys').select('id, status', { count: 'exact' }),
-  ]);
-
-  const successOps = Array.isArray(opsSuccessRes.data) ? opsSuccessRes.data : [];
-  const codes      = Array.isArray(codesRes.data)      ? codesRes.data      : [];
-
-  const realActiveSubs  = activeSubsRes.count ?? 0;
-  const realExpiredSubs = (expiredSubsRes.count ?? 0) + (expiredByDateRes.count ?? 0);
-  const totalOps        = (opsSuccessRes.count ?? 0) + (opsFailedRes.count ?? 0);
-
-  return {
-    total_users:             usersRes.count ?? 0,
-    active_subs:             realActiveSubs,
-    expired_subs:            realExpiredSubs,
-    total_operations:        totalOps,           // كل العمليات (ناجحة + فاشلة)
-    total_success_operations: opsSuccessRes.count ?? 0,  // الناجحة فقط
-    total_failed_operations:  opsFailedRes.count ?? 0,   // الفاشلة فقط
-    total_cards:             successOps.length,  // الكروت = العمليات الناجحة
-    total_revenue:           successOps.reduce((s, o) => s + (o.amount ?? 0), 0),
-    total_codes:             codesRes.count ?? 0,
-    used_codes:              codes.filter(c => c.status === 'used').length,
-  };
+  const { data, error } = await supabase.rpc('get_admin_overview_stats_v2');
+  if (error) {
+    console.error('Error in getAdminOverview:', error);
+    return {
+      total_users: 0, active_subs: 0, expired_subs: 0, total_operations: 0,
+      total_success_operations: 0, total_failed_operations: 0, total_cards: 0,
+      total_revenue: 0, total_codes: 0, used_codes: 0
+    };
+  }
+  return data as any;
 }
 
 // ==========================================
@@ -4423,6 +4374,8 @@ export async function adminGetAllMembers(opts: {
 // Phase 7: Merchant Invite Token APIs — Additive Only
 // ══════════════════════════════════════════════════════════════════
 import type { MerchantInvite, PendingInviteToken, InviteTokenStatus } from '@/types/types';
+import { formatError } from '@/lib/formatError';
+
 
 /** المفتاح المستخدم لتخزين دعوة الانتظار في localStorage */
 export const INVITE_TOKEN_KEY = 'vfp_pending_invite_v2';

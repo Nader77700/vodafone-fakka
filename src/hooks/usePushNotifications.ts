@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { resolveRoute, notifLog } from '@/lib/notificationRouter';
 import { isNewNotification } from '@/lib/duplicateNotifGuard';
 import { BUILD_INFO } from '@/lib/buildInfo';
+import { formatError } from '@/lib/formatError';
+
 
 // ─── نوع الإجراء المعلّق ─────────────────────────────────────────────────────
 type PendingAction =
@@ -26,7 +28,7 @@ async function openExternalUrl(url: string) {
     await Browser.open({ url, presentationStyle: 'fullscreen' });
     return;
   } catch (e) {
-    notifLog('Browser.open failed, trying fallback', { error: String(e) });
+    notifLog('Browser.open failed, trying fallback', { error: formatError(e) });
   }
   // Fallback 1: window.open
   try {
@@ -85,7 +87,7 @@ async function markReadByExternalId(externalId: string) {
       .eq('is_read', false);
     notifLog('Mark Read', { externalId });
   } catch (e) {
-    notifLog('Mark Read Error', { error: String(e) });
+    notifLog('Mark Read Error', { error: formatError(e) });
   }
 }
 
@@ -120,7 +122,7 @@ async function registerTokenWithServer(token: string) {
       },
     });
   } catch (e) {
-    notifLog('registerTokenWithServer error', { error: String(e) });
+    notifLog('registerTokenWithServer error', { error: formatError(e) });
   }
 }
 

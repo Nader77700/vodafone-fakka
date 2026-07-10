@@ -16,6 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { formatError } from '@/lib/formatError';
+
 
 function fmt(d?: string | null) {
   if (!d) return '—';
@@ -111,7 +113,7 @@ export default function AdminFeatureManagement() {
       if (error) throw error;
       setFeatures(p => ({ ...p, [key]: { ...p[key], key, value: String(newValue), description: p[key]?.description ?? null, category: p[key]?.category ?? null, updated_at: new Date().toISOString() } }));
       toast.success(`✅ ${key}: ${newValue ? 'مُفعَّل' : 'مُعطَّل'}`);
-    } catch (e) { toast.error(`فشل: ${String(e)}`); }
+    } catch (e) { toast.error(`فشل: ${formatError(e)}`); }
     finally { setSaving(p => ({ ...p, [key]: false })); }
   };
 

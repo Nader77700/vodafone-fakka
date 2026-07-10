@@ -15,6 +15,8 @@ import { buildInvoiceEscPos } from './EscPosBuilder';
 import { buildPrintHtml } from './PrintHtmlBuilder';
 import PrintBridge from './NativePrintBridge';
 import type { PaperSizeKey } from './NativePrintBridge';
+import { formatError } from '@/lib/formatError';
+
 
 // ── طابور الطباعة — منع التكرار ──────────────────────────────────────────
 const printQueue = new Map<string, PrintJob>();
@@ -56,7 +58,7 @@ export async function printViaAndroid(
     if (result.failed)    return { success: false, error: 'فشلت مهمة الطباعة' };
     return { success: result.success };
   } catch (e: unknown) {
-    return { success: false, error: e instanceof Error ? e.message : String(e) };
+    return { success: false, error: formatError(e) };
   }
 }
 
@@ -75,7 +77,7 @@ export async function printViaBluetooth(
     if (result.success) return { success: true };
     return { success: false, error: 'فشل إرسال البيانات للطابعة' };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = formatError(e);
     if (msg === 'BT_DISABLED')        return { success: false, error: 'Bluetooth مغلق — يرجى تشغيله' };
     if (msg === 'NO_BT_PERMISSION')   return { success: false, error: 'مطلوب صلاحية Bluetooth' };
     if (msg.startsWith('BT_CONNECT')) return { success: false, error: `فشل الاتصال: ${msg.replace('BT_CONNECT_FAILED: ', '')}` };

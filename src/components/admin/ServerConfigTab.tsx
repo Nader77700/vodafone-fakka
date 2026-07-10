@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { formatError } from '@/lib/formatError';
 import {
   RefreshCw, Loader2, Save, ToggleLeft, ToggleRight,
   Shield, Zap, Bell, Settings, AlertTriangle, ServerCrash,
@@ -147,7 +148,7 @@ export default function ServerConfigTab({ adminEmail }: { adminEmail: string }) 
       if (error) throw error;
       setRows((data ?? []) as AppConfigRow[]);
     } catch (e) {
-      toast.error('فشل تحميل الإعدادات: ' + String(e));
+      toast.error('فشل تحميل الإعدادات: ' + formatError(e));
     } finally {
       setLoading(false);
     }
@@ -162,7 +163,7 @@ export default function ServerConfigTab({ adminEmail }: { adminEmail: string }) 
       setRows(prev => prev.map(r => r.key === key ? { ...r, value, updated_at: new Date().toISOString() } : r));
       toast.success(`✅ تم حفظ "${key}"`);
     } catch (e) {
-      toast.error('فشل الحفظ: ' + String(e));
+      toast.error('فشل الحفظ: ' + formatError(e));
     } finally {
       setSaving(p => ({ ...p, [key]: false }));
     }

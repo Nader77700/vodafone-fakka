@@ -40,10 +40,9 @@ export function computeHardwareHash(): string {
     // 5. Platform (OS)
     parts.push(navigator.platform ?? '');
 
-    // 6. User-Agent hash (أول 80 حرف)
-    parts.push((navigator.userAgent ?? '').slice(0, 80));
+    // إزالة User-Agent لأنه يتغير مع تحديثات المتصفح ويسبب عدم استقرار البصمة
 
-    // 7. Canvas fingerprint
+    // 6. Canvas fingerprint
     try {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -87,6 +86,17 @@ export function getDeviceFingerprint(): string {
   try {
     const existing = localStorage.getItem(FP_KEY);
     if (existing && existing.length === 36) return existing;
+    
+    // محاولة الاسترجاع من STABLE_KEY
+    const stable = localStorage.getItem(STABLE_KEY);
+    if (stable) {
+      const [oldFp] = stable.split(':');
+      if (oldFp && oldFp.length === 36) {
+        localStorage.setItem(FP_KEY, oldFp);
+        return oldFp;
+      }
+    }
+    
     const fp = generateUUID();
     localStorage.setItem(FP_KEY, fp);
     return fp;

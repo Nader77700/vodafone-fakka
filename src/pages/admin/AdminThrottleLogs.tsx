@@ -16,6 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { formatError } from '@/lib/formatError';
+
 
 interface ThrottleRecord {
   id: string;
@@ -91,7 +93,7 @@ export default function AdminThrottleLogs() {
       setLogs(records as ThrottleRecord[]);
       setTotal(count ?? 0);
     } catch (e) {
-      toast.error(`فشل التحميل: ${String(e)}`);
+      toast.error(`فشل التحميل: ${formatError(e)}`);
     } finally {
       setLoading(false);
     }

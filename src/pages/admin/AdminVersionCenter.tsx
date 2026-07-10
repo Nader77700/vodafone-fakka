@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { BUILD_INFO } from '@/lib/buildInfo';
+import { formatError } from '@/lib/formatError';
+
 
 function fmt(d?: string | null) {
   if (!d) return '—';
@@ -98,7 +100,7 @@ export default function AdminVersionCenter() {
       if (error) throw error;
       toast.success(`✅ تم حفظ ${label}`);
       await load();
-    } catch (e) { toast.error(`فشل: ${String(e)}`); }
+    } catch (e) { toast.error(`فشل: ${formatError(e)}`); }
     finally { setSaving(false); }
   };
 
@@ -125,7 +127,7 @@ export default function AdminVersionCenter() {
       }
       setMinCode(newMinCode);
       await load();
-    } catch (e) { toast.error(`فشل: ${String(e)}`); setForceUpdate(!enabled); }
+    } catch (e) { toast.error(`فشل: ${formatError(e)}`); setForceUpdate(!enabled); }
     finally { setSaving(false); }
   };
 
@@ -216,7 +218,7 @@ export default function AdminVersionCenter() {
                       if (error) throw error;
                       toast.success(`✅ تم تحديث الحد الأدنى: ${minCode}`);
                       await load();
-                    } catch (e) { toast.error(`فشل: ${String(e)}`); }
+                    } catch (e) { toast.error(`فشل: ${formatError(e)}`); }
                     finally { setSaving(false); }
                   }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'حفظ'}

@@ -207,6 +207,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // كشف حذف الحساب عبر JWT_DELETED أو انتهاء الجلسة الإجباري
       if (event === 'SIGNED_OUT' && !session) {
         setProfile(null);
+        try {
+          localStorage.removeItem('__vfp_native_id');
+          localStorage.removeItem('pending_ops_queue');
+          localStorage.removeItem('vf_auth_data');
+          // لا نحذف __vfp_dfp أو __vfp_hwfp لضمان بقاء الحظر الفعلي
+        } catch { /* تجاهل */ }
       }
     });
 

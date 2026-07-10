@@ -54,6 +54,8 @@ import { fmtTimeLeft } from '@/lib/formatUtils';
 import { toast } from 'sonner';
 import { Radio, ArrowLeft, Wallet } from 'lucide-react';
 import PromotionBanner from '@/components/common/PromotionBanner';
+import { formatError } from '@/lib/formatError';
+
 
 // ── كارت Premium — عروض باقي الشبكات ──
 function NetworksPremiumCard() {
@@ -267,7 +269,7 @@ function NativeDebugPanel() {
       const result = await VodafoneDetector.getNetworkInfo();
       setInfo(result);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = formatError(e);
       setError(msg);
       console.error('[NativeDebug] error:', e);
     } finally {
@@ -925,6 +927,7 @@ function ExecuteModal({
         error_message: result.error ?? null, performed_at: performedAt,
         api_response: (result.error ? (result.error ?? '').split('\n')[0] : (result.success ? 'Completed' : null)) ?? null,
         operation_source: 'vodafone_cash',
+        idempotency_key: idempotencyKey,
       });
       if (opErr) {
         // فشل تسجيل العملية من العميل → أضف للطابور المحلي بدلاً من رفضها

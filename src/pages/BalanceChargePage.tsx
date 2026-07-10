@@ -1056,6 +1056,7 @@ function BalanceExecuteDialog({
         performed_at:     performedAt,
         api_response:     success ? 'Completed via AnaVodafone Balance' : (errorMsg?.split('\n')[0] ?? null),
         operation_source: 'ana_vodafone_balance',
+        idempotency_key:  txUuid,
       } as Parameters<typeof insertOperation>[0]);
 
       if (opErr) {
