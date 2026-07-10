@@ -63,10 +63,7 @@ export default function AdminThrottleLogs() {
     try {
       let q = supabase
         .from('charge_throttles')
-        .select(`
-          *,
-          profile:profiles!charge_throttles_user_id_fkey(username, phone)
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('throttled_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -74,7 +71,24 @@ export default function AdminThrottleLogs() {
 
       const { data, count, error } = await q;
       if (error) throw error;
-      setLogs((data ?? []) as ThrottleRecord[]);
+      
+      const records = (data ?? []) as any[];
+      if (records.length > 0) {
+        const userIds = [...new Set(records.map(r => r.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, phone')
+          .in('id', userIds);
+          
+        const profileMap = new Map();
+        (profiles ?? []).forEach(p => profileMap.set(p.id, p));
+        
+        records.forEach(r => {
+          r.profile = profileMap.get(r.user_id);
+        });
+      }
+      
+      setLogs(records as ThrottleRecord[]);
       setTotal(count ?? 0);
     } catch (e) {
       toast.error(`فشل التحميل: ${String(e)}`);

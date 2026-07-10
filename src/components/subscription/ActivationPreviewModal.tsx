@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { getActivationPreview, activateLicenseKey } from '@/lib/api';
+import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -99,7 +100,12 @@ export default function ActivationPreviewModal({ open, onOpenChange, userId, onS
   const handleActivate = async () => {
     if (!preview?.valid) return;
     setActivating(true);
-    const res = await activateLicenseKey(userId, code.trim().toUpperCase());
+    const identity = getStableDeviceIdentity();
+    const res = await activateLicenseKey(userId, code.trim().toUpperCase(), {
+      deviceFp: identity.device_fp,
+      hardwareHash: identity.hardware_hash,
+      nativeId: identity.device_id,
+    });
     setActivating(false);
     if (res.success) {
       toast.success(preview.currentDays > 0

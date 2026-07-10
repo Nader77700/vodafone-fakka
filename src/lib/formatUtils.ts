@@ -46,35 +46,37 @@ export function fmtTimeLeft(expiresAt: string | null | undefined): {
   if (ms <= 0) return { label: 'منتهي', color: '#ef4444', status: 'expired' };
 
   const totalSeconds = Math.floor(ms / 1000);
-  const days    = Math.floor(totalSeconds / 86400);
-  const hours   = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
+  
   let label: string;
   let color: string;
   let status: 'active' | 'expiring' | 'critical' | 'expired';
 
-  if (days >= 1) {
-    // أكثر من يوم: نعرض الأيام فقط
-    label  = `${days} ${days === 1 ? 'يوم' : 'أيام'}`;
-    color  = days <= 3 ? '#F7C948' : days <= 7 ? '#F7C948' : '#00C896';
-    status = days <= 7 ? 'expiring' : 'active';
-  } else if (hours >= 1) {
-    // أقل من يوم وأكثر من ساعة: نعرض الساعات مباشرة
-    label  = `${hours} ${hours === 1 ? 'ساعة' : 'ساعات'}`;
-    color  = '#F7C948';
-    status = 'expiring';
-  } else if (minutes >= 1) {
-    // أقل من ساعة: نعرض الدقائق
-    label  = `${minutes} ${minutes === 1 ? 'دقيقة' : 'دقائق'}`;
-    color  = '#ef4444';
-    status = 'critical';
+  if (totalSeconds > 86400) {
+    // أكثر من يوم: نحسب الأيام بالسقف (30 يوم و1 دقيقة = 31، لكن إذا 29 و23 ساعة = 30)
+    // لا يخصم يوم إلا بعد انتهاء 24 ساعة كاملة
+    const displayDays = Math.ceil(totalSeconds / 86400);
+    label  = `${displayDays} ${displayDays === 1 ? 'يوم' : displayDays === 2 ? 'يومان' : displayDays <= 10 ? 'أيام' : 'يوماً'}`;
+    color  = displayDays <= 3 ? '#F7C948' : displayDays <= 7 ? '#F7C948' : '#00C896';
+    status = displayDays <= 7 ? 'expiring' : 'active';
   } else {
-    // أقل من دقيقة: نعرض الثواني
-    label  = `${seconds} ${seconds === 1 ? 'ثانية' : 'ثوانٍ'}`;
-    color  = '#ef4444';
-    status = 'critical';
+    // آخر يوم (أقل من أو يساوي 24 ساعة): نبدأ بعرض الساعات والدقائق
+    const hours   = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours >= 1) {
+      label  = `${hours} ${hours === 1 ? 'ساعة' : hours === 2 ? 'ساعتان' : hours <= 10 ? 'ساعات' : 'ساعة'}`;
+      color  = '#F7C948';
+      status = 'expiring';
+    } else if (minutes >= 1) {
+      label  = `${minutes} ${minutes === 1 ? 'دقيقة' : minutes === 2 ? 'دقيقتان' : minutes <= 10 ? 'دقائق' : 'دقيقة'}`;
+      color  = '#ef4444';
+      status = 'critical';
+    } else {
+      label  = `${seconds} ${seconds === 1 ? 'ثانية' : seconds === 2 ? 'ثانيتان' : seconds <= 10 ? 'ثوانٍ' : 'ثانية'}`;
+      color  = '#ef4444';
+      status = 'critical';
+    }
   }
 
   return { label, color, status };

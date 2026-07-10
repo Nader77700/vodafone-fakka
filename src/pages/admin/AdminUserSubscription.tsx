@@ -28,6 +28,7 @@ import {
   archiveSubscriptionPro, restoreArchivedSubscription, restoreReplacedSubscription,
   getArchivedSubscriptions, getAllUserSubscriptions,
   renewSubscriptionPro, extendSubscriptionPro,
+  activateLicenseKey,
 } from '@/lib/api';
 import type { Subscription } from '@/types/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,11 +47,13 @@ function calcSecondsLeft(e?: string | null): number {
 }
 function fmtCountdown(secs: number): string {
   if (secs <= 0) return 'انتهى';
-  const d = Math.floor(secs / 86400);
-  const h = Math.floor((secs % 86400) / 3600);
+  if (secs > 86400) {
+    const displayDays = Math.ceil(secs / 86400);
+    return `${displayDays} يوم`;
+  }
+  const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
-  if (d > 0) return `${d} يوم ${h} ساعة`;
   if (h > 0) return `${h} ساعة ${m} دقيقة`;
   if (m > 0) return `${m} دقيقة ${s} ثانية`;
   return `${s} ثانية`;
@@ -270,6 +273,7 @@ export default function AdminUserSubscription() {
   const [saving,   setSaving]   = useState(false);
   const [renewDays,  setRenewDays]  = useState('30');
   const [extendDate, setExtendDate] = useState('');
+  const [overrideCode, setOverrideCode] = useState('');
   const [reactivateDays, setReactivateDays] = useState('30');
   const [showOps,  setShowOps]  = useState(false);
   const [showAllSubs, setShowAllSubs] = useState(false);
@@ -531,6 +535,31 @@ export default function AdminUserSubscription() {
                     `تم تجديد الاشتراك بـ ${renewDays} يوم`,
                   )}>
                   {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />} تجديد
+                </Button>
+              </div>
+            </div>
+
+            {/* تفعيل كود مباشر (تخطي القيود) */}
+            <div className="p-4 rounded-xl border border-border bg-muted/10 space-y-3">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-warning shrink-0" />
+                <p className="text-sm font-semibold">تفعيل كود (تخطي القيود)</p>
+              </div>
+              <div className="flex gap-2 items-center flex-wrap">
+                <Input value={overrideCode} onChange={e => setOverrideCode(e.target.value.toUpperCase())} className="text-sm flex-1" placeholder="أدخل كود التفعيل..." />
+                <Button size="sm" variant="default" className="h-9 text-xs gap-1 shrink-0 bg-warning hover:bg-warning/90 text-warning-foreground"
+                  disabled={saving || !overrideCode.trim()}
+                  onClick={() => runConfirm(
+                    'تأكيد التفعيل',
+                    `تفعيل الكود ${overrideCode} للمستخدم ${username} متجاوزاً أي قيود سابقة.`,
+                    async () => {
+                      const res = await activateLicenseKey(id!, overrideCode.trim(), { adminOverride: true });
+                      if (!res.success) throw new Error(res.error || 'فشل التفعيل');
+                      return { success: true };
+                    },
+                    'تم تفعيل الكود وتخطي القيود بنجاح'
+                  )}>
+                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} تفعيل إجباري
                 </Button>
               </div>
             </div>

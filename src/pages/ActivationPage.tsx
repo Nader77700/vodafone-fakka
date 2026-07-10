@@ -5,7 +5,7 @@ import {
   activateLicenseKey, getUserSubscription, calcTimeRemaining, getTrialUsageForUser,
   confirmGiftClaim,
 } from '@/lib/api';
-import { getDeviceFingerprint } from '@/lib/deviceFingerprint';
+import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 import DeviceBlockedModal from '@/components/subscription/DeviceBlockedModal';
 import type { Subscription } from '@/types/types';
 import { toast } from 'sonner';
@@ -139,8 +139,12 @@ export default function ActivationPage() {
     setLoading(true);
     let result;
     try {
-      const deviceFp = getDeviceFingerprint();
-      result = await activateLicenseKey(user.id, code.trim().toUpperCase(), deviceFp);
+      const identity = getStableDeviceIdentity();
+      result = await activateLicenseKey(user.id, code.trim().toUpperCase(), {
+        deviceFp: identity.device_fp,
+        hardwareHash: identity.hardware_hash,
+        nativeId: identity.device_id,
+      });
     } catch {
       // أي خطأ شبكي = فشل فوري بلا إعادة محاولة
       setLoading(false);

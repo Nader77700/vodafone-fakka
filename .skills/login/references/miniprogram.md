@@ -209,10 +209,10 @@ const { data, error } = await supabase.auth.verifyOtp({
      - If such a component exists in the codebase, do NOT import or call it from the login/register page. Build the OTP UI directly using only `supabase.auth.signInWithOtp()` and `supabase.auth.verifyOtp()`.
 3. Phone + password (verification ON): Use signUp(phone) to send OTP (Password required), verifyOtp() to register.
 4. Email + password (verification ON): pass emailRedirectTo to signup (default window.location.origin).
-5. Wechat login:
+5. Wechat login (WeChat authorization login, Wechat one-click authorization login):
   - Must add username-password login as a second login method.
   - Use signInWithWechat in `src/contexts/AuthContext.tsx` to implement WeChat login.
-  - Create an edge function named `wechat_miniapp_login` to support WeChat Mini Program login:
+  - **MANDATORY — WeChat login is non-functional without this step. Do NOT skip it.** Create an edge function named `wechat_miniapp_login`. The frontend `signInWithWechat` sends the `wx.login` code to this function, which exchanges it for an openid via code2session. The frontend compiles and renders green without this backend, so it is easy to overlook — but login will fail at runtime. Create it with exactly this code:
 ```
 import { createClient } from 'jsr:@supabase/supabase-js';
 
@@ -314,6 +314,7 @@ Deno.serve(async (req) => {
   }
 })
 ```
+  - **After creating the file, deploy it immediately** with the `supabase_deploy_edge_function` tool. Writing the file alone is not enough — an undeployed function returns 404 and login fails at runtime.
   - Modify handle_new_user() to also sync the username: add a `username` column to profiles, extract from `(NEW.raw_user_meta_data->>'username')::text`. Username-password signup must pass username in metadata via `signUp({ options: { data: { username } } })`. WeChat users will have username = NULL.
   - **CRITICAL**: username and openid must be stored in profiles.openid field. NEVER extract openid from email string — Supabase may normalize the email case.
   - **OPENID CONSTRAINT**: Do NOT add UNIQUE constraint on profiles.openid field. The same WeChat user may have multiple accounts.

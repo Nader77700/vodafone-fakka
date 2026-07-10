@@ -49,6 +49,11 @@
 - The client is already configured at `src/client/supabase.ts` (with weapp-compatible `customFetch`) — **do not modify**
 - Import directly: `import { supabase } from "@/client/supabase"`
 
+## Persistence
+
+- Use Supabase for ALL persistent data and file storage (DB tables + Storage buckets).
+- Do NOT use localStorage / `Taro.setStorage` or any client-side storage as the source of truth for app data — it does not sync across devices/sessions and is wiped on cache clear. Client-side storage is only for ephemeral UI state (drafts, toggles), never the data store.
+
 ## Directory Conventions
 
 - Place types and query wrappers under `src/db/`

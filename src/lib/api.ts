@@ -144,10 +144,17 @@ export async function validateAndSyncSubscription(userId: string): Promise<Subsc
   return sub;
 }
 
+export interface DeviceFingerprintOptions {
+  deviceFp?: string | null;
+  hardwareHash?: string | null;
+  nativeId?: string | null;
+  adminOverride?: boolean;
+}
+
 export async function activateLicenseKey(
   userId: string,
   code: string,
-  deviceFp?: string,
+  options?: DeviceFingerprintOptions,
 ): Promise<{ success: boolean; error?: string; errorCode?: string; isTrial?: boolean; blockerUsername?: string }> {
   // ── قبل التفعيل: احفظ الأيام المتبقية ثم سجّل الاشتراك القديم كـ replaced ──
   const { data: oldSub } = await supabase
@@ -167,9 +174,12 @@ export async function activateLicenseKey(
 
   // ── كل التفعيل يتم عبر RPC مع SECURITY DEFINER (يتجاوز RLS تمامًا) ──
   const { data, error } = await supabase.rpc('activate_license_key_v2', {
-    p_user_id:   userId,
-    p_code:      code,
-    p_device_fp: deviceFp ?? null,
+    p_user_id:        userId,
+    p_code:           code,
+    p_device_fp:      options?.deviceFp ?? null,
+    p_hardware_hash:  options?.hardwareHash ?? null,
+    p_native_id:      options?.nativeId ?? null,
+    p_admin_override: options?.adminOverride ?? false,
   });
   if (error) {
     return { success: false, error: 'حدث خطأ في الاتصال — يُرجى المحاولة مجدداً', errorCode: 'SERVER_ERROR' };
@@ -2268,23 +2278,35 @@ export async function getAllOperationsFiltered(
 }
 
 export async function getOperationsStats(filters: OperationsFilter = {}): Promise<OperationsStats> {
-  let q = supabase.from('operations').select('status, amount');
-  if (filters.user_id)   q = q.eq('user_id', filters.user_id);
-  if (filters.phone)     q = q.ilike('phone_number', `%${filters.phone}%`);
-  if (filters.card_type && filters.card_type !== 'all') q = q.ilike('card_type', `%${filters.card_type}%`);
-  if (filters.status && filters.status !== 'all')       q = q.eq('status', filters.status);
-  if (filters.date_from) q = q.gte('performed_at', filters.date_from);
-  if (filters.date_to)   q = q.lte('performed_at', filters.date_to + 'T23:59:59');
-  if (filters.operation_source && filters.operation_source !== 'all')
-    q = q.eq('operation_source', filters.operation_source);
+  let dateTo = filters.date_to || null;
+  if (dateTo && !dateTo.includes('T')) {
+    dateTo = `${dateTo}T23:59:59`;
+  }
 
-  const { data } = await q;
-  const rows = Array.isArray(data) ? data : [];
+  const rpcFilters = {
+    filter_user_id: filters.user_id || null,
+    filter_phone: filters.phone || null,
+    filter_card_type: (filters.card_type && filters.card_type !== 'all') ? filters.card_type : null,
+    filter_status: (filters.status && filters.status !== 'all') ? filters.status : null,
+    filter_date_from: filters.date_from || null,
+    filter_date_to: dateTo,
+    filter_operation_source: (filters.operation_source && filters.operation_source !== 'all') ? filters.operation_source : null,
+  };
+
+  const { data, error } = await supabase.rpc('get_operations_stats_v2', rpcFilters).maybeSingle();
+
+  if (error || !data) {
+    console.error('Error fetching operations stats via RPC:', error);
+    return { total: 0, success: 0, failed: 0, total_amount: 0 };
+  }
+
+  const rpcData = data as Record<string, any>;
+
   return {
-    total:        rows.length,
-    success:      rows.filter(r => r.status === 'success').length,
-    failed:       rows.filter(r => r.status === 'failed').length,
-    total_amount: rows.filter(r => r.status === 'success').reduce((s, r) => s + (r.amount ?? 0), 0),
+    total: Number(rpcData.total_count) || 0,
+    success: Number(rpcData.success_count) || 0,
+    failed: Number(rpcData.failed_count) || 0,
+    total_amount: Number(rpcData.total_amount) || 0,
   };
 }
 
@@ -2887,55 +2909,47 @@ export async function getAdminChartData(period: ChartPeriod): Promise<AdminChart
   const points: AdminChartPoint[] = [];
 
   if (period === 'daily') {
-    // آخر 7 أيام
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now); d.setDate(d.getDate() - i);
       const from = new Date(d); from.setHours(0, 0, 0, 0);
       const to   = new Date(d); to.setHours(23, 59, 59, 999);
-      const [opsR, usersR] = await Promise.all([
-        supabase.from('operations').select('amount, status').gte('performed_at', from.toISOString()).lte('performed_at', to.toISOString()),
+      const [opsStats, usersR] = await Promise.all([
+        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
       ]);
-      const ops = Array.isArray(opsR.data) ? opsR.data : [];
-      points.push({ label: d.toLocaleDateString('en-GB', { weekday: 'short' }), operations: ops.length, revenue: ops.filter(o => (o as {status?:string}).status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0), new_users: usersR.count ?? 0 });
+      points.push({ label: d.toLocaleDateString('en-GB', { weekday: 'short' }), operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
     }
   } else if (period === 'weekly') {
-    // آخر 8 أسابيع
     for (let i = 7; i >= 0; i--) {
       const from = new Date(now); from.setDate(from.getDate() - i * 7 - 6); from.setHours(0, 0, 0, 0);
       const to   = new Date(now); to.setDate(to.getDate() - i * 7);         to.setHours(23, 59, 59, 999);
-      const [opsR, usersR] = await Promise.all([
-        supabase.from('operations').select('amount, status').gte('performed_at', from.toISOString()).lte('performed_at', to.toISOString()),
+      const [opsStats, usersR] = await Promise.all([
+        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
       ]);
-      const ops = Array.isArray(opsR.data) ? opsR.data : [];
-      points.push({ label: `أسبوع ${8 - i}`, operations: ops.length, revenue: ops.filter(o => (o as {status?:string}).status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0), new_users: usersR.count ?? 0 });
+      points.push({ label: `أسبوع ${8 - i}`, operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
     }
   } else if (period === 'monthly') {
-    // آخر 12 شهر
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const from = new Date(d.getFullYear(), d.getMonth(), 1);
       const to   = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-      const [opsR, usersR] = await Promise.all([
-        supabase.from('operations').select('amount, status').gte('performed_at', from.toISOString()).lte('performed_at', to.toISOString()),
+      const [opsStats, usersR] = await Promise.all([
+        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
       ]);
-      const ops = Array.isArray(opsR.data) ? opsR.data : [];
-      points.push({ label: d.toLocaleDateString('en-GB', { month: 'short' }), operations: ops.length, revenue: ops.filter(o => (o as {status?:string}).status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0), new_users: usersR.count ?? 0 });
+      points.push({ label: d.toLocaleDateString('en-GB', { month: 'short' }), operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
     }
   } else {
-    // آخر 5 سنوات
     for (let i = 4; i >= 0; i--) {
       const yr = now.getFullYear() - i;
       const from = new Date(yr, 0, 1);
       const to   = new Date(yr, 11, 31, 23, 59, 59);
-      const [opsR, usersR] = await Promise.all([
-        supabase.from('operations').select('amount, status').gte('performed_at', from.toISOString()).lte('performed_at', to.toISOString()),
+      const [opsStats, usersR] = await Promise.all([
+        getOperationsStats({ date_from: from.toISOString(), date_to: to.toISOString() }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()),
       ]);
-      const ops = Array.isArray(opsR.data) ? opsR.data : [];
-      points.push({ label: String(yr), operations: ops.length, revenue: ops.filter(o => (o as {status?:string}).status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0), new_users: usersR.count ?? 0 });
+      points.push({ label: String(yr), operations: opsStats.total, revenue: opsStats.total_amount, new_users: usersR.count ?? 0 });
     }
   }
   return points;
