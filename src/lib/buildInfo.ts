@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.293',
-  versionCode:    208,
-  buildTimestamp: '2026-07-10T06:24:37Z',
+  appVersion:     '3.0.294',
+  versionCode:    209,
+  buildTimestamp: '2026-07-10T15:27:56Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.293.apk',
-  bundleHash:     'apk_v3_0_293_code208',
-  apkHash:        'apk_v3_0_293_code208',
-  dbVersion:      'v3.0.293',
+  bundleFile:     'VodafoneFakka-v3.0.294.apk',
+  bundleHash:     'apk_v3_0_294_code209',
+  apkHash:        'apk_v3_0_294_code209',
+  dbVersion:      'v3.0.294',
   releaseNotes: [
+    'v3.0.294: إصدار 3.0.294: منع الأجهزة المزدوجة وفك ارتباط الأجهزة وتحديث دمج العمليات',
     'v3.0.293: إصلاح Authorization في login + Premium بالإنجليزي + تصغير label الـ stats cards',
     'v3.0.292: إصلاح جذري لشحن الرصيد — استبدال supabase.functions.invoke بـ fetch() مباشر لتجاوز CapacitorHttp',
     'v3.0.291: إصلاح نهائي عرض العمليات — DB migration يملأ ops_limit + trigger تلقائي + تحسين كود القراءة',

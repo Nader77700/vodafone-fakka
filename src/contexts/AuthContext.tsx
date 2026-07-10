@@ -214,6 +214,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // إضافة مراقبة لحظية لاكتشاف تغيير الجهاز (تحديث device_id من جهاز آخر)
+  useEffect(() => {
+    if (!user) return;
+    const currentDeviceId = getDeviceId();
+    
+    const profileSub = supabase
+      .channel(`public:profiles:id=eq.${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        (payload) => {
+          const newDeviceId = payload.new.device_id;
+          // إذا تم تحديث معرف الجهاز ولم يعد يطابق جهازنا الحالي
+          if (newDeviceId && newDeviceId !== currentDeviceId) {
+            console.warn('[AuthContext] Device conflict detected via realtime! Signing out...');
+            doSignOut('تم تسجيل الدخول من جهاز آخر. تم إنهاء الجلسة لحماية حسابك.');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileSub);
+    };
+  }, [user]);
+
   return (
     <AuthContext.Provider value={{ user, profile, loading, sessionConflict, signOut, refreshProfile, claimSession }}>
       {children}

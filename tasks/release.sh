@@ -88,8 +88,8 @@ if [[ ! -f "$ANDROID_HOME_PATH/build-tools/34.0.0/apksigner" ]]; then
   fi
   export ANDROID_HOME="$ANDROID_HOME_PATH"
   export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-  yes | sdkmanager --licenses > /dev/null 2>&1
-  sdkmanager "build-tools;34.0.0" "platforms;android-34" > /dev/null 2>&1
+  yes | sdkmanager --licenses > /dev/null 2>&1 || true
+  sdkmanager "build-tools;34.0.0" "platforms;android-34" > /dev/null 2>&1 || true
 fi
 export ANDROID_HOME="$ANDROID_HOME_PATH"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/build-tools/34.0.0:$ANDROID_HOME/platform-tools:$PATH"
