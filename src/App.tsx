@@ -323,7 +323,10 @@ function MerchantClientGate() {
 const COLD_START_KEY = 'vfp_cold_start_done';
 
 function AppInner() {
-  const { sessionConflict } = useAuth();
+  const { sessionConflict, profile } = useAuth();
+  
+  // استثناء الأدمن من التحديث الإجباري
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   // isColdStart: true فقط إذا لم يكن للتطبيق نشاط حديث (خلال 30 دقيقة)
   const isColdStart = (() => {
@@ -401,13 +404,13 @@ function AppInner() {
       )}
 
       {/* MaintenanceScreen — يغطي التطبيق بالكامل فوراً من لوحة الإدارة */}
-      {!deviceBan?.banned && flags.ff_maintenance_mode && <MaintenanceScreen />}
+      {!deviceBan?.banned && flags.ff_maintenance_mode && !isAdmin && <MaintenanceScreen />}
 
       {/* SessionConflictScreen — الحساب مفتوح على جهاز آخر */}
-      {!deviceBan?.banned && !flags.ff_maintenance_mode && sessionConflict && <SessionConflictScreen />}
+      {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && sessionConflict && <SessionConflictScreen />}
 
       {/* ForceUpdateScreen — يغطي كل شيء ولا يسمح بالدخول حتى التحديث */}
-      {!deviceBan?.banned && !flags.ff_maintenance_mode && !sessionConflict && forceUpdate && (
+      {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && !sessionConflict && forceUpdate && !isAdmin && (
         <ForceUpdateScreen
           apkUrl={latestVersion?.apk_url}
           latestVersion={latestVersion?.version}

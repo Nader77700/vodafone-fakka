@@ -7,6 +7,7 @@ import type { Profile } from '@/types/types';
 import { toast } from 'sonner';
 import { useInviteAutoLink } from '@/hooks/useInviteAutoLink';
 import { getDeviceId } from '@/lib/deviceId';
+import { Device } from '@capacitor/device';
 
 interface AuthContextType {
   user: User | null;
@@ -36,7 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { tryAutoLink } = useInviteAutoLink();
 
   const doSignOut = async (message?: string) => {
-    try { await supabase.auth.signOut(); } catch { /* تجاهل */ }
+    try {
+      if (user && profile?.device_id === getDeviceId()) {
+        await supabase.from('profiles').update({ device_id: null }).eq('id', user.id);
+      }
+      await supabase.auth.signOut();
+    } catch { /* تجاهل */ }
     setUser(null);
     setProfile(null);
     if (message) toast.error(message, { duration: 8000 });
@@ -138,10 +144,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // أول تسجيل دخول أو نفس الجهاز — سجّل device_id
       if (!storedDeviceId || storedDeviceId !== currentDeviceId) {
-        supabase.from('profiles')
-          .update({ device_id: currentDeviceId })
-          .eq('id', u.id)
-          .then(() => {}, () => {});
+        Device.getInfo().then(info => {
+          supabase.from('profiles')
+            .update({ device_id: currentDeviceId, active_device_model: info.model })
+            .eq('id', u.id)
+            .then(() => {}, () => {});
+        }).catch(() => {
+          supabase.from('profiles')
+            .update({ device_id: currentDeviceId })
+            .eq('id', u.id)
+            .then(() => {}, () => {});
+        });
       }
     }
 
@@ -168,6 +181,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // السماح بتفريغ المعرّف فقط إذا كان الجهاز الحالي هو الجهاز النشط
+      if (user && profile?.device_id === getDeviceId()) {
+        await supabase.from('profiles').update({ device_id: null }).eq('id', user.id);
+      }
       await supabase.auth.signOut();
     } catch (e) {
       console.error('[AuthContext] signOut error:', e);

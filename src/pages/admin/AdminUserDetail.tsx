@@ -7,7 +7,7 @@ import {
   XCircle, Smartphone, Wifi, Bell, BellOff,
   Trash2, UserX, Zap, CalendarDays, AlertCircle,
   BarChart2, Package, Hash, Wallet, Timer, Calendar,
-  Tag, KeyRound, Eye, EyeOff, Send, Lock,
+  Tag, KeyRound, Eye, EyeOff, Send, Lock, Ban, LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -377,6 +377,44 @@ export default function AdminUserDetail() {
     load();
   };
 
+  const handleBanDevice = async (dev: any) => {
+    if (!window.confirm(`هل أنت متأكد من حظر الجهاز (${dev.device_model || 'Unknown'}) نهائياً؟\nلن يتمكن هذا الجهاز من فتح أي حساب في التطبيق.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-user-actions', {
+        body: {
+          action: 'ban_device',
+          device_fp: dev.device_fp,
+          device_id: dev.device_id,
+          hardware_hash: dev.hardware_hash,
+          ban_reason: 'تم حظره بواسطة الأدمن',
+          device_model: dev.device_model,
+          platform: dev.platform,
+          associated_user_ids: [user.id],
+          associated_usernames: [user.username]
+        }
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      toast.success('تم حظر الجهاز بنجاح');
+    } catch (e: any) {
+      toast.error(e.message || 'فشل حظر الجهاز');
+    }
+  };
+
+  const handleForceLogout = async (dev: any) => {
+    if (!window.confirm(`هل أنت متأكد من تسجيل الخروج الإجباري لهذا الجهاز (${dev.device_model || 'Unknown'})؟`)) return;
+    try {
+      // تفريغ device_id من profile
+      if (user.profile.device_id === dev.device_fp || user.profile.device_id === dev.device_id) {
+         await supabase.from('profiles').update({ device_id: null, active_device_model: null }).eq('id', user.id);
+      }
+      toast.success('تم تسجيل الخروج الإجباري من الجهاز بنجاح (سيطلب منه تسجيل الدخول مجدداً)');
+      fetchData(); // تحديث
+    } catch (e: any) {
+      toast.error('حدث خطأ');
+    }
+  };
+
   const handleDeleteSimilar = async (similarId: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الحساب المشابه؟')) return;
     setDeletingSimilar(similarId);
@@ -422,8 +460,8 @@ export default function AdminUserDetail() {
 
   // أحدث جهاز مسجّل
   const primaryDevice = devices[0];
-  const deviceModel = primaryDevice?.device_info?.model || 'Android';
-  const deviceOS = primaryDevice?.device_info?.os_version || '';
+  const deviceModel = primaryDevice?.device_model || 'Android';
+  const deviceOS = primaryDevice?.platform || '';
   const appVer = primaryDevice?.app_version ?? '—';
   const versionCode = primaryDevice?.version_code ?? '—';
 
@@ -506,20 +544,38 @@ export default function AdminUserDetail() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Smartphone className="w-4 h-4 text-primary shrink-0" />
-                      <span className="text-xs font-semibold">{dev.device_info?.model || 'Android'}</span>
+                      <span className="text-xs font-semibold">{dev.device_model || 'Android'}</span>
                       {dev.is_active && <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط</span>}
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{fmt(dev.updated_at)}</span>
+                    <span className="text-[10px] text-muted-foreground">{fmt(dev.last_seen_at)}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-1.5 mb-2">
                     <div className="rounded-lg bg-muted/30 p-2">
                       <p className="text-[10px] text-muted-foreground">نظام التشغيل</p>
-                      <p className="text-xs font-medium">{dev.device_info?.os_version || '—'}</p>
+                      <p className="text-xs font-medium">{dev.platform || '—'}</p>
                     </div>
                     <div className="rounded-lg bg-muted/30 p-2">
                       <p className="text-[10px] text-muted-foreground">إصدار التطبيق</p>
-                      <p className="text-xs font-medium">v{dev.app_version ?? '—'} ({dev.version_code ?? '—'})</p>
+                      <p className="text-xs font-medium">v{dev.app_version ?? '—'}</p>
                     </div>
+                  </div>
+                  <div className="flex gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-[10px] gap-1 hover:bg-muted"
+                      onClick={() => handleForceLogout(dev)}
+                    >
+                      <LogOut className="w-3 h-3" /> خروج إجباري
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-[10px] gap-1 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleBanDevice(dev)}
+                    >
+                      <Ban className="w-3 h-3" /> חظر الجهاز
+                    </Button>
                   </div>
                 </div>
               ))}

@@ -36,6 +36,8 @@ function isPhoneInput(val: string): boolean {
   return (d.startsWith('01') && d.length >= 8) || (d.startsWith('20') && d.length >= 10);
 }
 
+import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -112,6 +114,20 @@ export default function LoginPage() {
       toast.error('يرجى إدخال اسم المستخدم أو رقم الهاتف وكلمة المرور');
       return;
     }
+
+    // ── فحص حظر الجهاز قبل الدخول ──
+    const { device_fp, hardware_hash, device_id: native_id } = getStableDeviceIdentity();
+    const deviceId = getDeviceId();
+    try {
+      const { data: banCheck } = await supabase.functions.invoke<{banned:boolean;reason?:string}>('admin-user-actions', {
+        body: { action: 'check_device_ban', device_fp: device_fp || deviceId, device_id: native_id || deviceId, hardware_hash },
+      });
+      if ((banCheck as {banned?:boolean}|null)?.banned) {
+        toast.error(`🚫 جهازك محظور نهائياً.\nالسبب: ${(banCheck as {reason?:string}).reason ?? 'غير محدد'}`);
+        return;
+      }
+    } catch (e) { /* ignore */ }
+
     setLoading(true);
 
     if (isPhoneInput(username)) {
@@ -180,10 +196,11 @@ export default function LoginPage() {
       return;
     }
     // ── فحص حظر الجهاز قبل التسجيل ──
+    const { device_fp, hardware_hash, device_id: native_id } = getStableDeviceIdentity();
     const deviceId = getDeviceId();
     {
       const { data: banCheck } = await supabase.functions.invoke<{banned:boolean;reason?:string}>('admin-user-actions', {
-        body: { action: 'check_device_ban', device_id: deviceId, device_fp: deviceId },
+        body: { action: 'check_device_ban', device_fp: device_fp || deviceId, device_id: native_id || deviceId, hardware_hash },
       });
       if ((banCheck as {banned?:boolean}|null)?.banned) {
         toast.error(`🚫 هذا الجهاز محظور من إنشاء حسابات جديدة.\nالسبب: ${(banCheck as {reason?:string}).reason ?? 'تعدد الحسابات'}`);

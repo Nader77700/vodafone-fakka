@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.295',
-  versionCode:    210,
-  buildTimestamp: '2026-06-21T00:00:00Z',
+  appVersion:     '3.0.296',
+  versionCode:    211,
+  buildTimestamp: new Date().toISOString(),
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.295.apk',
-  bundleHash:     'apk_v3_0_295_code210',
-  apkHash:        'apk_v3_0_295_code210',
-  dbVersion:      'v3.0.295',
+  bundleFile:     'VodafoneFakka-v3.0.296.apk',
+  bundleHash:     'apk_v3_0_296_code211',
+  apkHash:        'apk_v3_0_296_code211',
+  dbVersion:      'v3.0.296',
   releaseNotes: [
+    'v3.0.296: تطبيق المراجعة الشاملة (Atomic Transactions)، منع تكرار الأكواد، حظر الأجهزة بالكامل، وتحديث الإحصائيات',
     'v3.0.295: تحسين نظام بصمة الأجهزة لمنع تكرار الأكواد المجانية وإضافة التفعيل الإجباري للمسؤول وتحديث مدة الاشتراك',
     'v3.0.294: إصدار 3.0.294: منع الأجهزة المزدوجة وفك ارتباط الأجهزة وتحديث دمج العمليات',
     'v3.0.293: إصلاح Authorization في login + Premium بالإنجليزي + تصغير label الـ stats cards',

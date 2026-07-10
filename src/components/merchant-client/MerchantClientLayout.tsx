@@ -34,6 +34,11 @@ export default function MerchantClientLayout() {
   const { profile } = useAuth();
   const { data, merchantSuspended, isLoading } = useMerchantClient();
   const { killSwitch, maintenance, forceUpdate, forceLogout, config } = useMerchantControlConfig();
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const effectiveForceUpdate = forceUpdate && !isAdmin;
+  const effectiveKillSwitch  = killSwitch && !isAdmin;
+  const effectiveForceLogout = forceLogout && !isAdmin;
   const navigate  = useNavigate();
   const loc       = useLocation();
 
@@ -79,9 +84,9 @@ export default function MerchantClientLayout() {
 
   // Phase 10: force_logout
   useEffect(() => {
-    if (!forceLogout) return;
+    if (!effectiveForceLogout) return;
     void supabase.auth.signOut();
-  }, [forceLogout]);
+  }, [effectiveForceLogout]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -118,8 +123,8 @@ export default function MerchantClientLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-background" dir="rtl">
       {/* Phase 10: شاشات التحكم اللحظية */}
-      {killSwitch  && <KillSwitchScreen message={config?.kill_switch_msg} />}
-      {forceUpdate && !killSwitch && <ForceUpdateScreen message={config?.force_update_msg} updateUrl={config?.force_update_url} />}
+      {effectiveKillSwitch  && <KillSwitchScreen message={config?.kill_switch_msg} />}
+      {effectiveForceUpdate && !effectiveKillSwitch && <ForceUpdateScreen message={config?.force_update_msg} updateUrl={config?.force_update_url} />}
 
       {/* Welcome Dialog — أول دخول فقط */}
       <MerchantWelcomeDialog />

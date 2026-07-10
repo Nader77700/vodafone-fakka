@@ -3090,12 +3090,16 @@ export interface UserDetail {
   // ─── حقول جديدة ───────────────────────────────────
   devices: Array<{
     id: string;
-    token: string;
-    device_info: { platform?: string; model?: string; os_version?: string };
+    device_fp: string | null;
+    device_id: string | null;
+    hardware_hash: string | null;
+    device_model: string | null;
+    platform: string | null;
+    os_version?: string | null;
     app_version: string | null;
-    version_code: number | null;
-    is_active: boolean;
-    updated_at: string;
+    version_code?: number | null;
+    last_seen_at: string;
+    is_active: boolean; // computed based on profile.device_id
   }>;
   similar_accounts: Array<{
     id: string;
@@ -3114,7 +3118,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     supabase.from('operations').select('*').eq('user_id', userId).order('performed_at', { ascending: false }).limit(200),
     supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(200),
     supabase.from('activity_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.from('fcm_tokens').select('id, token, device_info, app_version, version_code, is_active, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }),
+    supabase.from('device_registry').select('id, device_fp, device_id, hardware_hash, device_model, platform, app_version, last_seen_at').eq('user_id', userId).order('last_seen_at', { ascending: false }),
   ]);
 
   const ops: Operation[] = Array.isArray(opsRes.data) ? opsRes.data : [];
@@ -3189,7 +3193,10 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     notifications: Array.isArray(notifsRes.data) ? notifsRes.data : [],
     activity: Array.isArray(actRes.data) ? actRes.data : [],
     recent_ops: ops.slice(0, 50),
-    devices: Array.isArray(devicesRes.data) ? (devicesRes.data as UserDetail['devices']) : [],
+    devices: (Array.isArray(devicesRes.data) ? devicesRes.data : []).map(d => ({
+      ...d,
+      is_active: d.device_id === profile.device_id || d.device_fp === profile.device_id, // basic heuristic
+    })) as UserDetail['devices'],
     similar_accounts,
   };
 }
