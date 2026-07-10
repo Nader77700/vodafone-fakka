@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.290',
-  versionCode:    205,
-  buildTimestamp: '2026-07-09T22:09:31Z',
+  appVersion:     '3.0.291',
+  versionCode:    206,
+  buildTimestamp: '2026-07-10T05:19:17Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.290.apk',
-  bundleHash:     'apk_v3_0_290_code205',
-  apkHash:        'apk_v3_0_290_code205',
-  dbVersion:      'v3.0.290',
+  bundleFile:     'VodafoneFakka-v3.0.291.apk',
+  bundleHash:     'apk_v3_0_291_code206',
+  apkHash:        'apk_v3_0_291_code206',
+  dbVersion:      'v3.0.291',
   releaseNotes: [
+    'v3.0.291: إصلاح نهائي عرض العمليات — DB migration يملأ ops_limit + trigger تلقائي + تحسين كود القراءة',
     'v3.0.290: إصلاح نهائي لشحن الرصيد — edge function يُرجع 200 دائماً + تحسين معالجة الأخطاء',
     'v3.0.289: تنظيف merge conflicts + إصلاح نهائي لشحن الرصيد وعرض العمليات',
     'v3.0.288: إصلاح عرض عدد العمليات المتبقي + إصلاح شحن الرصيد للاشتراكات المحدودة',

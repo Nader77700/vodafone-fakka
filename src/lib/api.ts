@@ -787,18 +787,13 @@ export async function getSubscriptionOpsInfo(userId: string): Promise<Subscripti
     .eq('id', sub.license_key_id)
     .maybeSingle();
 
-  // ══ BUG FIX: أولوية القراءة ══════════════════════════════════════════════
-  // 1. subscriptions.ops_limit   — القيمة الفعلية المخصصة للمستخدم (الأعلى أولوية)
-  // 2. license_keys.operations_per_user — الحد الافتراضي للكود
-  // 3. license_keys.max_ops_per_user    — بديل قديم
+  // ══ قراءة ops_limit: أولوية subscriptions.ops_limit (مملوء الآن بـ DB trigger)
+  // fallback إلى license_keys.operations_per_user لضمان التوافق مع البيانات القديمة
+  const subOpsLimit: number | null = sub.ops_limit ?? null;
+  const keyOpsRaw: number | null   = (key?.operations_per_user ?? key?.max_ops_per_user) ?? null;
+  const rawOpsLimit: number | null = subOpsLimit ?? keyOpsRaw;
   // القاعدة: 0 = غير محدود تماماً مثل NULL
-  // uses_per_user = activation limit (NOT ops) — do NOT fall back to it for ops
-  const subOpsLimit = (sub as unknown as Record<string, unknown>).ops_limit as number | null | undefined;
-  const keyOpsRaw   = (key?.operations_per_user ?? key?.max_ops_per_user) ?? null;
-  const rawOpsLimit = subOpsLimit !== undefined && subOpsLimit !== null
-    ? subOpsLimit
-    : keyOpsRaw;
-  const opsLimit: number | null = (rawOpsLimit === 0) ? null : (rawOpsLimit ?? null);
+  const opsLimit: number | null = (rawOpsLimit === 0 || rawOpsLimit === null) ? null : rawOpsLimit;
 
   const codeType = (key?.code_type as SubscriptionOpsInfo['codeType']) ?? 'unknown';
   const expirationMode = key?.expiration_mode ?? null;

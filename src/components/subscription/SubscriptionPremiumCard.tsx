@@ -98,6 +98,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
   const opsRem   = opsLimit !== null ? Math.max(0, opsLimit - opsUsed) : null;
   const opsPct   = opsLimit ? Math.min(100, Math.round((opsUsed / opsLimit) * 100)) : 0;
 
+
   return (
     <div
       className="relative rounded-2xl overflow-hidden select-none"
