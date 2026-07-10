@@ -26,6 +26,9 @@ importers:
       '@capacitor/core':
         specifier: ^8.4.1
         version: 8.4.1
+      '@capacitor/device':
+        specifier: ^8.0.2
+        version: 8.0.2(@capacitor/core@8.4.1)
       '@capacitor/preferences':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.4.1)
@@ -466,6 +469,11 @@ packages:
 
   '@capacitor/core@8.4.1':
     resolution: {integrity: sha512-xqhOGLbTAYeOWK+IDUNSjQJAPapQjRHrIcgk9PYp52or9zFTaaMko31uNi16N6W+CRJ8VrRram6fOYILkBG2Hg==}
+
+  '@capacitor/device@8.0.2':
+    resolution: {integrity: sha512-fIqSXnG0s6bz5A/0xFgSXDkbU+Xl65ti80LhucNvLI4kGhJzcNn6SwWVwpXN9SJTOFWXblXknHNppheP8X1frQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/filesystem@1.1.0':
     resolution: {integrity: sha512-8O3UuvL8HNUEJvZnmn8yUmvgB1evtXfcF0oxIo3YbSlylqywJwS3JTiuhKmsvSxCdpbTy8IaTsutVh3gZgWbKg==}
@@ -4402,6 +4410,10 @@ snapshots:
   '@capacitor/core@8.4.1':
     dependencies:
       tslib: 2.8.1
+
+  '@capacitor/device@8.0.2(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
 
   '@capacitor/filesystem@1.1.0(@capacitor/core@3.9.0)':
     dependencies:

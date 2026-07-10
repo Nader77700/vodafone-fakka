@@ -378,6 +378,7 @@ export default function AdminUserDetail() {
   };
 
   const handleBanDevice = async (dev: any) => {
+    if (!detail) return;
     if (!window.confirm(`هل أنت متأكد من حظر الجهاز (${dev.device_model || 'Unknown'}) نهائياً؟\nلن يتمكن هذا الجهاز من فتح أي حساب في التطبيق.`)) return;
     try {
       const { data, error } = await supabase.functions.invoke('admin-user-actions', {
@@ -389,8 +390,8 @@ export default function AdminUserDetail() {
           ban_reason: 'تم حظره بواسطة الأدمن',
           device_model: dev.device_model,
           platform: dev.platform,
-          associated_user_ids: [user.id],
-          associated_usernames: [user.username]
+          associated_user_ids: [detail.profile.id],
+          associated_usernames: [detail.profile.username]
         }
       });
       if (error) throw new Error(error.message);
@@ -402,14 +403,15 @@ export default function AdminUserDetail() {
   };
 
   const handleForceLogout = async (dev: any) => {
+    if (!detail) return;
     if (!window.confirm(`هل أنت متأكد من تسجيل الخروج الإجباري لهذا الجهاز (${dev.device_model || 'Unknown'})؟`)) return;
     try {
       // تفريغ device_id من profile
-      if (user.profile.device_id === dev.device_fp || user.profile.device_id === dev.device_id) {
-         await supabase.from('profiles').update({ device_id: null, active_device_model: null }).eq('id', user.id);
+      if (detail.profile.device_id === dev.device_fp || detail.profile.device_id === dev.device_id) {
+         await supabase.from('profiles').update({ device_id: null, active_device_model: null }).eq('id', detail.profile.id);
       }
       toast.success('تم تسجيل الخروج الإجباري من الجهاز بنجاح (سيطلب منه تسجيل الدخول مجدداً)');
-      fetchData(); // تحديث
+      load(); // تحديث
     } catch (e: any) {
       toast.error('حدث خطأ');
     }

@@ -7,7 +7,7 @@ import type { Profile } from '@/types/types';
 import { toast } from 'sonner';
 import { useInviteAutoLink } from '@/hooks/useInviteAutoLink';
 import { getDeviceId } from '@/lib/deviceId';
-import { Device } from '@capacitor/device';
+import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 
 interface AuthContextType {
   user: User | null;
@@ -144,16 +144,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // أول تسجيل دخول أو نفس الجهاز — سجّل device_id
       if (!storedDeviceId || storedDeviceId !== currentDeviceId) {
-        Device.getInfo().then(info => {
-          supabase.from('profiles')
-            .update({ device_id: currentDeviceId, active_device_model: info.model })
-            .eq('id', u.id)
-            .then(() => {}, () => {});
+        import('@capacitor/device').then(({ Device }) => {
+          Device.getInfo().then(info => {
+            supabase.from('profiles')
+              .update({ device_id: currentDeviceId, active_device_model: info.model })
+              .eq('id', u.id)
+              .then(() => {}, () => {});
+          }).catch(() => {
+            supabase.from('profiles')
+              .update({ device_id: currentDeviceId })
+              .eq('id', u.id)
+              .then(() => {}, () => {});
+          });
         }).catch(() => {
-          supabase.from('profiles')
-            .update({ device_id: currentDeviceId })
-            .eq('id', u.id)
-            .then(() => {}, () => {});
+            supabase.from('profiles')
+              .update({ device_id: currentDeviceId })
+              .eq('id', u.id)
+              .then(() => {}, () => {});
         });
       }
     }

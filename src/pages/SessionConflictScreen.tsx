@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Shield, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/db/supabase';
 
 export default function SessionConflictScreen() {
   const { signOut, user } = useAuth();
@@ -12,7 +12,7 @@ export default function SessionConflictScreen() {
   useEffect(() => {
     if (user?.id) {
       supabase.from('profiles').select('active_device_model').eq('id', user.id).maybeSingle()
-        .then(({ data }) => {
+        .then(({ data }: { data: any }) => {
           if (data?.active_device_model) setDeviceModel(data.active_device_model);
         });
     }
