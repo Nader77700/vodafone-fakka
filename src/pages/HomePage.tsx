@@ -1781,7 +1781,7 @@ export default function HomePage() {
     if (ct === 'trial') return { label: `⚡ ${planName ?? 'تجريبي'}`, color: '#F7C948', bg: 'rgba(247,201,72,0.12)' };
     if (ct === 'gift')  return { label: `🎁 ${planName ?? 'هدية'}`,   color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' };
     if (ct === 'paid')  return { label: `📅 ${planName ?? 'شهري'}`,   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' };
-    return { label: `💎 ${planName ?? 'بريميوم'}`, color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' };
+    return { label: `💎 ${planName ?? 'Premium'}`, color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' };
   })();
 
   const displayName = profile?.full_name ?? profile?.username ?? 'المستخدم';
@@ -2133,8 +2133,8 @@ export default function HomePage() {
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[9px] text-muted-foreground/70 truncate tracking-wide">{label}</p>
-                    <p className="text-sm font-black tabular-nums leading-tight truncate"
+                    <p className="text-[8px] text-muted-foreground/70 leading-tight line-clamp-2 tracking-wide">{label}</p>
+                    <p className="text-[13px] font-black tabular-nums leading-tight truncate"
                       style={{ color }}>{value}</p>
                   </div>
                 </div>

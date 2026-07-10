@@ -550,8 +550,11 @@ function BalanceLoginDialog({
     setLoading(true); setError(null);
 
     // استخدام fetch() مباشر بدلاً من supabase.functions.invoke لتجاوز CapacitorHttp
+    // تمرير Authorization header مطلوب من قِبَل edge function للتحقق من هوية المستخدم
     const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL as string;
     const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const authSession  = (await supabase.auth.getSession()).data.session;
+    const authToken    = authSession?.access_token ?? '';
     type LoginResult = { success: boolean; access_token?: string; expires_in?: number; error?: string; };
     let data: LoginResult | null = null;
     let loginNetworkErr = false;
@@ -560,7 +563,11 @@ function BalanceLoginDialog({
       const timerId = setTimeout(() => ctrl.abort(), 20_000);
       const res = await fetch(`${supabaseUrl}/functions/v1/ana-balance-login`, {
         method: 'POST', signal: ctrl.signal,
-        headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnon },
+        headers: {
+          'Content-Type':  'application/json',
+          'apikey':        supabaseAnon,
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({ phone: trimPhone, password: trimPass }),
       });
       clearTimeout(timerId);

@@ -90,7 +90,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
     const ct = opsInfo?.codeType;
     if (ct === 'trial') return 'تجريبي';
     if (ct === 'gift')  return 'هدية';
-    return 'بريميوم';
+    return 'Premium';
   })();
 
   const opsUsed  = isAdmin ? 0 : (opsInfo?.opsUsed ?? 0);
