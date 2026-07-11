@@ -892,37 +892,9 @@ export async function getSubscriptionOpsInfo(userId: string): Promise<Subscripti
   const isByUsage = expirationMode === 'BY_USAGE';
   const planLabel = derivePlanLabel(codeType, durationDays);
 
-  // للتجريبي: اقرأ trial_usage
-  if (codeType === 'trial') {
-    const { data: usage } = await supabase
-      .from('trial_usage')
-      .select('ops_used')
-      .eq('key_id', sub.license_key_id)
-      .eq('user_id', userId)
-      .maybeSingle();
-    const opsUsed = usage?.ops_used ?? 0;
-    const isExhaustedByUsage = isByUsage && opsLimit !== null && opsUsed >= opsLimit;
-    if (isExhaustedByUsage) {
-      const graceEnds = new Date(Date.now() + 60 * 60 * 1000);
-      await supabase.from('subscriptions').update({
-        status: 'expired', in_grace_period: true,
-        grace_started_at: new Date().toISOString(),
-        grace_ends_at: graceEnds.toISOString(),
-      }).eq('id', sub.id);
-    }
-    return { opsUsed, opsLimit, codeType, isExhaustedByUsage, expirationMode, planLabel, durationDays };
-  }
-
   const opsUsed = sub.ops_count ?? 0;
   const isExhaustedByUsage = isByUsage && opsLimit !== null && opsUsed >= opsLimit;
-  if (isExhaustedByUsage) {
-    const graceEnds = new Date(Date.now() + 60 * 60 * 1000);
-    await supabase.from('subscriptions').update({
-      status: 'expired', in_grace_period: true,
-      grace_started_at: new Date().toISOString(),
-      grace_ends_at: graceEnds.toISOString(),
-    }).eq('id', sub.id);
-  }
+  
   return { opsUsed, opsLimit, codeType, isExhaustedByUsage, expirationMode, planLabel, durationDays };
 }
 

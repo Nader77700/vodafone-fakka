@@ -636,7 +636,7 @@ function UpdateDiagnosticsPanel() {
                   <td className="whitespace-nowrap px-3 py-2.5 font-bold text-foreground">{r.version}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-muted-foreground">{r.version_code}</td>
                   <td className="px-3 py-2.5 max-w-[160px]">
-                    <a href={r.apk_url} target="_blank" rel="noopener noreferrer"
+                    <a href={r.apk_url + (r.apk_url.includes('?') ? '&' : '?') + 'download='} target="_blank" rel="noopener noreferrer"
                       className="text-primary text-[11px] font-mono hover:underline break-all line-clamp-1">
                       {r.apk_url.split('/').pop()}
                     </a>

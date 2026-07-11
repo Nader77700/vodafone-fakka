@@ -245,7 +245,7 @@ export default function UpdatesPage() {
             )}
 
             <a
-              href={activeVersion.apk_url}
+              href={activeVersion.apk_url + (activeVersion.apk_url.includes('?') ? '&' : '?') + 'download='}
               download={activeVersion.apk_url.split('/').pop() || `VodafoneFakka-${activeVersion.version}.apk`}
               className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-black"
               style={{ background: '#eab308', boxShadow: '0 0 16px #eab30850' }}>
@@ -282,7 +282,7 @@ export default function UpdatesPage() {
             </div>
 
             <a
-              href={activeVersion.apk_url}
+              href={activeVersion.apk_url + (activeVersion.apk_url.includes('?') ? '&' : '?') + 'download='}
               download={activeVersion.apk_url.split('/').pop() || `VodafoneFakka-v${installedVersion ?? activeVersion.version}.apk`}
               className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-background"
               style={{ background: '#22c55e', boxShadow: '0 0 16px #22c55e40' }}>
@@ -358,7 +358,7 @@ export default function UpdatesPage() {
 
                 {v.apk_url && (
                   <a
-                    href={v.apk_url}
+                    href={v.apk_url + (v.apk_url.includes('?') ? '&' : '?') + 'download='}
                     download={v.apk_url.split('/').pop() || `VodafoneFakka-${v.version}.apk`}
                     className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary/70 hover:text-primary transition-colors mt-1"
                   >
