@@ -742,6 +742,7 @@ function ExecuteModal({
   const [trialExhausted, setTrialExhausted] = useState(false);
   const [trialOpsUsed, setTrialOpsUsed] = useState(0);
   const [trialMaxOps, setTrialMaxOps] = useState(2);
+  const [isTrialMode, setIsTrialMode] = useState(true);
   // ── حالة الفاتورة الموحّدة بعد النجاح ──
   const [receipt, setReceipt] = useState<InvoiceData | null>(null);
   // منع تنفيذ متعدد عبر ref متزامن
@@ -883,6 +884,7 @@ function ExecuteModal({
       if (!opsCheck.allowed) {
         setTrialOpsUsed(opsCheck.opsUsed ?? 0);
         setTrialMaxOps(opsCheck.opsLimit ?? 0);
+        setIsTrialMode(opsCheck.isTrial ?? true);
         setTrialExhausted(true);
         setSubmitting(false); setLoadingStep(0);
         executingRef.current = false;
@@ -917,17 +919,22 @@ function ExecuteModal({
           product_id: product.id, price: product.price, units: product.units,
           units_label: product.unitsLabel, validity: product.validity ?? '',
           type: product.type, via: result.via ?? 'unknown',
-          idempotency_key: idempotencyKey,
-          correlation_id:  correlationId,
-          retry_count:     result.retryCount ?? 0,
-          latency_ms:      executeLatencyMs,
         } as Record<string, unknown>,
+        idempotency_key: idempotencyKey,
+        correlation_id:  correlationId,
+        retry_count:     result.retryCount ?? 0,
+        latency_ms:      executeLatencyMs,
         category: isMared ? 'مارد' : 'فكة', amount: product.price,
         status: result.success ? 'success' : 'failed',
         error_message: result.error ?? null, performed_at: performedAt,
         api_response: (result.error ? (result.error ?? '').split('\n')[0] : (result.success ? 'Completed' : null)) ?? null,
         operation_source: 'vodafone_cash',
-      } as Record<string, unknown>);
+      });
+      if (opData && !opErr) {
+         if ((opData as any).operation_number) {
+            opNumber = (opData as any).operation_number;
+         }
+      }
       if (opErr) {
         console.error('Database Insert Error:', opErr);
 
@@ -1036,7 +1043,7 @@ function ExecuteModal({
 
   return (
     <>
-      <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} />
+      <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} isTrial={isTrialMode} />
       <Dialog open={open} onOpenChange={v => { if (!v && !submitting && !receipt) onClose(); }}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[460px] p-0 border-0 max-h-[92dvh] overflow-y-auto gap-0"

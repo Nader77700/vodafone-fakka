@@ -869,6 +869,7 @@ function BalanceExecuteDialog({
   const [trialExhausted, setTrialExhausted] = useState(false);
   const [trialOpsUsed, setTrialOpsUsed]   = useState(0);
   const [trialMaxOps, setTrialMaxOps]     = useState(0);
+  const [isTrialMode, setIsTrialMode]     = useState(true);
 
   // PHASE 5: Cooldown بعد فشل رصيد
   const [cooldownUntil, setCooldownUntil] = useState(0);
@@ -928,6 +929,7 @@ function BalanceExecuteDialog({
       if (!opsCheck.allowed) {
         setTrialOpsUsed(opsCheck.opsUsed ?? 0);
         setTrialMaxOps(opsCheck.opsLimit ?? 0);
+        setIsTrialMode(opsCheck.isTrial ?? true);
         setTrialExhausted(true);
         setSubmitting(false); executingRef.current = false;
         setStep('details'); return;
@@ -1056,7 +1058,13 @@ function BalanceExecuteDialog({
         performed_at:     performedAt,
         api_response:     success ? 'Completed via AnaVodafone Balance' : (errorMsg?.split('\n')[0] ?? null),
         operation_source: 'ana_vodafone_balance',
-      } as Record<string, unknown>);
+        idempotency_key:  txUuid,
+      });
+      if (opData && !opErr) {
+        if ((opData as any).operation_number) {
+            // Nothing to update locally, but the database will be updated.
+        }
+      }
 
       if (opErr) {
         console.error('Database Insert Error:', opErr);
@@ -1148,7 +1156,7 @@ function BalanceExecuteDialog({
 
   return (
     <>
-      <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} />
+      <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} isTrial={isTrialMode} />
       <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[440px] p-0 border-0 gap-0 max-h-[90dvh] overflow-y-auto"

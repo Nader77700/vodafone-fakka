@@ -14,9 +14,10 @@ interface Props {
   open: boolean;
   opsUsed: number;
   maxOps: number;
+  isTrial?: boolean;
 }
 
-export default function TrialExhaustedPopup({ open, opsUsed, maxOps }: Props) {
+export default function TrialExhaustedPopup({ open, opsUsed, maxOps, isTrial = true }: Props) {
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
 
@@ -43,18 +44,22 @@ export default function TrialExhaustedPopup({ open, opsUsed, maxOps }: Props) {
             <Zap className="w-8 h-8 text-warning" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-balance">انتهت الحصة التجريبية</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              استخدمت <span className="font-bold text-warning">{opsUsed}</span> من <span className="font-bold">{maxOps}</span> عملية تجريبية
-            </p>
+            <h2 className="text-lg font-black text-balance">
+              {isTrial ? 'انتهت الحصة التجريبية' : (maxOps > 0 ? 'نفدت باقة العمليات' : 'انتهى اشتراكك')}
+            </h2>
+            {maxOps > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                استخدمت <span className="font-bold text-warning">{opsUsed}</span> من <span className="font-bold">{maxOps}</span> عملية {isTrial ? 'تجريبية' : 'متاحة'}
+              </p>
+            )}
           </div>
         </div>
 
         {/* المحتوى */}
         <div className="px-6 py-5 space-y-4 text-center" dir="rtl">
           <p className="text-sm text-muted-foreground text-pretty">
-            انتهت الحصة التجريبية الخاصة بك.<br />
-            يرجى الاشتراك للاستمرار في استخدام منصة <span className="font-semibold text-foreground">Vodafone Fakka Premium</span>.
+            {isTrial ? 'انتهت الحصة التجريبية الخاصة بك.' : 'انتهت باقة العمليات أو اشتراكك الحالي.'}<br />
+            يرجى تجديد الاشتراك للاستمرار في استخدام منصة <span className="font-semibold text-foreground">Vodafone Fakka Premium</span>.
           </p>
 
           <div className="space-y-3 pt-1">

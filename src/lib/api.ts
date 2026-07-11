@@ -531,8 +531,8 @@ export async function insertOperationTransaction(
 }
 
 export async function insertOperation(
-  payload: Omit<Operation, 'id' | 'created_at' | 'operation_number'> & { duration_ms?: number | null; api_response?: string | null; operation_source?: string | null }
-): Promise<{ error: unknown; data: Operation | null }> {
+  payload: Omit<Operation, 'id' | 'created_at' | 'operation_number'> & { duration_ms?: number | null; api_response?: string | null; operation_source?: string | null; idempotency_key?: string | null; correlation_id?: string | null; retry_count?: number | null; latency_ms?: number | null; }
+): Promise<{ error: unknown; data: { id: string; operation_number: number; is_duplicate?: boolean } | null }> {
   if (!payload.device_fp || !payload.hardware_hash) {
     try {
       const identity = getStableDeviceIdentity();
@@ -542,12 +542,31 @@ export async function insertOperation(
     } catch { /* صامت */ }
   }
 
-  const { data, error } = await supabase
-    .from('operations')
-    .insert(payload as Record<string, unknown>)
-    .select('*')
-    .maybeSingle();
-  return { error, data: data as Operation | null };
+  // Use the RPC to ensure idempotency and get the operation number reliably
+  const { data, error } = await supabase.rpc('atomic_insert_operation_and_consume', {
+    p_user_id: payload.user_id,
+    p_phone: payload.phone_number,
+    p_card_type: payload.card_type,
+    p_amount: payload.amount,
+    p_status: payload.status,
+    p_error_msg: payload.error_message,
+    p_performed_at: payload.performed_at,
+    p_category: payload.category,
+    p_api_res: payload.api_response,
+    p_card_data: payload.card_data,
+    p_source: payload.operation_source,
+    p_idempotency_key: payload.idempotency_key,
+    p_duration_ms: payload.duration_ms,
+    p_correlation_id: payload.correlation_id,
+    p_execution_layer: payload.execution_layer,
+    p_retry_count: payload.retry_count,
+    p_latency_ms: payload.latency_ms,
+    p_device_fp: payload.device_fp,
+    p_hardware_hash: payload.hardware_hash,
+    p_native_id: payload.native_id
+  });
+  
+  return { error, data: data as any };
 }
 
 // ==========================================
