@@ -4,7 +4,7 @@
  */
 import type { InvoiceData, PaperWidth } from './types';
 
-const LOGO_URL = 'https://miaoda-conversation-file.s3cdn.medo.dev/user-bkii4kb9ihvk/app-ck2v94t1nev5/20260623/file_00000000191471f49ddde7c1651efc02.png';
+const LOGO_URL = 'https://miaoda-conversation-file.s3cdn.medo.dev/user-bkii4kb9ihvk/app-cxsd6dl9ycch/20260623/file_00000000191471f49ddde7c1651efc02.png';
 
 export function buildPrintHtml(invoice: InvoiceData, paperWidth: PaperWidth = 80): string {
   const mmWidth = paperWidth === 58 ? '58mm' : '80mm';

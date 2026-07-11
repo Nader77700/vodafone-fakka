@@ -159,7 +159,7 @@ export async function activateLicenseKey(
   // ── قبل التفعيل: احفظ الأيام المتبقية ثم سجّل الاشتراك القديم كـ replaced ──
   const { data: oldSub } = await supabase
     .from('subscriptions')
-    .select('id, expires_at, duration_days')
+    .select('id, expires_at')
     .eq('user_id', userId)
     .eq('status', 'active')
     .maybeSingle();
@@ -2613,9 +2613,16 @@ export async function registerDeviceInRegistry(userId: string, params: {
   device_fp?: string; device_id?: string; hardware_hash?: string;
   ip_address?: string; device_model?: string; platform?: string; app_version?: string;
 }): Promise<void> {
-  await supabase.functions.invoke('admin-user-actions', {
-    body: { action: 'register_device', userId, ...params },
-  }).catch(() => {});
+  try {
+    await supabase.from('device_registry').upsert({
+      user_id: userId, device_fp: params.device_fp ?? null, device_id: params.device_id ?? null,
+      hardware_hash: params.hardware_hash ?? null, ip_address: params.ip_address ?? null,
+      device_model: params.device_model ?? null, platform: params.platform ?? null,
+      app_version: params.app_version ?? null, last_seen_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,device_fp' });
+  } catch (e) {
+    // Ignore error
+  }
 }
 
 // ── الحسابات المحظورة (is_active = false) ─────────────────────────────────

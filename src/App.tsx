@@ -400,14 +400,14 @@ function AppInner() {
     <>
       {/* DeviceBannedScreen — يغطي التطبيق بالكامل إذا كان الجهاز محظوراً */}
       {deviceBan?.banned && (
-        <DeviceBannedScreen reason={deviceBan.reason} bannedAt={deviceBan.banned_at} />
+        <S><DeviceBannedScreen reason={deviceBan.reason} bannedAt={deviceBan.banned_at} /></S>
       )}
 
       {/* MaintenanceScreen — يغطي التطبيق بالكامل فوراً من لوحة الإدارة */}
       {!deviceBan?.banned && flags.ff_maintenance_mode && !isAdmin && <MaintenanceScreen />}
 
       {/* SessionConflictScreen — الحساب مفتوح على جهاز آخر */}
-      {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && sessionConflict && <SessionConflictScreen />}
+      {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && sessionConflict && <S><SessionConflictScreen /></S>}
 
       {/* ForceUpdateScreen — يغطي كل شيء ولا يسمح بالدخول حتى التحديث */}
       {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && !sessionConflict && forceUpdate && !isAdmin && (

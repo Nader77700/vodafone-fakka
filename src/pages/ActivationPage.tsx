@@ -190,7 +190,7 @@ export default function ActivationPage() {
               style={{ borderColor: 'rgba(230,0,0,0.2)', animationDuration: '1.5s' }} />
             <div className="w-16 h-16 rounded-2xl overflow-hidden border border-primary/30"
               style={{ background: '#0d0000' }}>
-              <img src="https://miaoda-conversation-file.s3cdn.medo.dev/user-bkii4kb9ihvk/app-ck2v94t1nev5/20260623/file_00000000191471f49ddde7c1651efc02.png"
+              <img src="https://miaoda-conversation-file.s3cdn.medo.dev/user-bkii4kb9ihvk/app-cxsd6dl9ycch/20260623/file_00000000191471f49ddde7c1651efc02.png"
                 alt="VFP" className="w-full h-full object-contain p-1" />
             </div>
           </div>

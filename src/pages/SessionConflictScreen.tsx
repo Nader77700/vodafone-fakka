@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/db/supabase';
 
 export default function SessionConflictScreen() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, claimSession } = useAuth();
   const [deviceModel, setDeviceModel] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,6 +53,16 @@ export default function SessionConflictScreen() {
 
         {/* بطاقة الخيارات */}
         <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+          {/* الاستمرار على هذا الجهاز (استرداد الجلسة) */}
+          <Button
+            variant="default"
+            className="w-full gap-2"
+            onClick={claimSession}
+          >
+            <Shield className="w-4 h-4" />
+            الاستمرار على هذا الجهاز
+          </Button>
+
           {/* تسجيل الخروج من هذا الجهاز */}
           <Button
             variant="outline"
