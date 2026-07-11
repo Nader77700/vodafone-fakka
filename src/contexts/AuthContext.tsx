@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // ── Single Session Check — تجاهل للأدوار المميزة ──────────────────────
+    // ── Single Session Check — تجاهل للأدوار المميزة (مُعطّل) ──────────────────────
     const skipRoles = ['admin', 'super_admin'];
     if (!skipRoles.includes(profileData.role)) {
       const currentIdentity = getStableDeviceIdentity();
@@ -139,13 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const isSamePhysical = storedDeviceFp && storedDeviceFp === currentIdentity.device_fp;
       const isSameDeviceId = storedDeviceId === currentDeviceId;
-
-      if (storedDeviceId && !isSameDeviceId && !isSamePhysical) {
-        // تعارض: الحساب مفتوح على جهاز آخر (فعلياً)
-        setProfile(profileData);
-        setSessionConflict(true);
-        return;
-      }
 
       // أول تسجيل دخول أو نفس الجهاز الفعلي ولكن UUID مختلف — سجّل device_id و device_fp الجديد
       if (!storedDeviceId || (!isSameDeviceId && isSamePhysical)) {

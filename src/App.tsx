@@ -303,7 +303,7 @@ function MerchantClientGate() {
 const COLD_START_KEY = 'vfp_cold_start_done';
 
 function AppInner() {
-  const { sessionConflict, profile } = useAuth();
+  const { profile } = useAuth();
   
   // استثناء الأدمن من التحديث الإجباري
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
@@ -351,7 +351,6 @@ function AppInner() {
 
   if (deviceBan?.banned) return wrapScreen(DeviceBannedScreen, { reason: deviceBan.reason, bannedAt: deviceBan.banned_at });
   if (flags.ff_maintenance_mode && !isAdmin) return wrapScreen(MaintenanceScreen);
-  if (sessionConflict) return wrapScreen(SessionConflictScreen);
   if (forceUpdate && !isAdmin) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
 
   return (

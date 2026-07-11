@@ -28,7 +28,6 @@ export default function TrialExhaustedPopup({ open, opsUsed, maxOps, isTrial = t
   }, [open]);
 
   const handleSubscribe = async () => {
-    await signOut();
     navigate('/activation', { replace: true, state: { reason: 'trial_exhausted' } });
   };
 

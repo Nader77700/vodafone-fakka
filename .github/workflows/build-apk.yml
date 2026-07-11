@@ -294,7 +294,7 @@ jobs:
           SB_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo
         run: |
           echo "📝 Updating DB — v${{ env.APP_VERSION }}"
-          FINAL_URL="${{ env.APK_PUBLIC_URL }}"
+          FINAL_URL="${{ env.APK_PUBLIC_URL }}?download="
           echo "✅ Using Supabase Storage URL: $FINAL_URL"
 
           # إيقاف is_latest للإصدارات القديمة أولاً
