@@ -34,10 +34,14 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Authorization header مطلوب' }, 401);
 
-    const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(
-      authHeader.replace('Bearer ', ''),
+    const supabaseUserClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } }
     );
-    if (authErr || !caller) return json({ error: 'توكن غير صالح' }, 401);
+
+    const { data: { user: caller }, error: authErr } = await supabaseUserClient.auth.getUser();
+    if (authErr || !caller) return json({ error: `توكن غير صالح: ${authErr?.message || 'لا يوجد مستخدم'}` }, 401);
 
     const { data: callerProfile } = await supabaseAdmin
       .from('profiles').select('role').eq('id', caller.id).single();
