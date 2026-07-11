@@ -134,31 +134,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!skipRoles.includes(profileData.role)) {
       const currentDeviceId = getDeviceId();
       const storedDeviceId = profileData.device_id;
+      const storedDeviceFp = (profileData as any).device_fp;
 
-      if (storedDeviceId && storedDeviceId !== currentDeviceId) {
-        // تعارض: الحساب مفتوح على جهاز آخر
+      const isSamePhysical = storedDeviceFp && storedDeviceFp === currentIdentity.device_fp;
+      const isSameDeviceId = storedDeviceId === currentDeviceId;
+
+      if (storedDeviceId && !isSameDeviceId && !isSamePhysical) {
+        // تعارض: الحساب مفتوح على جهاز آخر (فعلياً)
         setProfile(profileData);
         setSessionConflict(true);
         return;
       }
 
-      // أول تسجيل دخول أو نفس الجهاز — سجّل device_id
-      if (!storedDeviceId || storedDeviceId !== currentDeviceId) {
+      // أول تسجيل دخول أو نفس الجهاز الفعلي ولكن UUID مختلف — سجّل device_id و device_fp الجديد
+      if (!storedDeviceId || (!isSameDeviceId && isSamePhysical)) {
         import('@capacitor/device').then(({ Device }) => {
           Device.getInfo().then(info => {
             supabase.from('profiles')
-              .update({ device_id: currentDeviceId, active_device_model: info.model })
+              .update({ 
+                device_id: currentDeviceId, 
+                device_fp: currentIdentity.device_fp,
+                active_device_model: info.model 
+              })
               .eq('id', u.id)
               .then(() => {}, () => {});
           }).catch(() => {
             supabase.from('profiles')
-              .update({ device_id: currentDeviceId })
+              .update({ device_id: currentDeviceId, device_fp: currentIdentity.device_fp })
               .eq('id', u.id)
               .then(() => {}, () => {});
           });
         }).catch(() => {
             supabase.from('profiles')
-              .update({ device_id: currentDeviceId })
+              .update({ device_id: currentDeviceId, device_fp: currentIdentity.device_fp })
               .eq('id', u.id)
               .then(() => {}, () => {});
         });
@@ -175,8 +183,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const claimSession = async () => {
     if (!user) return;
     const currentDeviceId = getDeviceId();
+    const currentIdentity = await getStableDeviceIdentity();
     await supabase.from('profiles')
-      .update({ device_id: currentDeviceId })
+      .update({ device_id: currentDeviceId, device_fp: currentIdentity.device_fp })
       .eq('id', user.id);
     setSessionConflict(false);
     toast.success('تم تفعيل الجلسة على هذا الجهاز');

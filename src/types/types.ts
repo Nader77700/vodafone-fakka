@@ -298,6 +298,9 @@ export interface Operation {
   execution_layer?: string | null;
   retry_count?: number | null;
   latency_ms?: number | null;
+  device_fp?: string | null;
+  hardware_hash?: string | null;
+  native_id?: string | null;
   idempotency_key?: string | null;
   // joined
   profile?: Pick<Profile, 'id' | 'username' | 'email'>;

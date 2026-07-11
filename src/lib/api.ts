@@ -4,6 +4,7 @@ import type {
   Profile, LicenseKey, Subscription, Favorite,
   Operation, Notification, SystemLog, PaginatedResult, UserStatistics
 } from '@/types/types';
+import { getStableDeviceIdentity } from './deviceFingerprint';
 
 const DEVICE_HEADERS: Record<string, string> = {
   'User-Agent': 'okhttp/4.12.0',
@@ -481,6 +482,15 @@ export async function insertOperationTransaction(
   payload: Omit<Operation, 'id' | 'created_at' | 'operation_number'> & { duration_ms?: number | null; api_response?: string | null; operation_source?: string | null },
   isAdminOverride = false
 ): Promise<{ success: boolean; error?: string; data?: Operation; exhausted?: boolean; opsUsed?: number; opsLimit?: number }> {
+  if (!payload.device_fp || !payload.hardware_hash) {
+    try {
+      const identity = await getStableDeviceIdentity();
+      payload.device_fp = payload.device_fp ?? identity.device_fp;
+      payload.hardware_hash = payload.hardware_hash ?? identity.hardware_hash;
+      payload.native_id = payload.native_id ?? identity.native_id;
+    } catch { /* صامت */ }
+  }
+
   const { data, error } = await supabase.rpc('execute_operation_transaction', { p_payload: payload, p_admin_override: isAdminOverride });
   if (error) return { success: false, error: error.message };
   const res = data as { success: boolean; error?: string; exhausted?: boolean; operation?: Operation; consume_details?: unknown };
@@ -527,6 +537,15 @@ export async function insertOperationTransaction(
 export async function insertOperation(
   payload: Omit<Operation, 'id' | 'created_at' | 'operation_number'> & { duration_ms?: number | null; api_response?: string | null; operation_source?: string | null }
 ): Promise<{ error: unknown; data: Operation | null }> {
+  if (!payload.device_fp || !payload.hardware_hash) {
+    try {
+      const identity = await getStableDeviceIdentity();
+      payload.device_fp = payload.device_fp ?? identity.device_fp;
+      payload.hardware_hash = payload.hardware_hash ?? identity.hardware_hash;
+      payload.native_id = payload.native_id ?? identity.native_id;
+    } catch { /* صامت */ }
+  }
+
   const { data, error } = await supabase
     .from('operations')
     .insert(payload as Record<string, unknown>)
