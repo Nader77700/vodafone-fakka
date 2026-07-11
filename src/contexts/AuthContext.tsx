@@ -132,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ── Single Session Check — تجاهل للأدوار المميزة ──────────────────────
     const skipRoles = ['admin', 'super_admin'];
     if (!skipRoles.includes(profileData.role)) {
+      const currentIdentity = getStableDeviceIdentity();
       const currentDeviceId = getDeviceId();
       const storedDeviceId = profileData.device_id;
       const storedDeviceFp = (profileData as any).device_fp;
@@ -183,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const claimSession = async () => {
     if (!user) return;
     const currentDeviceId = getDeviceId();
-    const currentIdentity = await getStableDeviceIdentity();
+    const currentIdentity = getStableDeviceIdentity();
     await supabase.from('profiles')
       .update({ device_id: currentDeviceId, device_fp: currentIdentity.device_fp })
       .eq('id', user.id);

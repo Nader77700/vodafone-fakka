@@ -87,27 +87,7 @@ const S = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<PageSpinner />}>{children}</Suspense>
 );
 
-// ─── NetworkRecoverySync ──────────────────────────────────────────────────────
-// يُشغَّل عند بدء التطبيق وعند رجوع الإنترنت.
-// يزامن أي عمليات شحن معلقة لم تُسجَّل بسبب انقطاع الإنترنت.
-function NetworkRecoverySync() {
-  useEffect(() => {
-    // تسجيل مستمع رجوع الإنترنت مرة واحدة طوال عمر التطبيق
-    attachNetworkRecoveryListener(({ synced }) => {
-      if (synced > 0) {
-        toast.success(`✅ تمت مزامنة ${synced} عملية معلقة بنجاح`, { duration: 6000 });
-      }
-    });
-    // محاولة مزامنة فورية عند بدء التطبيق (لو كان هناك عمليات معلقة من جلسة سابقة)
-    const pending = getPendingCount();
-    if (pending > 0) {
-      syncPendingOps().then(({ synced }) => {
-        if (synced > 0) toast.success(`✅ تمت مزامنة ${synced} عملية معلقة`, { duration: 6000 });
-      });
-    }
-  }, []);
-  return null;
-}
+// بدون NetworkRecoverySync
 
 // ─── NotificationDeepLinkHandler ──────────────────────────────────────────────
 // يقرأ deep link من Cold Start (App URL open) ويوجّه للصفحة الصحيحة
@@ -362,40 +342,6 @@ function AppInner() {
   const { forceUpdate, latestVersion } = useUpdateChecker();
   const flags = useFeatureFlags();
 
-  // ── مسح طابور العمليات المعلّقة عند عودة الإنترنت ──
-  // العمليات التي نجحت native/bridge لكن فشل تسجيلها client-side بسبب انقطاع الإنترنت
-  const { user } = useAuth();
-  const flushQueue = useCallback(async () => {
-    if (!user) return;
-    try {
-      const raw = localStorage.getItem('pending_ops_queue');
-      if (!raw) return;
-      const queue: unknown[] = JSON.parse(raw);
-      if (!queue.length) return;
-      const remaining: unknown[] = [];
-      for (const op of queue) {
-        try {
-          const { error } = await insertOperation(op as Parameters<typeof insertOperation>[0]);
-          if (error) remaining.push(op);
-        } catch { remaining.push(op); }
-      }
-      if (remaining.length < queue.length) {
-        const flushed = queue.length - remaining.length;
-        toast.success(`✅ تم تسجيل ${flushed} عملية${flushed > 1 ? ' معلّقة' : ' معلّقة'} بنجاح`);
-      }
-      if (remaining.length === 0) localStorage.removeItem('pending_ops_queue');
-      else localStorage.setItem('pending_ops_queue', JSON.stringify(remaining));
-    } catch { /* لا يوقف التطبيق */ }
-  }, [user]);
-
-  useEffect(() => {
-    // محاولة عند فتح التطبيق مباشرة
-    flushQueue();
-    // محاولة عند عودة الإنترنت
-    window.addEventListener('online', flushQueue);
-    return () => window.removeEventListener('online', flushQueue);
-  }, [flushQueue]);
-
   return (
     <>
       {/* DeviceBannedScreen — يغطي التطبيق بالكامل إذا كان الجهاز محظوراً */}
@@ -433,7 +379,6 @@ function AppInner() {
 
       <AppResumeHandler />
       <AndroidBackHandler />
-      <NetworkRecoverySync />
       <NotificationDeepLinkHandler />
       <NavigationStateManager />
       <IntersectObserver />

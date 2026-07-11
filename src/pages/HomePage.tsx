@@ -930,45 +930,13 @@ function ExecuteModal({
         idempotency_key: idempotencyKey,
       });
       if (opErr) {
-        const errStr = String((opErr as any)?.message || opErr).toLowerCase();
-        const isNetworkError = !window.navigator.onLine || errStr.includes('fetch') || errStr.includes('network');
-
-        if (isNetworkError) {
-          // فشل تسجيل العملية بسبب الشبكة → أضف للطابور المحلي بدلاً من رفضها
-          const pendingOp = {
-            id: idempotencyKey,
-            user_id: user.id, phone_number: trimPhone, card_type: product.displayName,
-            card_data: {
-              product_id: product.id, price: product.price, units: product.units,
-              units_label: product.unitsLabel, validity: product.validity ?? '',
-              type: product.type, via: result.via ?? 'unknown',
-              idempotency_key: idempotencyKey, correlation_id: correlationId,
-              retry_count: result.retryCount ?? 0, latency_ms: executeLatencyMs,
-            },
-            category: isMared ? 'مارد' : 'فكة', amount: product.price,
-            status: result.success ? 'success' : 'failed',
-            error_message: result.error ?? null, performed_at: performedAt,
-            api_response: result.success ? 'Completed' : (result.error?.split('\n')[0] ?? null),
-            operation_source: 'vodafone_cash',
-          };
-          try {
-            const q: unknown[] = JSON.parse(localStorage.getItem('pending_ops_queue') ?? '[]');
-            q.push(pendingOp);
-            localStorage.setItem('pending_ops_queue', JSON.stringify(q));
-          } catch { /* ignore */ }
-        } else {
-          console.error('Database Insert Error:', opErr);
-        }
+        console.error('Database Insert Error:', opErr);
 
         if (result.success) {
-          if (isNetworkError) {
-            toast.warning('✅ تم الشحن — سيُسجَّل عند عودة الإنترنت', { duration: 8000 });
-          } else {
-            toast.success('✅ تم الشحن بنجاح (مع خطأ في التسجيل)', { duration: 8000 });
-          }
+          toast.success('✅ تم الشحن بنجاح (برجاء التحقق من الرصيد)', { duration: 8000 });
         } else {
           await refundOperation(user.id);
-          toast.error(isNetworkError ? '⚠️ فشل الاتصال — تم استرداد العملية' : '⚠️ فشل تسجيل العملية — تم استرداد العملية', { description: 'يرجى إعادة المحاولة', duration: 8000 });
+          toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية', { description: 'يرجى إعادة المحاولة', duration: 8000 });
         }
         setSubmitting(false); setLoadingStep(0);
         executingRef.current = false;

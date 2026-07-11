@@ -173,14 +173,10 @@ export async function activateLicenseKey(
   }
   await syncHistoryStatus(userId, 'replaced', 'replaced_by_new_subscription');
 
-  // ── كل التفعيل يتم عبر RPC مع SECURITY DEFINER (يتجاوز RLS تمامًا) ──
-  const { data, error } = await supabase.rpc('activate_license_key_v2', {
-    p_user_id:        userId,
-    p_code:           code,
-    p_device_fp:      options?.deviceFp ?? null,
-    p_hardware_hash:  options?.hardwareHash ?? null,
-    p_native_id:      options?.nativeId ?? null,
-    p_admin_override: options?.adminOverride ?? false,
+  // ── كل التفعيل يتم عبر RPC القديم (النسخة المستقرة) ──
+  const { data, error } = await supabase.rpc('activate_license_key', {
+    p_user_id: userId,
+    p_code: code,
   });
   if (error) {
     return { success: false, error: 'حدث خطأ في الاتصال — يُرجى المحاولة مجدداً', errorCode: 'SERVER_ERROR' };
@@ -3525,10 +3521,9 @@ export async function adminActivateByCode(
   code: string,
   adminId?: string,
 ): Promise<{ success: boolean; error?: string; errorCode?: string; isTrial?: boolean }> {
-  const { data, error } = await supabase.rpc('activate_license_key_v2', {
+  const { data, error } = await supabase.rpc('activate_license_key', {
     p_user_id:   userId,
     p_code:      code.trim().toUpperCase(),
-    p_device_fp: null, // الأدمن يتجاوز فحص الجهاز
   });
   if (error) return { success: false, error: 'فشل الاتصال بالسيرفر', errorCode: 'SERVER_ERROR' };
   const result = typeof data === 'string' ? JSON.parse(data) : data;
