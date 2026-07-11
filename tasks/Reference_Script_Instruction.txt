@@ -1,0 +1,174 @@
+import requests
+import json
+
+# ========== تسجيل الدخول ==========
+number = input('Enter your number: ')
+password = input('Enter your password: ')
+
+url = "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token"
+
+payload = {
+    'grant_type': "password",
+    'username': number,
+    'password': password,
+    'client_secret': "dca0pbLUWXVhXR266Gw1iT5rqwvvJQoN",
+    'client_id': "AnaVF"
+}
+
+headers = {
+    'User-Agent': "okhttp/4.12.0",
+    'Accept': "application/json, text/plain, */*",
+    'Accept-Encoding': "gzip",
+    'silentLogin': "true",
+    'msisdn': number,
+    'x-agent-operatingsystem': "13",
+    'clientId': "AnaVodafoneAndroid",
+    'Accept-Language': "ar",
+    'x-agent-device': "LENOVO TB310XU",
+    'x-agent-version': "2026.4.1",
+    'x-agent-build': "1139",
+    'digitalId': "25ZQ6VBSZPI1V",
+    'device-id': "e21f808017c900f3"
+}
+
+response = requests.post(url, data=payload, headers=headers)
+
+try:
+    tok = response.json()['access_token']
+    print('✅ Login successful!')
+except:
+    print('❌ Number or password error')
+    exit()
+
+# ========== دوال الكروت ==========
+
+def get_fakka_cards_dict():
+    return {
+        "1": {"name": "Fakka 2.5", "net_charge": "1.75", "units": "45 وحدة", "duration": "يوم واحد", "product_id": "Fakka_2.5_Unite"},
+        "2": {"name": "Fakka 3", "net_charge": "2.10", "units": "125 وحدة", "duration": "يوم واحد", "product_id": "Fakka_3_Unite"},
+        "3": {"name": "Fakka 4.25", "net_charge": "2.97", "units": "190 وحدة", "duration": "يوم واحد", "product_id": "Fakka_4.25_Unite"},
+        "4": {"name": "Fakka 5", "net_charge": "3.50", "units": "225 وحدة", "duration": "يوم واحد", "product_id": "Fakka_5_Unite"},
+        "5": {"name": "Fakka 6", "net_charge": "غير محدد", "units": "غير محدد", "duration": "يوم واحد", "product_id": "Fakka_6_Unite"},
+        "6": {"name": "Fakka 7", "net_charge": "4.90", "units": "300 وحدة", "duration": "3 أيام", "product_id": "Fakka_7_Unite"},
+        "7": {"name": "Fakka 8", "net_charge": "غير محدد", "units": "غير محدد", "duration": "أيام", "product_id": "Fakka_8_Unite"},
+        "8": {"name": "Fakka 9", "net_charge": "6.30", "units": "400 وحدة", "duration": "4 أيام", "product_id": "Fakka_9_Unite"},
+        "9": {"name": "Fakka 10", "net_charge": "7.00", "units": "450 وحدة", "duration": "7 أيام", "product_id": "Fakka_10_Unite"},
+        "10": {"name": "Fakka 10.5", "net_charge": "7.35", "units": "400 وحدة + 50MB", "duration": "7 أيام", "product_id": "Fakka_10.5_Unite"},
+        "11": {"name": "Fakka 12", "net_charge": "8.40", "units": "425 وحدة", "duration": "7 أيام", "product_id": "Fakka_12_Unite"},
+        "12": {"name": "Fakka 12.5", "net_charge": "غير محدد", "units": "غير محدد", "duration": "أيام", "product_id": "Fakka_12.5_Unite"},
+        "13": {"name": "Fakka 13.5", "net_charge": "9.45", "units": "625 وحدة", "duration": "7 أيام", "product_id": "Fakka_13.5_Unite"},
+        "14": {"name": "Fakka 15", "net_charge": "10.50", "units": "550 وحدة", "duration": "7 أيام", "product_id": "Fakka_15_Unite"},
+        "15": {"name": "Fakka 15.5", "net_charge": "10.85", "units": "625 وحدة", "duration": "7 أيام", "product_id": "Fakka_15.5_Unite"},
+        "16": {"name": "Fakka 17.5", "net_charge": "12.25", "units": "650 وحدة", "duration": "10 أيام", "product_id": "Fakka_17.5_Unite"},
+        "17": {"name": "Fakka 20", "net_charge": "غير محدد", "units": "غير محدد", "duration": "أيام", "product_id": "Fakka_20_Unite"},
+        "18": {"name": "Fakka 7 Social", "net_charge": "4.90", "units": "300 وحدة سوشيال", "duration": "3 أيام", "product_id": "Fakka_7_Social"},
+        "19": {"name": "Fakka 2.5 Social", "net_charge": "1.75", "units": "45 وحدة سوشيال", "duration": "يوم واحد", "product_id": "Fakka_2.5_Social"},
+        "20": {"name": "Fakka 4.25 Social", "net_charge": "2.97", "units": "190 وحدة سوشيال", "duration": "يوم واحد", "product_id": "Fakka_4.25_Social"},
+        "21": {"name": "Fakka 9 Social", "net_charge": "6.30", "units": "400 وحدة سوشيال", "duration": "4 أيام", "product_id": "Fakka_9_Social"},
+        "22": {"name": "Fakka 6 NewUnite", "net_charge": "غير محدد", "units": "غير محدد", "duration": "يوم واحد", "product_id": "Fakka_6_NewUnite"},
+        "23": {"name": "Fakka 11.5", "net_charge": "8.05", "units": "غير محدد", "duration": "7 أيام", "product_id": "Fakka_11.5_Unite"},
+        "24": {"name": "Fakka 13", "net_charge": "9.10", "units": "غير محدد", "duration": "7 أيام", "product_id": "Fakka_13_Unite"},
+        "25": {"name": "Fakka 16.5", "net_charge": "11.55", "units": "غير محدد", "duration": "10 أيام", "product_id": "Fakka_16.5_Unite"},
+        "26": {"name": "Fakka 19.5 NewUnite", "net_charge": "13.65", "units": "غير محدد", "duration": "10 أيام", "product_id": "Fakka_19.5_NewUnite"},
+        "27": {"name": "Fakka 26", "net_charge": "18.20", "units": "غير محدد", "duration": "شهر", "product_id": "Fakka_26_Unite"},
+        "28": {"name": "Mared 10 دقائق", "net_charge": "غير محدد", "units": "10 دقائق", "duration": "يوم واحد", "product_id": "Mared_10_Minuts"},
+        "29": {"name": "Mared 10 فليكس", "net_charge": "غير محدد", "units": "10 فليكس", "duration": "يوم واحد", "product_id": "Mared_10_Flexs"},
+        "30": {"name": "Mared 10 سوشيال", "net_charge": "غير محدد", "units": "10 سوشيال", "duration": "يوم واحد", "product_id": "Mared_10_Social"}
+    }
+
+# ========== عرض الكروت ==========
+cards = get_fakka_cards_dict()
+print("\n" + "="*60)
+print("📱 الكروت المتاحة:")
+print("="*60)
+
+for key, card in cards.items():
+    price = card['net_charge'] if card['net_charge'] != "غير محدد" else "سعر متغير"
+    print(f"{key}. {card['name']} - {price} - {card['units']}")
+
+print("="*60)
+
+# ========== اختيار الكرت ==========
+choice = input("\nأدخل رقم الكرت: ")
+
+if choice not in cards:
+    print("❌ اختيار غير صحيح")
+    exit()
+
+card_info = cards[choice]
+product_id = card_info['product_id']
+
+# ========== شحن الكرت ==========
+print(f"\n⏳ جاري شحن {card_info['name']}...")
+
+url = "https://mobile.vodafone.com.eg/services/dxl/pom/productOrder"
+
+payload = {
+    "channel": {"name": "MobileApp"},
+    "orderItem": [{
+        "action": "insert",
+        "product": {
+            "id": product_id,
+            "relatedParty": [{"id": number, "name": "MSISDN", "role": "Subscriber"}]
+        },
+        "eCode": 0
+    }],
+    "@type": "FakkaAndMared"
+}
+
+headers = {
+    'User-Agent': "okhttp/4.12.0",
+    'Connection': "Keep-Alive",
+    'Accept': "application/json",
+    'Accept-Encoding': "gzip",
+    'api-host': "ProductOrderingManagement",
+    'useCase': "FakkaAndMaredProduct",
+    'Authorization': "Bearer " + tok,
+    'api-version': "v2",
+    'device-id': "e21f808017c900f3",
+    'x-agent-operatingsystem': "13",
+    'clientId': "AnaVodafoneAndroid",
+    'x-agent-device': "LENOVO TB310XU",
+    'x-agent-version': "2026.4.1",
+    'x-agent-build': "1139",
+    'msisdn': number,
+    'Accept-Language': "ar",
+    'Content-Type': "application/json; charset=UTF-8"
+}
+
+response = requests.post(url, data=json.dumps(payload), headers=headers)
+
+if response.status_code in [200, 201]:
+    try:
+        result = response.json()
+        if result.get('code') == "2252":
+            print("❌ رصيد غير كافٍ")
+        else:
+            print(f"""
+✅ تم شحن الكرت بنجاح!
+
+📋 تفاصيل الكرت:
+├─ الاسم: {card_info['name']}
+├─ السعر: {card_info['net_charge']} جنيه
+├─ الوحدات: {card_info['units']}
+└─ المدة: {card_info['duration']}
+""")
+    except:
+        print(f"""
+✅ تم شحن الكرت بنجاح!
+
+📋 تفاصيل الكرت:
+├─ الاسم: {card_info['name']}
+├─ السعر: {card_info['net_charge']} جنيه
+├─ الوحدات: {card_info['units']}
+└─ المدة: {card_info['duration']}
+""")
+else:
+    try:
+        error = response.json()
+        if error.get('code') == "2252":
+            print("❌ رصيد غير كافٍ")
+        else:
+            print(f"❌ فشل الشحن: {error.get('reason', 'خطأ غير معروف')}")
+    except:
+        print(f"❌ فشل الشحن: كود {response.status_code}")

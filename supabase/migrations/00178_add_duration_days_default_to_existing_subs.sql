@@ -1,0 +1,1 @@
+UPDATE subscriptions SET duration_days = 30 WHERE duration_days IS NULL AND status = 'active';

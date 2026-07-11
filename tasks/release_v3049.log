@@ -1,0 +1,38 @@
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-06-28 13:59  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.48 (code 101)
+🚀 الإصدار الجديد  : v3.0.49 (code 102)
+📝 ملاحظات         : إصلاح حرج: شاشة البداية تتوقف عند 50% — timeout للتحقق من الحساب
+
+openjdk version "17.0.11" 2024-04-16
+✅ JDK جاهز
+✅ Android SDK جاهز
+
+⚙️  [1/7] تحديث build.gradle...
+✅ build.gradle: v3.0.49 (code 102)
+⚙️  [2/7] تحديث buildInfo.ts...
+  ✅ buildInfo.ts: v3.0.49 (code 102)
+⚙️  [3/7] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+⚙️  [3/7] مزامنة Capacitor...
+✅ Vite + Capacitor جاهز
+  ✔ namespace مُصحَّح في build.gradle
+  ✔ package= أُزيل من AndroidManifest.xml
+⚙️  [4/7] بناء APK (Gradle assembleRelease)...
+	at java.base/sun.net.www.protocol.http.HttpURLConnection$HttpInputStream.read(HttpURLConnection.java:3720)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection$HttpInputStream.read(HttpURLConnection.java:3713)
+	at org.gradle.wrapper.Install.forceFetch(SourceFile:2)
+	at org.gradle.wrapper.Install$1.call(SourceFile:8)
+	at org.gradle.wrapper.GradleWrapperMain.main(SourceFile:67)
