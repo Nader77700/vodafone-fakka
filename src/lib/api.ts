@@ -480,10 +480,10 @@ export async function insertOperationTransaction(
 ): Promise<{ success: boolean; error?: string; data?: Operation; exhausted?: boolean; opsUsed?: number; opsLimit?: number }> {
   if (!payload.device_fp || !payload.hardware_hash) {
     try {
-      const identity = await getStableDeviceIdentity();
+      const identity = getStableDeviceIdentity();
       payload.device_fp = payload.device_fp ?? identity.device_fp;
       payload.hardware_hash = payload.hardware_hash ?? identity.hardware_hash;
-      payload.native_id = payload.native_id ?? identity.native_id;
+      payload.native_id = payload.native_id ?? identity.device_id;
     } catch { /* صامت */ }
   }
 
@@ -535,10 +535,10 @@ export async function insertOperation(
 ): Promise<{ error: unknown; data: Operation | null }> {
   if (!payload.device_fp || !payload.hardware_hash) {
     try {
-      const identity = await getStableDeviceIdentity();
+      const identity = getStableDeviceIdentity();
       payload.device_fp = payload.device_fp ?? identity.device_fp;
       payload.hardware_hash = payload.hardware_hash ?? identity.hardware_hash;
-      payload.native_id = payload.native_id ?? identity.native_id;
+      payload.native_id = payload.native_id ?? identity.device_id;
     } catch { /* صامت */ }
   }
 

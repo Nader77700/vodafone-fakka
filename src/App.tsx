@@ -342,27 +342,20 @@ function AppInner() {
   const { forceUpdate, latestVersion } = useUpdateChecker();
   const flags = useFeatureFlags();
 
+  // ── Blocking Screens (Early Returns to completely unmount the app) ──
+  const wrapScreen = (Component: any, props: any = {}) => (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"/></div>}>
+      <PageErrorBoundary pageName="blocking-screen"><Component {...props} /></PageErrorBoundary>
+    </Suspense>
+  );
+
+  if (deviceBan?.banned) return wrapScreen(DeviceBannedScreen, { reason: deviceBan.reason, bannedAt: deviceBan.banned_at });
+  if (flags.ff_maintenance_mode && !isAdmin) return wrapScreen(MaintenanceScreen);
+  if (sessionConflict) return wrapScreen(SessionConflictScreen);
+  if (forceUpdate && !isAdmin) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
+
   return (
     <>
-      {/* DeviceBannedScreen — يغطي التطبيق بالكامل إذا كان الجهاز محظوراً */}
-      {deviceBan?.banned && (
-        <S><DeviceBannedScreen reason={deviceBan.reason} bannedAt={deviceBan.banned_at} /></S>
-      )}
-
-      {/* MaintenanceScreen — يغطي التطبيق بالكامل فوراً من لوحة الإدارة */}
-      {!deviceBan?.banned && flags.ff_maintenance_mode && !isAdmin && <MaintenanceScreen />}
-
-      {/* SessionConflictScreen — الحساب مفتوح على جهاز آخر */}
-      {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && sessionConflict && <S><SessionConflictScreen /></S>}
-
-      {/* ForceUpdateScreen — يغطي كل شيء ولا يسمح بالدخول حتى التحديث */}
-      {!deviceBan?.banned && (!flags.ff_maintenance_mode || isAdmin) && !sessionConflict && forceUpdate && !isAdmin && (
-        <ForceUpdateScreen
-          apkUrl={latestVersion?.apk_url}
-          latestVersion={latestVersion?.version}
-        />
-      )}
-
       {/* SplashOverlay خارج كل Route — إضافة حاجز أخطاء محلي يمنع كراش Sentry */}
       {showSplash && (
         <PageErrorBoundary pageName="splash-overlay">
@@ -642,13 +635,14 @@ const App: React.FC = () => {
 
 // AppWithGuard: يحمل profile من AuthContext ويطبق حماية DevTools
 function AppWithGuard() {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-  const devToolsOpen = useDevToolsGuard(isAdmin);
+  // تعليق الفحص أثناء التحميل لتجنب وميض الشاشة السوداء (Stutter) للأدمن
+  const devToolsOpen = useDevToolsGuard(isAdmin || loading);
 
   return (
     <>
-      {devToolsOpen && !isAdmin && <DevToolsWarningOverlay />}
+      {devToolsOpen && !isAdmin && !loading && <DevToolsWarningOverlay />}
       <AppInner />
     </>
   );
