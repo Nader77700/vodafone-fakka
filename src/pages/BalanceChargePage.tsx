@@ -1056,19 +1056,18 @@ function BalanceExecuteDialog({
         performed_at:     performedAt,
         api_response:     success ? 'Completed via AnaVodafone Balance' : (errorMsg?.split('\n')[0] ?? null),
         operation_source: 'ana_vodafone_balance',
-        idempotency_key:  txUuid,
-      } as Parameters<typeof insertOperation>[0]);
+      } as Record<string, unknown>);
 
       if (opErr) {
         console.error('Database Insert Error:', opErr);
 
-        if (success) {
-          toast.success('✅ تم الشحن بنجاح (برجاء التحقق من سجل العمليات لاحقاً)', { duration: 10000 });
-        } else {
+        if (!success) {
           await refundOperation(user.id);
           toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية');
+          setSubmitting(false); executingRef.current = false; return;
+        } else {
+          toast.warning('⚠️ تم الشحن، ولكن تعذر تسجيل العملية مؤقتاً في السجل');
         }
-        setSubmitting(false); executingRef.current = false; return;
       }
       // تسجيل ناجح → احذف من queue
       markOpSynced(txUuid);

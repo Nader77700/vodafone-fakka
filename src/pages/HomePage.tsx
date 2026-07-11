@@ -927,20 +927,20 @@ function ExecuteModal({
         error_message: result.error ?? null, performed_at: performedAt,
         api_response: (result.error ? (result.error ?? '').split('\n')[0] : (result.success ? 'Completed' : null)) ?? null,
         operation_source: 'vodafone_cash',
-        idempotency_key: idempotencyKey,
-      });
+      } as Record<string, unknown>);
       if (opErr) {
         console.error('Database Insert Error:', opErr);
 
-        if (result.success) {
-          toast.success('✅ تم الشحن بنجاح (برجاء التحقق من الرصيد)', { duration: 8000 });
-        } else {
+        if (!result.success) {
           await refundOperation(user.id);
           toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية', { description: 'يرجى إعادة المحاولة', duration: 8000 });
+          setSubmitting(false); setLoadingStep(0);
+          executingRef.current = false;
+          return;
+        } else {
+          // إذا نجح الشحن لكن فشل التسجيل، لا نوقف التدفق كي تظهر الفاتورة للمستخدم
+          toast.warning('⚠️ تم الشحن، ولكن تعذر تسجيل العملية مؤقتاً في السجل', { duration: 5000 });
         }
-        setSubmitting(false); setLoadingStep(0);
-        executingRef.current = false;
-        return;
       }
 
       // ← العملية الفاشلة لا تُخصم — نسترد النقطة فوراً
