@@ -30,6 +30,7 @@ const ESimPage              = lazy(() => import('./pages/networks/ESimPage'));
 const ESimDetailPage        = lazy(() => import('./pages/networks/ESimDetailPage'));
 const BalanceChargePage     = lazy(() => import('./pages/BalanceChargePage'));
 const InvitePage            = lazy(() => import('./pages/InvitePage'));
+const DownloadPage          = lazy(() => import('./pages/DownloadPage'));
 
 // Fallback خفيف أثناء التحميل الكسول
 const PageLoader = () => (
@@ -89,4 +90,5 @@ export const routes: RouteConfig[] = [
   { name: 'Admin',      path: '/admin',       element: <S><AdminDashboard /></S>, adminOnly: true },
   { name: 'SystemLogs', path: '/system-logs', element: <S><SystemLogsPage /></S>, adminOnly: true },
   { name: 'InvitePage', path: '/invite/:token', element: <S><InvitePage /></S>, public: true },
+  { name: 'Download',   path: '/download',    element: <S><DownloadPage /></S>, public: true },
 ];

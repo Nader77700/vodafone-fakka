@@ -5,6 +5,7 @@
 import { ShieldOff, Wrench, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Browser } from '@capacitor/browser';
 
 // ─────────────────────────────────────────────────────────────────
 // Kill Switch Screen — يوقف النسخة كلياً
@@ -60,7 +61,7 @@ export function ForceUpdateScreen({
       badgeCls="bg-primary/10 text-primary border-primary/20"
       action={updateUrl ? {
         label: 'تحديث الآن',
-        onClick: () => window.open(updateUrl, '_blank'),
+        onClick: () => Browser.open({ url: updateUrl }),
         icon: ExternalLink,
       } : undefined}
     />

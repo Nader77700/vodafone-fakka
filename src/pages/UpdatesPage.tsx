@@ -1,12 +1,13 @@
 // صفحة التحديثات — APK + سجل الإصدارات + فصل ملاحظات المستخدم عن الإدارة
 import { useState, useEffect } from 'react';
-import { Download, RefreshCw, CheckCircle2, Sparkles, Info, Calendar, Hash, ChevronDown, ChevronUp, Share2, Copy, Check } from 'lucide-react';
+import { Download, RefreshCw, CheckCircle2, Sparkles, Info, Calendar, Hash, ChevronDown, ChevronUp, Share2, Copy, Check, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/db/supabase';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { useAuth } from '@/contexts/AuthContext';
 import { BUILD_INFO } from '@/lib/buildInfo';
 import { toast } from 'sonner';
+import { Browser } from '@capacitor/browser';
 
 interface AppVersion {
   id: string;
@@ -244,13 +245,12 @@ export default function UpdatesPage() {
               </div>
             )}
 
-            <a
-              href={activeVersion.apk_url + (activeVersion.apk_url.includes('?') ? '&' : '?') + 'download='}
-              download={activeVersion.apk_url.split('/').pop() || `VodafoneFakka-${activeVersion.version}.apk`}
+            <button
+              onClick={() => Browser.open({ url: window.location.origin + '/download' })}
               className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-black"
               style={{ background: '#eab308', boxShadow: '0 0 16px #eab30850' }}>
               <Download className="w-4 h-4" /> تنزيل APK v{activeVersion.version}
-            </a>
+            </button>
           </div>
         )}
 
@@ -281,9 +281,8 @@ export default function UpdatesPage() {
               </div>
             </div>
 
-            <a
-              href={activeVersion.apk_url + (activeVersion.apk_url.includes('?') ? '&' : '?') + 'download='}
-              download={activeVersion.apk_url.split('/').pop() || `VodafoneFakka-v${installedVersion ?? activeVersion.version}.apk`}
+            <button
+              onClick={() => Browser.open({ url: window.location.origin + '/download' })}
               className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-background"
               style={{ background: '#22c55e', boxShadow: '0 0 16px #22c55e40' }}>
               <Download className="w-4 h-4" />
@@ -291,7 +290,7 @@ export default function UpdatesPage() {
               {isWebUpdate
                 ? `إعادة تثبيت APK v${installedVersion ?? activeVersion.version}`
                 : `تحميل APK v${installedVersion ?? activeVersion.version}`}
-            </a>
+            </button>
 
             <div className="rounded-xl bg-muted/30 p-3 text-[11px] text-muted-foreground space-y-1 leading-relaxed">
               <p className="font-bold text-foreground/80">📋 خطوات التثبيت:</p>
@@ -357,13 +356,12 @@ export default function UpdatesPage() {
                 )}
 
                 {v.apk_url && (
-                  <a
-                    href={v.apk_url + (v.apk_url.includes('?') ? '&' : '?') + 'download='}
-                    download={v.apk_url.split('/').pop() || `VodafoneFakka-${v.version}.apk`}
+                  <button
+                    onClick={() => Browser.open({ url: v.apk_url })}
                     className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary/70 hover:text-primary transition-colors mt-1"
                   >
                     <Download className="w-3 h-3" /> تحميل {v.version}
-                  </a>
+                  </button>
                 )}
               </div>
             );
