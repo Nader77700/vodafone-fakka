@@ -24,17 +24,7 @@ const ADMIN_WA_NUMBER = '201222692182';
 
 type Mode = 'login' | 'register';
 
-function normalizeEgyptPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('20') && digits.length === 12) return '0' + digits.slice(2);
-  if (digits.startsWith('01') && digits.length === 11) return digits;
-  return digits;
-}
 
-function isPhoneInput(val: string): boolean {
-  const d = val.replace(/\D/g, '');
-  return (d.startsWith('01') && d.length >= 8) || (d.startsWith('20') && d.length >= 10);
-}
 
 import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 
@@ -48,7 +38,6 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [phone, setPhone] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -111,7 +100,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     if (!username.trim() || !password) {
-      toast.error('يرجى إدخال اسم المستخدم أو رقم الهاتف وكلمة المرور');
+      toast.error('يرجى إدخال اسم المستخدم وكلمة المرور');
       return;
     }
 
@@ -129,43 +118,6 @@ export default function LoginPage() {
     } catch (e) { /* ignore */ }
 
     setLoading(true);
-
-    if (isPhoneInput(username)) {
-      const normalized = normalizeEgyptPhone(username);
-      const { data: profileRows } = await supabase
-        .from('profiles')
-        .select('email, id, created_at')
-        .eq('phone', normalized)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (!profileRows || profileRows.length === 0) {
-        setLoading(false);
-        toast.error('لم يُعثر على حساب بهذا الرقم');
-        return;
-      }
-
-      let matchedSession = null;
-      for (const row of profileRows) {
-        const { data: s, error: e } = await supabase.auth.signInWithPassword({ email: row.email, password });
-        if (!e && s?.user) { matchedSession = s; break; }
-      }
-
-      setLoading(false);
-      if (!matchedSession) {
-        toast.error('كلمة المرور غير صحيحة');
-        return;
-      }
-      if (matchedSession?.user?.id) {
-        const deviceId = getDeviceId();
-        supabase.from('profiles').update({ device_id: deviceId }).eq('id', matchedSession.user.id).then(() => {});
-        const linked = await applyPendingInvites(matchedSession.user.id);
-        // تحديث الـ profile بعد الربط بالتاجر حتى يُوجَّه للواجهة الصحيحة
-        if (linked) await refreshProfile();
-      }
-      navigate(from, { replace: true });
-      return;
-    }
 
     const { data: signData, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
@@ -191,7 +143,7 @@ export default function LoginPage() {
   };
 
   const handleRegister = async () => {
-    if (!username.trim() || !password || !confirmPassword || !phone.trim()) {
+    if (!username.trim() || !password || !confirmPassword) {
       toast.error('يرجى ملء جميع الحقول');
       return;
     }
@@ -243,23 +195,12 @@ export default function LoginPage() {
       toast.error('كلمة المرور وتأكيدها غير متطابقتين');
       return;
     }
-    const normalizedPhone = normalizeEgyptPhone(phone);
-    if (!/^01[0-9]{9}$/.test(normalizedPhone)) {
-      toast.error('رقم الواتساب يجب أن يكون 11 رقماً مصرياً (مثال: 01012345678)');
-      return;
-    }
     if (!agreed) {
       toast.error('يجب الموافقة على الشروط والأحكام');
       return;
     }
     setLoading(true);
-    const { data: existingPhone } = await supabase
-      .from('profiles').select('id').eq('phone', normalizedPhone).maybeSingle();
-    if (existingPhone) {
-      setLoading(false);
-      toast.error('رقم الهاتف هذا مسجّل مسبقاً، جرّب تسجيل الدخول أو استخدم رقماً آخر');
-      return;
-    }
+
     const regEmail = `${username.trim().toLowerCase()}@miaoda.com`;
     const { data, error } = await supabase.auth.signUp({
       email: regEmail, password,
@@ -280,7 +221,7 @@ export default function LoginPage() {
     }
     if (data.user) {
       await supabase.from('profiles').update({
-        username: username.trim(), phone: normalizedPhone,
+        username: username.trim()
       }).eq('id', data.user.id);
       const linked = await applyPendingInvites(data.user.id);
       // تحديث الـ profile لضمان قراءة merchant_id الجديد
@@ -349,13 +290,13 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-normal text-muted-foreground">
-                {mode === 'login' ? 'اسم المستخدم أو رقم الهاتف' : 'اسم المستخدم'}
+                اسم المستخدم
               </Label>
               <div className="relative input-premium rounded-lg">
                 <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
-                  placeholder={mode === 'login' ? 'اسم المستخدم أو 01XXXXXXXXX' : 'nader'}
+                  placeholder="nader"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleRegister())}
@@ -365,23 +306,6 @@ export default function LoginPage() {
                 <p className="text-xs text-muted-foreground pr-1">اسم المستخدم بالإنجليزية فقط · 4–7 أحرف</p>
               )}
             </div>
-
-            {mode === 'register' && (
-              <div className="space-y-1.5">
-                <Label className="text-sm font-normal text-muted-foreground">رقم التواصل على WhatsApp</Label>
-                <div className="relative input-premium rounded-lg">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="tel" inputMode="numeric"
-                    className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
-                    placeholder="مثال: 01012345678"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground pr-1">رقم الهاتف المصري (11 رقم) — للتواصل معك على واتساب</p>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <Label className="text-sm font-normal text-muted-foreground">كلمة المرور</Label>

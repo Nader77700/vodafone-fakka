@@ -1060,15 +1060,25 @@ function BalanceExecuteDialog({
       } as Parameters<typeof insertOperation>[0]);
 
       if (opErr) {
-        // ══ SECURITY GATE 5: فشل التسجيل — العملية محفوظة في queue ستُزامَن تلقائياً ══
-        // لا تُرسَل رسالة "سيُسجَّل لاحقاً" إلا إذا كان الشحن ناجحاً فعلاً
+        const errStr = String((opErr as any)?.message || opErr).toLowerCase();
+        const isNetworkError = !window.navigator.onLine || errStr.includes('fetch') || errStr.includes('network');
+
+        if (!isNetworkError) {
+          console.error('Database Insert Error:', opErr);
+          markOpSynced(txUuid); // إزالة من الطابور حتى لا تتكرر بلا نهاية
+        }
+
+        // ══ SECURITY GATE 5: فشل التسجيل ══
         if (success) {
-          toast.warning('✅ تم الشحن — جارٍ حفظ السجل، سيظهر تلقائياً عند استقرار الاتصال', { duration: 10000 });
-          // العملية في queue وستُزامَن عند رجوع الإنترنت
+          if (isNetworkError) {
+            toast.warning('✅ تم الشحن — جارٍ حفظ السجل، سيظهر تلقائياً عند استقرار الاتصال', { duration: 10000 });
+          } else {
+            toast.success('✅ تم الشحن بنجاح (مع خطأ في التسجيل)', { duration: 10000 });
+          }
         } else {
           await refundOperation(user.id);
           markOpSynced(txUuid); // إلغاء queue لأن الشحن فاشل والعملية مُستردة
-          toast.error('⚠️ فشل تسجيل العملية — تم استرداد العملية');
+          toast.error(isNetworkError ? '⚠️ فشل الاتصال — تم استرداد العملية' : '⚠️ فشل تسجيل العملية — تم استرداد العملية');
         }
         setSubmitting(false); executingRef.current = false; return;
       }
