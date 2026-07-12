@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.311',
-  versionCode:    226,
+  appVersion:     '3.0.312',
+  versionCode:    227,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.311.apk',
-  bundleHash:     'apk_v3_0_311_code226',
-  apkHash:        'apk_v3_0_311_code226',
-  dbVersion:      'v3.0.311',
+  bundleFile:     'VodafoneFakka-v3.0.312.apk',
+  bundleHash:     'apk_v3_0_312_code227',
+  apkHash:        'apk_v3_0_312_code227',
+  dbVersion:      'v3.0.312',
   releaseNotes: [
+    'v3.0.312: اكتمال نظام إدارة الأجهزة والجلسات وتفعيل أوامر (تسجيل خروج إجباري، حظر من الحساب، حظر نهائي من التطبيق)',
     'v3.0.311: إصلاح شامل لمشكلة تفعيل الكود وخطأ تغيير كلمة المرور للمشرفين',
     'v3.0.310: إصلاح شامل لمشكلة تفعيل الكود وخطأ تغيير كلمة المرور للمشرفين',
     'v3.0.309: إصلاح جذري لمشكلة تسجيل العمليات ورسائل الخطأ - العودة لأفضل إصدار مستقر مع معالجة الخلل',
