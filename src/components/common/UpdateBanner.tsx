@@ -10,7 +10,8 @@ export default function UpdateBanner() {
 
   const handleDownload = () => {
     if (!latestVersion) return;
-    Browser.open({ url: window.location.origin + '/download' });
+    const downloadUrl = window.location.href.split('#')[0] + '#/download';
+    Browser.open({ url: downloadUrl });
   };
 
   if (!showBanner || !latestVersion) return null;

@@ -42,23 +42,12 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
     // 1. apkUrl من DB (app_versions.apk_url) — المصدر الوحيد الصحيح
     // 2. بناء رابط Supabase من رقم الإصدار كـ fallback
     // ⛔ لا GitHub Releases أبداً — يبقى قديماً ولا يُحدَّث تلقائياً
-    let downloadUrl: string;
-
-    if (apkUrl && apkUrl.startsWith('https://') && (apkUrl.includes('apk-releases') || apkUrl.includes('supabase.co'))) {
-      // الرابط من DB صحيح ومن Supabase Storage ✅
-      downloadUrl = apkUrl.includes('?download') ? apkUrl : `${apkUrl}?download=`;
-    } else if (latestVersion) {
-      // بناء الرابط من رقم الإصدار كـ fallback
-      downloadUrl = `${SUPABASE_STORAGE}/VodafoneFakka-v${latestVersion}.apk?download=`;
-    } else {
-      // آخر حل — أحدث إصدار معروف في Supabase
-      downloadUrl = `${SUPABASE_STORAGE}/VodafoneFakka-v3.0.296.apk?download=`;
-    }
-
+    const downloadPageUrl = window.location.href.split('#')[0] + '#/download';
+    
     if (Capacitor.isNativePlatform()) {
-      await Browser.open({ url: downloadUrl, windowName: '_system' });
+      await Browser.open({ url: downloadPageUrl, windowName: '_system' });
     } else {
-      window.open(downloadUrl, '_blank');
+      window.open(downloadPageUrl, '_blank');
     }
   };
 
