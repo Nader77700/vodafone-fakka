@@ -2625,6 +2625,7 @@ export async function registerDeviceInRegistry(userId: string, params: {
       hardware_hash: params.hardware_hash ?? null, ip_address: params.ip_address ?? null,
       device_model: params.device_model ?? null, platform: params.platform ?? null,
       app_version: params.app_version ?? null, last_seen_at: new Date().toISOString(),
+      is_logged_in: true,
     }, { onConflict: 'user_id,device_fp' });
   } catch (e) {
     // Ignore error
@@ -3113,6 +3114,8 @@ export interface UserDetail {
     version_code?: number | null;
     last_seen_at: string;
     is_active: boolean; // computed based on profile.device_id
+    is_banned_from_account?: boolean;
+    force_logout?: boolean;
   }>;
   similar_accounts: Array<{
     id: string;
@@ -3131,7 +3134,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     supabase.from('operations').select('*').eq('user_id', userId).order('performed_at', { ascending: false }).limit(200),
     supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(200),
     supabase.from('activity_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.from('device_registry').select('id, device_fp, device_id, hardware_hash, device_model, platform, app_version, last_seen_at').eq('user_id', userId).order('last_seen_at', { ascending: false }),
+    supabase.from('device_registry').select('id, device_fp, device_id, hardware_hash, device_model, platform, app_version, last_seen_at, is_banned_from_account, force_logout, is_logged_in').eq('user_id', userId).order('last_seen_at', { ascending: false }),
   ]);
 
   const ops: Operation[] = Array.isArray(opsRes.data) ? opsRes.data : [];
@@ -3208,7 +3211,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     recent_ops: ops.slice(0, 50),
     devices: (Array.isArray(devicesRes.data) ? devicesRes.data : []).map(d => ({
       ...d,
-      is_active: d.device_id === profile.device_id || d.device_fp === profile.device_id, // basic heuristic
+      is_active: d.is_logged_in === true, // يعتمد على الحقل الجديد الآن
     })) as UserDetail['devices'],
     similar_accounts,
   };

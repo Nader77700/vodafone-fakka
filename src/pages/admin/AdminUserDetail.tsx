@@ -406,14 +406,31 @@ export default function AdminUserDetail() {
     if (!detail) return;
     if (!window.confirm(`هل أنت متأكد من تسجيل الخروج الإجباري لهذا الجهاز (${dev.device_model || 'Unknown'})؟`)) return;
     try {
-      // تفريغ device_id من profile
-      if (detail.profile.device_id === dev.device_fp || detail.profile.device_id === dev.device_id) {
-         await supabase.from('profiles').update({ device_id: null, active_device_model: null }).eq('id', detail.profile.id);
-      }
-      toast.success('تم تسجيل الخروج الإجباري من الجهاز بنجاح (سيطلب منه تسجيل الدخول مجدداً)');
+      const { data, error } = await supabase.rpc('admin_device_action', {
+        p_registry_id: dev.id,
+        p_action: 'force_logout'
+      });
+      if (error) throw error;
+      toast.success(data?.message || 'تم إرسال أمر تسجيل الخروج للجهاز');
       load(); // تحديث
     } catch (e: any) {
-      toast.error('حدث خطأ');
+      toast.error('حدث خطأ: ' + e.message);
+    }
+  };
+
+  const handleBanFromAccount = async (dev: any) => {
+    if (!detail) return;
+    if (!window.confirm(`هل أنت متأكد من حظر هذا الجهاز من هذا الحساب فقط (${dev.device_model || 'Unknown'})؟`)) return;
+    try {
+      const { data, error } = await supabase.rpc('admin_device_action', {
+        p_registry_id: dev.id,
+        p_action: dev.is_banned_from_account ? 'unban_account' : 'ban_account'
+      });
+      if (error) throw error;
+      toast.success(data?.message || 'تم تحديث حالة حظر الجهاز للحساب');
+      load(); // تحديث
+    } catch (e: any) {
+      toast.error('حدث خطأ: ' + e.message);
     }
   };
 
@@ -547,7 +564,11 @@ export default function AdminUserDetail() {
                     <div className="flex items-center gap-2">
                       <Smartphone className="w-4 h-4 text-primary shrink-0" />
                       <span className="text-xs font-semibold">{dev.device_model || 'Android'}</span>
-                      {dev.is_active && <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط</span>}
+                      {dev.is_active ? (
+                        <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط الآن</span>
+                      ) : (
+                        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">غير نشط</span>
+                      )}
                     </div>
                     <span className="text-[10px] text-muted-foreground">{fmt(dev.last_seen_at)}</span>
                   </div>
@@ -561,11 +582,11 @@ export default function AdminUserDetail() {
                       <p className="text-xs font-medium">v{dev.app_version ?? '—'}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2 pt-2 border-t border-border/50">
+                  <div className="flex gap-2 pt-2 border-t border-border/50 flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 text-[10px] gap-1 hover:bg-muted"
+                      className="flex-1 min-w-[100px] h-8 text-[10px] gap-1 hover:bg-muted"
                       onClick={() => handleForceLogout(dev)}
                     >
                       <LogOut className="w-3 h-3" /> خروج إجباري
@@ -573,10 +594,19 @@ export default function AdminUserDetail() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 text-[10px] gap-1 text-destructive hover:bg-destructive/10"
+                      className={cn("flex-1 min-w-[100px] h-8 text-[10px] gap-1", dev.is_banned_from_account ? "text-success hover:bg-success/10" : "text-destructive hover:bg-destructive/10")}
+                      onClick={() => handleBanFromAccount(dev)}
+                    >
+                      {dev.is_banned_from_account ? <CheckCircle className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                      {dev.is_banned_from_account ? 'فك حظر (حساب)' : 'حظر من الحساب'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 min-w-[100px] h-8 text-[10px] gap-1 text-destructive hover:bg-destructive/10"
                       onClick={() => handleBanDevice(dev)}
                     >
-                      <Ban className="w-3 h-3" /> חظر الجهاز
+                      <Ban className="w-3 h-3" /> حظر نهائي (للتطبيق)
                     </Button>
                   </div>
                 </div>

@@ -18,6 +18,8 @@ import { RuntimeConfigProvider } from '@/contexts/RuntimeConfigContext';
 import { RouteGuard } from '@/components/common/RouteGuard';
 import { insertOperation } from '@/lib/api';
 import { checkDeviceBan, registerDeviceInRegistry } from '@/lib/api';
+import { supabase } from '@/db/supabase';
+import { BUILD_INFO } from '@/lib/buildInfo';
 // ── استيراد ثابت للصفحات التي تظهر فور فتح التطبيق ──
 import SplashScreen, { SplashOverlay } from './pages/SplashScreen';
 // ── lazy load للصفحات الثقيلة — تُحمَّل بعد Splash فقط ──
@@ -139,22 +141,68 @@ function NotificationDeepLinkHandler() {
 // ─── DeviceFingerprintRegistrar ──────────────────────────────────────────────
 // يُسجِّل بصمة الجهاز في الخادم عند تسجيل الدخول لأول مرة
 // ويسجّل الجهاز في device_registry لكشف الحسابات المكررة
+// ويتأكد أيضاً إذا كان الجهاز محظوراً أو مطلوب منه تسجيل خروج
 function DeviceFingerprintRegistrar() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const registered = useRef(false);
+  
+  const checkDeviceStatus = async (device_fp?: string, device_id?: string) => {
+    try {
+      const { data, error } = await supabase.rpc('check_device_status', { 
+        p_device_fp: device_fp || null, 
+        p_device_id: device_id || null 
+      });
+      if (!error && data) {
+        if (data.global_ban || data.account_ban || data.force_logout) {
+          await signOut();
+          window.location.reload();
+        }
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     if (!user || registered.current) return;
     registered.current = true;
-    const { device_fp, hardware_hash, device_id } = getStableDeviceIdentity();
-    // تسجيل legacy (device_fp في profiles)
-    registerDeviceFingerprint(user.id, device_fp);
-    // تسجيل في device_registry (الجدول الجديد)
-    registerDeviceInRegistry(user.id, {
-      device_fp,
-      hardware_hash,
-      device_id: device_id ?? undefined,
-      platform: Capacitor.getPlatform(),
-    }).catch(() => {});
+    const registerFullDevice = async () => {
+      const { device_fp, hardware_hash, device_id } = getStableDeviceIdentity();
+      // تسجيل legacy (device_fp في profiles)
+      registerDeviceFingerprint(user.id, device_fp);
+      
+      // فحص الحظر
+      await checkDeviceStatus(device_fp, device_id || undefined);
+
+      let device_model = undefined;
+      let app_version = undefined;
+      
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { Device } = await import('@capacitor/device');
+          const info = await Device.getInfo();
+          device_model = `${info.manufacturer} ${info.model}`;
+        } catch (e) {}
+        try {
+          const { App: CapacitorApp } = await import('@capacitor/app');
+          const appInfo = await CapacitorApp.getInfo();
+          app_version = `v${appInfo.version} (${appInfo.build})`;
+        } catch (e) {}
+      } else {
+        // للويب
+        device_model = navigator.userAgent.substring(0, 50);
+        app_version = BUILD_INFO.appVersion;
+      }
+
+      // تسجيل في device_registry (الجدول الجديد)
+      registerDeviceInRegistry(user.id, {
+        device_fp,
+        hardware_hash,
+        device_id: device_id ?? undefined,
+        platform: Capacitor.getPlatform(),
+        device_model,
+        app_version
+      }).catch(() => {});
+    };
+    registerFullDevice();
   }, [user]);
   return null;
 }

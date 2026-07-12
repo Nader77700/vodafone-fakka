@@ -191,6 +191,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // تسجيل الخروج من الجدول الجديد
+      const { device_fp, device_id } = getStableDeviceIdentity();
+      try {
+        await supabase.rpc('mark_device_logged_out', { p_device_fp: device_fp || null, p_device_id: device_id || null });
+      } catch(e) {}
+
       // السماح بتفريغ المعرّف فقط إذا كان الجهاز الحالي هو الجهاز النشط
       if (user && profile?.device_id === getDeviceId()) {
         await supabase.from('profiles').update({ device_id: null }).eq('id', user.id);
