@@ -169,7 +169,9 @@ export default function ActivationPage() {
       }
       return;
     }
-    toast.success(result.isTrial ? 'تم تفعيل الكود التجريبي!' : 'تم تفعيل الاشتراك بنجاح!');
+    // استخدام الرسالة المخصصة من السيرفر (إن وجدت) أو الرسالة الافتراضية
+    toast.success(result.message || (result.isTrial ? 'تم تفعيل الكود التجريبي!' : 'تم تفعيل الاشتراك بنجاح!'));
+    
     // تحديث فوري — بدون Logout/Refresh ثم عرض شاشة البداية
     const [sub] = await Promise.all([
       getUserSubscription(user.id),
