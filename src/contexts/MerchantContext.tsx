@@ -98,8 +98,12 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
     };
   }, [profile?.id, profile?.merchant_id, load, refreshProfile]);
 
+  const contextValue = React.useMemo(() => ({
+    merchant, stats, loading, isMerchant, isAdmin, refresh: load
+  }), [merchant, stats, loading, isMerchant, isAdmin, load]);
+
   return (
-    <MerchantContext.Provider value={{ merchant, stats, loading, isMerchant, isAdmin, refresh: load }}>
+    <MerchantContext.Provider value={contextValue}>
       {children}
     </MerchantContext.Provider>
   );

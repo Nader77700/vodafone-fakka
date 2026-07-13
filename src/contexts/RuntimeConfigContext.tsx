@@ -189,8 +189,12 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [fetchConfig]);
 
+  const contextValue = React.useMemo(() => ({
+    config, isLoading, lastFetched, refresh: fetchConfig
+  }), [config, isLoading, lastFetched, fetchConfig]);
+
   return (
-    <RuntimeConfigContext.Provider value={{ config, isLoading, lastFetched, refresh: fetchConfig }}>
+    <RuntimeConfigContext.Provider value={contextValue}>
       {children}
     </RuntimeConfigContext.Provider>
   );
