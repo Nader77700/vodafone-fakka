@@ -2294,6 +2294,7 @@ export interface OperationsFilter {
   date_to?: string;
   operation_source?: string;
   operation_id?: string;
+  amount?: number;
 }
 
 export interface OperationsStats {
@@ -2321,6 +2322,7 @@ export async function getAllOperationsFiltered(
   if (filters.status && filters.status !== 'all')       q = q.eq('status', filters.status);
   if (filters.date_from) q = q.gte('performed_at', filters.date_from);
   if (filters.date_to)   q = q.lte('performed_at', filters.date_to + 'T23:59:59');
+  if (filters.amount)    q = q.eq('amount', filters.amount);
   if (filters.operation_source && filters.operation_source !== 'all')
     q = q.eq('operation_source', filters.operation_source);
   if (filters.operation_id)

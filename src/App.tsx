@@ -4,7 +4,7 @@ import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import IntersectObserver from '@/components/common/IntersectObserver';
 import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';
-import UpdateBanner from '@/components/common/UpdateBanner';
+
 import OfflineBanner from '@/components/common/OfflineBanner';
 import ForceUpdateScreen from '@/components/common/ForceUpdateScreen';
 import AnnouncementBanner from '@/components/common/AnnouncementBanner';
@@ -483,10 +483,7 @@ function AppInner() {
       <OfflineBanner />
       {/* AnnouncementBanner — رسائل الإدارة الفورية */}
       <AnnouncementBanner />
-      {/* UpdateBanner كان بدون PageErrorBoundary — أي خطأ فيه كان يصل لـ Sentry.ErrorBoundary */}
-      <PageErrorBoundary pageName="update-banner">
-        <UpdateBanner />
-      </PageErrorBoundary>
+
       <Toaster
         richColors
         position="top-center"
@@ -586,6 +583,10 @@ function useDevToolsGuard(isAdmin: boolean) {
 
     const check = () => {
       // تجاهل الفحص على أجهزة الموبايل الحقيقية — لا DevTools هناك
+      if (Capacitor.isNativePlatform()) {
+        setDevToolsOpen(false);
+        return;
+      }
       if (typeof window !== 'undefined' && window.outerWidth <= 768 && window.outerHeight <= 1024) {
         setDevToolsOpen(false);
         return;

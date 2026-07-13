@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import AdminShell from '@/components/admin/AdminShell';
+import { OperationsAmountsFilter } from '@/components/common/OperationsAmountsFilter';
 import type { Operation } from '@/types/types';
 import {
   getAllOperationsFiltered, getOperationsStats,
@@ -319,6 +320,7 @@ export default function AdminOperationsPage() {
   const [statusF, setStatusF]     = useState('all');
   const [sourceF, setSourceF]     = useState('all');
   const [cardTypeF, setCardTypeF] = useState('all');
+  const [amountF, setAmountF]     = useState<number | null>(null);
   const [dateFrom, setDateFrom]   = useState('');
   const [dateTo, setDateTo]       = useState('');
 
@@ -338,10 +340,11 @@ export default function AdminOperationsPage() {
     if (statusF !== 'all')   f.status = statusF;
     if (sourceF !== 'all')   f.operation_source = sourceF;
     if (cardTypeF !== 'all') f.card_type = cardTypeF;
+    if (amountF !== null)    f.amount = amountF;
     if (dateFrom)            f.date_from = dateFrom;
     if (dateTo)              f.date_to = dateTo;
     return f;
-  }, [search, statusF, sourceF, cardTypeF, dateFrom, dateTo]);
+  }, [search, statusF, sourceF, cardTypeF, amountF, dateFrom, dateTo]);
 
   // ─── تحميل البيانات ────────────────────────────────────────────────────────
   const loadData = useCallback(async (p = 1, silent = false) => {
@@ -351,7 +354,7 @@ export default function AdminOperationsPage() {
       const [res] = await Promise.all([
         getAllOperationsFiltered(p, filters),
       ]);
-      setOps(res.data as OpWithProfile[]);
+      setOps(prev => p === 1 ? (res.data as OpWithProfile[]) : [...prev, ...(res.data as OpWithProfile[])]);
       setTotal(res.count);
       setPage(p);
       setNewCount(0);
@@ -497,7 +500,12 @@ export default function AdminOperationsPage() {
 
         {/* ── فلاتر البحث المتقدمة ── */}
         <div className="card-premium p-4 space-y-3">
-          <div className="flex items-center gap-2">
+          <OperationsAmountsFilter 
+            selectedAmount={amountF} 
+            onSelectAmount={(a) => { setAmountF(a); setPage(1); }} 
+          />
+          
+          <div className="flex items-center gap-2 pt-2 border-t border-border">
             <Filter className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs font-semibold text-muted-foreground">فلاتر البحث</span>
           </div>
@@ -629,24 +637,14 @@ export default function AdminOperationsPage() {
         }
 
         {/* ── ترقيم الصفحات ── */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 py-2">
+        {page < totalPages && (
+          <div className="flex items-center justify-center gap-3 py-4">
             <Button
-              variant="outline" size="sm"
-              className="h-9 gap-1 border-border"
-              disabled={page <= 1 || loading}
-              onClick={() => loadData(page - 1)}>
-              <ChevronRight className="w-4 h-4" /> السابق
-            </Button>
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline" size="sm"
-              className="h-9 gap-1 border-border"
-              disabled={page >= totalPages || loading}
+              variant="outline"
+              className="w-full sm:w-auto h-10 border-border"
+              disabled={loading}
               onClick={() => loadData(page + 1)}>
-              التالي <ChevronLeft className="w-4 h-4" />
+              {loading ? 'جاري التحميل...' : 'عرض المزيد'}
             </Button>
           </div>
         )}

@@ -117,33 +117,64 @@ function OpDetailSheet({ op, open, onClose }: { op: Operation | null; open: bool
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
+import { OperationsAmountsFilter } from '@/components/common/OperationsAmountsFilter';
+
 export default function UserOperationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [ops,         setOps]         = useState<Operation[]>([]);
   const [loading,     setLoading]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
   const [search,      setSearch]      = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'balance' | 'vcash'>('all');
   const [dateFilter,   setDateFilter]   = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [amountFilter, setAmountFilter] = useState<number | null>(null);
   const [detailOp,    setDetailOp]    = useState<Operation | null>(null);
   const [sheetOpen,   setSheetOpen]   = useState(false);
 
-  const loadOps = useCallback(async () => {
+  const PAGE_SIZE = 50;
+
+  const loadOps = useCallback(async (p = 1, isLoadMore = false) => {
     if (!user) return;
-    setLoading(true);
-    const { data } = await supabase
+    if (isLoadMore) setLoadingMore(true);
+    else setLoading(true);
+
+    const from = (p - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let q = supabase
       .from('operations')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
       .order('performed_at', { ascending: false })
-      .limit(500);
-    setOps(Array.isArray(data) ? (data as unknown as Operation[]) : []);
-    setLoading(false);
-  }, [user]);
+      .range(from, to);
 
-  useEffect(() => { loadOps(); }, [loadOps]);
+    if (amountFilter !== null) {
+      q = q.eq('amount', amountFilter);
+    }
+
+    const { data, count } = await q;
+    
+    const newOps = Array.isArray(data) ? (data as unknown as Operation[]) : [];
+    
+    if (p === 1) {
+      setOps(newOps);
+    } else {
+      setOps(prev => [...prev, ...newOps]);
+    }
+    
+    setHasMore(count ? from + PAGE_SIZE < count : false);
+    setPage(p);
+    
+    setLoading(false);
+    setLoadingMore(false);
+  }, [user, amountFilter]);
+
+  useEffect(() => { loadOps(1); }, [loadOps]);
 
   // إحصائيات
   const stats = useMemo(() => {
@@ -182,7 +213,7 @@ export default function UserOperationsPage() {
     return true;
   }), [ops, statusFilter, sourceFilter, dateFilter, search]);
 
-  const hasFilters = search || statusFilter !== 'all' || sourceFilter !== 'all' || dateFilter !== 'all';
+  const hasFilters = search || statusFilter !== 'all' || sourceFilter !== 'all' || dateFilter !== 'all' || amountFilter !== null;
 
   return (
     <div className="min-h-screen pb-8" style={{ background: '#080000' }} dir="rtl">
@@ -198,7 +229,7 @@ export default function UserOperationsPage() {
           <h1 className="text-sm font-black text-white truncate">سجل العمليات</h1>
           <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{stats.total} عملية إجمالاً</p>
         </div>
-        <button onClick={loadOps} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+        <button onClick={() => loadOps(1)} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.15)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} style={{ color: '#E60000' }} />
         </button>
@@ -220,6 +251,13 @@ export default function UserOperationsPage() {
             </div>
           ))}
         </div>
+
+        {/* فلاتر القيم */}
+        <OperationsAmountsFilter 
+          userId={user?.id}
+          selectedAmount={amountFilter} 
+          onSelectAmount={(a) => { setAmountFilter(a); loadOps(1); }} 
+        />
 
         {/* بحث */}
         <div className="relative">
@@ -264,7 +302,7 @@ export default function UserOperationsPage() {
 
         {/* مسح الفلاتر */}
         {hasFilters && (
-          <button onClick={() => { setSearch(''); setStatusFilter('all'); setSourceFilter('all'); setDateFilter('all'); }}
+          <button onClick={() => { setSearch(''); setStatusFilter('all'); setSourceFilter('all'); setDateFilter('all'); setAmountFilter(null); loadOps(1); }}
             className="flex items-center gap-1 text-[11px]" style={{ color: '#E60000' }}>
             <X className="w-3 h-3" /> مسح الفلاتر ({filtered.length} نتيجة)
           </button>
@@ -354,6 +392,19 @@ export default function UserOperationsPage() {
                 </div>
               );
             })}
+            
+            {hasMore && (
+              <div className="flex justify-center pt-4 pb-8">
+                <button
+                  onClick={() => loadOps(page + 1, true)}
+                  disabled={loadingMore}
+                  className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                  style={{ background: 'rgba(230,0,0,0.1)', color: '#ff4444', border: '1px solid rgba(230,0,0,0.2)' }}
+                >
+                  {loadingMore ? 'جاري التحميل...' : 'عرض المزيد'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

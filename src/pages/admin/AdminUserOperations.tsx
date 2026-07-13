@@ -215,6 +215,8 @@ function OpCard({ op, onDetails }: { op: Operation; onDetails: (op: Operation) =
 }
 
 // ─── الصفحة الرئيسية ──────────────────────────────────────────────────────────
+import { OperationsAmountsFilter } from '@/components/common/OperationsAmountsFilter';
+
 const PAGE_SIZE = 20;
 
 export default function AdminUserOperations() {
@@ -233,6 +235,7 @@ export default function AdminUserOperations() {
   const [statusF,     setStatusF]     = useState('all');
   const [sourceF,     setSourceF]     = useState('all');
   const [cardTypeF,   setCardTypeF]   = useState('all');
+  const [amountF,     setAmountF]     = useState<number | null>(null);
   const [activeTab,   setActiveTab]   = useState<'all'|'success'|'failed'>('all');
   const [detailOp,    setDetailOp]    = useState<Operation | null>(null);
   const [sheetOpen,   setSheetOpen]   = useState(false);
@@ -261,15 +264,15 @@ export default function AdminUserOperations() {
   }, [allOps]);
 
   // تحميل صفحة العمليات مع فلاتر
-  const loadOps = useCallback(async () => {
+  const loadOps = useCallback(async (p = 1, silent = false) => {
     if (!id) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       let q = supabase
         .from('operations').select('*', { count: 'exact' })
         .eq('user_id', id)
         .order('performed_at', { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+        .range((p - 1) * PAGE_SIZE, p * PAGE_SIZE - 1);
 
       if (search) q = q.or(`phone_number.ilike.%${search}%,card_type.ilike.%${search}%`);
 
@@ -281,13 +284,20 @@ export default function AdminUserOperations() {
       if (sourceF === 'balance') q = q.eq('operation_source', 'ana_vodafone_balance');
       if (sourceF === 'vcash')   q = q.eq('operation_source', 'vodafone_cash');
       if (cardTypeF !== 'all')   q = q.eq('card_type', cardTypeF);
+      if (amountF !== null)      q = q.eq('amount', amountF);
 
       const { data, count } = await q;
-      setOps(Array.isArray(data) ? data as unknown as Operation[] : []);
+      const newOps = Array.isArray(data) ? data as unknown as Operation[] : [];
+      if (p === 1) {
+        setOps(newOps);
+      } else {
+        setOps(prev => [...prev, ...newOps]);
+      }
       setTotal(count ?? 0);
+      setPage(p);
     } catch { toast.error('فشل تحميل العمليات'); }
     finally { setLoading(false); }
-  }, [id, page, search, statusF, sourceF, cardTypeF, activeTab]);
+  }, [id, search, statusF, sourceF, cardTypeF, activeTab, amountF]);
 
   useEffect(() => {
     if (id) {
@@ -295,7 +305,7 @@ export default function AdminUserOperations() {
       loadAllOps();
     }
   }, [id]);
-  useEffect(() => { loadOps(); }, [loadOps]);
+  useEffect(() => { loadOps(1); }, [loadOps]);
 
   // إحصائيات من كل العمليات
   const stats = useMemo(() => {
@@ -444,7 +454,13 @@ export default function AdminUserOperations() {
         </div>
 
         {/* ── فلاتر ── */}
-        <div className="space-y-2">
+        <div className="space-y-3">
+          <OperationsAmountsFilter 
+            userId={id}
+            selectedAmount={amountF} 
+            onSelectAmount={(a) => { setAmountF(a); setPage(1); }} 
+          />
+
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -477,9 +493,9 @@ export default function AdminUserOperations() {
               </SelectContent>
             </Select>
           </div>
-          {(search || sourceF !== 'all' || cardTypeF !== 'all') && (
+          {(search || sourceF !== 'all' || cardTypeF !== 'all' || amountF !== null) && (
             <button
-              onClick={() => { setSearch(''); setSourceF('all'); setCardTypeF('all'); setPage(1); }}
+              onClick={() => { setSearch(''); setSourceF('all'); setCardTypeF('all'); setAmountF(null); setPage(1); }}
               className="text-[11px] text-primary flex items-center gap-1 hover:opacity-70">
               <X className="w-3 h-3" /> مسح الفلاتر
             </button>
@@ -500,14 +516,15 @@ export default function AdminUserOperations() {
               <div className="space-y-2">
                 {ops.map(op => <OpCard key={op.id} op={op} onDetails={openDetails} />)}
               </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 pt-4">
-                  <Button size="icon" variant="outline" className="w-8 h-8" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                  <span className="text-xs text-muted-foreground tabular-nums">{page} / {totalPages}</span>
-                  <Button size="icon" variant="outline" className="w-8 h-8" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
-                    <ChevronLeft className="w-4 h-4" />
+              {page < totalPages && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    disabled={loading}
+                    className="w-full sm:w-auto border-border"
+                    onClick={() => loadOps(page + 1)}
+                  >
+                    {loading ? 'جاري التحميل...' : 'عرض المزيد'}
                   </Button>
                 </div>
               )}

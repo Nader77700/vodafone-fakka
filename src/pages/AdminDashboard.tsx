@@ -1334,17 +1334,21 @@ export default function AdminDashboard() {
     setSubsLoading(false);
   }, [subsPage, subsSearch, subsStatusFilter, subsTypeFilter]);
 
-  const loadKeys = useCallback(async () => {
-    setKeysLoading(true);
-    setKeysResult(await getAllLicenseKeys(keysPage));
+  const loadKeys = useCallback(async (p = 1, silent = false) => {
+    if (!silent) setKeysLoading(true);
+    const res = await getAllLicenseKeys(p);
+    setKeysResult(prev => p === 1 ? res : { ...res, data: [...(prev?.data || []), ...res.data] });
+    setKeysPage(p);
     setKeysLoading(false);
-  }, [keysPage]);
+  }, []);
 
-  const loadCodeLogs = useCallback(async () => {
-    setCodeLogsLoading(true);
-    setCodeLogsResult(await getCodeLogs(undefined, codeLogsPage));
+  const loadCodeLogs = useCallback(async (p = 1, silent = false) => {
+    if (!silent) setCodeLogsLoading(true);
+    const res = await getCodeLogs(undefined, p);
+    setCodeLogsResult(prev => p === 1 ? res : { ...res, data: [...(prev?.data || []), ...res.data] });
+    setCodeLogsPage(p);
     setCodeLogsLoading(false);
-  }, [codeLogsPage]);
+  }, []);
 
   const loadCodeStats = useCallback(async () => {
     setCodeStatsLoading(true);
@@ -2825,7 +2829,18 @@ export default function AdminDashboard() {
                   )}
                 </div>
               )}
-              <Pagination page={keysPage} total={keysResult?.count ?? 0} pageSize={keysResult?.pageSize ?? 20} onChange={setKeysPage} />
+              {keysPage < Math.ceil((keysResult?.count ?? 0) / (keysResult?.pageSize ?? 20)) && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    disabled={keysLoading}
+                    className="w-full sm:w-auto border-border"
+                    onClick={() => loadKeys(keysPage + 1)}
+                  >
+                    {keysLoading ? 'جاري التحميل...' : 'عرض المزيد'}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -2836,7 +2851,7 @@ export default function AdminDashboard() {
             <div className="space-y-5 page-enter">
               <SectionHeader icon={Activity} title="سجل نشاط الأكواد" description="تتبع كل الأحداث المرتبطة بأكواد التفعيل"
                 count={codeLogsResult?.count}
-                action={<Button variant="outline" size="sm" className="border-border h-9 gap-1.5" onClick={loadCodeLogs}><RefreshCw className="w-3.5 h-3.5" /> تحديث</Button>}
+                action={<Button variant="outline" size="sm" className="border-border h-9 gap-1.5" onClick={() => loadCodeLogs(1)}><RefreshCw className="w-3.5 h-3.5" /> تحديث</Button>}
               />
               {codeLogsLoading ? <Spinner /> : (
                 <div className="card-premium p-1 divide-y divide-border/40">
@@ -2865,7 +2880,18 @@ export default function AdminDashboard() {
                   {!codeLogsResult?.data.length && <EmptyState icon={Activity} text="لا توجد سجلات بعد" />}
                 </div>
               )}
-              <Pagination page={codeLogsPage} total={codeLogsResult?.count ?? 0} pageSize={codeLogsResult?.pageSize ?? 20} onChange={setCodeLogsPage} />
+              {codeLogsPage < Math.ceil((codeLogsResult?.count ?? 0) / (codeLogsResult?.pageSize ?? 20)) && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    disabled={codeLogsLoading}
+                    className="w-full sm:w-auto border-border"
+                    onClick={() => loadCodeLogs(codeLogsPage + 1)}
+                  >
+                    {codeLogsLoading ? 'جاري التحميل...' : 'عرض المزيد'}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
