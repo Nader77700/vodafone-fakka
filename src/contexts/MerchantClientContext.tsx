@@ -238,16 +238,18 @@ export function MerchantClientProvider({ children }: { children: React.ReactNode
   const merchantSuspended = isMerchantClient && !!data &&
     !['active'].includes(data.merchant.status);
 
+  const contextValue = React.useMemo(() => ({
+    isMerchantClient,
+    isLoading,
+    data,
+    merchantSuspended,
+    isSubActive,
+    subscriptionBlockReason,
+    refresh: load,
+  }), [isMerchantClient, isLoading, data, merchantSuspended, isSubActive, subscriptionBlockReason, load]);
+
   return (
-    <MerchantClientContext.Provider value={{
-      isMerchantClient,
-      isLoading,
-      data,
-      merchantSuspended,
-      isSubActive,
-      subscriptionBlockReason,
-      refresh: load,
-    }}>
+    <MerchantClientContext.Provider value={contextValue}>
       {children}
     </MerchantClientContext.Provider>
   );

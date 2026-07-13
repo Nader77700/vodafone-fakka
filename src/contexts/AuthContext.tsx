@@ -1,5 +1,5 @@
 // سياق المصادقة — AuthContext
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/db/supabase';
 import { getProfile } from '@/lib/api';
@@ -279,8 +279,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
+  const contextValue = React.useMemo(() => ({
+    user, profile, loading, sessionConflict, signOut, refreshProfile, claimSession
+  }), [user, profile, loading, sessionConflict, signOut, refreshProfile, claimSession]);
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, sessionConflict, signOut, refreshProfile, claimSession }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
