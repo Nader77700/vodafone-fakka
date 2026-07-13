@@ -67,7 +67,8 @@ function CrashFallback() {
     // ── عدّ الكراش الحالي ─────────────────────────────────────────────────
     let count = 1;
     try {
-      const prev = parseInt(sessionStorage.getItem(CRASH_COUNT_KEY) ?? '0', 10);
+      const prevVal = sessionStorage.getItem(CRASH_COUNT_KEY);
+      const prev = parseInt(prevVal !== null ? prevVal : '0', 10);
       count = (isNaN(prev) ? 0 : prev) + 1;
       sessionStorage.setItem(CRASH_COUNT_KEY, String(count));
     } catch { /* تجاهل */ }

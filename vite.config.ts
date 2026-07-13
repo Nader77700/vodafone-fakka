@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     assetsInlineLimit: 4096,
     // استهداف WebView الأقدم على الأجهزة الضعيفة (Android 7+)
-    target: ['es2020', 'chrome80'],
+    target: ['es2015', 'chrome65'],
     // ── تشفير وضغط الكود في بيئة الإنتاج ────────────────────────────────
     minify: mode === "production" ? "esbuild" : false,
     // esbuild: حذف console.* و debugger تماماً في البروداكشن
@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => ({
         minifyIdentifiers: true,        // تشويه أسماء المتغيرات
         minifySyntax: true,             // ضغط الصياغة
         minifyWhitespace: true,         // حذف المسافات
-        target: 'es2020',
+        target: 'es2015',
       },
     }),
     rollupOptions: {
