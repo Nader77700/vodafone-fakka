@@ -317,7 +317,7 @@ jobs:
               \"version_code\":${{ env.APP_VERSION_CODE }},
               \"apk_url\":\"$FINAL_URL\",
               \"is_latest\":true,
-              \"force_update\":true,
+              \"force_update\":false,
               \"update_type\":\"apk\",
               \"apk_deployed\":true,
               \"apk_verified_at\":\"$NOW\"
@@ -329,9 +329,9 @@ jobs:
             "version_latest_name=${{ env.APP_VERSION }}" \
             "version_latest_code=${{ env.APP_VERSION_CODE }}" \
             "version_apk_url=$FINAL_URL" \
-            "version_min_code=${{ env.APP_VERSION_CODE }}" \
-            "version_min_supported=${{ env.APP_VERSION_CODE }}" \
-            "version_force_update=true"; do
+            "version_min_code=0" \
+            "version_min_supported=0" \
+            "version_force_update=false"; do
             KEY="${ENTRY%%=*}"
             VAL="${ENTRY#*=}"
             curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
