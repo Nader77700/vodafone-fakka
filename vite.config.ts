@@ -91,5 +91,5 @@ export default defineConfig(({ mode }) => ({
     },
   },
   // base: '/' — مسارات مطلقة للعمل مع bundled APK (Live URL Mode أُزيل)
-  base: './',
+  base: '/',
 }));
