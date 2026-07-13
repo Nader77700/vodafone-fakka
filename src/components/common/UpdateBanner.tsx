@@ -9,7 +9,9 @@ export default function UpdateBanner() {
   const navigate = useNavigate();
 
   const handleDownload = () => {
-    navigate('/updates');
+    if (!latestVersion) return;
+    const downloadUrl = window.location.href.split('#')[0] + '#/download';
+    Browser.open({ url: downloadUrl });
   };
 
   if (!showBanner || !latestVersion) return null;

@@ -1,6 +1,6 @@
 // صفحة التحديثات — APK + سجل الإصدارات + فصل ملاحظات المستخدم عن الإدارة
 import { useState, useEffect } from 'react';
-import { Download, RefreshCw, CheckCircle2, Sparkles, Info, Calendar, Hash, ChevronDown, ChevronUp, Share2, Copy, Check, ExternalLink, Loader2 } from 'lucide-react';
+import { Download, RefreshCw, CheckCircle2, Sparkles, Info, Calendar, Hash, ChevronDown, ChevronUp, Share2, Copy, Check, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/db/supabase';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
@@ -8,8 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BUILD_INFO } from '@/lib/buildInfo';
 import { toast } from 'sonner';
 import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
-import { ApkInstaller, downloadApkWithProgress, DownloadProgress } from '@/lib/apkInstaller';
 
 interface AppVersion {
   id: string;
@@ -60,34 +58,8 @@ export default function UpdatesPage() {
   const [current,        setCurrent]        = useState<AppVersion | null>(null);
   const [expandedId,     setExpandedId]     = useState<string | null>(null);
   const [copied,         setCopied]         = useState(false);
-  const [isDownloading,  setIsDownloading]  = useState(false);
-  const [progress,       setProgress]       = useState<DownloadProgress | null>(null);
 
   const displayVersion = installedVersion ? `v${installedVersion}` : CURRENT_VERSION;
-
-  const startInternalDownload = async (url: string, version: string) => {
-    if (!Capacitor.isNativePlatform()) {
-      window.open(url, '_blank');
-      return;
-    }
-    if (!url) {
-      toast.error('رابط التحديث غير متوفر');
-      return;
-    }
-    setIsDownloading(true);
-    try {
-      const base64 = await downloadApkWithProgress(url, setProgress);
-      setProgress(p => ({ ...p!, percent: 100 }));
-      await ApkInstaller.saveAndInstall({ base64, fileName: `VodafoneFakka-v${version}.apk` });
-    } catch (err: any) {
-      console.error('Internal update failed:', err);
-      toast.error('فشل التنزيل الداخلي. جاري الفتح في المتصفح...');
-      Browser.open({ url });
-    } finally {
-      setIsDownloading(false);
-      setProgress(null);
-    }
-  };
 
   const checkForUpdates = async () => {
     setCheckingUpdate(true);
@@ -273,39 +245,12 @@ export default function UpdatesPage() {
               </div>
             )}
 
-            {isDownloading ? (
-              <div className="space-y-3 bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20">
-                <div className="flex items-center justify-between text-xs font-bold px-1">
-                  <span className="text-yellow-500 flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري التنزيل...
-                  </span>
-                  <span className="text-yellow-500">{progress?.percent || 0}%</span>
-                </div>
-                <div className="h-3 w-full bg-background rounded-full overflow-hidden relative">
-                  <div 
-                    className="absolute top-0 right-0 h-full bg-yellow-500 transition-all duration-300"
-                    style={{ width: `${progress?.percent || 0}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-yellow-500/80 px-1">
-                  <span>{((progress?.downloaded || 0) / 1024 / 1024).toFixed(1)} MB</span>
-                  {progress?.remainingSec ? <span>متبقي {progress.remainingSec}ث</span> : null}
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => startInternalDownload(activeVersion.apk_url, activeVersion.version)}
-                className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-black"
-                style={{ background: '#eab308', boxShadow: '0 0 16px #eab30850' }}>
-                <Download className="w-4 h-4" /> تنزيل APK v{activeVersion.version} داخلياً
-              </button>
-            )}
-            
-            <div className="pt-2 border-t border-yellow-500/20 text-center">
-              <button onClick={() => Browser.open({ url: activeVersion.apk_url })} className="text-[10px] text-yellow-500/70 hover:text-yellow-500 underline underline-offset-2">
-                مواجهة مشكلة؟ التحميل عبر المتصفح
-              </button>
-            </div>
+            <button
+              onClick={() => Browser.open({ url: window.location.origin + '/download' })}
+              className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-black"
+              style={{ background: '#eab308', boxShadow: '0 0 16px #eab30850' }}>
+              <Download className="w-4 h-4" /> تنزيل APK v{activeVersion.version}
+            </button>
           </div>
         )}
 
@@ -336,43 +281,16 @@ export default function UpdatesPage() {
               </div>
             </div>
 
-            {isDownloading ? (
-              <div className="space-y-3 bg-primary/10 p-3 rounded-xl border border-primary/20">
-                <div className="flex items-center justify-between text-xs font-bold px-1">
-                  <span className="text-primary flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري التنزيل الداخلي...
-                  </span>
-                  <span className="text-primary">{progress?.percent || 0}%</span>
-                </div>
-                <div className="h-3 w-full bg-background rounded-full overflow-hidden relative">
-                  <div 
-                    className="absolute top-0 right-0 h-full bg-primary transition-all duration-300"
-                    style={{ width: `${progress?.percent || 0}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-primary/80 px-1">
-                  <span>{((progress?.downloaded || 0) / 1024 / 1024).toFixed(1)} MB</span>
-                  {progress?.remainingSec ? <span>متبقي {progress.remainingSec}ث</span> : null}
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => startInternalDownload(activeVersion.apk_url, installedVersion ?? activeVersion.version)}
-                className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-background"
-                style={{ background: '#22c55e', boxShadow: '0 0 16px #22c55e40' }}>
-                <Download className="w-4 h-4" />
-                {/* إذا كان web update: "إعادة تثبيت APK" لا "تحديث" */}
-                {isWebUpdate
-                  ? `إعادة تثبيت APK v${installedVersion ?? activeVersion.version} داخلياً`
-                  : `تحميل APK v${installedVersion ?? activeVersion.version} داخلياً`}
-              </button>
-            )}
-
-            <div className="pt-1 text-center">
-              <button onClick={() => Browser.open({ url: activeVersion.apk_url })} className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2">
-                تواجه مشكلة؟ قم بالتحميل عبر المتصفح
-              </button>
-            </div>
+            <button
+              onClick={() => Browser.open({ url: window.location.origin + '/download' })}
+              className="flex items-center justify-center gap-2 w-full h-11 font-bold text-sm rounded-xl text-background"
+              style={{ background: '#22c55e', boxShadow: '0 0 16px #22c55e40' }}>
+              <Download className="w-4 h-4" />
+              {/* إذا كان web update: "إعادة تثبيت APK" لا "تحديث" */}
+              {isWebUpdate
+                ? `إعادة تثبيت APK v${installedVersion ?? activeVersion.version}`
+                : `تحميل APK v${installedVersion ?? activeVersion.version}`}
+            </button>
 
             <div className="rounded-xl bg-muted/30 p-3 text-[11px] text-muted-foreground space-y-1 leading-relaxed">
               <p className="font-bold text-foreground/80">📋 خطوات التثبيت:</p>
