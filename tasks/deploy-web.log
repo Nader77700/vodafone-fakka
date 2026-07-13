@@ -621,3 +621,11 @@
 ╚══════════════════════════════════════════════════════╝
 
 💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-07-13 21:37         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] نشر serve-app (no-verify-jwt)...
+Access token not provided. Supply an access token by running supabase login or setting the SUPABASE_ACCESS_TOKEN environment variable.
+Try rerunning the command with --debug to troubleshoot the error.
