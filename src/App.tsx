@@ -397,8 +397,12 @@ function AppInner() {
     </Suspense>
   );
 
+  const isLoginPage = window.location.pathname === '/login' || window.location.hash.includes('/login');
+
   if (deviceBan?.banned) return wrapScreen(DeviceBannedScreen, { reason: deviceBan.reason, bannedAt: deviceBan.banned_at });
-  if (flags.ff_maintenance_mode && !isAdmin) return wrapScreen(MaintenanceScreen);
+  // السماح بصفحة تسجيل الدخول حتى لو كان وضع الصيانة مفعّل (ليتمكن الإدمن من الدخول)
+  // إذا سجل مستخدم عادي دخوله، سيتم طرده لصفحة الصيانة بعد تحويله من صفحة الدخول
+  if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage) return wrapScreen(MaintenanceScreen);
   if (forceUpdate && !isAdmin) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
 
   return (
