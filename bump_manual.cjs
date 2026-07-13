@@ -1,7 +1,7 @@
 const fs = require('fs');
 
-const version = '3.0.315';
-const code = 230;
+const version = '3.0.316';
+const code = 231;
 
 // package.json
 const pkgPath = 'package.json';
