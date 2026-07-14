@@ -329,9 +329,9 @@ jobs:
             "version_latest_name=${{ env.APP_VERSION }}" \
             "version_latest_code=${{ env.APP_VERSION_CODE }}" \
             "version_apk_url=$FINAL_URL" \
-            "version_min_code=0" \
-            "version_min_supported=0" \
-            "version_force_update=false"; do
+            "version_min_code=241" \
+            "version_min_supported=241" \
+            "version_force_update=true"; do
             KEY="${ENTRY%%=*}"
             VAL="${ENTRY#*=}"
             curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
@@ -367,7 +367,7 @@ jobs:
               \"version\":       \"${{ env.APP_VERSION }}\",
               \"version_code\":  ${{ env.APP_VERSION_CODE }},
               \"apk_url\":       \"${UPDATE_PAGE}\",
-              \"release_notes\": \"v${{ env.APP_VERSION }}: تحديث جديد متاح للتحميل\"
+              \"release_notes\": \"تحديث إجباري v${{ env.APP_VERSION }}: إصلاح شامل لمشكلة الإغلاق المفاجئ (Crash) وإضافة نظام تتبع الأعطال.\"
             }")
           NOTIF_HTTP=$(echo "$NOTIF_RESP" | tail -1)
           NOTIF_BODY=$(echo "$NOTIF_RESP" | head -1)

@@ -35,14 +35,69 @@ const MAX_CRASHES     = 2; // بعد 2 كراش متتالي → مسح كامل
   } catch { /* تجاهل */ }
 })();
 
+import { supabase } from '@/db/supabase';
+
+function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
+  try {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const stackTrace = error instanceof Error ? error.stack : '';
+    let fileName = '';
+    let lineNo = '';
+    let colNo = '';
+    
+    // Extract file info from stack if possible
+    if (stackTrace) {
+      const match = stackTrace.match(/at\s+.*?\s+\((.*?):(\d+):(\d+)\)/) || stackTrace.match(/at\s+(.*?):(\d+):(\d+)/);
+      if (match) {
+        fileName = match[1];
+        lineNo = match[2];
+        colNo = match[3];
+      }
+    }
+
+    let deviceModel = 'Unknown';
+    let androidVersion = 'Unknown';
+    try {
+      deviceModel = navigator.userAgent;
+      const match = navigator.userAgent.match(/Android\s([0-9\.]+)/);
+      if (match) androidVersion = match[1];
+    } catch {}
+
+    const sendCrash = async () => {
+      try {
+        await supabase.from('crash_logs').insert([{
+          exception_message: errorMsg,
+          exception_type: type,
+          stack_trace: stackTrace,
+          file_name: fileName,
+          line_number: lineNo,
+          column_number: colNo,
+          device_model: deviceModel,
+          android_version: androidVersion,
+          app_version: BUILD_INFO.appVersion || CURRENT_VERSION,
+          build_number: BUILD_INFO.buildTimestamp ? String(BUILD_INFO.buildTimestamp) : '',
+          current_route: window.location.hash || window.location.pathname,
+          internet_state: navigator.onLine ? 'online' : 'offline',
+          additional_data: extraData
+        }]);
+      } catch (e) { /* ignore */ }
+    };
+    sendCrash();
+  } catch (e) { /* fallback safe */ }
+}
+
 // ── Global Error Recovery — اصطياد كل الأخطاء قبل أن تُسقط التطبيق ──────────
 (function installGlobalErrorRecovery() {
   window.addEventListener('unhandledrejection', (event) => {
     console.error('[SafeMode] Unhandled rejection:', event.reason);
+    logToSupabase(event.reason, 'UnhandledRejection');
     event.preventDefault();
   });
   window.addEventListener('error', (event) => {
     console.error('[SafeMode] Global error:', event.message, event.filename, event.lineno);
+    logToSupabase(event.error || new Error(event.message), 'WindowError', {
+      file: event.filename, line: event.lineno, col: event.colno
+    });
   });
 })();
 
@@ -99,6 +154,24 @@ function CrashFallback() {
       }, 2500);
       return () => clearTimeout(t);
     }
+
+    // سجل الكراش في Supabase إذا أمكن
+    try {
+      import('@/db/supabase').then(({ supabase }) => {
+        const sendCrash = async () => {
+          try {
+            await supabase.from('crash_logs').insert([{
+              exception_message: 'React ErrorBoundary CrashFallback Triggered',
+              exception_type: 'ErrorBoundary',
+              current_route: window.location.hash || window.location.pathname,
+              app_version: CURRENT_VERSION,
+              additional_data: { crashCount: count }
+            }]);
+          } catch (e) { /* ignore */ }
+        };
+        sendCrash();
+      }).catch(() => {});
+    } catch {}
 
     // ── كراش #1: مسح عادي مع حفظ auth ──────────────────────────────────────
     try {

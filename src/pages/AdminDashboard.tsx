@@ -98,7 +98,7 @@ type AdminTab =
   | 'overview' | 'users' | 'subscriptions' | 'licenses' | 'codelogs'
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
-  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
+  | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
   | 'red_packages' | 'promotions';
 
 interface TabMeta {
@@ -120,6 +120,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'recharge',       label: 'محرك الشحن',       desc: 'ربط سكربت الشحن الخارجي',          icon: Zap },
   { id: 'operations',     label: 'العمليات',          desc: 'سجل جميع عمليات الشحن',            icon: Clock },
   { id: 'logs',           label: 'السجلات',           desc: 'سجلات النظام والأخطاء',             icon: FileText },
+  { id: 'crash_logs',     label: 'سجلات الأعطال',     desc: 'استعراض تقارير وإغلاقات التطبيق المفاجئة', icon: AlertTriangle },
   { id: 'notifications',  label: 'الإشعارات',        desc: 'إرسال إشعارات للمستخدمين',          icon: Bell },
   { id: 'notif_automation', label: 'إشعارات تلقائية', desc: 'قواعد الإشعارات الآلية',             icon: Cpu },
   { id: 'navlinks',       label: 'مدير الروابط',     desc: 'استعراض جميع روابط التطبيق',         icon: Link2 },
@@ -3780,6 +3781,13 @@ export default function AdminDashboard() {
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى المراقبة الحية...</p>
               {(() => { navigate('/admin/live-monitoring'); return null; })()}
+            </div>
+          )}
+
+          {activeTab === 'crash_logs' && (
+            <div className="py-8 text-center space-y-4 page-enter">
+              <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى سجلات الأعطال...</p>
+              {(() => { navigate('/admin/crash-logs'); return null; })()}
             </div>
           )}
 

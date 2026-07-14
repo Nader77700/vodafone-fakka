@@ -286,18 +286,16 @@ function NativeDebugPanel() {
     if (!isNative) return;
 
     // (A) TelephonyCallback native event — الأسرع (فوري عند تغيير Data SIM)
-    let nativeHandle: { remove: () => void } | null = null;
-    try {
-      nativeHandle = VodafoneDetector.addListener(
-        'networkStateChanged',
-        (data: { trigger: string; timestamp: number }) => {
-          if (import.meta.env.DEV) console.log('[NativeDebug] TelephonyCallback event:', data.trigger, data.timestamp);
-          fetchInfo();
-        }
-      ) as unknown as { remove: () => void };
-    } catch (e) {
-      if (import.meta.env.DEV) console.warn('[NativeDebug] addListener not available:', e);
-    }
+    const nativeHandlePromise = VodafoneDetector.addListener(
+      'networkStateChanged',
+      (data: { trigger: string; timestamp: number }) => {
+        if (import.meta.env.DEV) console.log('[NativeDebug] TelephonyCallback event:', data?.trigger, data?.timestamp);
+        fetchInfo();
+      }
+    ).catch(e => {
+      if (import.meta.env.DEV) console.warn('[NativeDebug] addListener error:', e);
+      return null;
+    });
 
     // (B) Web events كـ backup عند تغيير الاتصال
     const handleOnline  = () => { if (import.meta.env.DEV) console.log('[NativeDebug] online event'); fetchInfo(); };
@@ -317,7 +315,9 @@ function NativeDebugPanel() {
     const interval = setInterval(fetchInfo, 5000);
 
     return () => {
-      nativeHandle?.remove();
+      nativeHandlePromise.then(handle => {
+        if (handle && handle.remove) handle.remove();
+      });
       window.removeEventListener('online',  handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisible);
@@ -809,15 +809,13 @@ function ExecuteModal({
     if (!open || !isNativeAPK) return;
 
     // (A) TelephonyCallback native event — فوري عند تغيير Data SIM
-    let nativeHandle: { remove: () => void } | null = null;
-    try {
-      nativeHandle = VodafoneDetector.addListener(
-        'networkStateChanged',
-        () => { fetchNetworkInfo(); }
-      ) as unknown as { remove: () => void };
-    } catch (e) {
-      if (import.meta.env.DEV) console.warn('[Dialog] addListener not available:', e);
-    }
+    const nativeHandlePromise = VodafoneDetector.addListener(
+      'networkStateChanged',
+      () => { fetchNetworkInfo(); }
+    ).catch(e => {
+      if (import.meta.env.DEV) console.warn('[Dialog] addListener error:', e);
+      return null;
+    });
 
     // (B) Web events كـ backup
     const handleOnline  = () => fetchNetworkInfo();
@@ -833,7 +831,9 @@ function ExecuteModal({
     const interval = setInterval(fetchNetworkInfo, 5000);
 
     return () => {
-      nativeHandle?.remove();
+      nativeHandlePromise.then(handle => {
+        if (handle && handle.remove) handle.remove();
+      });
       window.removeEventListener('online',  handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisible);
@@ -846,17 +846,18 @@ function ExecuteModal({
   const validity = product ? getValidity(product) : '';
 
   const handleExecute = async () => {
-    if (!user || !product) return;
-    // منع التنفيذ المزدوج — أي ضغطة أثناء التنفيذ تُهمَل فوراً
-    if (executingRef.current) return;
-    // cooldown 15 ثانية بعد آخر فشل — يمنع double-submit غير المقصود
-    const timeSinceFail = Date.now() - lastFailedAtRef.current;
-    if (lastFailedAtRef.current > 0 && timeSinceFail < RETRY_COOLDOWN_MS) {
-      const secsLeft = Math.ceil((RETRY_COOLDOWN_MS - timeSinceFail) / 1000);
-      toast.warning(`انتظر ${secsLeft} ث قبل إعادة المحاولة`, { duration: 3000 });
-      return;
-    }
-    executingRef.current = true;
+    try {
+      if (!user || !product) return;
+      // منع التنفيذ المزدوج — أي ضغطة أثناء التنفيذ تُهمَل فوراً
+      if (executingRef.current) return;
+      // cooldown 15 ثانية بعد آخر فشل — يمنع double-submit غير المقصود
+      const timeSinceFail = Date.now() - lastFailedAtRef.current;
+      if (lastFailedAtRef.current > 0 && timeSinceFail < RETRY_COOLDOWN_MS) {
+        const secsLeft = Math.ceil((RETRY_COOLDOWN_MS - timeSinceFail) / 1000);
+        toast.warning(`انتظر ${secsLeft} ث قبل إعادة المحاولة`, { duration: 3000 });
+        return;
+      }
+      executingRef.current = true;
 
     const trimPhone  = phone.trim();
     const trimPin    = pin.trim();
@@ -1069,6 +1070,19 @@ function ExecuteModal({
       setLastErrorType(mapped.errorType);
       lastFailedAtRef.current = Date.now(); // بدء cooldown 15 ثانية
       toast.error('❌ فشل الشحن', { description: getFirstLine(mapped.arabicMessage), duration: 8000 });
+    }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('حدث خطأ غير متوقع أثناء تنفيذ العملية.');
+      setSubmitting(false); setLoadingStep(0);
+      executingRef.current = false;
+      import('@/db/supabase').then(({ supabase }) => {
+        supabase.from('crash_logs').insert([{
+          exception_message: err.message || String(err),
+          exception_type: 'HandleExecuteError',
+          current_route: '/home'
+        }]);
+      }).catch(() => {});
     }
   };
 

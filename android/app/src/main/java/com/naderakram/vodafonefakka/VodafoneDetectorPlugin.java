@@ -182,13 +182,15 @@ public class VodafoneDetectorPlugin extends Plugin {
     //  emitNetworkChangeEvent — يُرسل حدث JS فوراً عند أي تغيير
     // ─────────────────────────────────────────────────────────────
     private void emitNetworkChangeEvent() {
-        getActivity().runOnUiThread(() -> {
+        try {
             JSObject data = new JSObject();
             data.put("trigger", "networkStateChanged");
             data.put("timestamp", System.currentTimeMillis());
             notifyListeners("networkStateChanged", data);
             Log.i(TAG, "networkStateChanged event emitted to JS");
-        });
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to emit networkStateChanged event", e);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -214,7 +216,23 @@ public class VodafoneDetectorPlugin extends Plugin {
         if (sm != null) {
             try {
                 // getActiveDataSubscriptionId — الشريحة المستخدمة حالياً للبيانات
-                activeDataSubId = SubscriptionManager.getActiveDataSubscriptionId();
+                if (Build.VERSION.SDK_INT >= 30) {
+                    activeDataSubId = SubscriptionManager.getActiveDataSubscriptionId();
+                } else {
+                    try {
+                        java.lang.reflect.Method method = SubscriptionManager.class.getMethod("getDefaultDataSubscriptionId");
+                        Integer id = (Integer) method.invoke(sm);
+                        if (id != null) activeDataSubId = id;
+                    } catch (Exception e) {
+                        try {
+                            java.lang.reflect.Method method = SubscriptionManager.class.getMethod("getDefaultDataSubscriptionId");
+                            Integer id = (Integer) method.invoke(null);
+                            if (id != null) activeDataSubId = id;
+                        } catch (Exception ex) {
+                            activeDataSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+                        }
+                    }
+                }
 
                 if (activeDataSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && hasPhonePermission) {
                     // استخراج TelephonyManager للـ subscriptionId المحدد
