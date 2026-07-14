@@ -215,7 +215,8 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
               تطبيق
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground">الحالي: كل من عنده code أقل من <strong>{status.minVersion}</strong> مجبور يحدّث</p>
+          <p className="text-[10px] text-muted-foreground">الحالي: كل إصدار أقدم من <strong>{status.minVersion}</strong> سيتم حجبه وإجباره على التحديث.</p>
+          <p className="text-[10px] text-destructive/80 mt-1">ملاحظة: هذا الرقم هو <b>الحد المسموح به</b>. إذا أردت إجبار إصدار 236 على التحديث، يجب كتابة 237 هنا.</p>
         </div>
         <div className="space-y-2 pt-2 border-t border-border/40">
           <label className="text-xs text-muted-foreground">حجب إصدارات محددة (أرقام مفصولة بفاصلة)</label>
