@@ -5,6 +5,8 @@
 
 import { supabase } from '@/db/supabase';
 
+import { sendNotification } from '@/lib/api';
+
 // ── نتيجة موحّدة لكل أمر ────────────────────────────────────────────────────
 export interface EngineResult {
   success: boolean;
@@ -69,6 +71,17 @@ export async function engineSetMaintenance(enabled: boolean, message?: string): 
       message ? setConfig('ui_maintenance_msg', message, 'string') : Promise.resolve(),
     ]);
     await logEngine('maintenance', `وضع الصيانة → ${enabled ? 'تفعيل' : 'إلغاء'}`, { enabled, message });
+    
+    if (enabled) {
+      await sendNotification({
+        title: 'تنبيه صيانة 🔧',
+        body: message || 'التطبيق تحت الصيانة حالياً لضمان تقديم خدمة أفضل، سنعود قريباً!',
+        type: 'system',
+        is_global: true,
+        send_push: true
+      });
+    }
+
     return {
       success: true,
       message: enabled
@@ -90,6 +103,17 @@ export async function engineForceUpdate(minCode: number, message?: string): Prom
       message ? setConfig('version_force_update_msg', message, 'string') : Promise.resolve(),
     ]);
     await logEngine('force_update', `min_version → ${minCode}`, { minCode, message });
+    
+    if (minCode > 0) {
+      await sendNotification({
+        title: 'تحديث ضروري 🚀',
+        body: message || 'يتوفر تحديث جديد ومهم لضمان استقرار الخدمة، يرجى التحديث الآن.',
+        type: 'system',
+        is_global: true,
+        send_push: true
+      });
+    }
+
     return {
       success: true,
       message: `سيُجبر كل مستخدم على إصدار أقل من ${minCode} على التحديث فور فتح التطبيق`,

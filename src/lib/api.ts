@@ -3761,9 +3761,9 @@ export async function repairUsedCount(): Promise<{ fixedRows: number; error?: st
 /** جلب الحد الأدنى للإصدار المطلوب — 0 = لا إجبار */
 export async function getMinVersionCode(): Promise<number> {
   const { data } = await supabase
-    .from('app_settings')
+    .from('app_config')
     .select('value')
-    .eq('key', 'min_version_code')
+    .eq('key', 'version_min_supported')
     .maybeSingle();
   return parseInt((data as { value?: string } | null)?.value ?? '0', 10) || 0;
 }
@@ -3771,8 +3771,19 @@ export async function getMinVersionCode(): Promise<number> {
 /** تعيين الحد الأدنى للإصدار المطلوب (من لوحة الإدارة) */
 export async function setMinVersionCode(code: number): Promise<{ error?: string }> {
   const { error } = await supabase
-    .from('app_settings')
-    .upsert({ key: 'min_version_code', value: String(code), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    .from('app_config')
+    .upsert({ key: 'version_min_supported', value: String(code), value_type: 'number', category: 'version', updated_at: new Date().toISOString() }, { onConflict: 'key' });
+  
+  if (code > 0) {
+    await sendNotification({
+      title: 'تحديث ضروري 🚀',
+      body: 'يتوفر تحديث جديد ومهم لضمان استقرار الخدمة، يرجى التحديث الآن.',
+      type: 'system',
+      is_global: true,
+      send_push: true
+    });
+  }
+    
   if (error) return { error: error.message };
   return {};
 }

@@ -799,8 +799,8 @@ function ForceUpdateSettingsCard() {
       <div className="rounded-lg bg-warning/8 border border-warning/25 p-3 text-xs text-warning-foreground flex items-start gap-2">
         <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-warning" />
         <span>
-          إذا كان <strong>min_version_code &gt; 0</strong>، فأي مستخدم يملك APK بكود أقل سيُجبَر على التحديث
-          ولن يتمكن من استخدام التطبيق. القيمة <strong>0</strong> = لا إجبار.
+          هذا الرقم يُمثل <strong>الحد المسموح به</strong>. أي مستخدم يملك APK بكود <strong>أقل</strong> من هذا الرقم سيُجبَر على التحديث.<br/>
+          (مثال: إذا كان آخر إصدار هو 236، ضع هنا 236 إذا أردت إجبار من هم أقل من 236 على التحديث. إذا أردت إجبار إصدار 236 نفسه، ضع 237). القيمة <strong>0</strong> = لا إجبار.
         </span>
       </div>
       {loading ? (
