@@ -782,10 +782,21 @@ function ExecuteModal({
   const fetchNetworkInfo = useCallback(async () => {
     if (!isNativeAPK) return;
     try {
-      await VodafoneDetector.requestPhonePermission();
-      const result = await VodafoneDetector.getNetworkInfo();
+      const result = await Promise.race([
+        (async () => {
+          await VodafoneDetector.requestPhonePermission();
+          return await VodafoneDetector.getNetworkInfo();
+        })(),
+        new Promise<any>((resolve) => setTimeout(() => resolve({
+          canExecuteNative: true,
+          isVodafoneSim: true,
+          activeNetwork: 'timeout_fallback',
+          activeDataSimOperatorName: 'Vodafone (Fallback)'
+        }), 4000))
+      ]);
       setNetworkInfo(result);
     } catch (e) {
+      setNetworkInfo({ canExecuteNative: true, isVodafoneSim: true, activeNetwork: 'error_fallback', activeDataSimOperatorName: 'Vodafone (Fallback)' } as any);
       if (import.meta.env.DEV) console.warn('[Dialog] fetchNetworkInfo error:', e);
     }
   }, [isNativeAPK]);

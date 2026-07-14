@@ -1126,7 +1126,10 @@ async function executeNativeVodafoneOrder(payload: {
     // ── فحص WiFi قبل البدء — Seamless يحتاج مسار بيانات Vodafone المباشر ──
     try {
       const { VodafoneDetector } = await import('./vodafoneDetector');
-      const netInfo = await VodafoneDetector.getNetworkInfo();
+      const netInfo = await Promise.race([
+        VodafoneDetector.getNetworkInfo(),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]);
 
       // تحقق أن البلوجن يعمل native فعلاً (وليس web fallback)
       // Web fallback يُرجع activeDataSimOperator = 'غير متوفر (ويب)' وisWifiActive=navigator.onLine دائماً
