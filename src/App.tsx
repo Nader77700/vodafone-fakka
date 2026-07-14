@@ -9,6 +9,7 @@ import OfflineBanner from '@/components/common/OfflineBanner';
 import ForceUpdateScreen from '@/components/common/ForceUpdateScreen';
 import AnnouncementBanner from '@/components/common/AnnouncementBanner';
 import MaintenanceScreen from '@/components/common/MaintenanceScreen';
+import WhatsAppPopup from '@/components/common/WhatsAppPopup';
 import { useFeatureFlags } from '@/contexts/RuntimeConfigContext';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { Toaster } from '@/components/ui/sonner';
@@ -403,10 +404,14 @@ function AppInner() {
   // السماح بصفحة تسجيل الدخول حتى لو كان وضع الصيانة مفعّل (ليتمكن الإدمن من الدخول)
   // إذا سجل مستخدم عادي دخوله، سيتم طرده لصفحة الصيانة بعد تحويله من صفحة الدخول
   if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage) return wrapScreen(MaintenanceScreen);
+  // تأمين إضافي: إذا كان المستخدم العادي يحاول الدخول لحسابه أثناء الصيانة نطالبه بتحديث الصفحة
+  if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile) return wrapScreen(MaintenanceScreen);
+
   if (forceUpdate && !isAdmin) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
 
   return (
     <>
+      <WhatsAppPopup />
       {/* SplashOverlay خارج كل Route — إضافة حاجز أخطاء محلي يمنع كراش Sentry */}
       {showSplash && (
         <PageErrorBoundary pageName="splash-overlay">

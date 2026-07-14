@@ -81,6 +81,16 @@ const FEATURE_GROUPS = [
       { key: 'ff_notifications_push',   label: 'الإشعارات الفورية',     desc: 'تشغيل/إيقاف Push Notifications' },
     ],
   },
+  {
+    id: 'ui', label: 'واجهة المستخدم والصيانة',
+    icon: Settings, color: 'text-gray-500',
+    keys: [
+      { key: 'ui_maintenance_msg',      label: 'رسالة الصيانة',         desc: 'الرسالة التي تظهر في شاشة الصيانة' },
+      { key: 'ui_support_whatsapp',     label: 'جروب الواتساب',         desc: 'رابط جروب الواتساب للتواصل' },
+      { key: 'ui_announcement_enabled', label: 'تفعيل إعلان النظام',     desc: 'إظهار شريط تنبيه عام في التطبيق' },
+      { key: 'ui_announcement_text',    label: 'نص الإعلان',           desc: 'النص الذي يظهر في التنبيه' },
+    ],
+  },
 ];
 
 export default function AdminFeatureManagement() {

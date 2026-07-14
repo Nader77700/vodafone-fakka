@@ -186,7 +186,19 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     fetchConfig();
     timerRef.current = setInterval(fetchConfig, POLL_MS);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+
+    // تفعيل Realtime لتحديث الإعدادات (مثل وضع الصيانة) فوراً بدون انتظار 5 دقائق
+    const channel = supabase.channel('public:app_config')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_config' }, () => {
+        console.log('[RuntimeConfig] Realtime update detected, fetching new config...');
+        fetchConfig();
+      })
+      .subscribe();
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [fetchConfig]);
 
   const contextValue = React.useMemo(() => ({
