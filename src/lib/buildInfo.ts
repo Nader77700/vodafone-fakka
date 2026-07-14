@@ -4,16 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.321',
-  versionCode:    237,
+  appVersion:     '3.0.322',
+  versionCode:    238,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.321.apk',
-  bundleHash:     'apk_v3_0_321_code237',
-  apkHash:        'apk_v3_0_321_code237',
-  dbVersion:      'v3.0.321',
+  bundleFile:     'VodafoneFakka-v3.0.322.apk',
+  bundleHash:     'apk_v3_0_322_code238',
+  apkHash:        'apk_v3_0_322_code238',
+  dbVersion:      'v3.0.322',
   releaseNotes: [
-    'v3.0.321: إضافة إشعارات الإجبار والصيانة، تفعيل Realtime الفوري للإعدادات، وتوضيح طريقة التحديث الإجباري',
+    'v3.0.322: إصلاح مشكلة عدم قراءة وضع الصيانة بسبب تصنيفات قاعدة البيانات، وإضافة إشعار بانتهاء الصيانة',
     'v3.0.320: 🚨 تحديث جذري (Kill Switch) لحل مشكلة عدم ظهور التحديثات بسبب الـ Service Worker القديم (الكاش)',
     'v3.0.319: إضافة شاشة واتساب منبثقة، وتفعيل وضع الصيانة الفوري عبر Realtime، والإصدار النهائي لتثبيت نظام التحديث الإجباري الداخلي',
     'v3.0.314: إصلاح عاجل: استعادة نظام التحميل الداخلي وحل مشكلة ERR_CONNECTION_REFUSED',

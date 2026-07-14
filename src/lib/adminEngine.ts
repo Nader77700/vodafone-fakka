@@ -80,6 +80,14 @@ export async function engineSetMaintenance(enabled: boolean, message?: string): 
         is_global: true,
         send_push: true
       });
+    } else {
+      await sendNotification({
+        title: 'انتهاء الصيانة 🎉',
+        body: 'تم الانتهاء من أعمال الصيانة بنجاح، يمكنك الآن استخدام التطبيق بشكل طبيعي. شكراً لصبركم!',
+        type: 'system',
+        is_global: true,
+        send_push: true
+      });
     }
 
     return {

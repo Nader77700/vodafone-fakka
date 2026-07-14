@@ -156,11 +156,16 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
         security: {},
         business: {},
         ui: {},
-        general: {},
       };
 
-      for (const row of (data ?? []) as { key: string; value: string; value_type: string; category: string }[]) {
-        const cat = row.category;
+      for (const row of (data ?? []) as { key: string; value: string; value_type: string }) {
+        let cat = 'general';
+        if (row.key.startsWith('ff_')) cat = 'feature_flags';
+        else if (row.key.startsWith('version_')) cat = 'version';
+        else if (row.key.startsWith('sec_')) cat = 'security';
+        else if (row.key.startsWith('biz_')) cat = 'business';
+        else if (row.key.startsWith('ui_')) cat = 'ui';
+        
         if (!built[cat]) built[cat] = {};
         built[cat][row.key] = parseValue(row.value, row.value_type);
       }
