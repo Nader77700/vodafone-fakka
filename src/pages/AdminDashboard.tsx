@@ -98,7 +98,7 @@ type AdminTab =
   | 'overview' | 'users' | 'subscriptions' | 'licenses' | 'codelogs'
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
-  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
+  | 'version_center' | 'live_monitoring' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
   | 'red_packages' | 'promotions';
 
 interface TabMeta {
@@ -144,6 +144,7 @@ const INTERNAL_TABS: TabMeta[] = [
   { id: 'version_center', label: 'مركز الإصدارات',   desc: 'إدارة إصدارات التطبيق',             icon: Download },
   { id: 'live_monitoring',label: 'Live Monitoring',   desc: 'مراقبة المتصلين',                   icon: Activity },
   { id: 'feature_mgmt',   label: 'Feature Flags',     desc: 'تشغيل/إيقاف الميزات',              icon: ToggleOn },
+  { id: 'card_feedbacks', label: 'تقييمات الكروت',    desc: 'مراجعة الاقتراحات والتقييمات',     icon: MessageSquare },
 ];
 
 // جميع التبويبات (مرئية + داخلية) للـ rendering
@@ -3786,6 +3787,13 @@ export default function AdminDashboard() {
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى إدارة الميزات...</p>
               {(() => { navigate('/admin/feature-management'); return null; })()}
+            </div>
+          )}
+
+          {activeTab === 'card_feedbacks' && (
+            <div className="py-8 text-center space-y-4 page-enter">
+              <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى تقييمات الكروت...</p>
+              {(() => { navigate('/admin/card-feedbacks'); return null; })()}
             </div>
           )}
 

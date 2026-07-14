@@ -55,6 +55,7 @@ const AdminOperationsPage    = lazy(() => import('./pages/admin/AdminOperationsP
 const AdminVersionCenter     = lazy(() => import('./pages/admin/AdminVersionCenter'));
 const AdminLiveMonitoring    = lazy(() => import('./pages/admin/AdminLiveMonitoring'));
 const AdminFeatureManagement = lazy(() => import('./pages/admin/AdminFeatureManagement'));
+const CardFeedbackAdmin      = lazy(() => import('./pages/admin/CardFeedbackAdmin'));
 const AdminMerchantDetail    = lazy(() => import('./pages/admin/AdminMerchantDetail'));
 const AdminDuplicateAccounts = lazy(() => import('./pages/admin/AdminDuplicateAccounts'));
 const AdminDuplicateGroupDetail = lazy(() => import('./pages/admin/AdminDuplicateGroupDetail'));
@@ -477,6 +478,7 @@ function AppInner() {
         <Route path="/admin/version-center"         element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-version"><S><AdminVersionCenter /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/live-monitoring"        element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-live"><S><AdminLiveMonitoring /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/feature-management"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-features"><S><AdminFeatureManagement /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/card-feedbacks"         element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-card-feedbacks"><S><CardFeedbackAdmin /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicates"><S><AdminDuplicateAccounts /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts/:fp" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicate-detail"><S><AdminDuplicateGroupDetail /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/throttle-logs"          element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-throttle-logs"><S><AdminThrottleLogs /></S></PageErrorBoundary></RouteGuard>} />

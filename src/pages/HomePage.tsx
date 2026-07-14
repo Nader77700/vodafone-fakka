@@ -30,12 +30,13 @@ import { ALL_PRODUCTS, FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
 import type { VodafoneProduct } from '@/data/products';
 import { VodafoneDetector, isNativeAndroid } from '@/lib/vodafoneDetector';
 import type { NetworkInfo } from '@/lib/vodafoneDetector';
+import { CardFeedbackModal } from '@/components/common/CardFeedbackModal';
 import {
   Bell, Key, Calendar, Clock, Zap, Phone, Lock,
   CheckCircle2, XCircle, AlertTriangle, Loader2,
   Shield, CreditCard, Users, ChevronLeft,
   Database, Sparkles, Gift, Wifi, Signal, RefreshCw,
-  Smartphone, Copy, Info, Home, RotateCcw,
+  Smartphone, Copy, Info, Home, RotateCcw, Tag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -680,6 +681,9 @@ function ReceiptView({
 }) {
   const navigate = useNavigate();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const { config } = useRuntimeConfig();
+  const feedbackEnabled = config.feature_flags.ff_card_feedback_enabled;
 
   return (
     <div className="flex flex-col" dir="rtl">
@@ -693,6 +697,17 @@ function ReceiptView({
       {/* أزرار الإجراءات */}
       <div className="px-5 py-4 space-y-2.5">
         <PrintButton invoice={invoice} variant="full" />
+        
+        {feedbackEnabled && invoice.status === 'success' && (
+          <button
+            className="w-full h-11 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+            style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}
+            onClick={() => setFeedbackOpen(true)}
+          >
+            <Tag className="w-4 h-4" /> تقييم واقتراح تعديل للكارت
+          </button>
+        )}
+
         <button
           className="w-full h-11 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
@@ -718,6 +733,15 @@ function ReceiptView({
 
       {/* نافذة التفاصيل */}
       <OperationDetailsDialog open={detailsOpen} onClose={() => setDetailsOpen(false)} invoice={invoice} />
+      
+      {/* نافذة التقييم */}
+      <CardFeedbackModal
+        isOpen={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        operationId={invoice.correlationId || invoice.opNumber?.toString() || 'unknown'}
+        cardType={invoice.productName}
+        operationDate={invoice.date}
+      />
     </div>
   );
 }

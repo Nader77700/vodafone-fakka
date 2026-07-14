@@ -236,7 +236,7 @@ export default function MaintenanceScreen() {
             جروب واتساب للتحديثات
           </Button>
           
-          <Button variant="outline" onClick={refresh} className="w-full h-12 text-md gap-2 bg-transparent border-white/20 text-white hover:bg-white/10 mt-2">
+          <Button variant="outline" onClick={refresh} className="w-full h-12 text-md gap-2 bg-transparent border-white/20 hover:bg-white/10 mt-2">
             <RefreshCw className="h-5 w-5" />
             تحديث الصفحة
           </Button>

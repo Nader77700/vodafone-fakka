@@ -17,6 +17,7 @@ export interface FeatureFlags {
   ff_operations_enabled:     boolean;
   ff_notifications_enabled:  boolean;
   ff_maintenance_mode:       boolean;
+  ff_card_feedback_enabled:  boolean;
 }
 
 export interface VersionConfig {
@@ -72,6 +73,7 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     ff_operations_enabled:     true,
     ff_notifications_enabled:  true,
     ff_maintenance_mode:       false,
+    ff_card_feedback_enabled:  true,
   },
   version: {
     version_min_supported:    94,
@@ -158,7 +160,7 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
         ui: {},
       };
 
-      for (const row of (data ?? []) as { key: string; value: string; value_type: string }) {
+      for (const row of (data ?? []) as { key: string; value: string; value_type: string }[]) {
         let cat = 'general';
         if (row.key.startsWith('ff_')) cat = 'feature_flags';
         else if (row.key.startsWith('version_')) cat = 'version';
