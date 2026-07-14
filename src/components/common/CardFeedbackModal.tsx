@@ -80,22 +80,44 @@ export function CardFeedbackModal({
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('Not authenticated');
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      let uploadData: Blob = file;
+      let fileExt = file.name ? file.name.split('.').pop() : 'jpg';
+
+      // تجنب مشكلة تلف كائن File في الـ WebView عند إعادة المحاولة
+      if (screenshotPreview) {
+        try {
+          const res = await fetch(screenshotPreview);
+          uploadData = await res.blob();
+        } catch (e) {
+          console.warn('Failed to convert preview to blob, using original file', e);
+        }
+      }
+
+      // تنظيف اسم الملف ليكون أحرف إنجليزية فقط
+      const safeExt = fileExt?.replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
+      const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${safeExt}`;
 
       const { data, error } = await supabase.storage
         .from('feedbacks')
-        .upload(fileName, file, { upsert: false });
+        .upload(fileName, uploadData, { 
+          upsert: false,
+          contentType: file.type || 'image/jpeg'
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase upload error:', error);
+        throw error;
+      }
 
       const { data: publicUrlData } = supabase.storage
         .from('feedbacks')
         .getPublicUrl(data.path);
 
       return publicUrlData.publicUrl;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error uploading screenshot:', err);
+      // عرض الخطأ الفعلي للمستخدم للمساعدة في التشخيص
+      toast.error('فشل الرفع: ' + (err.message || 'يرجى المحاولة مرة أخرى'));
       return null;
     }
   };
@@ -118,7 +140,8 @@ export function CardFeedbackModal({
       if (screenshot) {
         screenshotUrl = await uploadScreenshot(screenshot);
         if (!screenshotUrl) {
-          throw new Error('فشل رفع الصورة، يرجى المحاولة مرة أخرى');
+          setIsSubmitting(false);
+          return;
         }
       }
 
