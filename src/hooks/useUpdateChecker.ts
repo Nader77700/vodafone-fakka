@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
+import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 
 export interface AppVersion {
   version: string;
@@ -39,63 +40,28 @@ async function getNativeVersionCode(): Promise<{ code: number; version: string }
 }
 
 export function useUpdateChecker() {
+  const { config, isLoading: configLoading } = useRuntimeConfig();
   const [latestVersion,    setLatestVersion]    = useState<AppVersion | null>(null);
   const [apkExists,        setApkExists]        = useState<boolean | null>(null);
   const [dismissed,        setDismissed]        = useState(false);
   const [ready,            setReady]            = useState(false);
   const [installedVersion, setInstalledVersion] = useState<string>(BUILD_INFO.appVersion);
   const [installedCode,    setInstalledCode]    = useState<number>(BUILD_INFO.versionCode);
-  // Force Update state — مستقل عن latestVersion
-  const [minVersionCode,   setMinVersionCode]   = useState<number>(0);
-  const [blockedCodes,     setBlockedCodes]     = useState<number[]>([]);
-  const [forceUpdateToggle, setForceUpdateToggle] = useState<boolean>(false);
-  const [forceReady,       setForceReady]       = useState(false);
+
+  const minVersionCode = config.version.version_min_supported || 0;
+  const blockedCodes   = config.version.version_blocked_codes || [];
 
   useEffect(() => {
     const check = async () => {
       try {
-        // 1. اقرأ versionCode الحقيقي من APK المثبَّت
         const { code, version } = await getNativeVersionCode();
         setInstalledCode(code);
         setInstalledVersion(version);
 
-        // 2. اجلب runtime config أولاً (الأولوية — لا نحتاج latest للإجبار)
-        const [configRes, versionRes] = await Promise.all([
-          supabase.rpc('get_app_config_public'),
-          supabase.from('app_versions').select('*').eq('is_latest', true).maybeSingle(),
-        ]);
-
-        // استخرج min_version + blocked من runtime config
-        let minCode = 0;
-        let blocked: number[] = [];
-        let forceToggle = false;
-        if (configRes.data) {
-          for (const row of configRes.data as { key: string; value: string }[]) {
-            if (row.key === 'version_min_supported') {
-              minCode = parseInt(row.value, 10) || 0;
-            }
-            // version_min_code كـ fallback إذا لم يُضبط version_min_supported
-            if (row.key === 'version_min_code' && minCode === 0) {
-              minCode = parseInt(row.value, 10) || 0;
-            }
-            if (row.key === 'version_blocked_codes') {
-              try { blocked = JSON.parse(row.value) || []; } catch { /* ignore */ }
-            }
-            // version_force_update boolean — fallback إضافي للإجبار
-            if (row.key === 'version_force_update') {
-              forceToggle = row.value === 'true';
-            }
-          }
-        }
-        setMinVersionCode(minCode);
-        setBlockedCodes(blocked);
-        setForceUpdateToggle(forceToggle);
-        // Force check جاهز بمجرد قراءة config — لا ننتظر APK check
-        setForceReady(true);
-
-        // 3. معالجة آخر إصدار للبانر الاختياري
-        if (versionRes.data) {
-          const latest = versionRes.data as AppVersion;
+        const { data } = await supabase.from('app_versions').select('*').eq('is_latest', true).maybeSingle();
+        
+        if (data) {
+          const latest = data as AppVersion;
           setLatestVersion(latest);
 
           const dismissedVersion = localStorage.getItem(STORAGE_KEY);
@@ -103,14 +69,14 @@ export function useUpdateChecker() {
 
           const exists = await checkApkExists(latest.apk_url);
           setApkExists(exists);
+        } else {
+          setApkExists(false);
         }
       } catch { /* صامت */ }
       finally { setReady(true); }
     };
-
-    // تشغيل فوري بدون تأخير — التحقق من التحديث الإجباري يجب أن يكون سريعاً
     check();
-  }, []);
+  }, [minVersionCode, blockedCodes.join(',')]); // إعادة الفحص فوراً عند تغيير الإعدادات لضمان جلب رابط التحديث الجديد
 
   const isApkUpdate = latestVersion?.update_type !== 'web';
 
@@ -120,24 +86,16 @@ export function useUpdateChecker() {
     && latestVersion.version_code > installedCode
     && apkExists === true;
 
-  // forceUpdate — يعتمد على forceReady (config) لا ready (APK check)
-  // يعمل حتى لو latestVersion غير متاح — يكفي أن installedCode < minVersionCode
-  // أو أن version_force_update = true مع وجود إصدار أحدث
   const isBlocked   = blockedCodes.includes(installedCode);
   const isBelowMin  = minVersionCode > 0 && installedCode < minVersionCode;
-  // version_force_update boolean toggle: يُجبر إذا كان هناك إصدار أحدث
-  const isForceToggled = forceUpdateToggle && latestVersion !== null && latestVersion.version_code > installedCode;
 
-  // ─── Guard حاسم: لا Force Update ولا hasUpdate إلا بعد التأكد من APK ───
-  // apkExists=null = جارٍ الفحص، apkExists=false = الرابط ميت (لا تُظهر شيئاً)
-  // يمنع شاشة "تحديث إجباري" عندما APK غير موجود أو لم يرتفع بعد
   const apkReady = apkExists === true;
 
-  const forceUpdate = forceReady
-    && ready             // انتظر اكتمال فحص APK أولاً
-    && apkReady          // APK موجود فعلاً ويرجع 200
+  const forceUpdate = !configLoading
+    && ready
+    && apkReady
     && Capacitor.isNativePlatform()
-    && (isBelowMin || isBlocked || isForceToggled);
+    && (isBelowMin || isBlocked);
 
   const showBanner = hasUpdate && !dismissed && !forceUpdate;
 
