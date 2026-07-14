@@ -222,18 +222,13 @@ if (typeof window !== 'undefined') {
 // ── تسجيل Service Worker — تخزين Static Assets محلياً ─────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
-      .then(reg => {
-        // تحقق من تحديثات SW عند كل تشغيل
-        reg.update().catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (const registration of registrations) {
+        registration.unregister();
         if (import.meta.env.DEV) {
-          console.log('[SW] Registered:', reg.scope);
+          console.log('[SW] Unregistered:', registration.scope);
         }
-      })
-      .catch(err => {
-        // SW اختياري — التطبيق يعمل بدونه
-        if (import.meta.env.DEV) console.warn('[SW] Registration failed:', err);
-      });
+      }
+    });
   });
 }
