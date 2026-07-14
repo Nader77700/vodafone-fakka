@@ -193,7 +193,8 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
     timerRef.current = setInterval(fetchConfig, POLL_MS);
 
     // تفعيل Realtime لتحديث الإعدادات (مثل وضع الصيانة) فوراً بدون انتظار 5 دقائق
-    const channel = supabase.channel('public:app_config')
+    const channelName = `app_config_changes_${Math.random().toString(36).substring(2)}`;
+    const channel = supabase.channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_config' }, () => {
         console.log('[RuntimeConfig] Realtime update detected, fetching new config...');
         fetchConfig();
