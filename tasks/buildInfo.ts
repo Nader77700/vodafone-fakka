@@ -6,13 +6,14 @@
 export const BUILD_INFO = {
   appVersion:     '3.0.325',
   versionCode:    241,
-  buildTimestamp: '2026-07-14T16:35:34.000Z',
+  buildTimestamp: '2026-07-14T16:47:56Z',
   sourceHash:     'i9j0k1l2m3445566',
   bundleFile:     'VodafoneFakka-v3.0.325.apk',
   bundleHash:     'apk_v3_0_325_code241',
   apkHash:        'apk_v3_0_325_code241',
   dbVersion:      'v3.0.325',
   releaseNotes: [
+    'v3.0.325: تحديث إجباري: إصلاح شامل لمشكلة الإغلاق المفاجئ (Crash) وإضافة نظام تتبع الأعطال.',
     'v3.0.325: إصلاح شامل لمشكلة الإغلاق المفاجئ (Crash) على أندرويد 10 وما قبله، وإضافة نظام تتبع الأعطال (Crash Logs) ولوحة إدارتها',
     'v3.0.324: إضافة نظام تقييم الكروت واقتراح التعديلات، مع لوحة تحكم كاملة للإدارة',
     'v3.0.320: 🚨 تحديث جذري (Kill Switch) لحل مشكلة عدم ظهور التحديثات بسبب الـ Service Worker القديم (الكاش)',
