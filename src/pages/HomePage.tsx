@@ -907,6 +907,12 @@ function ExecuteModal({
     if (!isAdmin) {
       const opsCheck: OpsCheckResult = await checkAndConsumeOperation(user.id);
       if (!opsCheck.allowed) {
+        if (opsCheck.codeType === 'rpc_error') {
+          toast.error('حدث خطأ في الاتصال بالخادم. يرجى التحقق من الإنترنت والمحاولة مجدداً.');
+          setSubmitting(false); setLoadingStep(0);
+          executingRef.current = false;
+          return;
+        }
         setTrialOpsUsed(opsCheck.opsUsed ?? 0);
         setTrialMaxOps(opsCheck.opsLimit ?? 0);
         setIsTrialMode(opsCheck.isTrial ?? true);
