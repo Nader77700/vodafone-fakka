@@ -1,5 +1,6 @@
 // طبقة وصول البيانات — جميع استدعاءات Supabase
 import { supabase } from '@/db/supabase';
+import { GlobalCrashContext } from './crashContext';
 import type {
   Profile, LicenseKey, Subscription, Favorite,
   Operation, Notification, SystemLog, PaginatedResult, UserStatistics
@@ -1552,6 +1553,8 @@ export async function executeVodafoneOrder(payload: {
   idempotencyKey?: string;    // مفتاح Idempotency — يمنع التنفيذ المزدوج
   correlationId?:  string;    // معرّف ربط للـ Debug
 }): Promise<{ success: boolean; error?: string; via?: 'native' | 'bridge' | 'server'; debugSteps?: ChargeDebugStep[]; retryCount?: number; operation_number?: number | null; registered?: boolean }> {
+  GlobalCrashContext.transactionUuid = payload.correlationId || '';
+  GlobalCrashContext.transactionUuid = payload.correlationId || '';
 
   const MAX_RETRIES = 2;  // أقصى عدد إعادة محاولات
   let lastResult: { success: boolean; error?: string; debugSteps?: ChargeDebugStep[] } | null = null;

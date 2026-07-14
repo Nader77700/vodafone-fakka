@@ -12,9 +12,45 @@ Sentry.init({
 
 // ── مسح تلقائي للحالة القديمة عند كل تحديث ─────────────────────────────────
 import { BUILD_INFO } from './lib/buildInfo';
+import { GlobalCrashContext } from './lib/crashContext';
 const VF_VERSION_KEY  = 'vfp_app_version';
 const CURRENT_VERSION = BUILD_INFO.appVersion;
 const AUTH_KEY        = 'sb-vchmsnavyhripakyvzom-auth-token';
+
+// Listen for clicks to track last action
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target && typeof target.innerText === 'string' && target.innerText.trim()) {
+      GlobalCrashContext.lastAction = `Clicked: ${target.innerText.trim().slice(0, 30)}`;
+    } else if (target && target.tagName) {
+      GlobalCrashContext.lastAction = `Clicked: <${target.tagName.toLowerCase()}>`;
+    }
+  }, { capture: true, passive: true });
+}
+
+// Track routes via history pushState/replaceState proxy
+if (typeof window !== 'undefined' && window.history) {
+  const originalPush = window.history.pushState;
+  const originalReplace = window.history.replaceState;
+  
+  const updateRoute = () => {
+    const current = window.location.hash || window.location.pathname;
+    if (current !== GlobalCrashContext.previousRoute) {
+      GlobalCrashContext.previousRoute = current;
+    }
+  };
+
+  window.history.pushState = function(...args) {
+    updateRoute();
+    return originalPush.apply(this, args);
+  };
+  window.history.replaceState = function(...args) {
+    updateRoute();
+    return originalReplace.apply(this, args);
+  };
+  window.addEventListener('popstate', updateRoute);
+}
 
 // مفتاح عدّاد الكراشات — في sessionStorage لأنه يُبقى بعد localStorage.clear()
 // ويُمسح تلقائياً عند إغلاق التطبيق كلياً (Android kill process)
@@ -47,6 +83,7 @@ function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
     
     // Extract file info from stack if possible
     if (stackTrace) {
+      // Regex to capture file, line, and col properly from modern browser stack traces
       const match = stackTrace.match(/at\s+.*?\s+\((.*?):(\d+):(\d+)\)/) || stackTrace.match(/at\s+(.*?):(\d+):(\d+)/);
       if (match) {
         fileName = match[1];
@@ -77,8 +114,16 @@ function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
           app_version: BUILD_INFO.appVersion || CURRENT_VERSION,
           build_number: BUILD_INFO.buildTimestamp ? String(BUILD_INFO.buildTimestamp) : '',
           current_route: window.location.hash || window.location.pathname,
+          previous_route: GlobalCrashContext.previousRoute,
           internet_state: navigator.onLine ? 'online' : 'offline',
-          additional_data: extraData
+          additional_data: { 
+            ...extraData, 
+            last_action: GlobalCrashContext.lastAction,
+            last_api_request: GlobalCrashContext.lastApiRequest,
+            transaction_uuid: GlobalCrashContext.transactionUuid,
+            queue_state: GlobalCrashContext.queueState,
+            component_name: GlobalCrashContext.componentName
+          }
         }]);
       } catch (e) { /* ignore */ }
     };
@@ -89,6 +134,14 @@ function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
 // ── Global Error Recovery — اصطياد كل الأخطاء قبل أن تُسقط التطبيق ──────────
 (function installGlobalErrorRecovery() {
   window.addEventListener('unhandledrejection', (event) => {
+    // ── تجاهل خطأ AbortError: Lock broken الخاص بمكتبة Supabase Auth (steal: true) ──
+    // هذا الخطأ متوقع عند عمل Refresh للتوكن في الخلفية وأخذ Lock بقوة من طلب آخر معلّق.
+    if (event.reason?.name === 'AbortError' && typeof event.reason?.message === 'string' && event.reason.message.includes('Lock broken by another request with the')) {
+      console.warn('[SafeMode] Ignored expected Supabase Auth Lock Steal error');
+      event.preventDefault();
+      return;
+    }
+
     console.error('[SafeMode] Unhandled rejection:', event.reason);
     logToSupabase(event.reason, 'UnhandledRejection');
     event.preventDefault();
@@ -112,13 +165,21 @@ function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
 //  • كراش #2: مسح كامل (بما فيه auth) + خروج من التطبيق تماماً
 //  • بعد exitApp: المستخدم يفتح التطبيق من جديد بحالة نظيفة 100%
 //
-function CrashFallback() {
+function CrashFallback({ error, componentStack }: any) {
   const [countdown,  setCountdown]  = useState(4);
   const [cleared,    setCleared]    = useState(false);
   const [crashCount, setCrashCount] = useState(0);
   const [hasUpdate,  setHasUpdate]  = useState(false);
 
   useEffect(() => {
+    // ── استخراج اسم الـ Component من الـ ComponentStack ──
+    if (componentStack && typeof componentStack === 'string') {
+      const match = componentStack.match(/at\s+([A-Za-z0-9_]+)/);
+      if (match) {
+        GlobalCrashContext.componentName = match[1];
+      }
+    }
+
     // ── عدّ الكراش الحالي ─────────────────────────────────────────────────
     let count = 1;
     try {
@@ -161,11 +222,21 @@ function CrashFallback() {
         const sendCrash = async () => {
           try {
             await supabase.from('crash_logs').insert([{
-              exception_message: 'React ErrorBoundary CrashFallback Triggered',
+              exception_message: error ? (error.message || String(error)) : 'React ErrorBoundary CrashFallback Triggered',
               exception_type: 'ErrorBoundary',
+              stack_trace: error ? error.stack : componentStack,
               current_route: window.location.hash || window.location.pathname,
+              previous_route: GlobalCrashContext.previousRoute,
               app_version: CURRENT_VERSION,
-              additional_data: { crashCount: count }
+              additional_data: { 
+                crashCount: count,
+                componentStack,
+                last_action: GlobalCrashContext.lastAction,
+                last_api_request: GlobalCrashContext.lastApiRequest,
+                transaction_uuid: GlobalCrashContext.transactionUuid,
+                queue_state: GlobalCrashContext.queueState,
+                component_name: GlobalCrashContext.componentName
+              }
             }]);
           } catch (e) { /* ignore */ }
         };

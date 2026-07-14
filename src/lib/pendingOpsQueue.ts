@@ -12,6 +12,7 @@
  */
 
 import { supabase } from '@/db/supabase';
+import { GlobalCrashContext } from './crashContext';
 
 // ── أنواع ──────────────────────────────────────────────────────────────────
 
@@ -47,12 +48,20 @@ const MAX_AGE_MS   = 7 * 24 * 60 * 60 * 1000; // 7 أيام
 function loadQueue(): PendingOperation[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      GlobalCrashContext.queueState = '0 operations (empty storage)';
+      return [];
+    }
     const arr = JSON.parse(raw) as PendingOperation[];
     // حذف العمليات القديمة جداً (> 7 أيام)
     const cutoff = Date.now() - MAX_AGE_MS;
-    return arr.filter(op => new Date(op.created_at).getTime() > cutoff);
-  } catch { return []; }
+    const filtered = arr.filter(op => new Date(op.created_at).getTime() > cutoff);
+    GlobalCrashContext.queueState = `${filtered.length} pending ops out of ${arr.length}`;
+    return filtered;
+  } catch { 
+    GlobalCrashContext.queueState = 'JSON Error';
+    return []; 
+  }
 }
 
 function saveQueue(queue: PendingOperation[]): void {
