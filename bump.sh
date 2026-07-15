@@ -7,7 +7,7 @@ CURRENT_CODE=$(grep -oP 'versionCode \K\d+' "$GRADLE" | head -1)
 CURRENT_VER=$(grep -oP 'versionName "\K[^"]+' "$GRADLE" | head -1)
 IFS='.' read -r MAJ MIN PAT <<< "$CURRENT_VER"
 NEW_VER="${MAJ}.${MIN}.$((PAT + 1))"
-NOTES="إصلاح عاجل: استعادة نظام التحميل الداخلي وحل مشكلة ERR_CONNECTION_REFUSED"
+NOTES="تحديث هام: معالجة مشكلة تفعيل فليكس وإظهار الأخطاء الحقيقية من فودافون بدلاً من رسائل النجاح الوهمية"
 NEW_CODE=$((CURRENT_CODE + 1))
 BUILD_TS=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 sed -i "s/versionCode ${CURRENT_CODE}/versionCode ${NEW_CODE}/" "$GRADLE"

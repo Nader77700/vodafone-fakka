@@ -61,6 +61,7 @@ const AdminMerchantDetail    = lazy(() => import('./pages/admin/AdminMerchantDet
 const AdminDuplicateAccounts = lazy(() => import('./pages/admin/AdminDuplicateAccounts'));
 const AdminDuplicateGroupDetail = lazy(() => import('./pages/admin/AdminDuplicateGroupDetail'));
 const AdminThrottleLogs      = lazy(() => import('./pages/admin/AdminThrottleLogs'));
+const AdminLegacyFlexPage    = lazy(() => import('./pages/admin/AdminLegacyFlexPage'));
 const MerchantDashboard      = lazy(() => import('./pages/merchant/MerchantDashboard'));
 const MerchantClientLayout   = lazy(() => import('@/components/merchant-client/MerchantClientLayout'));
 const JoinPage               = lazy(() => import('./pages/JoinPage'));
@@ -79,6 +80,8 @@ const WEPage                 = lazy(() => import('./pages/networks/WEPage'));
 const ESimPage               = lazy(() => import('./pages/networks/ESimPage'));
 const ESimDetailPage         = lazy(() => import('./pages/networks/ESimDetailPage'));
 const BalanceChargePage      = lazy(() => import('./pages/BalanceChargePage'));
+const LegacyFlexSystemsPage  = lazy(() => import('./pages/LegacyFlexSystemsPage'));
+const LegacyFlexSubRequiredPage = lazy(() => import('./pages/LegacyFlexSubRequiredPage'));
 
 // مؤشر تحميل خفيف أثناء lazy loading
 const PageSpinner = () => (
@@ -463,6 +466,8 @@ function AppInner() {
           <Route path="build-info" element={<RouteGuard adminOnly><PageErrorBoundary pageName="build-info"><S><BuildInfoPage /></S></PageErrorBoundary></RouteGuard>} />
           <Route path="updates"              element={<PageErrorBoundary pageName="updates"><S><UpdatesPage /></S></PageErrorBoundary>} />
           <Route path="balance-charge"       element={<PageErrorBoundary pageName="balance-charge"><S><BalanceChargePage /></S></PageErrorBoundary>} />
+          <Route path="legacy-flex"          element={<PageErrorBoundary pageName="legacy-flex"><S><LegacyFlexSystemsPage /></S></PageErrorBoundary>} />
+          <Route path="legacy-flex/subscription-required" element={<PageErrorBoundary pageName="legacy-flex-sub-required"><S><LegacyFlexSubRequiredPage /></S></PageErrorBoundary>} />
           <Route path="notifications"        element={<PageErrorBoundary pageName="notifications"><S><NotificationsPage /></S></PageErrorBoundary>} />
           <Route path="settings"             element={<PageErrorBoundary pageName="settings"><S><SettingsPage /></S></PageErrorBoundary>} />
           <Route index element={<Navigate to="/home" replace />} />
@@ -483,6 +488,7 @@ function AppInner() {
         <Route path="/admin/card-feedbacks"         element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-card-feedbacks"><S><CardFeedbackAdmin /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicates"><S><AdminDuplicateAccounts /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts/:fp" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicate-detail"><S><AdminDuplicateGroupDetail /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/legacy-flex" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-legacy-flex"><S><AdminLegacyFlexPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/throttle-logs"          element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-throttle-logs"><S><AdminThrottleLogs /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />

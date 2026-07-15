@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.325',
-  versionCode:    241,
-  buildTimestamp: '2026-07-14T16:47:56Z',
+  appVersion:     '3.0.326',
+  versionCode:    242,
+  buildTimestamp: '2026-07-15T11:55:06Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.325.apk',
-  bundleHash:     'apk_v3_0_325_code241',
-  apkHash:        'apk_v3_0_325_code241',
-  dbVersion:      'v3.0.325',
+  bundleFile:     'VodafoneFakka-v3.0.326.apk',
+  bundleHash:     'apk_v3_0_326_code242',
+  apkHash:        'apk_v3_0_326_code242',
+  dbVersion:      'v3.0.326',
   releaseNotes: [
+    'v3.0.326: تحديث هام: معالجة مشكلة تفعيل فليكس وإظهار الأخطاء الحقيقية من فودافون بدلاً من رسائل النجاح الوهمية',
     'v3.0.325: تحديث إجباري: إصلاح شامل لمشكلة الإغلاق المفاجئ (Crash) وإضافة نظام تتبع الأعطال.',
     'v3.0.325: إصلاح شامل لمشكلة الإغلاق المفاجئ (Crash) على أندرويد 10 وما قبله، وإضافة نظام تتبع الأعطال (Crash Logs) ولوحة إدارتها',
     'v3.0.324: إضافة نظام تقييم الكروت واقتراح التعديلات، مع لوحة تحكم كاملة للإدارة',

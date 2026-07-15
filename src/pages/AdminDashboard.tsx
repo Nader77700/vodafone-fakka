@@ -1,7 +1,7 @@
 // لوحة الإدارة — SaaS Premium v9 (14-Phase Rebuild)
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
 import { formatEgyptDateTime, formatEgyptDate } from '@/lib/egyptTime';
 import {
@@ -98,7 +98,7 @@ type AdminTab =
   | 'overview' | 'users' | 'subscriptions' | 'licenses' | 'codelogs'
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
-  | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
+  | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
   | 'red_packages' | 'promotions';
 
 interface TabMeta {
@@ -129,6 +129,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'product_config', label: 'إدارة الكروت',     desc: 'تفعيل وإيقاف وتعديل إعدادات الكروت', icon: Package },
   { id: 'giftbox',        label: 'صندوق الهدايا',    desc: 'إدارة الهدية الترحيبية للمستخدمين', icon: Gift },
   { id: 'balance_products', label: 'كروت الرصيد',    desc: 'إدارة كروت نظام الشحن من الرصيد',   icon: Banknote },
+  { id: 'legacy_flex',    label: 'أنظمة فليكس',      desc: 'إدارة أنظمة فليكس القديمة (قريباً)',icon: RotateCcw },
   { id: 'merchants',       label: 'التجار',           desc: 'إدارة حسابات التجار وإنشائها',      icon: Building2 },
   { id: 'member_monitor',  label: 'أعضاء التجار',     desc: 'مراقبة أعضاء واشتراكات التجار',     icon: Users },
   { id: 'duplicate_accounts', label: 'الحسابات المكررة', desc: 'كشف الأجهزة المتعددة الحسابات وحظرها', icon: ShieldAlert },
@@ -3773,49 +3774,56 @@ export default function AdminDashboard() {
           {activeTab === 'version_center' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى مركز الإصدارات...</p>
-              {(() => { navigate('/admin/version-center'); return null; })()}
+              <Navigate to="/admin/version-center" replace />
+            </div>
+          )}
+
+          {activeTab === 'legacy_flex' && (
+            <div className="py-8 text-center space-y-4 page-enter">
+              <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى أنظمة فليكس...</p>
+              <Navigate to="/admin/legacy-flex" replace />
             </div>
           )}
 
           {activeTab === 'live_monitoring' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى المراقبة الحية...</p>
-              {(() => { navigate('/admin/live-monitoring'); return null; })()}
+              <Navigate to="/admin/live-monitoring" replace />
             </div>
           )}
 
           {activeTab === 'crash_logs' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى سجلات الأعطال...</p>
-              {(() => { navigate('/admin/crash-logs'); return null; })()}
+              <Navigate to="/admin/crash-logs" replace />
             </div>
           )}
 
           {activeTab === 'feature_mgmt' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى إدارة الميزات...</p>
-              {(() => { navigate('/admin/feature-management'); return null; })()}
+              <Navigate to="/admin/feature-management" replace />
             </div>
           )}
 
           {activeTab === 'card_feedbacks' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى تقييمات الكروت...</p>
-              {(() => { navigate('/admin/card-feedbacks'); return null; })()}
+              <Navigate to="/admin/card-feedbacks" replace />
             </div>
           )}
 
           {activeTab === 'charge_throttles' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى سجلات التقييد...</p>
-              {(() => { navigate('/admin/throttle-logs'); return null; })()}
+              <Navigate to="/admin/throttle-logs" replace />
             </div>
           )}
 
           {activeTab === 'duplicate_accounts' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى الحسابات المكررة...</p>
-              {(() => { navigate('/admin/duplicate-accounts'); return null; })()}
+              <Navigate to="/admin/duplicate-accounts" replace />
             </div>
           )}
 
