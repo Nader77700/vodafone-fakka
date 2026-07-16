@@ -11,7 +11,7 @@ import {
   getUserSubscription, getUserOperations, calcDaysRemaining, calcTimeRemaining,
   validateAndSyncSubscription,
   getActivityTimeline, logActivity, insertOperation, checkAndConsumeOperation, refundOperation,
-  executeVodafoneOrder, checkLocalBridge, sendNotification, getUnreadNotificationCount,
+  executeVodafoneOrder, sendNotification, getUnreadNotificationCount,
   getExpiryNotificationSentToday, getSubscriptionOpsInfo, insertSystemLog,
   getProductConfig, type ProductConfig,
 } from '@/lib/api';
@@ -791,8 +791,6 @@ function ExecuteModal({
     executingRef.current = false;
     if (isNativeAPK) {
       fetchNetworkInfo();
-    } else {
-      checkLocalBridge().then(ok => setBridgeActive(ok));
     }
   }, [open, isNativeAPK, fetchNetworkInfo]);
 
@@ -1008,7 +1006,7 @@ function ExecuteModal({
           execution_layer: result.via ?? 'unknown',
           retry_count:     result.retryCount ?? 0,
           latency_ms:      executeLatencyMs,
-          error_layer: result.success ? null : (result.via === 'native' ? 'Vodafone-API' : result.via === 'bridge' ? 'Bridge' : 'EdgeFunction'),
+          error_layer: result.success ? null : 'EdgeFunction',
           raw_error:   result.error ?? null,
           debug_steps_count: result.debugSteps?.length ?? 0,
         },

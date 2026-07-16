@@ -329,8 +329,8 @@ jobs:
             "version_latest_name=${{ env.APP_VERSION }}" \
             "version_latest_code=${{ env.APP_VERSION_CODE }}" \
             "version_apk_url=$FINAL_URL" \
-            "version_min_code=241" \
-            "version_min_supported=241" \
+            "version_min_code=${{ env.APP_VERSION_CODE }}" \
+            "version_min_supported=${{ env.APP_VERSION_CODE }}" \
             "version_force_update=true"; do
             KEY="${ENTRY%%=*}"
             VAL="${ENTRY#*=}"

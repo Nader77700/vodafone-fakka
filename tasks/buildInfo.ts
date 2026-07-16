@@ -5,12 +5,12 @@
 
 export const BUILD_INFO = {
   appVersion:     '3.0.326',
-  versionCode:    242,
+  versionCode:    326,
   buildTimestamp: '2026-07-15T11:55:06Z',
   sourceHash:     'i9j0k1l2m3445566',
   bundleFile:     'VodafoneFakka-v3.0.326.apk',
-  bundleHash:     'apk_v3_0_326_code242',
-  apkHash:        'apk_v3_0_326_code242',
+  bundleHash:     'apk_v3_0_326_code326',
+  apkHash:        'apk_v3_0_326_code326',
   dbVersion:      'v3.0.326',
   releaseNotes: [
     'v3.0.326: تحديث هام: معالجة مشكلة تفعيل فليكس وإظهار الأخطاء الحقيقية من فودافون بدلاً من رسائل النجاح الوهمية',
