@@ -83,6 +83,18 @@ serve(async (req: Request) => {
     // ── استقبال بيانات الطلب ──
     const { product_id, receiver, access_token, msisdn, tx_uuid } = await req.json();
 
+    // ── LAYER 14 & 15: Validate product against Database ──
+    const { data: productConfig } = await supabaseAdmin
+      .from("product_config")
+      .select("id, is_active")
+      .eq("product_id", product_id)
+      .single();
+
+    if (!productConfig || !productConfig.is_active) {
+      console.log("[balance-charge] invalid product:", product_id);
+      return json({ success: false, error: "المنتج غير صالح أو تم إيقافه من السيرفر" }, 400);
+    }
+
     if (!product_id || !receiver || !access_token || !msisdn)
       return json({ success: false, error: "بيانات غير مكتملة — يرجى تسجيل الدخول مجدداً" }, 400);
     if (!receiver.startsWith("01") || receiver.length !== 11)

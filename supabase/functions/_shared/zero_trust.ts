@@ -23,10 +23,15 @@ export async function zeroTrustCheck(req: Request) {
   const appSignature = req.headers.get("x-app-signature");
   const buildHash = req.headers.get("x-build-hash");
   
-  if (appBuild < 326) {
+  // LAYER 9: Remote Config (Minimum Supported Version)
+  const { data: config } = await supabaseAdmin.from('app_config').select('config_value').eq('config_key', 'min_supported_version').maybeSingle();
+  const minBuildRequired = config?.config_value ? parseInt(config.config_value, 10) : 320;
+
+  if (appBuild < minBuildRequired) {
     return { error: "Update Required: Version too old", status: 426 };
   }
 
+  // Strict verification only applied if appBuild >= 326 as an upgrade path
   if (appBuild >= 326) {
     // In production, we strictly verify these
     if (!appSignature || !buildHash) {
@@ -45,6 +50,14 @@ export async function zeroTrustCheck(req: Request) {
       
     if (!registry) {
       // LAYER 12 & 13: Log failure and potentially ban
+      const ip = req.headers.get("x-forwarded-for") || "unknown";
+      await supabaseAdmin.from('security_logs').insert({
+        user_id: null,
+        event_type: 'TAMPER_DETECTED',
+        details: { appBuild, buildHash, appSignature, ip },
+        risk_level: 'critical',
+        action_taken: 'blocked_request'
+      });
       return { error: "Integrity Check Failed: Invalid Signature or Build Hash", status: 403 };
     }
   }
@@ -79,10 +92,10 @@ export async function zeroTrustCheck(req: Request) {
   const requestSignature = req.headers.get("x-request-signature");
   const sessionToken = req.headers.get("x-session-token");
 
-  if (sessionToken) {
+    if (sessionToken) {
     const { data: session } = await supabaseAdmin
       .from('security_sessions')
-      .select('session_secret, expires_at')
+      .select('session_secret, expires_at, device_id')
       .eq('session_token', sessionToken)
       .eq('user_id', user.id)
       .eq('is_valid', true)
@@ -90,6 +103,18 @@ export async function zeroTrustCheck(req: Request) {
 
     if (!session || new Date(session.expires_at) < new Date()) {
       return { error: "Invalid or Expired Session Token", status: 401 };
+    }
+
+    const deviceId = req.headers.get("x-device-id");
+    if (session.device_id && session.device_id !== deviceId) {
+      await supabaseAdmin.from('security_logs').insert({
+        user_id: user.id,
+        event_type: 'SESSION_HIJACK_ATTEMPT',
+        details: { expected: session.device_id, received: deviceId },
+        risk_level: 'high',
+        action_taken: 'blocked_request'
+      });
+      return { error: "Session Device Mismatch", status: 403 };
     }
 
     if (nonce) {

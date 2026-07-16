@@ -165,6 +165,18 @@ serve(async (req: Request) => {
     }
     const { product_id, receiver, pin, sender } = body;
 
+    // ── LAYER 14 & 15: Validate product against Database ──
+    const { data: productConfig } = await supabaseAdmin
+      .from("product_config")
+      .select("id, is_active")
+      .eq("product_id", product_id)
+      .single();
+
+    if (!productConfig || !productConfig.is_active) {
+      logStep("product_validation", "fail", "invalid product");
+      return json({ success: false, error: "المنتج غير صالح أو تم إيقافه من السيرفر" }, 400);
+    }
+
     if (!product_id || !receiver || !pin || !sender) {
       logStep("validate", "fail", "missing fields");
       return json({ success: false, error: "بيانات غير مكتملة — أدخل جميع الحقول", layer: "Frontend" }, 400);
