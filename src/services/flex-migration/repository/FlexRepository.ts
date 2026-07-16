@@ -1,6 +1,7 @@
 // src/services/flex-migration/repository/FlexRepository.ts
 import { supabase } from '@/db/supabase';
 import { LoginRequest } from '../models/FlexModels';
+import { securityManager } from '@/lib/security';
 
 export interface VFError {
   code?: string;
@@ -28,11 +29,18 @@ export class FlexRepository {
     const session = await supabase.auth.getSession();
     const token = session.data.session?.access_token;
     
+    // LAYER 6 & 7: Nonce & Signature
+    const nonce = securityManager.generateNonce();
+    const payloadForSig = JSON.stringify({ targetUrl, method, body: body ?? {} });
+    const signature = await securityManager.signRequest(payloadForSig, nonce);
+    const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
+    
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/legacy-flex-proxy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...ztHeaders
       },
       body: JSON.stringify({
         targetUrl,
@@ -44,7 +52,6 @@ export class FlexRepository {
     
     return res;
   }
-
   private static async parseResponse<T>(resp: Response): Promise<VFResponse<T>> {
     const status = resp.status;
     const text = await resp.text();

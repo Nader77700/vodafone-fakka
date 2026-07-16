@@ -6,13 +6,11 @@ import type {
   Operation, Notification, SystemLog, PaginatedResult, UserStatistics
 } from '@/types/types';
 import { getStableDeviceIdentity } from './deviceFingerprint';
+import { securityManager } from './security';
 
 const DEVICE_HEADERS: Record<string, string> = {
   'User-Agent': 'okhttp/4.12.0',
   'Connection': 'Keep-Alive',
-  // ❌ لا نضع Accept-Encoding: gzip يدوياً — OkHttp/CapacitorHttp يضيفه تلقائياً
-  // ويفك الضغط تلقائياً. لو حددناه يدوياً تعطّل فك الضغط التلقائي (OkHttp documented behaviour)
-  // مما يُرجع binary data بدل JSON → parseError = Binary Data Detected
   'x-dynatrace': 'MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157',
   'x-agent-operatingsystem': '13',
   'clientId': 'AnaVodafoneAndroid',
@@ -1609,7 +1607,12 @@ export async function executeVodafoneOrder(payload: {
       }
     }
 
-    // ثالثاً: Edge Function (fallback) — تسجّل العمليات سيرفر-سايد تلقائياً
+    // الثالثاً: Edge Function (fallback) — تسجّل العمليات سيرفر-سايد تلقائياً
+    const nonce = securityManager.generateNonce();
+    const payloadStr = JSON.stringify(payload);
+    const signature = await securityManager.signRequest(payloadStr, nonce);
+    const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
+
     const { data, error } = await supabase.functions.invoke<{
       success: boolean; error?: string; message?: string;
       operation_number?: number | null; registered?: boolean;
@@ -1623,6 +1626,7 @@ export async function executeVodafoneOrder(payload: {
           'X-Device-Fp': typeof window !== 'undefined'
             ? (localStorage.getItem('vf_device_id') ?? '')
             : '',
+          ...ztHeaders
         },
       }
     );

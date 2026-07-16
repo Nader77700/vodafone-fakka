@@ -4,6 +4,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { securityManager } from '@/lib/security';
 import { supabase } from '@/db/supabase';
 import {
   insertOperation, checkAndConsumeOperation, refundOperation,
@@ -985,6 +986,18 @@ function BalanceExecuteDialog({
     try {
       const ctrl = new AbortController();
       const timerId = setTimeout(() => ctrl.abort(), 30_000); // 30 ثانية timeout
+      
+      const nonce = securityManager.generateNonce();
+      const payloadObj = {
+          product_id:   product.product_id,
+          receiver:     receiverPhone,
+          access_token: session.access_token,
+          msisdn:       session.msisdn,
+          tx_uuid:      txUuid,
+      };
+      const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
+      const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
+
       const res = await fetch(`${supabaseUrl}/functions/v1/ana-balance-charge`, {
         method:  'POST',
         signal:  ctrl.signal,
@@ -992,14 +1005,9 @@ function BalanceExecuteDialog({
           'Content-Type':  'application/json',
           'Authorization': `Bearer ${authToken}`,
           'apikey':        supabaseAnon,
+          ...ztHeaders
         },
-        body: JSON.stringify({
-          product_id:   product.product_id,
-          receiver:     receiverPhone,
-          access_token: session.access_token,
-          msisdn:       session.msisdn,
-          tx_uuid:      txUuid,
-        }),
+        body: JSON.stringify(payloadObj),
       });
       clearTimeout(timerId);
       const txt = await res.text();

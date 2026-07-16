@@ -1,13 +1,8 @@
 // Edge Function: تنفيذ الشحن من رصيد أنا فودافون
-// المرجع: Reference_Script_Instruction.txt — API ودقيقة كما في السكربت
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-build",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { zeroTrustCheck, CORS_HEADERS } from "../_shared/zero_trust.ts";
 
 // هيدرات الشحن — مطابقة 100% للسكربت المرجعي
 const CHARGE_HEADERS: Record<string, string> = {
@@ -31,7 +26,7 @@ const CHARGE_HEADERS: Record<string, string> = {
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, "Content-Type": "application/json" },
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
 
 async function fetchWithTimeout(url: string, opts: RequestInit, timeoutSec: number) {
@@ -48,48 +43,27 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutSec: numb
 }
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
   // ══ الدالة دائماً تُرجع 200 مع success:true/false ══
-  // هذا يضمن أن الكلاينت يقرأ الجواب من data وليس fnErr
   const requestStartedAt = Date.now();
   console.log("[balance-charge] invoked", new Date().toISOString());
 
   try {
-    // ── التحقق من المصادقة ──
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.log("[balance-charge] no auth header");
-      return json({ success: false, error: "غير مصرح — يجب تسجيل الدخول" });
+    // ── Zero Trust Check (Layer 1-15) ──
+    const zt = await zeroTrustCheck(req);
+    if (zt.error) {
+       console.log("[balance-charge] zero_trust fail:", zt.error);
+       return json({ success: false, error: zt.error, session_expired: zt.status === 401 }, zt.status);
     }
-
-    const callerClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser();
-    if (authErr || !caller) {
-      console.log("[balance-charge] auth failed", authErr?.message);
-      return json({ success: false, error: "جلسة غير صحيحة — يرجى إعادة تسجيل الدخول", session_expired: true });
-    }
+    const caller = zt.user!;
+    const supabaseAdmin = zt.supabaseAdmin;
+    const isAdmin = zt.isAdmin;
 
     console.log("[balance-charge] caller:", caller.id);
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    const { data: prof } = await supabaseAdmin.from("profiles").select("role, is_active").eq("id", caller.id).single();
-    if (!prof?.is_active) {
-      console.log("[balance-charge] banned user:", caller.id);
-      return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" });
-    }
-
     const { data: sub } = await supabaseAdmin
       .from("subscriptions").select("status, expires_at, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
-    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
 
     // الفحص: status=active + (لا يوجد expires_at أو expires_at مستقبلي) + الحصة لم تنفد
     const subActive = sub && sub.status === "active" &&

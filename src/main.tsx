@@ -13,6 +13,10 @@ Sentry.init({
 // ── مسح تلقائي للحالة القديمة عند كل تحديث ─────────────────────────────────
 import { BUILD_INFO } from './lib/buildInfo';
 import { GlobalCrashContext } from './lib/crashContext';
+import { securityManager } from './lib/security';
+
+// Initialize Zero Trust Security Session
+securityManager.initSession().catch(console.error);
 const VF_VERSION_KEY  = 'vfp_app_version';
 const CURRENT_VERSION = BUILD_INFO.appVersion;
 const AUTH_KEY        = 'sb-vchmsnavyhripakyvzom-auth-token';

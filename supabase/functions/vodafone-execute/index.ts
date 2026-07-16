@@ -6,14 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 /** تأخير بسيط */
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-// ── الحد الأدنى المطلوب من build code ─────────────────────────────────────
-const MIN_BUILD_REQUIRED = 0;
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-build, x-app-version, x-idempotency-key, x-correlation-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { zeroTrustCheck, CORS_HEADERS } from "../_shared/zero_trust.ts";
 
 const DEVICE: Record<string, string> = {
   "User-Agent": "okhttp/4.12.0",
@@ -31,7 +24,7 @@ const DEVICE: Record<string, string> = {
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, "Content-Type": "application/json" },
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
 
 // fetch مع timeout بالثواني
@@ -49,7 +42,7 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutSec: numb
 }
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
   // ── معرّفات التتبع — تُسجَّل في كل log ──
   const requestId     = crypto.randomUUID();
@@ -68,52 +61,24 @@ serve(async (req: Request) => {
   };
 
   try {
-    // ── Server-side Version Block ───────────────────────────────────────────
-    const appBuild = parseInt(req.headers.get("x-app-build") ?? "0", 10);
-    if (appBuild < MIN_BUILD_REQUIRED) {
-      logStep("version_check", "fail", `build ${appBuild} < ${MIN_BUILD_REQUIRED}`);
-      return json({ success: false, error: "إصدارك قديم — يجب تحديث التطبيق", error_code: "UPDATE_REQUIRED", layer: "EdgeFunction" }, 426);
+    // ── Zero Trust Check (Layer 1-15) ──
+    const zt = await zeroTrustCheck(req);
+    if (zt.error) {
+       logStep("zero_trust", "fail", zt.error);
+       return json({ success: false, error: zt.error, error_code: "SECURITY_REJECT", layer: "EdgeFunction" }, zt.status);
     }
-    logStep("version_check", "ok", `build=${appBuild}`);
+    const caller = zt.user!;
+    const supabaseAdmin = zt.supabaseAdmin;
+    const isAdmin = zt.isAdmin;
+    const prof = zt.profile;
 
-    // ── المصادقة ──
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logStep("auth", "fail", "missing Authorization header");
-      return json({ success: false, error: "غير مصرح — يجب تسجيل الدخول", layer: "Auth" }, 401);
-    }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    const callerClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser();
-    if (authErr || !caller) {
-      logStep("auth", "fail", `session invalid: ${authErr?.message ?? "no user"}`);
-      return json({ success: false, error: "غير مصرح — جلسة منتهية أو غير صحيحة", layer: "Auth" }, 401);
-    }
     logStep("auth", "ok", `user=${caller.id}`);
 
     // ── التحقق من الاشتراك وحالة القفل ──
     const { data: sub } = await supabaseAdmin
       .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
     const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
-    const { data: prof } = await supabaseAdmin
-      .from("profiles")
-      .select("role, is_active, vodafone_pin_locked_at, vodafone_lock_reason")
-      .eq("id", caller.id).single();
-    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
 
-    if (!prof?.is_active) {
-      logStep("subscription", "fail", "account banned");
-      return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة", layer: "Authorization" }, 403);
-    }
     if (!hasActive && !isAdmin) {
       logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}`);
       return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" }, 403);
