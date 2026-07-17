@@ -17,8 +17,8 @@ export async function checkDeviceIntegrity() {
       
       // التبليغ عن التلاعب بصمت
       await supabase.rpc('report_security_breach', {
-        p_device_fp: fp.fingerprint,
-        p_hardware_hash: fp.hardwareHash,
+        p_device_fp: fp.device_fp,
+        p_hardware_hash: fp.hardware_hash,
         p_action: 'ROOT_EMULATOR_DETECTED',
         p_reason: `Rooted: ${rootCheck.result}, Emulator: ${emulatorCheck.result}`
       });

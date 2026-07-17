@@ -334,7 +334,7 @@ const styles = {
 } as const;
 
 createRoot(document.getElementById("root")!).render(
-  <Sentry.ErrorBoundary fallback={<CrashFallback />}>
+  <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
     <AppWrapper>
       <App />
     </AppWrapper>

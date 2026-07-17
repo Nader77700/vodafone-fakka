@@ -944,7 +944,14 @@ function BalanceExecuteDialog({
     }
 
     // ══ SECURITY GATE 2: توليد UUID فريد قبل الاتصال — يمنع التكرار ══
-    const txUuid = crypto.randomUUID();
+    const generateUuidFallback = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+      });
+    };
+    const txUuid = generateUuidFallback();
     const performedAt = new Date().toISOString();
 
     // ══ SECURITY GATE 3: حفظ العملية محلياً قبل أي اتصال ══
