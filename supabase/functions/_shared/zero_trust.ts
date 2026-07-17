@@ -24,8 +24,8 @@ export async function zeroTrustCheck(req: Request) {
   const buildHash = req.headers.get("x-build-hash");
   
   // LAYER 9: Remote Config (Minimum Supported Version)
-  const { data: config } = await supabaseAdmin.from('app_config').select('config_value').eq('config_key', 'min_supported_version').maybeSingle();
-  const minBuildRequired = config?.config_value ? parseInt(config.config_value, 10) : 320;
+  const { data: config } = await supabaseAdmin.from('app_config').select('value').eq('key', 'version_min_supported').maybeSingle();
+  const minBuildRequired = config?.value ? parseInt(config.value, 10) : 320;
 
   if (appBuild < minBuildRequired) {
     return { error: "Update Required: Version too old", status: 426 };

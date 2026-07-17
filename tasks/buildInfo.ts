@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.334',
-  versionCode:    334,
+  appVersion:     '3.0.335',
+  versionCode:    335,
   buildTimestamp: '2026-07-17T12:24:22Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.334.apk',
-  bundleHash:     'apk_v3.0.334_code334',
-  apkHash:        'apk_v3.0.334_code334',
-  dbVersion:      'v3.0.334',
+  bundleFile:     'VodafoneFakka-v3.0.335.apk',
+  bundleHash:     'apk_v3.0.335_code335',
+  apkHash:        'apk_v3.0.335_code335',
+  dbVersion:      'v3.0.335',
   releaseNotes: [
+    'v3.0.335: إصلاح حاسم لمشكلة ReferenceError في generateUUID أثناء عملية الشحن',
     'v3.0.334: إصلاح حاسم لمشكلة الشاشة السوداء والإغلاق المفاجئ، وإصدار إجباري للجميع',
     'v3.0.334: إصلاح حاسم لمشكلة الشاشة السوداء (حدث خطأ غير متوقع) التي ظهرت بعد التحديث الأخير نتيجة تعارض في التشفير، وإصلاح توافقية مع هواتف أندرويد القديمة',
     'v3.0.328: إصدار أمني حاسم - إزالة شفرة الشحن المباشر من التطبيق، ونقل العمليات بالكامل للسيرفر (Zero Trust) مع حظر النسخ المهكرة وإجبارها على التحديث',
