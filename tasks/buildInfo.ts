@@ -4,14 +4,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.327',
-  versionCode:    327,
-  buildTimestamp: '2026-07-16T22:17:22Z',
+  appVersion: '3.0.328',
+  versionCode: 328,
+  buildTimestamp: '2026-07-17T10:24:30Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.327.apk',
-  bundleHash:     'apk_v3_0_327_code327',
-  apkHash:        'apk_v3_0_327_code327',
-  dbVersion:      'v3.0.327',
+  bundleFile: 'VodafoneFakka-v3.0.328.apk',
+  bundleHash: 'apk_v3_0_328_code328',
+  apkHash: 'apk_v3_0_328_code328',
+  dbVersion: 'v3.0.328',
   releaseNotes: [
     'v3.0.327: إصدار أمني حاسم - إزالة شفرة الشحن المباشر من التطبيق، ونقل العمليات بالكامل للسيرفر (Zero Trust) مع حظر النسخ المهكرة وإجبارها على التحديث',
     'v3.0.326: إصدار النسخة الآمنة 326: حظر كامل للنسخ المهكرة وتطبيق الحماية المركزية من السيرفر',
