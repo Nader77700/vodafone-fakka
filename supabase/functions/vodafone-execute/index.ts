@@ -168,7 +168,7 @@ serve(async (req: Request) => {
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin
       .from("product_config")
-      .select("id, is_enabled")
+      .select("id, is_enabled, display_name, price")
       .eq("product_id", product_id)
       .single();
 
@@ -334,9 +334,9 @@ serve(async (req: Request) => {
         .insert({
           user_id:          caller.id,
           phone_number:     receiver,
-          card_type:        product_id,
+          card_type:        productConfig?.display_name || product_id,
           category:         product_id.toLowerCase().includes("mared") ? "مارد" : "فكة",
-          amount:           0, // سيُحدَّث من العميل إذا أمكن — السيرفر لا يعرف السعر
+          amount:           productConfig?.price || 0,
           status:           "success",
           error_message:    null,
           performed_at:     performedAt,
@@ -478,9 +478,9 @@ serve(async (req: Request) => {
     await supabaseAdmin.from("operations").insert({
       user_id:          caller.id,
       phone_number:     receiver,
-      card_type:        product_id,
+      card_type:        productConfig?.display_name || product_id,
       category:         product_id.toLowerCase().includes("mared") ? "مارد" : "فكة",
-      amount:           0,
+      amount:           productConfig?.price || 0,
       status:           "failed",
       error_message:    friendly.split("\n")[0],
       performed_at:     performedAt,
