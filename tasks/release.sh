@@ -368,7 +368,8 @@ declare -A CONFIG_UPDATES=(
   [version_latest_name]="${NEW_VER}"
   [version_latest_code]="${NEW_CODE}"
   [version_apk_url]="${APK_URL}"
-  [version_force_update]="false"
+  [version_force_update]="true"
+  [version_min_supported]="${NEW_CODE}"
 )
 for KEY in "${!CONFIG_UPDATES[@]}"; do
   VAL="${CONFIG_UPDATES[$KEY]}"

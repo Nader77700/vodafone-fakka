@@ -113,7 +113,7 @@ export class FlexMigrationService {
     preAuthToken?: string
   ): Promise<ActivationResult> {
     const startTime = Date.now();
-    const transactionId = crypto.randomUUID();
+    const transactionId = generateUUID();
 
     try {
       FlexLogger.info('FlexMigrationService', 'Starting bundle activation', { bundleId: bundle.bundleId, transactionId });

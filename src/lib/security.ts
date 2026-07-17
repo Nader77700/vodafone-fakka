@@ -60,7 +60,7 @@ class SecurityManager {
   }
 
   generateNonce(): string {
-    return crypto.randomUUID();
+    return generateUUID();
   }
 
   async signRequest(payload: string, nonce: string): Promise<string> {

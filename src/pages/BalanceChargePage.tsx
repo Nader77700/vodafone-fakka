@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { generateUUID } from "@/lib/uuid";
 import { useAuth } from '@/contexts/AuthContext';
 import { securityManager } from '@/lib/security';
 import { supabase } from '@/db/supabase';
@@ -945,7 +946,7 @@ function BalanceExecuteDialog({
 
     // ══ SECURITY GATE 2: توليد UUID فريد قبل الاتصال — يمنع التكرار ══
     const generateUuidFallback = () => {
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+      return generateUUID();
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
         return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
