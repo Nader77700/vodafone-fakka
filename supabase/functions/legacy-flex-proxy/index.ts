@@ -29,6 +29,12 @@ serve(async (req) => {
       throw new Error('targetUrl is required');
     }
 
+    // Force inject the latest Vodafone headers server-side so we don't need app updates
+    const finalHeaders = headers || {};
+    finalHeaders['User-Agent'] = "okhttp/4.12.0";
+    finalHeaders['x-agent-version'] = "2026.4.1";
+    finalHeaders['x-agent-build'] = "1139";
+
     // SSRF Prevention: Enforce allowed hosts
     const targetUrlObj = new URL(targetUrl);
     if (!ALLOWED_TARGET_HOSTS.some(host => targetUrlObj.hostname.endsWith(host))) {
@@ -37,7 +43,7 @@ serve(async (req) => {
 
     const fetchOptions: RequestInit = {
       method: method || 'GET',
-      headers: headers || {},
+      headers: finalHeaders,
     };
 
     if (body && (method === 'POST' || method === 'PUT')) {
