@@ -948,6 +948,8 @@ export async function executeVodafoneOrder(payload: {
   receiver: string;
   pin: string;
   sender: string;
+  seamless_token?: string | null;
+  msisdn?: string | null;
   idempotencyKey?: string;    // مفتاح Idempotency — يمنع التنفيذ المزدوج
   correlationId?:  string;    // معرّف ربط للـ Debug
 }): Promise<{ success: boolean; error?: string; via?: 'server'; debugSteps?: ChargeDebugStep[]; retryCount?: number; operation_number?: number | null; registered?: boolean }> {

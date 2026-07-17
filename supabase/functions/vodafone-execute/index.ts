@@ -158,12 +158,12 @@ serve(async (req: Request) => {
     }
 
     // ── قراءة البيانات ──
-    let body: { product_id?: string; receiver?: string; pin?: string; sender?: string };
+    let body: { product_id?: string; receiver?: string; pin?: string; sender?: string; seamless_token?: string | null; msisdn?: string | null; };
     try { body = await req.json(); } catch {
       logStep("parse_body", "fail", "invalid JSON");
       return json({ success: false, error: "بيانات غير صالحة", layer: "Frontend" }, 400);
     }
-    const { product_id, receiver, pin, sender } = body;
+    const { product_id, receiver, pin, sender, seamless_token, msisdn: payload_msisdn } = body;
 
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin
@@ -177,42 +177,43 @@ serve(async (req: Request) => {
       return json({ success: false, error: "المنتج غير صالح أو تم إيقافه من السيرفر" }, 400);
     }
 
-    if (!product_id || !receiver || !pin || !sender) {
+    if (!product_id || !receiver || !pin) {
       logStep("validate", "fail", "missing fields");
-      return json({ success: false, error: "بيانات غير مكتملة — أدخل جميع الحقول", layer: "Frontend" }, 400);
+      return json({ success: false, error: "بيانات غير مكتملة — أدخل جميع الحقول المطلوبة", layer: "Frontend" }, 400);
     }
     if (!receiver.startsWith("01") || receiver.length !== 11) {
       return json({ success: false, error: "رقم المستفيد غير صحيح — 11 رقم يبدأ بـ 01", layer: "Frontend" }, 400);
     }
-    if (!sender.startsWith("01") || sender.length !== 11) {
-      return json({ success: false, error: "رقم محفظتك غير صحيح — 11 رقم يبدأ بـ 01", layer: "Frontend" }, 400);
-    }
+    // تم إلغاء طلب الـ sender الإجباري لأن التطبيق يعتمد على التعرف التلقائي (Seamless)
     logStep("validate", "ok", `product=${product_id} receiver=${receiver}`);
 
     // ── Step 1: seamless token (timeout 8s) ──
-    let seamlessToken: string | null = null;
-    let msisdn: string = sender.startsWith("0") ? sender.slice(1) : sender;
+    let seamlessToken: string | null = seamless_token || null;
+    let msisdn: string = payload_msisdn || (sender && sender.length > 0 ? (sender.startsWith("0") ? sender.slice(1) : sender) : "");
 
-    try {
-      const r = await fetchWithTimeout(
-        "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless",
-        { method: "GET", headers: DEVICE }, 8
-      );
-      const txt = await r.text();
-      logStep("seamless", r.ok ? "ok" : "fail", `http=${r.status}`, { raw_prefix: txt.slice(0, 100) });
-      if (r.ok) {
-        const d = JSON.parse(txt);
-        seamlessToken = d?.seamlessToken ?? null;
-        if (d?.msisdn) msisdn = String(d.msisdn);
+    // إذا لم يرسل التطبيق التوكن، نحاول جلبه من السيرفر كحل بديل (وإن كان سيفشل غالبا)
+    if (!seamlessToken) {
+      try {
+        const r = await fetchWithTimeout(
+          "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless",
+          { method: "GET", headers: DEVICE }, 8
+        );
+        const txt = await r.text();
+        logStep("seamless", r.ok ? "ok" : "fail", `http=${r.status}`, { raw_prefix: txt.slice(0, 100) });
+        if (r.ok) {
+          const d = JSON.parse(txt);
+          seamlessToken = d?.seamlessToken ?? null;
+          if (d?.msisdn) msisdn = String(d.msisdn);
+        }
+      } catch (e) {
+        logStep("seamless", "fail", `network: ${String(e).slice(0, 80)}`, { layer: "Network" });
       }
-    } catch (e) {
-      logStep("seamless", "fail", `network: ${String(e).slice(0, 80)}`, { layer: "Network" });
     }
 
     if (!seamlessToken) {
       return json({
         success: false,
-        error: "يلزم تشغيل جسر الشحن على الموبايل\n\nشغّل ملف vodafone_bridge.py على موبايلك (بيانات فودافون) ثم أعد المحاولة.",
+        error: "فشل الشحن: يلزم تشغيل بيانات فودافون للحصول على جسر الشحن\n\nتأكد أنك تستخدم شريحة فودافون وأن البيانات (Data) مفعلة للتعرف التلقائي.",
         layer: "Vodafone",
       }, 502);
     }

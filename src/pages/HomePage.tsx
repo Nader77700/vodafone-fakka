@@ -17,6 +17,38 @@ import {
 } from '@/lib/api';
 import { staleWhileRevalidate, cacheGetStale, cacheSet } from '@/lib/appCache';
 import type { ActivityEntry, SubscriptionOpsInfo, OpsCheckResult } from '@/lib/api';
+import { CapacitorHttp } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
+
+export async function fetchSeamlessToken(): Promise<{ token: string | null; msisdn: string | null }> {
+  try {
+    const url = "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless";
+    const headers = {
+      "User-Agent": "okhttp/4.12.0",
+      "Connection": "Keep-Alive",
+      "Accept-Language": "ar",
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      const response = await CapacitorHttp.get({ url, headers });
+      if (response.data) {
+        const d = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        return { token: d?.seamlessToken ?? null, msisdn: d?.msisdn ? String(d.msisdn) : null };
+      }
+    } else {
+      // للويب (قد يفشل بسبب CORS)
+      const r = await fetch(url, { headers });
+      if (r.ok) {
+        const d = await r.json();
+        return { token: d?.seamlessToken ?? null, msisdn: d?.msisdn ? String(d.msisdn) : null };
+      }
+    }
+  } catch (err) {
+    console.warn("seamless fetch error", err);
+  }
+  return { token: null, msisdn: null };
+}
+
 import type { ChargeDebugStep } from '@/lib/api';
 import type { Subscription, Operation } from '@/types/types';
 import { parseApiError, shouldShowNetworkTips, getFirstLine, isPinLocked, isUnregisteredMsisdn } from '@/lib/errorMapper';
@@ -919,8 +951,26 @@ function ExecuteModal({
     await new Promise(r => setTimeout(r, 600));
     setLoadingStep(3);
 
+    // محاولة جلب التوكن من الموبايل
+    let sToken = null;
+    let sMsisdn = null;
+    try {
+      const seamless = await fetchSeamlessToken();
+      sToken = seamless.token;
+      sMsisdn = seamless.msisdn;
+    } catch (e) {
+      console.warn("seamless extraction failed", e);
+    }
+
+    if (!sToken) {
+      executingRef.current = false; 
+      toast.error('يلزم تفعيل بيانات فودافون (Data) للتعرف التلقائي على المحفظة'); 
+      return;
+    }
+
     const result = await executeVodafoneOrder({
-      product_id: product.id, receiver: trimPhone, pin: trimPin, sender: trimSender,
+      product_id: product.id, receiver: trimPhone, pin: trimPin, sender: sMsisdn || trimSender,
+      seamless_token: sToken, msisdn: sMsisdn,
       idempotencyKey, correlationId,
     });
 
