@@ -23,24 +23,46 @@ import { Capacitor } from '@capacitor/core';
 export async function fetchSeamlessToken(): Promise<{ token: string | null; msisdn: string | null }> {
   try {
     const url = "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless";
+    
+    // يجب محاكاة تطبيق أنا فودافون بالكامل لكي يستجيب السيرفر بـ JSON وليس HTML
     const headers = {
       "User-Agent": "okhttp/4.12.0",
       "Connection": "Keep-Alive",
+      "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157",
+      "x-agent-operatingsystem": "13",
+      "clientId": "AnaVodafoneAndroid",
       "Accept-Language": "ar",
+      "x-agent-device": "LENOVO TB310XU",
+      "x-agent-version": "2026.4.1",
+      "x-agent-build": "1139",
+      "digitalId": "25ZQ6VBSZPI1V",
     };
 
     if (Capacitor.isNativePlatform()) {
       const response = await CapacitorHttp.get({ url, headers });
-      if (response.data) {
-        const d = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-        return { token: d?.seamlessToken ?? null, msisdn: d?.msisdn ? String(d.msisdn) : null };
+      if (response.status === 200 && response.data) {
+        const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+        try {
+          const d = JSON.parse(txt);
+          return { token: d?.seamlessToken ?? null, msisdn: d?.msisdn ? String(d.msisdn) : null };
+        } catch(e) {
+          console.warn("seamless parse error native:", txt.slice(0, 100));
+        }
+      } else {
+         console.warn("seamless failed native with status:", response.status);
       }
     } else {
-      // للويب (قد يفشل بسبب CORS)
-      const r = await fetch(url, { headers });
+      const r = await fetch(url, { method: "GET", headers });
       if (r.ok) {
-        const d = await r.json();
-        return { token: d?.seamlessToken ?? null, msisdn: d?.msisdn ? String(d.msisdn) : null };
+        const txt = await r.text();
+        try {
+          const d = JSON.parse(txt);
+          return { token: d?.seamlessToken ?? null, msisdn: d?.msisdn ? String(d.msisdn) : null };
+        } catch (e) {
+          console.warn("seamless parse error web, raw response:", txt.slice(0, 100));
+        }
+      } else {
+        console.warn("seamless failed web with status:", r.status);
       }
     }
   } catch (err) {
@@ -964,7 +986,7 @@ function ExecuteModal({
 
     if (!sToken) {
       executingRef.current = false; 
-      toast.error('يلزم تفعيل بيانات فودافون (Data) للتعرف التلقائي على المحفظة'); 
+      toast.error('فشل التعرف التلقائي على المحفظة: تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'); 
       return;
     }
 
