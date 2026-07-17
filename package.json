@@ -94,10 +94,12 @@
     "@typescript/native-preview": "7.0.0-dev.20260514.1",
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.27",
+    "javascript-obfuscator": "^5.4.7",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.11",
     "typescript": "~5.9.3",
     "vite": "npm:rolldown-vite@latest",
+    "vite-plugin-javascript-obfuscator": "^3.1.0",
     "vite-plugin-obfuscator": "^1.0.5",
     "vite-plugin-svgr": "^4.5.0"
   }

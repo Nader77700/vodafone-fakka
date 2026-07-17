@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import path from "path";
+import javascriptObfuscator from 'vite-plugin-javascript-obfuscator';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -12,6 +13,28 @@ export default defineConfig(({ mode }) => ({
         exportType: "named",
         namedExport: "ReactComponent",
       },
+    }),
+    mode === 'production' && javascriptObfuscator({
+      include: ['src/**/*.js', 'src/**/*.jsx', 'src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [/node_modules/],
+      apply: 'build',
+      debugger: true,
+      options: {
+        compact: true,
+        controlFlowFlattening: true,
+        controlFlowFlatteningThreshold: 0.5,
+        deadCodeInjection: false, // Prevents excessive bundle size
+        debugProtection: true,
+        debugProtectionInterval: 4000,
+        disableConsoleOutput: true,
+        identifierNamesGenerator: 'hexadecimal',
+        log: false,
+        renameGlobals: false,
+        stringArray: true,
+        stringArrayEncoding: ['base64'],
+        stringArrayThreshold: 0.75,
+        unicodeEscapeSequence: false
+      }
     }),
   ],
   resolve: {

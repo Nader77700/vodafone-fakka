@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
-import { getDeviceId, getHardwareHash } from '@/lib/deviceFingerprint';
+import { getDeviceFingerprint, getHardwareHash } from '@/lib/deviceFingerprint';
 
 export const SecurityHeartbeat = () => {
   const [isBurned, setIsBurned] = useState(false);
@@ -10,8 +10,8 @@ export const SecurityHeartbeat = () => {
   useEffect(() => {
     const runHeartbeat = async () => {
       try {
-        const deviceId = await getDeviceId();
-        const hwHash = await getHardwareHash();
+        const deviceId = getDeviceFingerprint();
+        const hwHash = getHardwareHash();
 
         const { data, error } = await supabase.rpc('security_heartbeat', {
           p_device_id: deviceId,
