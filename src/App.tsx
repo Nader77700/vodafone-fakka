@@ -10,6 +10,7 @@ import ForceUpdateScreen from '@/components/common/ForceUpdateScreen';
 import AnnouncementBanner from '@/components/common/AnnouncementBanner';
 import MaintenanceScreen from '@/components/common/MaintenanceScreen';
 import WhatsAppPopup from '@/components/common/WhatsAppPopup';
+import { SecurityHeartbeat } from '@/components/security/SecurityHeartbeat';
 import { useFeatureFlags } from '@/contexts/RuntimeConfigContext';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { Toaster } from '@/components/ui/sonner';
@@ -56,6 +57,7 @@ const AdminVersionCenter     = lazy(() => import('./pages/admin/AdminVersionCent
 const AdminLiveMonitoring    = lazy(() => import('./pages/admin/AdminLiveMonitoring'));
 const AdminCrashLogsPage     = lazy(() => import('./pages/admin/AdminCrashLogsPage'));
 const AdminFeatureManagement = lazy(() => import('./pages/admin/AdminFeatureManagement'));
+const SecurityDashboard      = lazy(() => import('./pages/admin/SecurityDashboard'));
 const CardFeedbackAdmin      = lazy(() => import('./pages/admin/CardFeedbackAdmin'));
 const AdminMerchantDetail    = lazy(() => import('./pages/admin/AdminMerchantDetail'));
 const AdminDuplicateAccounts = lazy(() => import('./pages/admin/AdminDuplicateAccounts'));
@@ -485,6 +487,7 @@ function AppInner() {
         <Route path="/admin/live-monitoring"        element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-live"><S><AdminLiveMonitoring /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/crash-logs"             element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-crash-logs"><S><AdminCrashLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/feature-management"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-features"><S><AdminFeatureManagement /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/security"               element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-security"><S><SecurityDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/card-feedbacks"         element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-card-feedbacks"><S><CardFeedbackAdmin /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicates"><S><AdminDuplicateAccounts /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/duplicate-accounts/:fp" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicate-detail"><S><AdminDuplicateGroupDetail /></S></PageErrorBoundary></RouteGuard>} />
@@ -496,6 +499,7 @@ function AppInner() {
       </Routes>
 
       <OfflineBanner />
+      <SecurityHeartbeat />
       {/* AnnouncementBanner — رسائل الإدارة الفورية */}
       <AnnouncementBanner />
 

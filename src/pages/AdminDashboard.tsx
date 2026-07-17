@@ -99,7 +99,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions';
+  | 'red_packages' | 'promotions' | 'security';
 
 interface TabMeta {
   id: AdminTab;
@@ -134,6 +134,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'member_monitor',  label: 'أعضاء التجار',     desc: 'مراقبة أعضاء واشتراكات التجار',     icon: Users },
   { id: 'duplicate_accounts', label: 'الحسابات المكررة', desc: 'كشف الأجهزة المتعددة الحسابات وحظرها', icon: ShieldAlert },
   { id: 'charge_throttles',   label: 'سجلات التقييد',   desc: 'سجلات تقييد الشحن وتضارب الأجهزة',    icon: ShieldX },
+  { id: 'security',           label: 'لوحة الأمان',     desc: 'سجلات الأمان وجدار الحماية',        icon: Shield },
   { id: 'red_packages',       label: 'باقات RED',        desc: 'إدارة باقات Vodafone RED ديناميكياً',   icon: Package },
   { id: 'promotions',         label: 'العروض والبانرات', desc: 'إنشاء وإدارة العروض والبانرات',          icon: Tag },
 ];
@@ -3775,6 +3776,12 @@ export default function AdminDashboard() {
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى مركز الإصدارات...</p>
               <Navigate to="/admin/version-center" replace />
+            </div>
+          )}
+          {activeTab === 'security' && (
+            <div className="py-8 text-center space-y-4 page-enter">
+              <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى لوحة الأمان...</p>
+              <Navigate to="/admin/security" replace />
             </div>
           )}
 
