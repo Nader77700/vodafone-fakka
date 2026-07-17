@@ -2,14 +2,29 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
 import { getDeviceFingerprint, getHardwareHash } from '@/lib/deviceFingerprint';
+import { checkDeviceIntegrity } from '@/lib/security';
 
 export const SecurityHeartbeat = () => {
   const [isBurned, setIsBurned] = useState(false);
   const [burnReason, setBurnReason] = useState('');
 
+  const triggerBurn = async (reason: string) => {
+    setIsBurned(true);
+    setBurnReason(reason);
+    localStorage.clear();
+    sessionStorage.clear();
+    await supabase.auth.signOut();
+  };
+
   useEffect(() => {
     const runHeartbeat = async () => {
       try {
+        const isClean = await checkDeviceIntegrity();
+        if (!isClean) {
+          await triggerBurn('بيئة نظام غير آمنة (تم اكتشاف روت / جليبريك أو محاكي).');
+          return;
+        }
+
         const deviceId = getDeviceFingerprint();
         const hwHash = getHardwareHash();
 
@@ -24,15 +39,7 @@ export const SecurityHeartbeat = () => {
         if (error) throw error;
 
         if (data && data.action === 'BURN') {
-          setIsBurned(true);
-          setBurnReason(data.reason || 'TAMPER_DETECTED');
-          
-          // Clear all local data silently
-          localStorage.clear();
-          sessionStorage.clear();
-          
-          // Attempt to log out
-          await supabase.auth.signOut();
+          await triggerBurn(data.reason || 'TAMPER_DETECTED');
         }
       } catch (err) {
         // Silently fail if network error, don't block legitimate users on poor connection

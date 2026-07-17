@@ -35,6 +35,9 @@ importers:
       '@capacitor/push-notifications':
         specifier: ^8.1.1
         version: 8.1.1(@capacitor/core@8.4.1)
+      '@capgo/capacitor-is-root':
+        specifier: ^8.1.16
+        version: 8.1.16(@capacitor/core@8.4.1)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.4.0(react-hook-form@7.79.0(react@18.3.1))
@@ -498,6 +501,11 @@ packages:
 
   '@capacitor/push-notifications@8.1.1':
     resolution: {integrity: sha512-WqzjPKIbYbARMN+GC0XMAJcxJpUUzqgzS/Ny8RODLrro38pQhm3GXYwX2Mwd+LZlLY39rGImkCkrKyQSNfuikA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capgo/capacitor-is-root@8.1.16':
+    resolution: {integrity: sha512-Hs4ekW8NtZ+u+zBL+AJUnMv0K3HA+0TCLKxlB/4CarX+f2K0Xy6y8h+E1tzUFIk2hMVWfSLJUPGYuCX65R+eYw==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -4574,6 +4582,10 @@ snapshots:
       '@capacitor/core': 8.4.1
 
   '@capacitor/push-notifications@8.1.1(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
+
+  '@capgo/capacitor-is-root@8.1.16(@capacitor/core@8.4.1)':
     dependencies:
       '@capacitor/core': 8.4.1
 

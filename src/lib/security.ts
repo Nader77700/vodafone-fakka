@@ -1,5 +1,37 @@
 import { BUILD_INFO } from './buildInfo';
 import { getStableDeviceIdentity } from './deviceFingerprint';
+import { IsRoot } from '@capgo/capacitor-is-root';
+import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/db/supabase';
+
+export async function checkDeviceIntegrity() {
+  if (!Capacitor.isNativePlatform()) return true;
+
+  try {
+    const rootCheck = await IsRoot.isRooted();
+    const emulatorCheck = Capacitor.getPlatform() === 'android' ? await IsRoot.isRunningOnEmulator() : { result: false };
+
+    if (rootCheck.result || emulatorCheck.result) {
+      // الجهاز عليه روت أو محاكي
+      const fp = getStableDeviceIdentity();
+      
+      // التبليغ عن التلاعب بصمت
+      await supabase.rpc('report_security_breach', {
+        p_device_fp: fp.fingerprint,
+        p_hardware_hash: fp.hardwareHash,
+        p_action: 'ROOT_EMULATOR_DETECTED',
+        p_reason: `Rooted: ${rootCheck.result}, Emulator: ${emulatorCheck.result}`
+      });
+
+      return false; // Integrity failed
+    }
+
+    return true; // Clean
+  } catch (err) {
+    console.error('Integrity check error', err);
+    return true; // Default to pass on error to avoid false positives
+  }
+}
 
 class SecurityManager {
   private sessionToken: string | null = null;
