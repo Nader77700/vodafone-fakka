@@ -1,3 +1,4 @@
+import { generateUUID } from "../../lib/uuid";
 // src/services/flex-migration/FlexMigrationService.ts
 import { FlexLogger } from './logging/FlexLogger';
 import { FlexValidator } from './security/FlexValidator';

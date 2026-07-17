@@ -1,3 +1,4 @@
+import { generateUUID } from "./uuid";
 import { BUILD_INFO } from './buildInfo';
 import { getStableDeviceIdentity } from './deviceFingerprint';
 import { IsRoot } from '@capgo/capacitor-is-root';
