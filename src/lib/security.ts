@@ -83,7 +83,7 @@ class SecurityManager {
     return {
       'x-app-build': BUILD_INFO.versionCode.toString(),
       'x-app-signature': 'debug_sig', // In production, retrieved from Native Plugin
-      'x-build-hash': (BUILD_INFO as any).buildHash || 'apk_v3_0_326_code242',
+      'x-build-hash': (BUILD_INFO as any).bundleHash || (BUILD_INFO as any).apkHash || 'apk_v3_0_326_code242',
       'x-device-id': identity.device_id || 'unknown',
       'x-hardware-hash': identity.hardware_hash,
       'x-nonce': nonce,

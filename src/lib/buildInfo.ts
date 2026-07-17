@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.336',
-  versionCode:    336,
+  appVersion:     '3.0.337',
+  versionCode:    337,
   buildTimestamp: '2026-07-17T12:24:22Z',
   sourceHash:     'i9j0k1l2m3445566',
-  bundleFile:     'VodafoneFakka-v3.0.336.apk',
-  bundleHash:     'apk_v3.0.336_code336',
-  apkHash:        'apk_v3.0.336_code336',
-  dbVersion:      'v3.0.336',
+  bundleFile:     'VodafoneFakka-v3.0.337.apk',
+  bundleHash:     'apk_v3.0.337_code337',
+  apkHash:        'apk_v3.0.337_code337',
+  dbVersion:      'v3.0.337',
   releaseNotes: [
+    'v3.0.337: إصلاح حاسم لتطابق بصمة التحديث (Build Hash) وإدراجها في السيرفر',
     'v3.0.336: إصلاح حاسم لمشكلة عدم ظهور رسالة الخطأ الحقيقية بسبب خطأ في حفظ السجل بقاعدة البيانات',
     'v3.0.335: إصلاح حاسم لمشكلة ReferenceError في generateUUID أثناء عملية الشحن',
     'v3.0.334: إصلاح حاسم لمشكلة الشاشة السوداء والإغلاق المفاجئ، وإصدار إجباري للجميع',
