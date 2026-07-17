@@ -129,8 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // ── Single Session Check — تجاهل للأدوار المميزة (مُعطّل) ──────────────────────
-    const skipRoles = ['admin', 'super_admin'];
+    // ── Single Session Check — لا يوجد استثناء لأي دور (حتى الإدارة) لسد الثغرات ──
+    const skipRoles: string[] = []; // تم إزالة 'admin', 'super_admin' بناءً على طلب المالك
     if (!skipRoles.includes(profileData.role)) {
       const currentIdentity = getStableDeviceIdentity();
       const currentDeviceId = getDeviceId();

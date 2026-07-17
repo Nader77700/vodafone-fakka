@@ -79,13 +79,13 @@ serve(async (req: Request) => {
       .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
     const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
 
-    if (!hasActive && !isAdmin) {
+    if (!hasActive) {
       logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}`);
       return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" }, 403);
     }
 
     // ── فحص قفل Vodafone Cash (error 1118) — 24 ساعة ──
-    if (prof?.vodafone_pin_locked_at && !isAdmin) {
+    if (prof?.vodafone_pin_locked_at) {
       const lockedAt = new Date(prof.vodafone_pin_locked_at).getTime();
       const hoursSinceLock = (Date.now() - lockedAt) / (1000 * 60 * 60);
       if (hoursSinceLock < 24) {
@@ -619,7 +619,7 @@ serve(async (req: Request) => {
     const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
 
     if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 403);
-    if (!hasActive && !isAdmin) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك لاستخدام هذه الخدمة" }, 403);
+    if (!hasActive) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك لاستخدام هذه الخدمة" }, 403);
 
     const { product_id, receiver, pin, sender } = await req.json();
     console.log("[vf] start", { product_id, receiver });

@@ -73,7 +73,7 @@ serve(async (req: Request) => {
       .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
     const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
     const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
-    if (!hasActive && !isAdmin) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 403);
+    if (!hasActive) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 403);
 
     // ── استقبال بيانات تسجيل الدخول ──
     const { phone, password } = await req.json();

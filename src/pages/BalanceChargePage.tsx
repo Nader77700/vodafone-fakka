@@ -925,7 +925,8 @@ function BalanceExecuteDialog({
     setSubmitting(true); setLastError(null);
     setStep('executing');
 
-    if (!isAdmin) {
+    const skipChecks = false; // تم إيقاف تجاوز الأدمن
+    if (!skipChecks) {
       const opsCheck: OpsCheckResult = await checkAndConsumeOperation(user.id);
       if (!opsCheck.allowed) {
         if (opsCheck.codeType === 'rpc_error') {
@@ -1092,7 +1093,7 @@ function BalanceExecuteDialog({
       }
       // تسجيل ناجح → احذف من queue
       markOpSynced(txUuid);
-      if (!success && !isAdmin) await refundOperation(user.id);
+      if (!success) await refundOperation(user.id);
 
       const clientOpNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
       const dateLabel = new Date(performedAt).toLocaleDateString('en-GB');
@@ -1133,7 +1134,7 @@ function BalanceExecuteDialog({
     }
 
     // مسار سيرفر-سايد
-    if (!success && !isAdmin) await refundOperation(user.id);
+    if (!success) await refundOperation(user.id);
     try {
       const upd = success
         ? { usage_count: (product.usage_count ?? 0) + 1, success_count: (product.success_count ?? 0) + 1, last_used_at: now.toISOString() }

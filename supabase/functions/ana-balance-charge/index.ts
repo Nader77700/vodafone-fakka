@@ -73,7 +73,7 @@ serve(async (req: Request) => {
 
     console.log("[balance-charge] sub check:", { subStatus: sub?.status, subActive, opsExhausted, hasActive, isAdmin });
 
-    if (!hasActive && !isAdmin) {
+    if (!hasActive) {
       const errMsg = opsExhausted
         ? "نفدت حصة العمليات الشهرية — يرجى تجديد الاشتراك"
         : "اشتراكك منتهٍ — يرجى تجديد الاشتراك";

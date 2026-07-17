@@ -894,8 +894,9 @@ function ExecuteModal({
       return;
     }
 
-    // ── Admin يتجاوز جميع قيود الحصة والاشتراك ─────────────────────────
-    if (!isAdmin) {
+    // ── لم يعد الـ Admin يتجاوز قيود الحصة والاشتراك (حماية من ثغرات الصلاحيات) ──
+    const skipChecks = false; // تم إيقاف تجاوز الأدمن
+    if (!skipChecks) {
       const opsCheck: OpsCheckResult = await checkAndConsumeOperation(user.id);
       if (!opsCheck.allowed) {
         if (opsCheck.codeType === 'rpc_error') {
@@ -972,14 +973,14 @@ function ExecuteModal({
         }
       }
 
-      // ← العملية الفاشلة لا تُخصم — نسترد النقطة فوراً
-      if (!result.success && !isAdmin) {
+      // ← العملية الفاشلة لا تُخصم — نسترد النقطة فوراً (ينطبق على الجميع)
+      if (!result.success) {
         await refundOperation(user.id);
       }
 
       opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
-    } else if (!result.success && !isAdmin) {
-      // فشل عبر Edge Function → استرداد النقطة
+    } else if (!result.success) {
+      // فشل عبر Edge Function → استرداد النقطة (ينطبق على الجميع)
       await refundOperation(user.id);
     }
     const timeLabel = formatReceiptTime(performedAt);
@@ -1875,7 +1876,9 @@ export default function HomePage() {
     [activeTab, mergedProducts]);
 
   const handleSelectProduct = (product: VodafoneProduct) => {
-    if (!subActive && !isAdmin && !isMerchantClient) {
+    // ── حظر الاستخدام للجميع (بمن فيهم الأدمن) إذا لم يكن الاشتراك نشطاً ──
+    const skipChecks = false; 
+    if (!subActive && !isMerchantClient && !skipChecks) {
       toast.error('اشتراكك غير نشط، يرجى التفعيل أولاً');
       navigate('/activate'); return;
     }
@@ -2320,8 +2323,8 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* حالة الاشتراك */}
-      {!subActive && !isAdmin && (
+      {/* حالة الاشتراك للجميع */}
+      {!subActive && !isMerchantClient && (
         <div className="px-4 pt-3">
           <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
             <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />

@@ -260,7 +260,7 @@ function ActivationDialog({
   const handleCheckEligibility = async () => {
     if (!system) return;
 
-    if (!subActive && !isAdmin) {
+    if (!subActive) {
       setResult({
         success: false,
         message: 'لا يمكنك تنفيذ هذه العملية.',
