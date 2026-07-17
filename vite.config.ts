@@ -90,6 +90,6 @@ export default defineConfig(({ mode }) => ({
       return { relative: true };
     },
   },
-  // base: '/' — مسارات مطلقة للعمل مع bundled APK (Live URL Mode أُزيل)
-  base: '/',
+  // base: './' — مسارات مطلقة للعمل مع bundled APK (Live URL Mode أُزيل)
+  base: './',
 }));

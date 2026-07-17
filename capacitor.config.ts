@@ -4,8 +4,14 @@ const config: CapacitorConfig = {
   appId: "com.naderakram.vodafonefakka",
   appName: "Vodafone Fakka",
   webDir: "dist",
-  // ── Bundled Mode ─────────────────────────────────────────────────────────
-  // الملفات محفوظة داخل APK مباشرة — يضمن فتح التطبيق دايماً حتى بدون إنترنت
+  // ── Live URL Mode ─────────────────────────────────────────────────────────
+  // يسمح بتحديث الواجهة فورياً من السيرفر بدون بناء APK جديد.
+  // ملاحظة: قد يظهر شاشة بيضاء إذا لم يكن هناك إنترنت عند تشغيل التطبيق.
+  server: {
+    url: "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html",
+    cleartext: true,
+    allowNavigation: ["*"]
+  },
   android: {
     backgroundColor: "#000000",
   },
