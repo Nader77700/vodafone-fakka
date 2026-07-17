@@ -168,11 +168,11 @@ serve(async (req: Request) => {
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin
       .from("product_config")
-      .select("id, is_active")
+      .select("id, is_enabled")
       .eq("product_id", product_id)
       .single();
 
-    if (!productConfig || !productConfig.is_active) {
+    if (!productConfig || !productConfig.is_enabled) {
       logStep("product_validation", "fail", "invalid product");
       return json({ success: false, error: "المنتج غير صالح أو تم إيقافه من السيرفر" }, 400);
     }

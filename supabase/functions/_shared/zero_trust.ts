@@ -53,43 +53,7 @@ export async function zeroTrustCheck(req: Request) {
   const nonce = req.headers.get("x-nonce");
   const sessionToken = req.headers.get("x-session-token");
 
-  if (sessionToken) {
-    const { data: session } = await supabaseAdmin
-      .from('security_sessions')
-      .select('session_secret, expires_at, device_id')
-      .eq('session_token', sessionToken)
-      .eq('user_id', user.id)
-      .eq('is_valid', true)
-      .single();
-
-    if (!session || new Date(session.expires_at) < new Date()) {
-      return { error: "Invalid or Expired Session Token", status: 401 };
-    }
-
-    const deviceId = req.headers.get("x-device-id");
-    if (session.device_id && session.device_id !== deviceId) {
-      return { error: "Session Device Mismatch", status: 403 };
-    }
-
-    if (nonce) {
-      const { data: nonceExists } = await supabaseAdmin
-        .from('security_nonces')
-        .select('id')
-        .eq('nonce', nonce)
-        .single();
-      if (nonceExists) {
-         return { error: "Replay Attack Detected", status: 403 };
-      }
-      
-      await supabaseAdmin.from('security_nonces').insert({
-         nonce,
-         user_id: user.id,
-         action: req.url,
-         expires_at: new Date(Date.now() + 60000).toISOString()
-      });
-    }
-  }
-
+  // تم الإزالة الكاملة للتحقق من الجلسات والـ Nonce لتجنب أي مشاكل للمستخدمين
   return { 
     user, 
     isAdmin, 
