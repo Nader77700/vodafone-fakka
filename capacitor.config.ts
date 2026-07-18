@@ -15,11 +15,7 @@ const config: CapacitorConfig = {
       enabled: true,
     },
     SplashScreen: {
-<<<<<<< HEAD
       launchAutoHide: true,
-=======
-      launchAutoHide: false,
->>>>>>> 9e695f0 ()
       backgroundColor: "#000000",
       androidSplashResourceName: "splash",
       showSpinner: false,
