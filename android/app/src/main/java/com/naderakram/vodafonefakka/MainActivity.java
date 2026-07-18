@@ -39,7 +39,7 @@ public class MainActivity extends BridgeActivity {
 
     // ⚡ يُحدَّث تلقائياً في release.sh مع كل إصدار جديد
     private static final String APK_DOWNLOAD_URL =
-        "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.57.apk";
+        "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.341.apk";
 
     private FrameLayout       mUpdateOverlay;
     private boolean           mAppReady       = false;

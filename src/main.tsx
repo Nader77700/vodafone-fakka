@@ -4,21 +4,6 @@ import { useEffect, useState } from "react";
 import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import "./index.css";
-import DisableDevtool from 'disable-devtool';
-
-// ── تفعيل الحماية ضد أدوات المطور (DevTools) ──────────────────────
-if (import.meta.env.PROD) {
-  DisableDevtool({
-    disableMenu: true,
-    disableSelect: true,
-    disableCopy: true,
-    disableCut: true,
-    disablePaste: true,
-    clearLog: true,
-    disableIframeParents: true,
-    timeOutUrl: 'about:blank',
-  });
-}
 
 // ── التحقق من صحة بيئة التطبيق (Tamper Detection) ──────────────────
 import { App as CapApp } from '@capacitor/app';
