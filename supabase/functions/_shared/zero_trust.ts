@@ -53,6 +53,7 @@ export async function zeroTrustCheck(req: Request) {
     return { error: "Missing Authorization header", status: 401 };
   }
 
+  const minConfig = configs?.find(c => c.key === 'version_min_supported');
   const appBuild = parseInt(req.headers.get("x-app-build") ?? "0", 10);
   const minBuildRequired = minConfig?.value ? parseInt(minConfig.value, 10) : 330;
 
@@ -60,6 +61,7 @@ export async function zeroTrustCheck(req: Request) {
     return { error: "Update Required: Version too old", status: 426 };
   }
 
+  const appSignature = req.headers.get("x-app-signature");
   const bannedConfig = configs?.find(c => c.key === 'banned_app_signatures');
   if (bannedConfig?.value && appSignature) {
     const bannedSignatures = bannedConfig.value.split(',').map(s => s.trim());
