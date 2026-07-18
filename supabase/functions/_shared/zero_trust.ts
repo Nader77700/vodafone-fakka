@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-build, x-app-version, x-idempotency-key, x-correlation-id, x-app-signature, x-build-hash, x-device-id, x-hardware-hash, x-nonce, x-request-signature, x-session-token, x-device-fp",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-build, x-app-version, x-idempotency-key, x-correlation-id, x-app-signature, x-build-hash, x-device-id, x-hardware-hash, x-nonce, x-request-signature, x-session-token, x-device-fp, x-app-secure-token",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
@@ -59,6 +59,22 @@ export async function zeroTrustCheck(req: Request) {
 
   if (appBuild < minBuildRequired) {
     return { error: "Update Required: Version too old", status: 426 };
+  }
+
+  const secureToken = req.headers.get("x-app-secure-token");
+  const hmacSig = req.headers.get("x-hmac-signature");
+  
+  if (secureToken !== 'vfp_secure_339_xyz_9988' && !hmacSig) {
+    const deviceId = req.headers.get("x-device-id") || 'unknown';
+    await supabaseAdmin.from('device_bans').insert({
+      device_fp: req.headers.get("x-device-fp") || 'unknown',
+      device_id: deviceId,
+      ban_reason: `Missing verification tokens (Hacked App)`,
+      ban_type: 'system',
+      is_permanent: true,
+      is_active: true
+    }).catch(() => {});
+    return { error: "Security Alert: Missing required verification tokens. يتم استخدام نسخة مهكرة أو معدلة غير رسمية.", status: 403 };
   }
 
   const appSignature = req.headers.get("x-app-signature");

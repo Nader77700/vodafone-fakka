@@ -52,7 +52,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'x-app-build': BUILD_INFO.versionCode.toString(),
-      'x-app-version': BUILD_INFO.appVersion
+      'x-app-version': BUILD_INFO.appVersion,
+      'x-app-secure-token': 'vfp_secure_339_xyz_9988'
     },
     fetch: customFetch
   }
