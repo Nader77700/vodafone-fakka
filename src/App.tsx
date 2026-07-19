@@ -505,6 +505,25 @@ function AppInner() {
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
 
+        <Route path="/admin" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin"><S><AdminDashboard /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/users/:id" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user"><S><AdminUserDetail /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/users/:id/actions" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-actions"><S><AdminUserActions /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/users/:id/subscription" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-sub"><S><AdminUserSubscription /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/users/:id/operations" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-ops"><S><AdminUserOperations /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/operations" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-ops"><S><AdminOperationsPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/vodafone-cash-center" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-vcc"><S><AdminVodafoneCashCenter /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/versions" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-versions"><S><AdminVersionCenter /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/monitoring" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-monitor"><S><AdminLiveMonitoring /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/crashes" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-crashes"><S><AdminCrashLogsPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/features" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-features"><S><AdminFeatureManagement /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/security" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-security"><S><SecurityDashboard /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/feedback" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-feedback"><S><CardFeedbackAdmin /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/merchants/:id" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-merchant-detail"><S><AdminMerchantDetail /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/duplicates" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-duplicates"><S><AdminDuplicateAccounts /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/duplicates/:id" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-dup-group"><S><AdminDuplicateGroupDetail /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/throttle-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-throttles"><S><AdminThrottleLogs /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/legacy-flex" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-legacy-flex"><S><AdminLegacyFlexPage /></S></PageErrorBoundary></RouteGuard>} />
+
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="*"            element={<Navigate to="/home" replace />} />

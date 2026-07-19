@@ -141,8 +141,11 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
         {/* ── Info Grid: Admin → رسالة احترافية | User → تاريخ التفعيل + الانتهاء فقط ── */}
         {isAdmin ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl"
-            style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.18)' }}>
+          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-[#00E5FF1a] transition-colors"
+            style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.18)' }}
+            onClick={() => navigate('/admin')}
+            title="الذهاب إلى لوحة التحكم"
+          >
             <Crown className="w-5 h-5 shrink-0" style={{ color: '#00E5FF' }} />
             <p className="text-xs font-bold leading-snug" style={{ color: '#00E5FF' }}>
               هذا الحساب يتمتع بصلاحيات مسؤول النظام واستخدام غير محدود ♾️
