@@ -22,9 +22,10 @@ import { toast } from 'sonner';
 interface ForceUpdateScreenProps {
   apkUrl?: string;
   latestVersion?: string;
+  customMessage?: string;
 }
 
-export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdateScreenProps) {
+export default function ForceUpdateScreen({ apkUrl, latestVersion, customMessage }: ForceUpdateScreenProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
   const [error, setError] = useState('');
@@ -110,7 +111,7 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion }: ForceUpdate
               يجب تحديث التطبيق للمتابعة
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed text-pretty">
-              إصدارك الحالي قديم ولا يدعم الخدمة. يرجى تحديث التطبيق للاستمرار.
+              {customMessage || 'إصدارك الحالي قديم ولا يدعم الخدمة. يرجى تحديث التطبيق للاستمرار.'}
             </p>
           </div>
         </div>

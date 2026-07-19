@@ -3,17 +3,33 @@ import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
 import { getDeviceFingerprint, getHardwareHash } from '@/lib/deviceFingerprint';
 import { checkDeviceIntegrity } from '@/lib/security';
+import ForceUpdateScreen from '@/components/common/ForceUpdateScreen';
 
 export const SecurityHeartbeat = () => {
   const [isBurned, setIsBurned] = useState(false);
   const [burnReason, setBurnReason] = useState('');
+  const [isForceUpdate, setIsForceUpdate] = useState(false);
+  const [apkUrl, setApkUrl] = useState<string | undefined>(undefined);
+  const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
 
-  const triggerBurn = async (reason: string) => {
-    setIsBurned(true);
+  const triggerBurn = async (reason: string, actionType: 'BURN' | 'FORCE_UPDATE' = 'BURN') => {
     setBurnReason(reason);
-    localStorage.clear();
-    sessionStorage.clear();
-    await supabase.auth.signOut();
+    if (actionType === 'FORCE_UPDATE') {
+      setIsForceUpdate(true);
+      // Fetch latest APK info for the Force Update screen
+      try {
+        const { data } = await supabase.from('app_versions').select('apk_url, version').eq('is_latest', true).maybeSingle();
+        if (data) {
+          setApkUrl(data.apk_url);
+          setLatestVersion(data.version);
+        }
+      } catch { /* ignore */ }
+    } else {
+      setIsBurned(true);
+      localStorage.clear();
+      sessionStorage.clear();
+      await supabase.auth.signOut();
+    }
   };
 
   useEffect(() => {
@@ -32,26 +48,35 @@ export const SecurityHeartbeat = () => {
           p_device_id: deviceId,
           p_hardware_hash: hwHash,
           p_version_code: BUILD_INFO.versionCode,
-          p_build_hash: 'debug_hash', // In production, native plugin sets this
+          p_build_hash: 'debug_hash',
           p_apk_signature: 'debug_sig'
         });
 
         if (error) throw error;
 
         if (data && data.action === 'BURN') {
-          await triggerBurn(data.reason || 'TAMPER_DETECTED');
+          // If the reason indicates an old version, show force update instead of black screen
+          if (data.reason && (data.reason.includes('إصدار') || data.reason.includes('قديم'))) {
+            await triggerBurn(data.reason, 'FORCE_UPDATE');
+          } else {
+            await triggerBurn(data.reason || 'TAMPER_DETECTED');
+          }
+        } else if (data && data.action === 'FORCE_UPDATE') {
+          await triggerBurn(data.reason || 'OLD_VERSION', 'FORCE_UPDATE');
         }
       } catch (err) {
-        // Silently fail if network error, don't block legitimate users on poor connection
         console.error('Heartbeat failed', err);
       }
     };
 
     runHeartbeat();
-    // Run heartbeat every 5 minutes
     const interval = setInterval(runHeartbeat, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  if (isForceUpdate) {
+    return <ForceUpdateScreen apkUrl={apkUrl} latestVersion={latestVersion} customMessage={burnReason} />;
+  }
 
   if (isBurned) {
     return (
