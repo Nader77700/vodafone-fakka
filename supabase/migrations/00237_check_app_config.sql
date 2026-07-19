@@ -1,0 +1,1 @@
+SELECT key, value FROM app_config WHERE key IN ('version_min_supported', 'version_force_update', 'ff_maintenance_mode');
