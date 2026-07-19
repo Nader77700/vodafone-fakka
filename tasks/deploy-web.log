@@ -1,0 +1,639 @@
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-28 23:29         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/Cbe-XZES.js
+  ✅ assets/2sKtKSjl.js
+  ✅ assets/BkV73ynv.js
+  ✅ assets/B1ZoAJde.js
+  ✅ assets/CUnqFPD_.js
+  ✅ assets/B-pCWjxa.js
+  ✅ assets/DgvKk-YW.js
+  ✅ assets/BRSqzKAB.css
+  ✅ assets/DGC_K09O.js
+  ✅ assets/CF4OQ7IH.js
+  ✅ assets/fI2EESE4.js
+  ✅ assets/BP5X--3d.js
+  ✅ assets/D2cHppD0.js
+  ✅ assets/CoTjbacr.js
+  ✅ assets/DZyztnoU.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-28 23:30
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-29 00:32         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/2sKtKSjl.js
+  ✅ assets/BkV73ynv.js
+  ✅ assets/B1ZoAJde.js
+  ✅ assets/CUnqFPD_.js
+  ✅ assets/B-pCWjxa.js
+  ✅ assets/DgvKk-YW.js
+  ✅ assets/CF4OQ7IH.js
+  ✅ assets/fI2EESE4.js
+  ✅ assets/BGjmB7N2.js
+  ✅ assets/C5cZDFzJ.css
+  ✅ assets/BT9PLifz.js
+  ✅ assets/BdKftp69.js
+  ✅ assets/CoTjbacr.js
+  ✅ assets/DZyztnoU.js
+  ✅ assets/CCvd8Gyl.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-29 00:33
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-29 01:16         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/CmfFmcE0.js
+  ✅ assets/2sKtKSjl.js
+  ✅ assets/BkV73ynv.js
+  ✅ assets/B1ZoAJde.js
+  ✅ assets/CUnqFPD_.js
+  ✅ assets/B-pCWjxa.js
+  ✅ assets/BMZJ91d7.js
+  ✅ assets/DgvKk-YW.js
+  ✅ assets/C34o3oan.css
+  ✅ assets/CF4OQ7IH.js
+  ✅ assets/fI2EESE4.js
+  ✅ assets/Dsmw9t3h.js
+  ✅ assets/CoTjbacr.js
+  ✅ assets/BlB7TusJ.js
+  ✅ assets/DZyztnoU.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-29 01:17
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-29 02:04         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/Psj9r75u.js
+  ✅ assets/DHbYIrwt.js
+  ✅ assets/2ah4IYCT.js
+  ✅ assets/C1AOJvEN.js
+  ✅ assets/BXRe_FPE.js
+  ✅ assets/OClHnUK4.js
+  ✅ assets/C34o3oan.css
+  ✅ assets/JXUDZ6j7.js
+  ✅ assets/B_rE44xR.js
+  ✅ assets/Cqi5_1MV.js
+  ✅ assets/DoaoIF-P.js
+  ✅ assets/DcBSLBkL.js
+  ✅ assets/CnOoBYWL.js
+  ✅ assets/S5Urqj39.js
+  ✅ assets/DZyztnoU.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-29 02:04
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-29 03:00         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/DHbYIrwt.js
+  ✅ assets/BA0zUXLB.js
+  ✅ assets/D2JgdnSn.js
+  ✅ assets/2ah4IYCT.js
+  ✅ assets/C1AOJvEN.js
+  ✅ assets/BXRe_FPE.js
+  ✅ assets/DZhyemCL.js
+  ✅ assets/DBh83zZr.js
+  ✅ assets/CBe8LCdX.css
+  ✅ assets/JXUDZ6j7.js
+  ✅ assets/Cqi5_1MV.js
+  ✅ assets/CnOoBYWL.js
+  ✅ assets/CzDLbSYS.js
+  ✅ assets/S5Urqj39.js
+  ✅ assets/DZyztnoU.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-29 03:00
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-29 19:36         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/api.ts, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/D53-ApoI.js
+  ✅ assets/4xZQK5IC.js
+  ✅ assets/MyEjBxG3.css
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/DXhg4idR.js
+  ✅ assets/Dli8Abe8.js
+  ✅ assets/DQ8EjnpC.js
+  ✅ assets/0tO7WLtN.js
+  ✅ assets/BOyP-4zn.js
+  ✅ assets/D6uPArbD.js
+  ✅ assets/D4tSoILc.js
+  ✅ assets/BSVPm7of.js
+  ✅ assets/COlAEJIM.js
+  ✅ assets/DSMW6Bjl.js
+  ✅ assets/gFWHKBtR.js
+  ✅ assets/DZyztnoU.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-29 19:36
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-06-30 23:53         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/api.ts, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+
+⚙️  [2/3] رفع الملفات إلى web-live...
+  📄 رفع index.html...
+  ✅ index.html (HTTP 200)
+  ✅ VodafoneFakka.apk
+  ✅ apple-touch-icon.png
+  ✅ icons/icon-72x72.png
+  ✅ icons/icon-32x32.png
+  ✅ icons/icon-16x16.png
+  ✅ icons/icon-180x180.png
+  ✅ icons/icon-144x144.png
+  ✅ icons/icon-384x384.png
+  ✅ icons/icon-96x96.png
+  ✅ icons/icon-152x152.png
+  ✅ icons/icon-120x120.png
+  ✅ icons/icon-512x512.png
+  ✅ icons/icon-192x192.png
+  ✅ icons/icon-48x48.png
+  ✅ icons/icon-256x256.png
+  ✅ icons/icon-128x128.png
+  ✅ favicon.png
+  ✅ vodafone_bridge.py
+  ✅ assets/Dg0IPmVL.js
+  ✅ assets/CXD9bxgz.js
+  ✅ assets/D4tuHqHz.js
+  ✅ assets/1bJxK2t0.js
+  ✅ assets/CGwDffiX.js
+  ✅ assets/C76ZtodM.js
+  ✅ assets/b9k3I6si.js
+  ✅ assets/BwqETqJt.js
+  ✅ assets/CJvnhzLp.css
+  ✅ assets/_QD2bYOl.js
+  ✅ assets/Bd9I-zOM.js
+  ✅ assets/BckPk2yk.js
+  ✅ assets/BiAA6wvT.js
+  ✅ assets/CaEA7iLH.js
+  ✅ assets/DZyztnoU.js
+  ✅ assets/Df4DCwVB.js
+  ✅ vfp-logo.png
+  ✅ sw.js
+  ✅ manifest.json
+  ✅ images/logo/auth-logo.svg
+  ✅ images/logo/logo-icon.svg
+  ✅ images/logo/logo-dark.svg
+  ✅ images/shape/grid-01.svg
+  ✅ images/vf-fakka-card-bg.jpg
+  ✅ images/vf-card-bg.jpg
+  ✅ images/favicon.ico
+  ✅ images/error/503-dark.svg
+  ✅ images/error/500-dark.svg
+  ✅ images/error/503.svg
+  ✅ images/error/404-dark.svg
+  ✅ images/error/404.svg
+  ✅ images/error/500.svg
+
+  📊 رُفع: 50 ملف — فشل: 0 ملف
+
+⚙️  [3/3] التحقق من Live URL...
+
+╔══════════════════════════════════════════════════════╗
+║  ✅ Live URL يعمل بنجاح!                             ║
+╠══════════════════════════════════════════════════════╣
+║  🌐 URL: https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/web-live/index.html
+║  📦 ملفات مرفوعة: 50
+║  ⏰ وقت النشر: 2026-06-30 23:54
+╚══════════════════════════════════════════════════════╝
+
+💡 كل APK مبني بـ server.url سيحمّل هذا الكود فوراً عند فتح التطبيق
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-07-13 21:37         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] نشر serve-app (no-verify-jwt)...
+Access token not provided. Supply an access token by running supabase login or setting the SUPABASE_ACCESS_TOKEN environment variable.
+Try rerunning the command with --debug to troubleshoot the error.
+
+╔══════════════════════════════════════╗
+║   🌐 نشر ويب — 2026-07-15 04:57         ║
+╚══════════════════════════════════════╝
+
+⚙️  [1/3] نشر serve-app (no-verify-jwt)...
+Access token not provided. Supply an access token by running supabase login or setting the SUPABASE_ACCESS_TOKEN environment variable.
+Try rerunning the command with --debug to troubleshoot the error.
