@@ -4,8 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.349',
-  versionCode:    349,
+  appVersion:     '3.0.350',
+  versionCode:    350,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'update_security_339',
   bundleFile:     'VodafoneFakka-v3.0.339.apk',
