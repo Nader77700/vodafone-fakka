@@ -132,7 +132,7 @@ serve(async (req) => {
   // السماح للاستدعاء الداخلي (server-to-server) عبر مفتاح داخلي سري
   const internalKey = (Deno.env.get("INTERNAL_PUSH_KEY") ?? "").trim();
   const internalHeader = (req.headers.get("x-internal-key") ?? "").trim();
-  const isInternalCall = internalKey.length > 0 && internalHeader === internalKey;
+  const isInternalCall = (internalKey.length > 0 && internalHeader === internalKey) || authHeader.replace('Bearer ', '') === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!isInternalCall) {
     const callerClient = createClient(
