@@ -46,7 +46,7 @@ import java.security.NoSuchAlgorithmException;
 public class MainActivity extends BridgeActivity {
 
     private static final String APK_DOWNLOAD_URL =
-        "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.348.apk";
+        "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.349.apk";
 
     // ─── حساس التلاعب الداخلي ─────────────────────────────────────────────────
     // يتحقق من أن التوقيع الرقمي للتطبيق لم يتم العبث به (Anti-Tamper Sensor)

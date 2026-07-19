@@ -44,3 +44,4 @@ package.json.[0-9]*
 historical_context.txt
 tasks/historical_context.txt
 tasks/release.log
+*.apk
