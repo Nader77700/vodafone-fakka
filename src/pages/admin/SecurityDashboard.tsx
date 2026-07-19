@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/db/supabase';
-import { Shield, AlertTriangle, Ban, RefreshCw, Smartphone } from 'lucide-react';
+import { Shield, AlertTriangle, Ban, RefreshCw, Smartphone, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function SecurityDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [bannedDevices, setBannedDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // لحظر جهاز يدوياً
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [banDeviceId, setBanDeviceId] = useState('');
+  const [banReason, setBanReason] = useState('');
+  const [banning, setBanning] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,6 +52,31 @@ export default function SecurityDashboard() {
     }
   };
 
+  const manualBanDevice = async () => {
+    if (!banDeviceId.trim()) return toast.error('يرجى إدخال معرف الجهاز أو البصمة');
+    setBanning(true);
+    try {
+      const { error } = await supabase.from('device_bans').insert({
+        device_id: banDeviceId.trim(),
+        device_fp: banDeviceId.trim(),
+        ban_reason: banReason.trim() || 'حظر يدوي من الإدارة',
+        ban_type: 'manual_ban',
+        is_permanent: true,
+        is_active: true
+      });
+      if (error) throw error;
+      toast.success('تم حظر الجهاز بنجاح');
+      setBanDialogOpen(false);
+      setBanDeviceId('');
+      setBanReason('');
+      fetchData();
+    } catch (e: any) {
+      toast.error('فشل حظر الجهاز: ' + e.message);
+    } finally {
+      setBanning(false);
+    }
+  };
+
   const banDevice = async (deviceFp: string) => {
     if (!confirm('هل أنت متأكد من حظر وحرق هذا الجهاز نهائياً؟ لن يتمكن من فتح التطبيق مرة أخرى.')) return;
     try {
@@ -68,10 +102,48 @@ export default function SecurityDashboard() {
           <Shield className="w-6 h-6 text-red-500" />
           لوحة تحكم الأمان والمراقبة
         </h1>
-        <button onClick={fetchData} className="p-2 bg-secondary rounded-full hover:bg-secondary/80">
-          <RefreshCw className="w-5 h-5" />
-        </button>
+        <div className="flex gap-2">
+          <Button onClick={() => setBanDialogOpen(true)} variant="destructive" className="gap-2">
+            <Plus className="w-4 h-4" />
+            حظر جهاز جديد
+          </Button>
+          <button onClick={fetchData} className="p-2 bg-secondary rounded-full hover:bg-secondary/80">
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </div>
       </div>
+
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>حظر جهاز يدوياً</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">معرف الجهاز (Device ID / Fingerprint)</label>
+              <Input 
+                placeholder="أدخل المعرف أو البصمة..." 
+                value={banDeviceId}
+                onChange={e => setBanDeviceId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">سبب الحظر (اختياري)</label>
+              <Input 
+                placeholder="سبب الحظر ليظهر للمستخدم..." 
+                value={banReason}
+                onChange={e => setBanReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanDialogOpen(false)}>إلغاء</Button>
+            <Button variant="destructive" onClick={manualBanDevice} disabled={banning}>
+              {banning ? 'جاري الحظر...' : 'تأكيد الحظر'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* سجلات الأمان */}
