@@ -46,12 +46,14 @@ import java.security.NoSuchAlgorithmException;
 public class MainActivity extends BridgeActivity {
 
     private static final String APK_DOWNLOAD_URL =
-        "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.346.apk";
+        "https://vchmsnavyhripakyvzom.supabase.co/storage/v1/object/public/apk-releases/VodafoneFakka-v3.0.347.apk";
 
     // ─── حساس التلاعب الداخلي ─────────────────────────────────────────────────
     // يتحقق من أن التوقيع الرقمي للتطبيق لم يتم العبث به (Anti-Tamper Sensor)
     // إذا قام الهاكر بتغيير أي ملف (حتى وإن فصل السيرفر)، سيتغير التوقيع
     // وسيتم إغلاق التطبيق فوراً من داخل الأندرويد نفسه.
+    private static final String OFFICIAL_SIGNATURE_HASH = "zN9jrQQcPvUl/PfF4tv8TM5S5y4oRasZb3o4VMCvpDc=";
+
     private void runNativeTamperSensor() {
         try {
             PackageInfo packageInfo = getPackageManager().getPackageInfo(
@@ -61,11 +63,17 @@ public class MainActivity extends BridgeActivity {
                 md.update(signature.toByteArray());
                 String currentSignatureHash = Base64.encodeToString(md.digest(), Base64.DEFAULT).trim();
                 
-                // هنا يمكننا إضافة الهاش الأصلي في المستقبل، لكن كإجراء أولي
-                // نمنع تشغيل التطبيق إذا كان في وضع الـ Debug (ما يفعله الهاكر عادة عند التعديل)
+                // 1. التحقق من التوقيع الرسمي للنسخة
+                if (!OFFICIAL_SIGNATURE_HASH.equals(currentSignatureHash)) {
+                    Log.e("TamperSensor", "تلاعب مكتشف: توقيع التطبيق غير متطابق. تم حرق التطبيق...");
+                    finishAndRemoveTask();
+                    System.exit(0);
+                }
+
+                // 2. التحقق من وضع الـ Debug
                 boolean isDebuggable = (0 != (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE));
                 if (isDebuggable) {
-                    Log.e("TamperSensor", "تلاعب مكتشف: تم تفعيل وضع التصحيح من قبل مخترق. يتم حرق التطبيق...");
+                    Log.e("TamperSensor", "تلاعب مكتشف: تم تفعيل وضع التصحيح. تم حرق التطبيق...");
                     finishAndRemoveTask();
                     System.exit(0);
                 }
