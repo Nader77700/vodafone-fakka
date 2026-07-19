@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build Web App
-        run: pnpm run build
+        run: npx vite build --outDir dist
       - name: Copy invite page
         run: cp docs/invite.html dist/invite.html || true
       - name: Copy index to 404
