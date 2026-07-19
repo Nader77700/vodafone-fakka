@@ -31,8 +31,15 @@ const lazyImport = (fn: () => Promise<any>) => {
       return await fn();
     } catch (error: any) {
       if (error?.message?.includes('Failed to fetch dynamically imported module')) {
-        // إذا انقطعت الشبكة أثناء تحميل ملف الصفحة، نعيد تحميل التطبيق تلقائياً
-        window.location.reload();
+        // منع التكرار اللانهائي للإعادة
+        const reloads = parseInt(sessionStorage.getItem('vfp_reload_count') || '0', 10);
+        if (reloads < 3) {
+          sessionStorage.setItem('vfp_reload_count', (reloads + 1).toString());
+          window.location.reload();
+        } else {
+          sessionStorage.removeItem('vfp_reload_count');
+          throw new Error('فشل تحميل الصفحة بسبب مشكلة في الشبكة أو المتصفح. يرجى إغلاق التطبيق وفتحه مجدداً.');
+        }
       }
       throw error;
     }

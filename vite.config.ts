@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import path from "path";
-import obfuscatorPlugin from "vite-plugin-javascript-obfuscator";
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === "production";
@@ -16,27 +15,6 @@ export default defineConfig(({ mode }) => {
         exportType: "named",
         namedExport: "ReactComponent",
       },
-    }),
-    isProd && obfuscatorPlugin({
-      include: [/\.(jsx?|tsx?|cjs|mjs)$/],
-      exclude: [/node_modules/],
-      apply: "build",
-      options: {
-        compact: true,
-        controlFlowFlattening: true,
-        controlFlowFlatteningThreshold: 0.5,
-        deadCodeInjection: true,
-        deadCodeInjectionThreshold: 0.3,
-        debugProtection: false,  // تسبب مشكلة الشاشة السوداء في بعض الأجهزة
-        disableConsoleOutput: true,
-        identifierNamesGenerator: 'hexadecimal',
-        renameGlobals: false,
-        selfDefending: false, // يمكن أن تكسر بعض إضافات المتصفح إذا تم تشغيلها
-        stringArray: true,
-        stringArrayEncoding: ['rc4', 'base64'], // تشفير قوي للنصوص
-        stringArrayThreshold: 0.75,
-        unicodeEscapeSequence: false
-      }
     })
   ],
   resolve: {
