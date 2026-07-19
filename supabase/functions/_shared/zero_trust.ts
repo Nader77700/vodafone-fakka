@@ -13,7 +13,7 @@ export async function zeroTrustCheck(req: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  const { data: configs } = await supabaseAdmin.from('app_config').select('key, value').in('key', ['version_min_supported', 'banned_app_signatures', 'ff_maintenance_mode']);
+  const { data: configs } = await supabaseAdmin.from('core_app_config').select('key, value').in('key', ['version_min_supported', 'banned_app_signatures', 'ff_maintenance_mode']);
   
   const isMaintenanceMode = configs?.find(c => c.key === 'ff_maintenance_mode')?.value === 'true';
 
