@@ -64,7 +64,7 @@ export async function zeroTrustCheck(req: Request) {
   const secureToken = req.headers.get("x-app-secure-token");
   const hmacSig = req.headers.get("x-hmac-signature");
   
-  if (secureToken !== 'vfp_secure_339_xyz_9988' && !hmacSig) {
+  if (secureToken !== 'vfp_secure_351_ULTIMATE_X9' && !hmacSig) {
     const deviceId = req.headers.get("x-device-id") || 'unknown';
     await supabaseAdmin.from('device_bans').insert({
       device_fp: req.headers.get("x-device-fp") || 'unknown',
