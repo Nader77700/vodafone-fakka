@@ -325,14 +325,12 @@ jobs:
             }"
           echo "✅ DB: v${{ env.APP_VERSION }} is_latest=true apk_deployed=true"
 
-          # تحديث app_config — جميع المفاتيح بما فيها version_force_update
+          # تحديث app_config — فقط لإعلام النظام بوجود تحديث جديد (اختياري)
+          # لا نُحدث version_min_supported أو version_force_update هنا، بل من خلال لوحة التحكم
           for ENTRY in \
             "version_latest_name=${{ env.APP_VERSION }}" \
             "version_latest_code=${{ env.APP_VERSION_CODE }}" \
-            "version_apk_url=$FINAL_URL" \
-            "version_min_code=${{ env.APP_VERSION_CODE }}" \
-            "version_min_supported=${{ env.APP_VERSION_CODE }}" \
-            "version_force_update=true"; do
+            "version_apk_url=$FINAL_URL"; do
             KEY="${ENTRY%%=*}"
             VAL="${ENTRY#*=}"
             curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/core_app_config?key=eq.$KEY" \
@@ -368,7 +366,7 @@ jobs:
               \"version\":       \"${{ env.APP_VERSION }}\",
               \"version_code\":  ${{ env.APP_VERSION_CODE }},
               \"apk_url\":       \"${UPDATE_PAGE}\",
-              \"release_notes\": \"تحديث إجباري v${{ env.APP_VERSION }}: إصلاح شامل لمشكلة الإغلاق المفاجئ (Crash) وإضافة نظام تتبع الأعطال.\"
+              \"release_notes\": \"تحديث جديد v${{ env.APP_VERSION }} متاح الآن مع بعض التحسينات.\"
             }")
           NOTIF_HTTP=$(echo "$NOTIF_RESP" | tail -1)
           NOTIF_BODY=$(echo "$NOTIF_RESP" | head -1)
