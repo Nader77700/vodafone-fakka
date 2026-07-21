@@ -1108,7 +1108,18 @@ function ExecuteModal({
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
                   style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
                   {logoUrl
-                    ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+                    ? (
+                      <>
+                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" 
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.removeAttribute('style');
+                          }} />
+                        <div style={{ display: 'none' }} className="flex items-center justify-center w-full h-full">
+                          <VFLogo size={28} />
+                        </div>
+                      </>
+                    )
                     : <VFLogo size={28} />}
                 </div>
                 <div className="flex-1 min-w-0">

@@ -1077,7 +1077,11 @@ export async function getActivationPreview(userId: string, code: string): Promis
   const effectiveDays = key.custom_duration_days ?? key.duration_days;
   // P2 FIX: حساب تاريخ الانتهاء بالميلي‌ثانية الدقيقة (24 ساعة كاملة لكل يوم)
   const baseDate = currentDays > 0 && sub?.expires_at ? new Date(sub.expires_at) : now;
-  const rawExpiry = new Date(baseDate.getTime() + effectiveDays * 24 * 60 * 60 * 1000);
+  // P2 FIX & USER FIX: حساب الأيام بنظام اليوم التقويمي (ينتهي يوم الاشتراك الساعة 11:59:59 مساءً)
+  // إذا اشترك لـ 30 يوم، فاليوم الحالي يُحسب كأول يوم، وينتهي الاشتراك بعد 29 يوماً إضافياً في نهاية اليوم.
+  const rawExpiry = new Date(baseDate.getTime());
+  rawExpiry.setDate(rawExpiry.getDate() + Math.max(0, effectiveDays - 1));
+  rawExpiry.setHours(23, 59, 59, 999);
 
   let newExpiry = rawExpiry;
   if (key.expiration_mode === 'BY_DATE' && key.expiry_date) {
@@ -2927,7 +2931,11 @@ export async function reactivateUserSubscription(userId: string): Promise<{ succ
     const { data: key } = await supabase.from('license_keys').select('duration_days, custom_duration_days').eq('id', sub.license_key_id).maybeSingle();
     if (key) durationDays = key.custom_duration_days ?? key.duration_days ?? 30;
   }
-  const newExpiry = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+  // P2 FIX: التجديد بنظام اليوم التقويمي (اليوم ينتهي 11:59:59 مساءً)
+  const newExpiry = new Date();
+  newExpiry.setDate(newExpiry.getDate() + Math.max(0, durationDays - 1));
+  newExpiry.setHours(23, 59, 59, 999);
+
   const { error } = await supabase.from('subscriptions').update({
     status: 'active',
     expires_at: newExpiry.toISOString(),
@@ -4769,7 +4777,11 @@ export async function restoreReplacedSubscription(
 
   // 2. حساب الأيام المتبقية (من days_remaining المحفوظ أو من المدة الأصلية)
   const daysRemaining: number = replacedSub.days_remaining ?? replacedSub.duration_days ?? 1;
-  const newExpiry = new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000).toISOString();
+  // نظام الأيام التقويمية (ينتهي الساعة 11:59:59 مساءً)
+  const newExpiryDate = new Date();
+  newExpiryDate.setDate(newExpiryDate.getDate() + Math.max(0, daysRemaining - 1));
+  newExpiryDate.setHours(23, 59, 59, 999);
+  const newExpiry = newExpiryDate.toISOString();
 
   // 3. إلغاء الاشتراك الحالي النشط (إن وُجد)
   const { data: currentSub } = await supabase
