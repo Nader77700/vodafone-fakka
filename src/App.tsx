@@ -389,7 +389,7 @@ function MerchantClientGate() {
 const COLD_START_KEY = 'vfp_cold_start_done';
 
 function AppInner() {
-  const { profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   
   // استثناء الأدمن من التحديث الإجباري
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
@@ -437,14 +437,50 @@ function AppInner() {
 
   const isLoginPage = window.location.pathname === '/login' || window.location.hash.includes('/login');
 
+  if (forceUpdate) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
+
+  if (user && !profile && !loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">
+          <span className="text-4xl">⚠️</span>
+        </div>
+        <h1 className="text-xl font-bold text-foreground text-center mb-2">
+          خطأ في الجلسة أو الإصدار
+        </h1>
+        <p className="text-sm text-muted-foreground text-center mb-8 max-w-sm">
+          يبدو أنك تستخدم إصداراً قديماً من التطبيق أو أن جلستك محظورة أمنياً.
+          يُرجى تحديث التطبيق أو مسح الذاكرة المؤقتة.
+        </p>
+        <div className="space-y-3 w-full max-w-sm">
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            className="w-full h-12 bg-primary text-primary-foreground font-semibold rounded-xl"
+          >
+            تحديث ومسح الذاكرة
+          </button>
+          <button
+            onClick={() => {
+              supabase.auth.signOut().then(() => window.location.reload());
+            }}
+            className="w-full h-12 border border-destructive text-destructive font-semibold rounded-xl"
+          >
+            تسجيل الخروج
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (deviceBan?.banned) return wrapScreen(DeviceBannedScreen, { reason: deviceBan.reason, bannedAt: deviceBan.banned_at });
   // السماح بصفحة تسجيل الدخول حتى لو كان وضع الصيانة مفعّل (ليتمكن الإدمن من الدخول)
   // إذا سجل مستخدم عادي دخوله، سيتم طرده لصفحة الصيانة بعد تحويله من صفحة الدخول
   if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage) return wrapScreen(MaintenanceScreen);
   // تأمين إضافي: إذا كان المستخدم العادي يحاول الدخول لحسابه أثناء الصيانة نطالبه بتحديث الصفحة
   if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile) return wrapScreen(MaintenanceScreen);
-
-  if (forceUpdate && !isAdmin) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
 
   return (
     <>

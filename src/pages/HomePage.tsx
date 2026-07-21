@@ -1646,7 +1646,11 @@ export default function HomePage() {
   const homeBannerUrl = getUrl('home_banner');
 
   const loadData = () => {
-    if (!user || !profile) return;
+    if (!user) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
     let isMounted = true;
 
     // ── cache-first: اعرض البيانات المخزنة فوراً قبل أي network call ──

@@ -93,8 +93,6 @@ export function useUpdateChecker() {
 
   const forceUpdate = !configLoading
     && ready
-    && apkReady
-    && Capacitor.isNativePlatform()
     && (isBelowMin || isBlocked);
 
   const showBanner = hasUpdate && !dismissed && !forceUpdate;

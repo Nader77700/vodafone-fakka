@@ -169,17 +169,37 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion, customMessage
 
         {/* رابط النسخ (Fallback) */}
         <div className="pt-2 border-t border-border/50">
-          <p className="text-[11px] text-muted-foreground text-center mb-3 leading-relaxed">
-            إذا واجهتك مشكلة في التنزيل الداخلي أو توقف التحميل،<br/> انسخ الرابط وافتحه في <span className="font-bold text-foreground">Google Chrome</span>
-          </p>
-          <Button
-            variant="outline"
-            onClick={copyUrl}
-            className="w-full h-10 text-xs font-bold rounded-xl gap-2"
-          >
-            <Copy className="w-4 h-4" />
-            {copied ? 'تم النسخ بنجاح!' : 'نسخ رابط آخر إصدار'}
-          </Button>
+          {!Capacitor.isNativePlatform() ? (
+            <>
+              <p className="text-[11px] text-muted-foreground text-center mb-3 leading-relaxed">
+                إذا كنت تستخدم نسخة الويب (المتصفح)، يمكنك محاولة مسح الذاكرة المؤقتة لتحديث التطبيق.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.reload();
+                }}
+                className="w-full h-10 text-xs font-bold rounded-xl gap-2"
+              >
+                مسح الذاكرة المؤقتة وتحديث
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] text-muted-foreground text-center mb-3 leading-relaxed">
+                إذا واجهتك مشكلة في التنزيل الداخلي أو توقف التحميل،<br/> انسخ الرابط وافتحه في <span className="font-bold text-foreground">Google Chrome</span>
+              </p>
+              <Button
+                variant="outline"
+                onClick={copyUrl}
+                className="w-full h-10 text-xs font-bold rounded-xl gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? 'تم النسخ بنجاح!' : 'نسخ رابط آخر إصدار'}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
