@@ -40,10 +40,18 @@ interface CacheEntry<T> {
   etag?: string;    // للـ delta sync (updated_at أو hash)
 }
 
+// Timeout wrapper to prevent hanging
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Storage timeout')), ms))
+  ]);
+};
+
 // ─── Storage Abstraction ──────────────────────────────────────────────────
 async function storageGet(key: string): Promise<string | null> {
   try {
-    const { value } = await Preferences.get({ key });
+    const { value } = await withTimeout(Preferences.get({ key }), 1000);
     return value;
   } catch {
     try { return localStorage.getItem(key); } catch { return null; }
@@ -52,14 +60,14 @@ async function storageGet(key: string): Promise<string | null> {
 
 async function storageSet(key: string, value: string): Promise<void> {
   try {
-    await Preferences.set({ key, value });
+    await withTimeout(Preferences.set({ key, value }), 1000);
   } catch {
     try { localStorage.setItem(key, value); } catch { /* تجاهل */ }
   }
 }
 
 async function storageRemove(key: string): Promise<void> {
-  try { await Preferences.remove({ key }); } catch { /* ignore */ }
+  try { await withTimeout(Preferences.remove({ key }), 1000); } catch { /* ignore */ }
   try { localStorage.removeItem(key); } catch { /* ignore */ }
 }
 

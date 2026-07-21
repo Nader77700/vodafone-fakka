@@ -1720,7 +1720,7 @@ export default function HomePage() {
       if (effectiveSub && effectiveSub.status === 'active' && effectiveSub.expires_at) {
         const daysLeft = Math.ceil((new Date(effectiveSub.expires_at).getTime() - Date.now()) / 86400000);
         if (daysLeft > 0 && daysLeft <= 3) {
-          const alreadySent = await getExpiryNotificationSentToday(user.id);
+          const alreadySent = await getExpiryNotificationSentToday(user.id).catch(() => true);
           if (!alreadySent && isMounted) {
             await sendNotification({
               user_id: user.id,
@@ -1728,11 +1728,14 @@ export default function HomePage() {
               body: `اشتراكك سينتهي في ${new Date(effectiveSub.expires_at).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. جدّد الآن لتجنب الانقطاع.`,
               type: 'subscription_renewal',
               is_global: false,
-            });
-            if (isMounted) getUnreadNotificationCount(user.id).then(setUnreadCount);
+            }).catch(() => {});
+            if (isMounted) getUnreadNotificationCount(user.id).then(setUnreadCount).catch(() => {});
           }
         }
       }
+    }).catch(err => {
+      console.error('Failed to load data in HomePage:', err);
+      if (isMounted) setLoading(false);
     });
     return () => { isMounted = false; };
   };
