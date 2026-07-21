@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.352',
+  appVersion:     '3.0.353',
   versionCode:    351,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'update_security_339',

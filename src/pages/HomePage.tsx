@@ -754,6 +754,10 @@ function ExecuteModal({
   const [trialOpsUsed, setTrialOpsUsed] = useState(0);
   const [trialMaxOps, setTrialMaxOps] = useState(2);
   const [isTrialMode, setIsTrialMode] = useState(true);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => { setImgError(false); }, [logoUrl]);
+
   // ── حالة الفاتورة الموحّدة بعد النجاح ──
   const [receipt, setReceipt] = useState<InvoiceData | null>(null);
   // منع تنفيذ متعدد عبر ref متزامن
@@ -1107,19 +1111,8 @@ function ExecuteModal({
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
                   style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
-                  {logoUrl
-                    ? (
-                      <>
-                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" 
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.removeAttribute('style');
-                          }} />
-                        <div style={{ display: 'none' }} className="flex items-center justify-center w-full h-full">
-                          <VFLogo size={28} />
-                        </div>
-                      </>
-                    )
+                  {logoUrl && !imgError
+                    ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" onError={() => setImgError(true)} />
                     : <VFLogo size={28} />}
                 </div>
                 <div className="flex-1 min-w-0">
