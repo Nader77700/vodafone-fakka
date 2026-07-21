@@ -29,14 +29,11 @@
         transition: opacity 0.3s ease;
       }
       #boot-loader.hidden { opacity: 0; pointer-events: none; }
-      #boot-loader-spinner {
-        width: 36px; height: 36px;
-        border: 3px solid rgba(230,0,0,0.25);
-        border-top-color: #E60000;
-        border-radius: 50%;
-        animation: bl-spin 0.8s linear infinite;
+      @keyframes bl-pulse {
+        0% { transform: scale(0.9); opacity: 0.8; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(0.9); opacity: 0.8; }
       }
-      @keyframes bl-spin { to { transform: rotate(360deg); } }
     </style>
     <!-- P3: Web Manifest link -->
     <link rel="manifest" href="/manifest.json?v=2.6.4" />
@@ -70,7 +67,7 @@
   <body style="background:#050000;margin:0;padding:0;">
     <!-- boot-loader: يظهر فوراً قبل React — يمنع الشاشة السوداء الفارغة -->
     <div id="boot-loader">
-      <div id="boot-loader-spinner"></div>
+      <img src="/vfp-logo.png" alt="Vodafone Fakka Premium" style="width: 120px; height: 120px; animation: bl-pulse 2s infinite ease-in-out;" />
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
