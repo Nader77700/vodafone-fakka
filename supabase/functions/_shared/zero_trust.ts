@@ -64,8 +64,8 @@ export async function zeroTrustCheck(req: Request) {
   const secureToken = req.headers.get("x-app-secure-token");
   const hmacSig = req.headers.get("x-hmac-signature");
   
-  // BURN ALL OLD VERSIONS: Only 354 and above (which send vfp_secure_354_omega) or debug_sig are allowed!
-  if (secureToken !== 'vfp_secure_354_omega' && secureToken !== 'debug_sig') {
+  // BURN ALL OLD VERSIONS: Only 355 and above are allowed!
+  if (secureToken !== 'vfp_secure_355_kill_switch' && secureToken !== 'debug_sig') {
     const deviceId = req.headers.get("x-device-id") || 'unknown';
     // We can also insert into device_bans if we want to permanently ban the hacker, 
     // but just rejecting it is enough to "burn the bridge".
