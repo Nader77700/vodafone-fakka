@@ -430,84 +430,95 @@ function AppInner() {
   const { config, isLoading: isConfigLoading } = useRuntimeConfig();
   const flags = config.feature_flags;
 
-  // ── Blocking Screens (Early Returns to completely unmount the app) ──
-  const wrapScreen = (Component: any, props: any = {}) => (
-    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"/></div>}>
-      <PageErrorBoundary pageName="blocking-screen"><Component {...props} /></PageErrorBoundary>
-    </Suspense>
-  );
+  // ── Blocking Screens ──
+  const renderBlockingScreen = () => {
+    let Component = null;
+    let props: any = {};
+
+    if (forceUpdate) { Component = ForceUpdateScreen; props = { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version }; }
+    else if (deviceBan?.banned) { Component = DeviceBannedScreen; props = { reason: deviceBan.reason, bannedAt: deviceBan.banned_at }; }
+    else if (isBurned) { Component = DeviceBannedScreen; props = { reason: burnReason }; }
+    else if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage && !isConfigLoading) { Component = MaintenanceScreen; }
+    else if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile && !isConfigLoading) { Component = MaintenanceScreen; }
+    
+    if (!Component) return null;
+
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"/></div>}>
+        <PageErrorBoundary pageName="blocking-screen"><Component {...props} /></PageErrorBoundary>
+      </Suspense>
+    );
+  };
+
+  const blockingScreen = renderBlockingScreen();
 
   const isLoginPage = window.location.pathname === '/login' || window.location.hash.includes('/login');
 
-  if (forceUpdate) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
-
-  if (user && !profile && !loading) {
-    // If user exists but profile failed to load (e.g., network error or RLS issue),
-    // we should NOT show a scary "Session Error" screen that asks them to clear memory.
-    // Instead, we show a friendly retry screen.
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4" dir="rtl">
-        <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">
-          <WifiOff className="w-10 h-10 text-destructive" />
+  const renderProfileError = () => {
+    if (user && !profile && !loading) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4" dir="rtl">
+          <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">
+            <WifiOff className="w-10 h-10 text-destructive" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground text-center mb-2">
+            فشل تحميل بيانات الحساب
+          </h1>
+          <p className="text-sm text-muted-foreground text-center mb-8 max-w-sm">
+            لم نتمكن من جلب بيانات حسابك من الخادم. قد يكون السبب ضعف في الاتصال بالإنترنت.
+          </p>
+          <div className="space-y-3 w-full max-w-sm">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full h-12 bg-primary text-primary-foreground font-semibold rounded-xl"
+            >
+              إعادة المحاولة
+            </button>
+            <button
+              onClick={() => {
+                supabase.auth.signOut().then(() => window.location.reload());
+              }}
+              className="w-full h-12 border border-destructive text-destructive font-semibold rounded-xl"
+            >
+              تسجيل الخروج
+            </button>
+          </div>
         </div>
-        <h1 className="text-xl font-bold text-foreground text-center mb-2">
-          فشل تحميل بيانات الحساب
-        </h1>
-        <p className="text-sm text-muted-foreground text-center mb-8 max-w-sm">
-          لم نتمكن من جلب بيانات حسابك من الخادم. قد يكون السبب ضعف في الاتصال بالإنترنت.
-        </p>
-        <div className="space-y-3 w-full max-w-sm">
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full h-12 bg-primary text-primary-foreground font-semibold rounded-xl"
-          >
-            إعادة المحاولة
-          </button>
-          <button
-            onClick={() => {
-              supabase.auth.signOut().then(() => window.location.reload());
-            }}
-            className="w-full h-12 border border-destructive text-destructive font-semibold rounded-xl"
-          >
-            تسجيل الخروج
-          </button>
-        </div>
-      </div>
-    );
-  }
+      );
+    }
+    return null;
+  };
 
-  if (deviceBan?.banned) return wrapScreen(DeviceBannedScreen, { reason: deviceBan.reason, bannedAt: deviceBan.banned_at });
-  // السماح بصفحة تسجيل الدخول حتى لو كان وضع الصيانة مفعّل (ليتمكن الإدمن من الدخول)
-  // إذا سجل مستخدم عادي دخوله، سيتم طرده لصفحة الصيانة بعد تحويله من صفحة الدخول
-  if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage && !isConfigLoading) return wrapScreen(MaintenanceScreen);
-  // تأمين إضافي: إذا كان المستخدم العادي يحاول الدخول لحسابه أثناء الصيانة نطالبه بتحديث الصفحة
-  if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile && !isConfigLoading) return wrapScreen(MaintenanceScreen);
+  const profileErrorScreen = renderProfileError();
 
   return (
     <>
       <WhatsAppPopup />
-      {/* SplashOverlay خارج كل Route — إضافة حاجز أخطاء محلي يمنع كراش Sentry */}
-      {showSplash && (
-        <PageErrorBoundary pageName="splash-overlay">
-          <SplashOverlay onDone={handleSplashDone} />
-        </PageErrorBoundary>
-      )}
 
-      {/* PostSplashNavigator يقرأ حالة Auth ويوجّه — حمايته تمنع رفع الخطأ لـ Sentry */}
-      {navigateNow && (
-        <PageErrorBoundary pageName="post-splash-nav">
-          <PostSplashNavigator onNavigated={handleNavigated} isHotStart={!isColdStart} />
-        </PageErrorBoundary>
-      )}
+      {blockingScreen ? blockingScreen : profileErrorScreen ? profileErrorScreen : (
+        <>
+          {/* SplashOverlay خارج كل Route — إضافة حاجز أخطاء محلي يمنع كراش Sentry */}
+          {showSplash && (
+            <PageErrorBoundary pageName="splash-overlay">
+              <SplashOverlay onDone={handleSplashDone} />
+            </PageErrorBoundary>
+          )}
 
-      <AppResumeHandler />
-      <AndroidBackHandler />
-      <NotificationDeepLinkHandler />
-      <NavigationStateManager />
-      <IntersectObserver />
-      <DeviceFingerprintRegistrar />
+          {/* PostSplashNavigator يقرأ حالة Auth ويوجّه — حمايته تمنع رفع الخطأ لـ Sentry */}
+          {navigateNow && (
+            <PageErrorBoundary pageName="post-splash-nav">
+              <PostSplashNavigator onNavigated={handleNavigated} isHotStart={!isColdStart} />
+            </PageErrorBoundary>
+          )}
 
-      <Routes>
+          <AppResumeHandler />
+          <AndroidBackHandler />
+          <NotificationDeepLinkHandler />
+          <NavigationStateManager />
+          <IntersectObserver />
+          <DeviceFingerprintRegistrar />
+
+          <Routes>
         {/* SplashScreen و LoginPage بدون PageErrorBoundary كانا يرسلان الأخطاء مباشرة لـ Sentry */}
         <Route path="/" element={<PageErrorBoundary pageName="splash"><SplashScreen /></PageErrorBoundary>} />
         <Route path="/login" element={<PageErrorBoundary pageName="login"><LoginPage /></PageErrorBoundary>} />
@@ -572,9 +583,10 @@ function AppInner() {
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="*"            element={<Navigate to="/home" replace />} />
       </Routes>
+      )}
 
       <OfflineBanner />
-      <SecurityHeartbeat />
+      <SecurityHeartbeat onBurn={triggerBurn} />
       {/* AnnouncementBanner — رسائل الإدارة الفورية */}
       <AnnouncementBanner />
 
