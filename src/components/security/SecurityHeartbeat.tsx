@@ -14,7 +14,16 @@ export const SecurityHeartbeat = () => {
   const [apkUrl, setApkUrl] = useState<string | undefined>(undefined);
   const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
   const [hasVerifiedWithServer, setHasVerifiedWithServer] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
   const isOnline = useOnlineStatus();
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (!hasVerifiedWithServer) {
+      timeout = setTimeout(() => setShowLoading(true), 3000);
+    }
+    return () => clearTimeout(timeout);
+  }, [hasVerifiedWithServer]);
 
   const triggerBurn = async (reason: string, actionType: 'BURN' | 'FORCE_UPDATE' = 'BURN') => {
     setBurnReason(reason);
@@ -88,7 +97,8 @@ export const SecurityHeartbeat = () => {
 
   // Strict Offline Protection for New Version 354+
   // If the app starts and hasn't verified with the server yet, block the UI
-  if (!hasVerifiedWithServer) {
+  // Delay showing the loading screen to avoid flashing if connection is fast
+  if (!hasVerifiedWithServer && showLoading) {
     return (
       <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300" dir="rtl">
         {!isOnline ? (

@@ -16,7 +16,8 @@ import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { RuntimeConfigProvider } from '@/contexts/RuntimeConfigContext';
+import { RuntimeConfigProvider, useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
+import { WifiOff } from 'lucide-react';
 import { RouteGuard } from '@/components/common/RouteGuard';
 import { insertOperation } from '@/lib/api';
 import { checkDeviceBan, registerDeviceInRegistry } from '@/lib/api';
@@ -426,7 +427,8 @@ function AppInner() {
 
   // فحص التحديث الإجباري — يُقرأ من DB بعد 2.5 ثانية
   const { forceUpdate, latestVersion } = useUpdateChecker();
-  const flags = useFeatureFlags();
+  const { config, isLoading: isConfigLoading } = useRuntimeConfig();
+  const flags = config.feature_flags;
 
   // ── Blocking Screens (Early Returns to completely unmount the app) ──
   const wrapScreen = (Component: any, props: any = {}) => (
@@ -440,27 +442,26 @@ function AppInner() {
   if (forceUpdate) return wrapScreen(ForceUpdateScreen, { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version });
 
   if (user && !profile && !loading) {
+    // If user exists but profile failed to load (e.g., network error or RLS issue),
+    // we should NOT show a scary "Session Error" screen that asks them to clear memory.
+    // Instead, we show a friendly retry screen.
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4" dir="rtl">
         <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">
-          <span className="text-4xl">⚠️</span>
+          <WifiOff className="w-10 h-10 text-destructive" />
         </div>
         <h1 className="text-xl font-bold text-foreground text-center mb-2">
-          خطأ في الجلسة أو الإصدار
+          فشل تحميل بيانات الحساب
         </h1>
         <p className="text-sm text-muted-foreground text-center mb-8 max-w-sm">
-          يبدو أنك تستخدم إصداراً قديماً من التطبيق أو أن جلستك محظورة أمنياً.
-          يُرجى تحديث التطبيق أو مسح الذاكرة المؤقتة.
+          لم نتمكن من جلب بيانات حسابك من الخادم. قد يكون السبب ضعف في الاتصال بالإنترنت.
         </p>
         <div className="space-y-3 w-full max-w-sm">
           <button
-            onClick={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
+            onClick={() => window.location.reload()}
             className="w-full h-12 bg-primary text-primary-foreground font-semibold rounded-xl"
           >
-            تحديث ومسح الذاكرة
+            إعادة المحاولة
           </button>
           <button
             onClick={() => {
@@ -478,9 +479,9 @@ function AppInner() {
   if (deviceBan?.banned) return wrapScreen(DeviceBannedScreen, { reason: deviceBan.reason, bannedAt: deviceBan.banned_at });
   // السماح بصفحة تسجيل الدخول حتى لو كان وضع الصيانة مفعّل (ليتمكن الإدمن من الدخول)
   // إذا سجل مستخدم عادي دخوله، سيتم طرده لصفحة الصيانة بعد تحويله من صفحة الدخول
-  if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage) return wrapScreen(MaintenanceScreen);
+  if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage && !isConfigLoading) return wrapScreen(MaintenanceScreen);
   // تأمين إضافي: إذا كان المستخدم العادي يحاول الدخول لحسابه أثناء الصيانة نطالبه بتحديث الصفحة
-  if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile) return wrapScreen(MaintenanceScreen);
+  if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile && !isConfigLoading) return wrapScreen(MaintenanceScreen);
 
   return (
     <>
