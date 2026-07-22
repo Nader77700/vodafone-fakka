@@ -3,6 +3,7 @@
 // اللوجو: /vfp-logo.png محلي داخل APK
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { SplashScreen as NativeSplashScreen } from '@capacitor/splash-screen';
 import { supabase } from '@/db/supabase';
 
 export const OFFICIAL_LOGO = '/vfp-logo.png';
@@ -253,6 +254,15 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
   const initDoneRef  = useRef(false);
   const minDoneRef   = useRef(false);
   const leavingRef   = useRef(false);
+
+  useEffect(() => {
+    // Hide Native Splash Screen smoothly once React Splash is ready
+    if (IS_NATIVE) {
+      setTimeout(() => {
+        NativeSplashScreen.hide().catch(() => {});
+      }, 50); // slight delay to ensure React painted
+    }
+  }, []);
 
   const tryLeave = useCallback(() => {
     if (initDoneRef.current && minDoneRef.current && !leavingRef.current) {

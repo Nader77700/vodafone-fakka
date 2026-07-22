@@ -98,6 +98,16 @@ serve(async (req: Request) => {
       console.log("[balance-charge] invalid product:", product_id);
       return await abortAndRefund({ success: false, error: "تم إيقاف هذا المنتج مؤقتاً من قبل الإدارة" });
     }
+
+    const appBuildStr = req.headers.get("x-app-build");
+    const appBuild = appBuildStr ? parseInt(appBuildStr, 10) : 0;
+    const legacyBlockedProducts = ['Fakka_2.5_Unite', 'Fakka_5_Unite', 'Fakka_6_NewUnite', 'Fakka_7_Unite', 'Fakka_9_Unite'];
+
+    if (appBuild < 356 && legacyBlockedProducts.includes(product_id)) {
+      console.log("[balance-charge] legacy product blocked for old versions:", product_id);
+      return await abortAndRefund({ success: false, error: "تم إيقاف هذا المنتج للإصدارات القديمة. يرجى تحديث التطبيق إلى أحدث إصدار." });
+    }
+
     // Allow if missing from DB for backward compatibility
 
     if (!product_id || !receiver || !access_token || !msisdn)
