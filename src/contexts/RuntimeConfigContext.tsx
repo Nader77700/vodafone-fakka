@@ -185,6 +185,19 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
     } catch (e) {
       console.warn('[RuntimeConfig] fetch failed — using cached/default:', e);
+      // Fallback: If network fails, do NOT lock the user out with a stale cached Maintenance Mode!
+      setConfig(prev => {
+        if (prev.feature_flags.ff_maintenance_mode) {
+          const safeConfig = {
+            ...prev,
+            feature_flags: { ...prev.feature_flags, ff_maintenance_mode: false }
+          };
+          // Also clear it from cache so it doesn't persist
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify(safeConfig)); } catch {}
+          return safeConfig;
+        }
+        return prev;
+      });
     } finally {
       setIsLoading(false);
     }
