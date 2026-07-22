@@ -37,6 +37,52 @@ Deno.serve(async (req) => {
     // ── مسار فحص الحظر (مفتوح للجميع ولا يتطلب صلاحيات) ──────────────────────────
     if (action === 'check_device_ban') {
       const { device_fp, device_id, hardware_hash } = body as Record<string, string | undefined>;
+      const appBuild = req.headers.get('x-app-build');
+      const secureToken = req.headers.get('x-app-secure-token');
+      const appPackage = req.headers.get('x-app-package');
+      const buildNum = appBuild ? parseInt(appBuild, 10) : 0;
+
+      // HACKER DETECTION
+      const isSpoofingVersion = buildNum >= 353 && secureToken !== 'vfp_secure_354_omega' && secureToken !== 'vfp_secure_339_xyz_9988';
+      const isWrongPackage = appPackage && appPackage !== 'com.naderakram.vodafonefakka';
+
+      if (isSpoofingVersion || isWrongPackage) {
+        // Auto-ban this hacker's device permanently
+        if (device_fp || device_id || hardware_hash) {
+          await supabaseAdmin.from('device_bans').insert({
+            device_fp: device_fp || null,
+            device_id: device_id || null,
+            hardware_hash: hardware_hash || null,
+            ban_reason: 'نظام الحماية التلقائي: محاولة استخدام نسخة مقرصنة ومزيفة',
+            ban_type: 'both',
+            is_permanent: true,
+            is_active: true,
+            banned_by_name: 'Auto-Security-System'
+          });
+        }
+        return json({ banned: true, reason: 'تم حظر جهازك نهائياً لمحاولة استخدام نسخة مقرصنة.' });
+      }
+
+      // 0. Hard ban old versions immediately before anything else (Legitimate old users)
+      if (!isNaN(buildNum) && buildNum < 353) {
+        return json({ banned: true, reason: 'إصدار التطبيق قديم. يرجى التحديث إلى النسخة 354 الأحدث.' });
+      }
+
+      // 1. Check explicitly banned versions from DB
+      if (appBuild) {
+        const { data: vBan } = await supabaseAdmin.from('version_bans')
+          .select('ban_reason')
+          .eq('is_active', true)
+          .or(`version_name.eq.${appBuild},version_name.ilike.%${appBuild}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (vBan) {
+          return json({ banned: true, reason: vBan.ban_reason || 'هذه النسخة محظورة أمنياً. قم بتنزيل النسخة الرسمية لتتمكن من الدخول.' });
+        }
+      }
+
+      // 2. Check hardware device bans (Applied to ALL versions unconditionally)
       if (!device_fp && !device_id && !hardware_hash) return json({ banned: false });
 
       let query = supabaseAdmin.from('device_bans')

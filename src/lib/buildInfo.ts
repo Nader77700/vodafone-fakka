@@ -4,15 +4,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.353',
-  versionCode:    353,
+  appVersion:     '3.0.354',
+  versionCode:    354,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'update_security_339',
-  bundleFile:     'VodafoneFakka-v3.0.339.apk',
-  bundleHash:     'apk_v3_0_339_code339',
-  apkHash:        'apk_v3_0_339_code339',
-  dbVersion:      'v3.0.339',
+  sourceHash:     'update_security_354',
+  bundleFile:     'VodafoneFakka-v3.0.354.apk',
+  bundleHash:     'apk_v3_0_354_code354',
+  apkHash:        'apk_v3_0_354_code354',
+  dbVersion:      'v3.0.354',
   releaseNotes: [
+    'v3.0.354: إغلاق ثغرة العمل بدون إنترنت، وحظر كامل لجميع الإصدارات السابقة وتشفير الاتصال بقاعدة البيانات.',
+    'v3.0.353: إصلاح مشكلة قراءة الداتا وتفعيل الحظر للأجهزة المهكرة',
     'v3.0.339: تحديث أمني شامل - تفعيل حمايات التشفير المعقد، ربط كامل مع السيرفر، وإنهاء صلاحية كافة الإصدارات المخترقة',
     'v3.0.338: حل نهائي لمشكلة جسر الشحن: قراءة داتا فودافون وإرسال التوكن بنجاح من الموبايل',
     'v3.0.337: إصلاح حاسم لتطابق بصمة التحديث (Build Hash) وإدراجها في السيرفر',

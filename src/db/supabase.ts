@@ -2,6 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { BUILD_INFO } from "@/lib/buildInfo";
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { securityManager } from "@/lib/security";
 import { generateRequestSignature } from "@/lib/hmac";
 
@@ -10,6 +11,31 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let cachedSignature: string | null = null;
 let cachedBuildHash: string | null = null;
+let appPackageName: string = 'com.naderakram.vodafonefakka';
+
+// Stealthy Self-Destruct Check
+if (Capacitor.isNativePlatform()) {
+  CapApp.getInfo().then(info => {
+    appPackageName = info.id;
+    if (info.id !== 'com.naderakram.vodafonefakka') {
+      setTimeout(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.body.innerHTML = '<div style="background:#000;color:red;padding:20px;text-align:center;font-size:20px;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p></div>';
+      }, 3000);
+    }
+  }).catch(() => {});
+}
+
+// DOM Tampering Check
+setInterval(() => {
+  const html = document.body.innerHTML.toLowerCase();
+  if (html.includes('mostafa eid') || html.includes('مصطفى') || appPackageName !== 'com.naderakram.vodafonefakka') {
+    localStorage.clear();
+    sessionStorage.clear();
+    document.body.innerHTML = '<div style="background:#000;color:red;padding:20px;text-align:center;font-size:20px;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p></div>';
+  }
+}, 7000);
 
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   if (!options) options = {};
@@ -30,17 +56,20 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
         options.headers.set('x-build-hash', cachedBuildHash);
         options.headers.set('x-hmac-signature', signature);
         options.headers.set('x-timestamp', timestamp);
+        options.headers.set('x-app-package', appPackageName);
       } else if (Array.isArray(options.headers)) {
         options.headers.push(['x-app-signature', cachedSignature]);
         options.headers.push(['x-build-hash', cachedBuildHash]);
         options.headers.push(['x-hmac-signature', signature]);
         options.headers.push(['x-timestamp', timestamp]);
+        options.headers.push(['x-app-package', appPackageName]);
       } else {
         const headers = options.headers as Record<string, string>;
         headers['x-app-signature'] = cachedSignature;
         headers['x-build-hash'] = cachedBuildHash;
         headers['x-hmac-signature'] = signature;
         headers['x-timestamp'] = timestamp;
+        headers['x-app-package'] = appPackageName;
       }
     } catch (err) { console.error('Error generating signature', err) }
   }
@@ -53,7 +82,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       'x-app-build': BUILD_INFO.versionCode.toString(),
       'x-app-version': BUILD_INFO.appVersion,
-      'x-app-secure-token': 'vfp_secure_339_xyz_9988'
+      'x-app-secure-token': 'vfp_secure_354_omega',
+      'x-app-package': 'com.naderakram.vodafonefakka'
     },
     fetch: customFetch
   }
