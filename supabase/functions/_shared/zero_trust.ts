@@ -67,6 +67,7 @@ export async function zeroTrustCheck(req: Request) {
   // BURN ALL OLD VERSIONS: Only 355 and above are allowed!
   // Fallback for version 355 which was built with the old token
   const isValidToken = 
+    secureToken === 'vfp_secure_356_kill_switch' || 
     secureToken === 'vfp_secure_355_kill_switch' || 
     secureToken === 'debug_sig' || 
     (secureToken === 'vfp_secure_354_omega' && appBuild >= 355);

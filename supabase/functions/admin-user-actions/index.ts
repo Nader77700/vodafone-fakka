@@ -43,7 +43,11 @@ Deno.serve(async (req) => {
       const buildNum = appBuild ? parseInt(appBuild, 10) : 0;
 
       // HACKER DETECTION
-      const isSpoofingVersion = buildNum >= 353 && secureToken !== 'vfp_secure_354_omega' && secureToken !== 'vfp_secure_339_xyz_9988';
+      const isSpoofingVersion = buildNum >= 353 && 
+        secureToken !== 'vfp_secure_356_kill_switch' && 
+        secureToken !== 'vfp_secure_355_kill_switch' && 
+        secureToken !== 'vfp_secure_354_omega' && 
+        secureToken !== 'vfp_secure_339_xyz_9988';
       const isWrongPackage = appPackage && appPackage !== 'com.naderakram.vodafonefakka';
 
       if (isSpoofingVersion || isWrongPackage) {

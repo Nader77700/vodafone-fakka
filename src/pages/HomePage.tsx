@@ -1920,8 +1920,8 @@ export default function HomePage() {
         return;
       }
 
-      // تعطيل التنفيذ فقط — الكارت ظاهر لكن لا ينفّذ
-      if (cfg.status === 'disabled_execution') {
+      // تعطيل صريح
+      if (cfg.status === 'disabled_execution' || !cfg.is_enabled) {
         setDisabledProductOpen(true);
         return;
       }
