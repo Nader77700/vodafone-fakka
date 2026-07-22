@@ -65,11 +65,17 @@ export async function zeroTrustCheck(req: Request) {
   const hmacSig = req.headers.get("x-hmac-signature");
   
   // BURN ALL OLD VERSIONS: Only 355 and above are allowed!
-  if (secureToken !== 'vfp_secure_355_kill_switch' && secureToken !== 'debug_sig') {
+  // Fallback for version 355 which was built with the old token
+  const isValidToken = 
+    secureToken === 'vfp_secure_355_kill_switch' || 
+    secureToken === 'debug_sig' || 
+    (secureToken === 'vfp_secure_354_omega' && appBuild >= 355);
+
+  if (!isValidToken) {
     const deviceId = req.headers.get("x-device-id") || 'unknown';
     // We can also insert into device_bans if we want to permanently ban the hacker, 
     // but just rejecting it is enough to "burn the bridge".
-    return { error: "Security Alert: Old or modified app detected. The execution engine has been permanently disabled for this version.", status: 403 };
+    return { error: "تنبيه أمني: تم اكتشاف إصدار قديم أو معدّل. تم إيقاف محرك التنفيذ بشكل دائم لهذا الإصدار، يُرجى التحديث.", status: 403 };
   }
 
   const appSignature = req.headers.get("x-app-signature");

@@ -98,24 +98,14 @@ export const SecurityHeartbeat = () => {
   // Strict Offline Protection for New Version 354+
   // If the app starts and hasn't verified with the server yet, block the UI
   // Delay showing the loading screen to avoid flashing if connection is fast
-  if (!hasVerifiedWithServer && showLoading) {
+  if (!hasVerifiedWithServer && !isOnline && showLoading) {
     return (
       <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300" dir="rtl">
-        {!isOnline ? (
-          <>
-            <WifiOff className="w-16 h-16 text-gray-500 mb-4 animate-pulse" />
-            <h2 className="text-xl font-bold text-white mb-2">في انتظار الاتصال بالإنترنت</h2>
-            <p className="text-gray-400 text-sm max-w-xs">
-              لأسباب أمنية، لا يمكن تشغيل التطبيق في وضع عدم الاتصال (Offline). يرجى تفعيل الإنترنت والمحاولة مجدداً للتحقق من هويتك.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">جاري التحقق من الأمان...</h2>
-            <p className="text-gray-400 text-sm max-w-xs">يرجى الانتظار لحظات للتحقق من هوية جهازك والاتصال الآمن مع الخوادم.</p>
-          </>
-        )}
+        <WifiOff className="w-16 h-16 text-gray-500 mb-4 animate-pulse" />
+        <h2 className="text-xl font-bold text-white mb-2">في انتظار الاتصال بالإنترنت</h2>
+        <p className="text-gray-400 text-sm max-w-xs">
+          لأسباب أمنية، لا يمكن تشغيل التطبيق في وضع عدم الاتصال (Offline). يرجى تفعيل الإنترنت والمحاولة مجدداً للتحقق من هويتك.
+        </p>
       </div>
     );
   }

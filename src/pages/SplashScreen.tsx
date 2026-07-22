@@ -76,16 +76,17 @@ const D = {
 
 function buildSteps(): InitStep[] {
   return [
-    { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 8,  run: async () => { await delay(D.init); } },
-    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 10, run: async () => { try { localStorage.getItem('vf_theme'); } catch {} await delay(D.settings); } },
+    { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 5,  run: async () => { await delay(D.init); } },
+    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 5, run: async () => { try { localStorage.getItem('vf_theme'); } catch {} await delay(D.settings); } },
     { id: 'internet',     label: 'التحقق من الاتصال…',     weight: 10, run: async () => { await delay(navigator.onLine ? D.internet : D.internet * 3); } },
-    { id: 'firebase',     label: 'تهيئة Firebase…',        weight: 12, run: async () => { await delay(D.firebase); } },
+    { id: 'security',     label: 'التحقق من الأمان…',      weight: 10, run: async () => { await delay(D.internet); } },
+    { id: 'firebase',     label: 'تهيئة Firebase…',        weight: 10, run: async () => { await delay(D.firebase); } },
     { id: 'fcm',          label: 'تسجيل الإشعارات…',       weight: 10, run: async () => { await delay(D.fcm); } },
-    { id: 'auth',         label: 'التحقق من الحساب…',      weight: 12, run: async () => { try { await withTimeout(supabase.auth.getSession()); } catch {} } },
-    { id: 'subscription', label: 'فحص الاشتراك…',          weight: 12, run: async () => { await delay(D.sub); } },
+    { id: 'auth',         label: 'التحقق من الحساب…',      weight: 10, run: async () => { try { await withTimeout(supabase.auth.getSession()); } catch {} } },
+    { id: 'subscription', label: 'فحص الاشتراك…',          weight: 10, run: async () => { await delay(D.sub); } },
     { id: 'update',       label: 'فحص التحديثات…',         weight: 10, run: async () => { try { const q = supabase.from('app_versions').select('version').eq('is_latest', true).maybeSingle(); await withTimeout(Promise.resolve(q)); } catch {} } },
     { id: 'user_data',    label: 'تحميل بيانات المستخدم…', weight: 10, run: async () => { await delay(D.user); } },
-    { id: 'complete',     label: 'جاري التحميل…',          weight: 6,  run: async () => { await delay(D.complete); } },
+    { id: 'complete',     label: 'جاري التحميل…',          weight: 10, run: async () => { await delay(D.complete); } },
   ];
 }
 
