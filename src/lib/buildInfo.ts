@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.354',
-  versionCode:    354,
+  appVersion:     '3.0.355',
+  versionCode:    355,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'update_security_354',
-  bundleFile:     'VodafoneFakka-v3.0.354.apk',
-  bundleHash:     'apk_v3_0_354_code354',
-  apkHash:        'apk_v3_0_354_code354',
-  dbVersion:      'v3.0.354',
+  sourceHash:     'update_security_355_offline_kill',
+  bundleFile:     'VodafoneFakka-v3.0.355.apk',
+  bundleHash:     'apk_v3_0_355_code355',
+  apkHash:        'apk_v3_0_355_code355',
+  dbVersion:      'v3.0.355',
   releaseNotes: [
+    'v3.0.355: تطبيق نظام التدمير الذاتي لحل مشكلة فصل الإنترنت — التطبيق لن يعمل بأي شكل بدون اتصال مباشر وقوي بخادم الحماية.',
     'v3.0.354: إغلاق ثغرة العمل بدون إنترنت، وحظر كامل لجميع الإصدارات السابقة وتشفير الاتصال بقاعدة البيانات.',
     'v3.0.353: إصلاح مشكلة قراءة الداتا وتفعيل الحظر للأجهزة المهكرة',
     'v3.0.339: تحديث أمني شامل - تفعيل حمايات التشفير المعقد، ربط كامل مع السيرفر، وإنهاء صلاحية كافة الإصدارات المخترقة',

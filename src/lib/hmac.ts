@@ -1,6 +1,6 @@
 // دالة لتوليد توقيع تشفيري للطلبات (HMAC-SHA256)
 export const generateRequestSignature = async (): Promise<{ signature: string; timestamp: string }> => {
-  const secret = 'VodafoneFakkaPremium2024SecureHMACKey_V9';
+  const secret = 'VodafoneFakkaPremium2026_V10_ULTRA_SECURE';
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const fallbackSignature = 'fallback_signature_timeout';
   

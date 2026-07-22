@@ -1950,7 +1950,17 @@ export async function checkDeviceBan(params: {
   const { data, error } = await supabase.functions.invoke('admin-user-actions', {
     body: { action: 'check_device_ban', ...params },
   });
-  if (error) return { banned: false, error: error.message };
+  
+  // SECURITY FIX: If the app is offline or the request is blocked by a firewall,
+  // we MUST assume the device is banned to prevent offline bypass attacks!
+  if (error || !navigator.onLine) {
+    return { 
+      banned: true, 
+      reason: 'تعذر الاتصال بخادم الحماية. يرجى التأكد من اتصال الإنترنت وإلغاء أي حظر (Firewall).', 
+      error: error?.message ?? 'Offline' 
+    };
+  }
+  
   return data as { banned: boolean; reason?: string; banned_at?: string };
 }
 
