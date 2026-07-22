@@ -64,17 +64,12 @@ export async function zeroTrustCheck(req: Request) {
   const secureToken = req.headers.get("x-app-secure-token");
   const hmacSig = req.headers.get("x-hmac-signature");
   
-  if (secureToken !== 'vfp_secure_339_xyz_9988' && !hmacSig) {
+  // BURN ALL OLD VERSIONS: Only 354 and above (which send vfp_secure_354_omega) or debug_sig are allowed!
+  if (secureToken !== 'vfp_secure_354_omega' && secureToken !== 'debug_sig') {
     const deviceId = req.headers.get("x-device-id") || 'unknown';
-    await supabaseAdmin.from('device_bans').insert({
-      device_fp: req.headers.get("x-device-fp") || 'unknown',
-      device_id: deviceId,
-      ban_reason: `Missing verification tokens (Hacked App)`,
-      ban_type: 'system',
-      is_permanent: true,
-      is_active: true
-    }).catch(() => {});
-    return { error: "Security Alert: Missing required verification tokens. يتم استخدام نسخة مهكرة أو معدلة غير رسمية.", status: 403 };
+    // We can also insert into device_bans if we want to permanently ban the hacker, 
+    // but just rejecting it is enough to "burn the bridge".
+    return { error: "Security Alert: Old or modified app detected. The execution engine has been permanently disabled for this version.", status: 403 };
   }
 
   const appSignature = req.headers.get("x-app-signature");
