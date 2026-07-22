@@ -791,6 +791,34 @@ const App: React.FC = () => {
   );
 };
 
+import { PrivacyScreen } from "@capacitor-community/privacy-screen";
+import { PlayIntegrity } from "@capacitor-community/play-integrity";
+
+function SecurityInit() {
+  useEffect(() => {
+    const initSecurity = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // 1. Enable Sensitive Screen Protection (FLAG_SECURE)
+          await PrivacyScreen.enable();
+          
+          // 2. Request Google Play Integrity Token (Validates device/app trust)
+          // Note: In a full implementation, this token would be sent to the backend for verification.
+          const { token } = await PlayIntegrity.requestIntegrityToken({
+            // Generate a random nonce to prevent replay attacks
+            nonce: btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))))
+          });
+          console.log("Play Integrity Token securely generated:", token ? "YES" : "NO");
+        } catch (e) {
+          console.error("Security init failed:", e);
+        }
+      }
+    };
+    initSecurity();
+  }, []);
+  return null;
+}
+
 // AppWithGuard: يحمل profile من AuthContext ويطبق حماية DevTools
 function AppWithGuard() {
   const { profile, loading } = useAuth();
@@ -800,6 +828,7 @@ function AppWithGuard() {
 
   return (
     <>
+      <SecurityInit />
       {devToolsOpen && !isAdmin && !loading && <DevToolsWarningOverlay />}
       <AppInner />
     </>

@@ -11,6 +11,12 @@ importers:
       '@capacitor-community/http':
         specifier: ^1.4.1
         version: 1.4.1
+      '@capacitor-community/play-integrity':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.4.1)
+      '@capacitor-community/privacy-screen':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.4.1)
       '@capacitor/android':
         specifier: ^8.4.1
         version: 8.4.1(@capacitor/core@8.4.1)
@@ -137,6 +143,9 @@ importers:
       axios:
         specifier: ^1.13.1
         version: 1.18.0
+      capacitor-secure-storage-plugin:
+        specifier: ^0.13.0
+        version: 0.13.0(@capacitor/core@8.4.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -462,6 +471,16 @@ packages:
 
   '@capacitor-community/http@1.4.1':
     resolution: {integrity: sha512-+pCkBXrwfm97UfjOgjV950H/qZ8SE36Mrcb46BlL1ps3VIsGuIO+AulL8GqTC6LewheRVtGJpRspNtneXQotNA==}
+
+  '@capacitor-community/play-integrity@8.0.0':
+    resolution: {integrity: sha512-vvX2BK9Wkqwb90aNkZfUIWgXvjHM9hOxHPpWjvrVN0gAIoXoSsb1kmNPLNKZsztyTPdjC1ybUEVbX1MLCNLE9w==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor-community/privacy-screen@8.0.0':
+    resolution: {integrity: sha512-XcBTgQ13BdH8xB7arJ2io5rP3aEXcndgDVl/GdFRNwc8TatnV+1U6rGROLtepYLA4Rl0GP7k4zAeykcG+a//3w==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/android@3.9.0':
     resolution: {integrity: sha512-YTPyrh1NozEuYXWGtfqN27TLXUrLbZX9fggyd4JQ1yMaUZTmLPm5dCuznONhQ49aPkJnUJB02JfpHy/qGwa2Lw==}
@@ -2064,6 +2083,11 @@ packages:
 
   caniuse-lite@1.0.30001799:
     resolution: {integrity: sha512-hG1bReV+OUU+MOqK4t/ZWI0tZOyz3rqS9XuhOUz1cIcbwBKjOyJEJuw9ER5JuNyqxNk8u/JUVbGibBOL1yrjFw==}
+
+  capacitor-secure-storage-plugin@0.13.0:
+    resolution: {integrity: sha512-+rLC/9Z0LTaRRt6L6HjBwcDh5gqgI3NPmDSwo4hk41XQOy3EBrRo81VleIqFsowsMA3oMT+E59Bl8/HiWk0nhQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -4818,6 +4842,14 @@ snapshots:
       '@capacitor/filesystem': 1.1.0(@capacitor/core@3.9.0)
       '@capacitor/ios': 3.9.0(@capacitor/core@3.9.0)
 
+  '@capacitor-community/play-integrity@8.0.0(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
+
+  '@capacitor-community/privacy-screen@8.0.0(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
+
   '@capacitor/android@3.9.0(@capacitor/core@3.9.0)':
     dependencies:
       '@capacitor/core': 3.9.0
@@ -6535,6 +6567,10 @@ snapshots:
   camelcase@6.3.0: {}
 
   caniuse-lite@1.0.30001799: {}
+
+  capacitor-secure-storage-plugin@0.13.0(@capacitor/core@8.4.1):
+    dependencies:
+      '@capacitor/core': 8.4.1
 
   ccount@2.0.1: {}
 

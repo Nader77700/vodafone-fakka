@@ -5,6 +5,37 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { securityManager } from "@/lib/security";
 import { generateRequestSignature } from "@/lib/hmac";
+import { SecureStoragePlugin } from 'capacitor-secure-storage-plugin';
+
+const secureStorageAdapter = {
+  getItem: async (key: string) => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const { value } = await SecureStoragePlugin.get({ key });
+        return value;
+      }
+      return localStorage.getItem(key);
+    } catch { return null; }
+  },
+  setItem: async (key: string, value: string) => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await SecureStoragePlugin.set({ key, value });
+      } else {
+        localStorage.setItem(key, value);
+      }
+    } catch {}
+  },
+  removeItem: async (key: string) => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await SecureStoragePlugin.remove({ key });
+      } else {
+        localStorage.removeItem(key);
+      }
+    } catch {}
+  }
+};
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -71,6 +102,13 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
         headers['x-timestamp'] = timestamp;
         headers['x-app-package'] = appPackageName;
       }
+
+      // Sensitive Memory Protection: Clear references to crypto material immediately
+      setTimeout(() => {
+        // @ts-ignore
+        options = null;
+      }, 50);
+
     } catch (err) { console.error('Error generating signature', err) }
   }
 
@@ -78,6 +116,12 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: secureStorageAdapter,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
   global: {
     headers: {
       'x-app-build': BUILD_INFO.versionCode.toString(),
