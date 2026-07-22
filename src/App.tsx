@@ -23,7 +23,6 @@ import { insertOperation } from '@/lib/api';
 import { checkDeviceBan, registerDeviceInRegistry } from '@/lib/api';
 import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
-// ── استيراد ثابت للصفحات التي تظهر فور فتح التطبيق ──
 import SplashScreen, { SplashOverlay } from './pages/SplashScreen';
 // ── استيراد كسول مدعوم بإعادة التحميل عند انقطاع الشبكة ──
 const lazyImport = (fn: () => Promise<any>) => {
@@ -395,15 +394,16 @@ function AppInner() {
   // استثناء الأدمن من التحديث الإجباري
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-  // isColdStart: true فقط إذا لم يكن للتطبيق نشاط حديث (خلال 30 دقيقة)
+  // isColdStart: فقط إذا لم يكن للتطبيق نشاط حديث (خلال 30 دقيقة)
   const isColdStart = (() => {
     const ts = Number(localStorage.getItem(ACTIVITY_KEY) ?? 0);
     if (!ts) return true;
     return Date.now() - ts > RESUME_TTL_MS;
   })();
 
-  const [showSplash,  setShowSplash]  = useState(isColdStart);
-  const [navigateNow, setNavigateNow] = useState(!isColdStart);
+  // نظهر الشاشة البدائية دائماً (حتى لو لم يكن Cold Start) لتغطية الشاشة السوداء وإعطاء التطبيق مساحة للتحميل خلفها
+  const [showSplash,  setShowSplash]  = useState(true);
+  const [navigateNow, setNavigateNow] = useState(false);
 
   // ── فحص حظر الجهاز ─────────────────────────────────────────────────────
   const [deviceBan, setDeviceBan] = useState<{ banned: boolean; reason?: string; banned_at?: string } | null>(null);
