@@ -437,7 +437,6 @@ function AppInner() {
 
     if (forceUpdate) { Component = ForceUpdateScreen; props = { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version }; }
     else if (deviceBan?.banned) { Component = DeviceBannedScreen; props = { reason: deviceBan.reason, bannedAt: deviceBan.banned_at }; }
-    else if (isBurned) { Component = DeviceBannedScreen; props = { reason: burnReason }; }
     else if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage && !isConfigLoading) { Component = MaintenanceScreen; }
     else if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile && !isConfigLoading) { Component = MaintenanceScreen; }
     
@@ -583,10 +582,11 @@ function AppInner() {
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="*"            element={<Navigate to="/home" replace />} />
       </Routes>
+        </>
       )}
 
       <OfflineBanner />
-      <SecurityHeartbeat onBurn={triggerBurn} />
+      <SecurityHeartbeat />
       {/* AnnouncementBanner — رسائل الإدارة الفورية */}
       <AnnouncementBanner />
 
