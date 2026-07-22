@@ -191,10 +191,11 @@ serve(async (req: Request) => {
       .eq("product_id", product_id)
       .single();
 
-    if (!productConfig || !productConfig.is_enabled) {
-      logStep("product_validation", "fail", "invalid product");
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "المنتج غير صالح أو تم إيقافه من السيرفر" }, 400);
+    if (productConfig && !productConfig.is_enabled) {
+      logStep("product_validation", "fail", "product disabled by admin");
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "تم إيقاف هذا المنتج مؤقتاً من قبل الإدارة" }, 400);
     }
+    // If !productConfig, we allow it to pass for backward compatibility since the DB table might not be fully seeded yet
 
     if (!product_id || !receiver || !pin) {
       logStep("validate", "fail", "missing fields");

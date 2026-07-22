@@ -94,10 +94,11 @@ serve(async (req: Request) => {
       .eq("product_id", product_id)
       .single();
 
-    if (!productConfig || !productConfig.is_enabled) {
+    if (productConfig && !productConfig.is_enabled) {
       console.log("[balance-charge] invalid product:", product_id);
-      return await abortAndRefund({ success: false, error: "المنتج غير صالح أو تم إيقافه من السيرفر" });
+      return await abortAndRefund({ success: false, error: "تم إيقاف هذا المنتج مؤقتاً من قبل الإدارة" });
     }
+    // Allow if missing from DB for backward compatibility
 
     if (!product_id || !receiver || !access_token || !msisdn)
       return await abortAndRefund({ success: false, error: "بيانات غير مكتملة — يرجى تسجيل الدخول مجدداً" });

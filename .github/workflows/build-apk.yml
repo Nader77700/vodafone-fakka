@@ -333,7 +333,7 @@ jobs:
             "version_apk_url=$FINAL_URL"; do
             KEY="${ENTRY%%=*}"
             VAL="${ENTRY#*=}"
-            curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/core_app_config?key=eq.$KEY" \
+            curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
               -H "Authorization: Bearer $SB_SERVICE_KEY" \
               -H "apikey: $SB_SERVICE_KEY" \
               -H "Content-Type: application/json" \

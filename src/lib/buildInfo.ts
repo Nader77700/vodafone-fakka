@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.355',
-  versionCode:    355,
+  appVersion:     '3.0.356',
+  versionCode:    356,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'update_security_354',
-  bundleFile:     'VodafoneFakka-v3.0.355.apk',
-  bundleHash:     'apk_v3_0_355_code355',
-  apkHash:        'apk_v3_0_355_code355',
-  dbVersion:      'v3.0.355',
+  sourceHash:     'update_security_356',
+  bundleFile:     'VodafoneFakka-v3.0.356.apk',
+  bundleHash:     'apk_v3_0_356_code356',
+  apkHash:        'apk_v3_0_356_code356',
+  dbVersion:      'v3.0.356',
   releaseNotes: [
+    'v3.0.356: دمج شاشة التحقق الأمني مع شاشة البداية، وإصلاح توافقية الشحن مع الإصدار الجديد وإخفاء رسائل الخطأ المعقدة',
     'v3.0.354: إغلاق ثغرة العمل بدون إنترنت، وحظر كامل لجميع الإصدارات السابقة وتشفير الاتصال بقاعدة البيانات.',
     'v3.0.353: إصلاح مشكلة قراءة الداتا وتفعيل الحظر للأجهزة المهكرة',
     'v3.0.339: تحديث أمني شامل - تفعيل حمايات التشفير المعقد، ربط كامل مع السيرفر، وإنهاء صلاحية كافة الإصدارات المخترقة',
