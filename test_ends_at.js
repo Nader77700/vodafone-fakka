@@ -1,0 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient("https://vchmsnavyhripakyvzom.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjI4Nzg1NSwiZXhwIjoyMDk3ODYzODU1fQ.qGv6iURGQONn7wlG55S8HMCxTfodI2GQfcV4PkpARIo");
+
+async function run() {
+  const { data, error } = await supabase.from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .or('ends_at.is.null,ends_at.gte.2026-01-01');
+  console.log(error);
+}
+run();

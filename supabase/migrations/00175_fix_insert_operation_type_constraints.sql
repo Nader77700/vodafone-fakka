@@ -1,0 +1,1 @@
+ALTER TABLE public.operations ALTER COLUMN idempotency_key TYPE text;

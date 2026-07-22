@@ -1,0 +1,1 @@
+ALTER TABLE public.card_feedbacks ALTER COLUMN operation_date TYPE text;
