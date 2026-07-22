@@ -45,3 +45,4 @@ historical_context.txt
 tasks/historical_context.txt
 tasks/release.log
 *.apk
+.native-wind-cache
