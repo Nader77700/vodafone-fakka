@@ -18,7 +18,7 @@ export const SecurityHeartbeat = () => {
   const isOnline = useOnlineStatus();
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
     if (!hasVerifiedWithServer) {
       timeout = setTimeout(() => setShowLoading(true), 3000);
     }
