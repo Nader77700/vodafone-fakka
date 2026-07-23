@@ -168,7 +168,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
         // ── تفعيل حساسات الأمان الداخلية ──
-        runNativeTamperSensor();
+        // runNativeTamperSensor();
 
         // ── FIX #2: تسجيل البلوجنات قبل super ──
         registerPlugin(VodafoneDetectorPlugin.class);
