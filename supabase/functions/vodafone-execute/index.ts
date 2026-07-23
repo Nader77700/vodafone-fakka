@@ -359,7 +359,7 @@ serve(async (req: Request) => {
       logStep("charge", "ok", `product=${product_id} receiver=${receiver} latency=${latencyMs}ms`);
 
       // تسجيل العملية في قاعدة البيانات مباشرة من السيرفر
-      const { data: opData } = await supabaseAdmin
+      const { data: opData, error: opInsertErr } = await supabaseAdmin
         .from("operations")
         .insert({
           user_id:          caller.id,
@@ -372,6 +372,11 @@ serve(async (req: Request) => {
           performed_at:     performedAt,
           api_response:     "Completed",
           operation_source: "vodafone_cash",
+          idempotency_key:  idempotencyKey,
+          correlation_id:   correlationId,
+          latency_ms:       latencyMs,
+          device_fp:        deviceFp ?? null,
+          execution_layer:  "edge_function",
           card_data: {
             product_id,
             receiver,
@@ -385,6 +390,10 @@ serve(async (req: Request) => {
         })
         .select("operation_number")
         .maybeSingle();
+
+      if (opInsertErr) {
+        logStep("op_insert", "fail", `error=${JSON.stringify(opInsertErr)}`);
+      }
 
       const opNumber = (opData as { operation_number?: number } | null)?.operation_number ?? null;
       const opId     = (opData as { id?: string } | null)?.id ?? null;
@@ -505,7 +514,7 @@ serve(async (req: Request) => {
     else if (rawErr) { friendly = `❌ ${rawErr}`; }
 
     // سجّل العملية الفاشلة سيرفر-سايد أيضاً
-    await supabaseAdmin.from("operations").insert({
+    const { error: failInsertErr } = await supabaseAdmin.from("operations").insert({
       user_id:          caller.id,
       phone_number:     receiver,
       card_type:        productConfig?.display_name || product_id,
@@ -516,6 +525,11 @@ serve(async (req: Request) => {
       performed_at:     performedAt,
       api_response:     friendly.split("\n")[0],
       operation_source: "vodafone_cash",
+      idempotency_key:  idempotencyKey,
+      correlation_id:   correlationId,
+      latency_ms:       latencyMs,
+      device_fp:        deviceFp ?? null,
+      execution_layer:  "edge_function",
       card_data: {
         product_id,
         receiver,
@@ -526,7 +540,10 @@ serve(async (req: Request) => {
         error_code:      errCode,
         registered_by:   "edge_function",
       },
-    }).then(() => {}).catch(() => {});
+    });
+    if (failInsertErr) {
+      logStep("op_insert_fail", "fail", `error=${JSON.stringify(failInsertErr)}`);
+    }
 
     const lockUntil = errCode === "1118"
       ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
