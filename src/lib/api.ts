@@ -670,7 +670,17 @@ export async function getAllProfiles(page = 1, search = ''): Promise<PaginatedRe
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to);
-  if (search) query = query.or(`username.ilike.%${search}%,email.ilike.%${search}%`);
+    
+  if (search) {
+    const s = search.trim();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    if (isUUID) {
+      query = query.eq('id', s);
+    } else {
+      query = query.or(`username.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
+    }
+  }
+  
   const { data, count } = await query;
   return { data: Array.isArray(data) ? data : [], count: count ?? 0, page, pageSize: PAGE_SIZE };
 }
@@ -1152,6 +1162,28 @@ export async function getAllSubscriptions(
     query = query.eq('status', filters.status);
   }
 
+  // فلتر البحث
+  if (filters.search) {
+    const s = filters.search.trim();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    if (isUUID) {
+      // بحث بمعرف الاشتراك أو معرف المستخدم
+      query = query.or(`id.eq.${s},user_id.eq.${s}`);
+    } else {
+      // بحث باسم المستخدم أو الإيميل أو الهاتف
+      // لأننا نحتاج للبحث في profiles سنعيد بناء الـ query ليكون profiles!inner
+      query = supabase
+        .from('subscriptions')
+        .select('*, profiles!inner(username, email, full_name, phone)', { count: 'exact' })
+        .or(`username.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`, { foreignTable: 'profiles' })
+        .order('created_at', { ascending: false });
+        
+      if (filters.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+    }
+  }
+
   const { data, count } = await query.range(from, to);
   const rows = Array.isArray(data) ? data : [];
 
@@ -1630,6 +1662,7 @@ export async function getAllOperations(page = 1, search = ''): Promise<Paginated
 export interface OperationsFilter {
   user_id?: string;
   phone?: string;
+  search?: string;
   card_type?: string;
   status?: string;
   date_from?: string;
@@ -1659,7 +1692,28 @@ export async function getAllOperationsFiltered(
     .range(from, to);
 
   if (filters.user_id)  q = q.eq('user_id', filters.user_id);
-  if (filters.phone)    q = q.ilike('phone_number', `%${filters.phone}%`);
+  
+  if (filters.search) {
+    const s = filters.search.trim();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    if (isUUID) {
+      q = q.eq('id', s);
+    } else if (/^[0-9]+$/.test(s)) {
+      q = q.ilike('phone_number', `%${s}%`);
+    } else {
+      // للبحث عن طريق username، نحتاج لعمل inner join مع جدول profiles
+      q = supabase
+        .from('operations')
+        .select('*, profiles!inner(username, email)', { count: 'exact' })
+        .ilike('profiles.username', `%${s}%`)
+        .order('performed_at', { ascending: false })
+        .range(from, to);
+      if (filters.user_id) q = q.eq('user_id', filters.user_id);
+    }
+  } else if (filters.phone) {
+    q = q.ilike('phone_number', `%${filters.phone}%`);
+  }
+
   if (filters.card_type && filters.card_type !== 'all') q = q.ilike('card_type', `%${filters.card_type}%`);
   if (filters.status && filters.status !== 'all')       q = q.eq('status', filters.status);
   if (filters.date_from) q = q.gte('performed_at', filters.date_from);
@@ -1964,6 +2018,34 @@ export async function registerDeviceInRegistry(userId: string, params: {
   ip_address?: string; device_model?: string; platform?: string; app_version?: string;
 }): Promise<void> {
   try {
+    // 1. البحث عن الجهاز باستخدام hardware_hash لنفس المستخدم
+    if (params.hardware_hash) {
+      const { data: existing } = await supabase
+        .from('device_registry')
+        .select('id, device_fp, device_id')
+        .eq('user_id', userId)
+        .eq('hardware_hash', params.hardware_hash)
+        .order('last_seen_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        // تحديث السجل الموجود بدلاً من إضافة واحد جديد (يمنع التكرار)
+        await supabase.from('device_registry').update({
+          device_fp: params.device_fp ?? existing.device_fp,
+          device_id: params.device_id ?? existing.device_id,
+          ip_address: params.ip_address ?? null,
+          device_model: params.device_model ?? null,
+          platform: params.platform ?? null,
+          app_version: params.app_version ?? null,
+          last_seen_at: new Date().toISOString(),
+          is_logged_in: true,
+        }).eq('id', existing.id);
+        return;
+      }
+    }
+
+    // 2. إذا لم يكن موجوداً، أو لم يتوفر hardware_hash، يتم الإدراج مع onConflict احتياطي
     await supabase.from('device_registry').upsert({
       user_id: userId, device_fp: params.device_fp ?? null, device_id: params.device_id ?? null,
       hardware_hash: params.hardware_hash ?? null, ip_address: params.ip_address ?? null,

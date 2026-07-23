@@ -336,7 +336,7 @@ export default function AdminOperationsPage() {
   // ─── بناء الفلاتر ──────────────────────────────────────────────────────────
   const buildFilters = useCallback((): OperationsFilter => {
     const f: OperationsFilter = {};
-    if (search)              f.phone = search;
+    if (search)              f.search = search;
     if (statusF !== 'all')   f.status = statusF;
     if (sourceF !== 'all')   f.operation_source = sourceF;
     if (cardTypeF !== 'all') f.card_type = cardTypeF;
@@ -510,12 +510,12 @@ export default function AdminOperationsPage() {
             <span className="text-xs font-semibold text-muted-foreground">فلاتر البحث</span>
           </div>
 
-          {/* الصف الأول: بحث بالهاتف */}
+          {/* الصف الأول: بحث عام */}
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               className="pr-9 bg-background border-border h-10"
-              placeholder="بحث برقم الهاتف..."
+              placeholder="بحث برقم الهاتف، اسم المستخدم، أو ID العملية..."
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />

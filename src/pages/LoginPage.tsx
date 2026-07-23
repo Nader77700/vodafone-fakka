@@ -36,6 +36,7 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<Mode>('login');
   const [username, setUsername] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -143,8 +144,8 @@ export default function LoginPage() {
   };
 
   const handleRegister = async () => {
-    if (!username.trim() || !password || !confirmPassword) {
-      toast.error('يرجى ملء جميع الحقول');
+    if (!username.trim() || !phone.trim() || !password || !confirmPassword) {
+      toast.error('يرجى ملء جميع الحقول (اسم المستخدم، رقم الهاتف، وكلمتي المرور)');
       return;
     }
     // ── فحص حظر الجهاز قبل التسجيل ──
@@ -167,8 +168,12 @@ export default function LoginPage() {
       toast.error('اسم المستخدم يجب ألا يتجاوز 7 أحرف');
       return;
     }
-    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
-      toast.error('اسم المستخدم يجب أن يحتوي على حروف إنجليزية أو أرقام فقط');
+    if (!/^[a-zA-Z0-9_]+$/.test(username.trim()) || !/[a-zA-Z]/.test(username.trim())) {
+      toast.error('اسم المستخدم يجب أن يحتوي على حروف إنجليزية، ولا يمكن أن يكون أرقاماً فقط');
+      return;
+    }
+    if (!/^01[0125][0-9]{8}$/.test(phone.trim())) {
+      toast.error('يرجى إدخال رقم هاتف مصري صحيح (مثال: 01012345678)');
       return;
     }
     if (password.length < 8) {
@@ -204,7 +209,7 @@ export default function LoginPage() {
     const regEmail = `${username.trim().toLowerCase()}@miaoda.com`;
     const { data, error } = await supabase.auth.signUp({
       email: regEmail, password,
-      options: { data: { username: username.trim() } },
+      options: { data: { username: username.trim(), phone: phone.trim() } },
     });
     if (error) {
       setLoading(false);
@@ -221,7 +226,8 @@ export default function LoginPage() {
     }
     if (data.user) {
       await supabase.from('profiles').update({
-        username: username.trim()
+        username: username.trim(),
+        phone: phone.trim()
       }).eq('id', data.user.id);
       const linked = await applyPendingInvites(data.user.id);
       // تحديث الـ profile لضمان قراءة merchant_id الجديد
@@ -303,9 +309,26 @@ export default function LoginPage() {
                 />
               </div>
               {mode === 'register' && (
-                <p className="text-xs text-muted-foreground pr-1">اسم المستخدم بالإنجليزية فقط · 4–7 أحرف</p>
+                <p className="text-xs text-muted-foreground pr-1">اسم المستخدم بالإنجليزية فقط · يحتوي على أحرف · 4–7 أحرف</p>
               )}
             </div>
+
+            {mode === 'register' && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-normal text-muted-foreground">رقم الهاتف <span className="text-destructive">*</span></Label>
+                <div className="relative input-premium rounded-lg">
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
+                    placeholder="01012345678"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground pr-1">رقم هاتف مصري لتأمين الحساب واسترجاعه</p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label className="text-sm font-normal text-muted-foreground">كلمة المرور</Label>
