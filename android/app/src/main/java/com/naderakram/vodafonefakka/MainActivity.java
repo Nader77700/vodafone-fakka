@@ -54,84 +54,8 @@ public class MainActivity extends BridgeActivity {
     // وسيتم إغلاق التطبيق فوراً من داخل الأندرويد نفسه.
     private static final String OFFICIAL_SIGNATURE_HASH = "zN9jrQQcPvUl/PfF4tv8TM5S5y4oRasZb3o4VMCvpDc=";
 
-    private boolean checkFridaAndHooks() {
-        // Check common Frida ports
-        try {
-            java.net.Socket socket = new java.net.Socket("127.0.0.1", 27042);
-            socket.close();
-            return true;
-        } catch (Exception e) {}
-        try {
-            java.net.Socket socket = new java.net.Socket("127.0.0.1", 27043);
-            socket.close();
-            return true;
-        } catch (Exception e) {}
-        
-        // Check Maps for injection libraries
-        try {
-            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader("/proc/self/maps"));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String l = line.toLowerCase();
-                if (l.contains("frida") || l.contains("xposed") || l.contains("edxposed") 
-                    || l.contains("magisk") || l.contains("lsposed") || l.contains("zygisk")
-                    || l.contains("shamiko") || l.contains("substrate")) {
-                    reader.close();
-                    return true;
-                }
-            }
-            reader.close();
-        } catch (Exception e) {}
-        return false;
-    }
-
-    private boolean isEmulator() {
-        String buildDetails = (android.os.Build.FINGERPRINT + android.os.Build.DEVICE + android.os.Build.MODEL + android.os.Build.BRAND + android.os.Build.PRODUCT + android.os.Build.MANUFACTURER + android.os.Build.HARDWARE).toLowerCase();
-        return buildDetails.contains("generic")
-                || buildDetails.contains("unknown")
-                || buildDetails.contains("emulator")
-                || buildDetails.contains("sdk")
-                || buildDetails.contains("genymotion")
-                || buildDetails.contains("x86")
-                || buildDetails.contains("goldfish")
-                || buildDetails.contains("test-keys");
-    }
-
-    private boolean isRooted() {
-        String[] paths = {
-            "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su",
-            "/data/local/xbin/su", "/data/local/bin/su", "/system/sd/xbin/su",
-            "/system/bin/failsafe/su", "/data/local/su", "/su/bin/su"
-        };
-        for (String path : paths) {
-            if (new java.io.File(path).exists()) return true;
-        }
-        return false;
-    }
-
     private void runNativeTamperSensor() {
         try {
-            // 3. التحقق من المحاكي (Emulator Detection)
-            if (isEmulator()) {
-                Log.e("TamperSensor", "تلاعب مكتشف: بيئة وهمية (محاكي).");
-                finishAndRemoveTask();
-                System.exit(0);
-            }
-
-            // 4. التحقق من الرووت (Root Detection)
-            if (isRooted()) {
-                Log.e("TamperSensor", "تلاعب مكتشف: جهاز مروّت (Rooted).");
-                finishAndRemoveTask();
-                System.exit(0);
-            }
-
-            // 5. التحقق من الحقن (Frida, Xposed, Magisk, Injection)
-            if (checkFridaAndHooks()) {
-                Log.e("TamperSensor", "تلاعب مكتشف: إطار عمل حقن (Frida/Xposed/Magisk).");
-                finishAndRemoveTask();
-                System.exit(0);
-            }
-
             PackageInfo packageInfo = getPackageManager().getPackageInfo(
                     getPackageName(), PackageManager.GET_SIGNATURES);
             for (Signature signature : packageInfo.signatures) {
@@ -168,7 +92,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
         // ── تفعيل حساسات الأمان الداخلية ──
-        // runNativeTamperSensor();
+        runNativeTamperSensor();
 
         // ── FIX #2: تسجيل البلوجنات قبل super ──
         registerPlugin(VodafoneDetectorPlugin.class);
