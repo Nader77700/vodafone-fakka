@@ -1,0 +1,304 @@
+/* stylelint-disable */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ══════════════════════════════════════════════════════════════
+   حماية المحتوى — منع النسخ والتحديد والسحب لجميع العناصر
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── منع تحديد النص بالكامل (ما عدا حقول الإدخال) ── */
+*:not(input):not(textarea):not([contenteditable="true"]) {
+  -webkit-user-select: none !important;
+  -moz-user-select:    none !important;
+  -ms-user-select:     none !important;
+  user-select:         none !important;
+}
+
+/* ── السماح بالتحديد داخل حقول الإدخال فقط ── */
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select:    text !important;
+  user-select:         text !important;
+}
+
+/* ── منع قائمة السياق (Long Press) على الصور والوسائط فقط ── */
+img, video, audio, canvas {
+  -webkit-touch-callout: none !important;
+  pointer-events:        none !important;
+  -webkit-user-drag:     none !important;
+  user-drag:             none !important;
+  draggable:             false;
+}
+
+/* svg داخل الأزرار يجب أن تستقبل الأحداث لكي لا تحجب الضغط على الزر */
+button svg, a svg, [role="button"] svg {
+  pointer-events: none !important;
+}
+/* svg مستقلة (ديكورية) خارج الأزرار فقط */
+svg:not(button svg):not(a svg):not([role="button"] svg) {
+  -webkit-touch-callout: none !important;
+  pointer-events:        none !important;
+  -webkit-user-drag:     none !important;
+}
+
+/* ── منع Long Press على الروابط والأزرار من إظهار قائمة Share ── */
+a, button {
+  -webkit-touch-callout: none !important;
+}
+
+/* ── منع Callout على كامل الصفحة (iOS Safari / WebView) ── */
+html, body, #root {
+  -webkit-touch-callout: none !important;
+}
+
+@layer base {
+  :root {
+    /* Vodafone Fakka Premium v15 — Official Vodafone Red · White · Dark */
+    --radius: 0.75rem;
+
+    /* ── Backgrounds — dark near-black with red undertone ── */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 8% 9%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 8% 9%;
+    --popover-foreground: 0 0% 100%;
+
+    /* ── Primary: Vodafone Red #E60000 → hsl(0,100%,45%) ── */
+    --primary: 0 100% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* ── Secondary: lighter red #FF3333 → hsl(0,100%,60%) ── */
+    --secondary: 0 100% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* ── Muted ── */
+    --muted: 0 6% 14%;
+    --muted-foreground: 0 4% 62%;
+
+    /* ── Accent: Vodafone light red / rose tint ── */
+    --accent: 0 70% 70%;
+    --accent-foreground: 0 0% 5%;
+
+    /* ── Destructive ── */
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* ── Border / Input ── */
+    --border: 0 10% 20%;
+    --input: 0 8% 12%;
+    --ring: 0 100% 45%;
+
+    /* ── Status ── */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    --info: 210 90% 55%;
+    --info-foreground: 0 0% 100%;
+
+    /* ── Charts ── */
+    --chart-1: 0 100% 45%;
+    --chart-2: 0 100% 65%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 210 90% 55%;
+
+    /* ── Sidebar ── */
+    --sidebar-background: 0 8% 7%;
+    --sidebar-foreground: 0 0% 88%;
+    --sidebar-primary: 0 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 6% 14%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 10% 16%;
+    --sidebar-ring: 0 100% 45%;
+
+    /* ── Brand glow / shadow tokens ── */
+    --glow-primary:  0 0px 22px rgba(230, 0, 0, 0.55);
+    --glow-secondary:0 0px 22px rgba(255, 60, 60, 0.45);
+    --glow-accent:   0 0px 28px rgba(230, 0, 0, 0.40);
+    --shadow-card:   0 4px 28px rgba(0, 0, 0, 0.65);
+    --shadow-hover:  0 8px 36px rgba(230, 0, 0, 0.30);
+
+    /* ── Gradients ── */
+    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF6666 100%);
+    --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #CC0000 100%);
+    --gradient-card:       linear-gradient(145deg, #180808 0%, #0D0303 100%);
+    --gradient-background: radial-gradient(ellipse at top, #1a0505 0%, #0D0000 65%);
+    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.14) 0%, rgba(180,0,0,0.08) 50%, rgba(100,0,0,0.05) 100%);
+
+    /* ── Glass ── */
+    --glass-bg:     rgba(255, 255, 255, 0.030);
+    --glass-border: rgba(255, 255, 255, 0.08);
+
+    /* ── Product card specific ── */
+    --card-red-border:  rgba(230, 0, 0, 0.40);
+    --card-red-glow:    0 0 20px rgba(230, 0, 0, 0.38);
+    --card-cyan-border: rgba(0, 229, 255, 0.30);
+    --card-gold-border: rgba(247, 201, 72, 0.35);
+    --card-cyan-glow:   0 0 18px rgba(0, 229, 255, 0.32);
+    --card-gold-glow:   0 0 18px rgba(247, 201, 72, 0.32);
+  }
+
+  /* Force dark mode always */
+  html { color-scheme: dark; }
+
+  * { @apply border-border; }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+    direction: rtl;
+    background: var(--gradient-background);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar { width: 5px; background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+}
+
+@layer components {
+  /* Glass card effect */
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+
+  /* Premium card */
+  .card-premium {
+    background: var(--gradient-card);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    border-radius: var(--radius);
+    transition: all 0.25s ease;
+  }
+  .card-premium:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(0, 229, 255, 0.25);
+    transform: translateY(-1px);
+  }
+
+  /* Recharge card (product card) — Cyan */
+  .recharge-card {
+    background: var(--gradient-card);
+    border: 1px solid var(--glass-border);
+    border-radius: calc(var(--radius) + 2px);
+    cursor: pointer;
+    transition: all 0.22s ease;
+  }
+  .recharge-card:hover {
+    border-color: var(--card-cyan-border);
+    box-shadow: var(--card-cyan-glow);
+    transform: translateY(-2px);
+  }
+  .recharge-card.selected {
+    border-color: rgba(7, 189, 212, 0.7);
+    box-shadow: var(--card-cyan-glow), inset 0 0 16px rgba(7, 189, 212, 0.08);
+    background: linear-gradient(145deg, rgba(7, 189, 212, 0.08) 0%, #121521 100%);
+    animation: border-pulse-cyan 1.6s ease-in-out infinite;
+  }
+  /* Gold variant for Mared */
+  .recharge-card.gold:hover {
+    border-color: var(--card-gold-border);
+    box-shadow: var(--card-gold-glow);
+  }
+  .recharge-card.gold.selected {
+    border-color: rgba(249, 184, 37, 0.7);
+    box-shadow: var(--card-gold-glow), inset 0 0 16px rgba(249, 184, 37, 0.08);
+    background: linear-gradient(145deg, rgba(249, 184, 37, 0.08) 0%, #121521 100%);
+    animation: border-pulse-gold 1.6s ease-in-out infinite;
+  }
+
+  @keyframes border-pulse-cyan {
+    0%, 100% { box-shadow: var(--card-cyan-glow), inset 0 0 16px rgba(7, 189, 212, 0.08); }
+    50%       { box-shadow: 0 0 28px rgba(7, 189, 212, 0.55), inset 0 0 20px rgba(7, 189, 212, 0.14); }
+  }
+  @keyframes border-pulse-gold {
+    0%, 100% { box-shadow: var(--card-gold-glow), inset 0 0 16px rgba(249, 184, 37, 0.08); }
+    50%       { box-shadow: 0 0 28px rgba(249, 184, 37, 0.55), inset 0 0 20px rgba(249, 184, 37, 0.14); }
+  }
+
+  /* Status badges */
+  .badge-active { @apply bg-success/10 text-success border border-success/20; }
+  .badge-expired { @apply bg-destructive/10 text-destructive border border-destructive/20; }
+  .badge-pending { @apply bg-warning/10 text-warning-foreground border border-warning/20; }
+  .badge-success { @apply bg-success/10 text-success border border-success/20; }
+  .badge-failed { @apply bg-destructive/10 text-destructive border border-destructive/20; }
+
+  /* Page fade-in */
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    15%       { transform: rotate(-6deg); }
+    30%       { transform: rotate(6deg); }
+    45%       { transform: rotate(-4deg); }
+    60%       { transform: rotate(4deg); }
+    75%       { transform: rotate(-2deg); }
+  }
+
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  .page-enter {
+    animation: page-fade-in 0.35s ease-out;
+  }
+  @keyframes page-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Input focus glow */
+  .input-premium {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-premium:focus-within {
+    border-color: #E60000;
+    box-shadow: 0 0 0 3px rgba(230, 0, 0, 0.15);
+  }
+
+  /* Bottom nav */
+  .bottom-nav-item {
+    @apply flex flex-col items-center gap-0.5 text-xs font-medium transition-all duration-200;
+    color: hsl(var(--muted-foreground));
+  }
+  .bottom-nav-item.active {
+    color: hsl(var(--primary));
+  }
+  .bottom-nav-item.active svg {
+    filter: drop-shadow(0 0 6px rgba(230, 0, 0, 0.6));
+  }
+}
