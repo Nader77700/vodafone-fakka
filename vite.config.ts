@@ -2,7 +2,54 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import path from "path";
-import obfuscator from 'rollup-plugin-javascript-obfuscator';
+import JavaScriptObfuscator from 'javascript-obfuscator';
+
+const customObfuscatorPlugin = () => {
+  return {
+    name: 'custom-obfuscator',
+    enforce: 'post',
+    apply: 'build',
+    generateBundle(options, bundle) {
+      for (const fileName in bundle) {
+        const chunk = bundle[fileName];
+        if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
+          const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
+            compact: true,
+            controlFlowFlattening: true,
+            controlFlowFlatteningThreshold: 0.75,
+            deadCodeInjection: false,
+            deadCodeInjectionThreshold: 0,
+            debugProtection: true,
+            debugProtectionInterval: 4000,
+            disableConsoleOutput: true,
+            identifierNamesGenerator: 'hexadecimal',
+            log: false,
+            numbersToExpressions: true,
+            renameGlobals: false,
+            selfDefending: false,
+            simplify: true,
+            splitStrings: true,
+            splitStringsChunkLength: 10,
+            stringArray: true,
+            stringArrayCallsTransform: true,
+            stringArrayEncoding: ['base64'],
+            stringArrayIndexShift: true,
+            stringArrayRotate: true,
+            stringArrayShuffle: true,
+            stringArrayWrappersCount: 1,
+            stringArrayWrappersChainedCalls: true,
+            stringArrayWrappersParametersMaxCount: 2,
+            stringArrayWrappersType: 'variable',
+            stringArrayThreshold: 0.75,
+            transformObjectKeys: true,
+            unicodeEscapeSequence: false
+          });
+          chunk.code = obfuscated.getObfuscatedCode();
+        }
+      }
+    }
+  };
+};
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === "production";
@@ -17,37 +64,7 @@ export default defineConfig(({ mode }) => {
         namedExport: "ReactComponent",
       },
     }),
-    isProd && obfuscator({
-      compact: true,
-      controlFlowFlattening: false,
-      controlFlowFlatteningThreshold: 0,
-      deadCodeInjection: false,
-      deadCodeInjectionThreshold: 0,
-      debugProtection: true,
-      debugProtectionInterval: 4000,
-      disableConsoleOutput: true,
-      identifierNamesGenerator: 'hexadecimal',
-      log: false,
-      numbersToExpressions: true,
-      renameGlobals: true,
-      selfDefending: true, // selfDefending can crash webviews on Android sometimes
-      simplify: true,
-      splitStrings: true,
-      splitStringsChunkLength: 5,
-      stringArray: true,
-      stringArrayCallsTransform: true,
-      stringArrayEncoding: ['base64', 'rc4'],
-      stringArrayIndexShift: true,
-      stringArrayRotate: true,
-      stringArrayShuffle: true,
-      stringArrayWrappersCount: 2,
-      stringArrayWrappersChainedCalls: true,
-      stringArrayWrappersParametersMaxCount: 2,
-      stringArrayWrappersType: 'variable',
-      stringArrayThreshold: 0.75,
-      transformObjectKeys: true,
-      unicodeEscapeSequence: false
-    })
+    isProd && customObfuscatorPlugin()
   ],
   resolve: {
     alias: {

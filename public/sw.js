@@ -14,13 +14,11 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          console.log('[SW Kill Switch] Deleting cache:', cacheName);
           return caches.delete(cacheName);
         })
       );
     }).then(() => {
       self.registration.unregister().then(() => {
-        console.log('[SW Kill Switch] Unregistered completely.');
       });
     }).then(() => self.clients.claim())
   );
