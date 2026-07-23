@@ -431,6 +431,8 @@ function AppInner() {
   const flags = config.feature_flags;
 
   // ── Blocking Screens ──
+  const isLoginPage = window.location.pathname === '/login' || window.location.hash.includes('/login');
+  
   const renderBlockingScreen = () => {
     let Component = null;
     let props: any = {};
@@ -450,8 +452,6 @@ function AppInner() {
   };
 
   const blockingScreen = renderBlockingScreen();
-
-  const isLoginPage = window.location.pathname === '/login' || window.location.hash.includes('/login');
 
   const renderProfileError = () => {
     if (user && !profile && !loading) {
