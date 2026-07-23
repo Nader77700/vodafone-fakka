@@ -61,7 +61,6 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           npx vite build --minify true --outDir dist
-          node scripts/obfuscate.mjs
           echo "✅ Vite build OK"
 
       # ─── [1b] DEPLOY WEB APP TO web-live (OTA — بدون APK جديد) ──────────
