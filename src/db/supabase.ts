@@ -5,9 +5,56 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { securityManager } from "@/lib/security";
 import { generateRequestSignature } from "@/lib/hmac";
+import CryptoJS from 'crypto-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// مفتاح التشفير السري (Dynamic Key generation based on device/app info makes it harder to extract)
+// We use a combination of Anon Key and Package Name as a static base key for localStorage.
+// Note: In browser, it's easily extractable, but obfuscation protects it. In Capacitor, it's much harder.
+const STORAGE_ENCRYPTION_KEY = CryptoJS.SHA256(supabaseAnonKey + 'com.naderakram.vodafonefakka_VFP_SECURE_STORAGE').toString();
+
+// Secure Storage Adapter for Supabase
+const secureStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      const encryptedValue = localStorage.getItem(key);
+      if (!encryptedValue) return null;
+      
+      // Attempt to decrypt
+      const decryptedBytes = CryptoJS.AES.decrypt(encryptedValue, STORAGE_ENCRYPTION_KEY);
+      const decryptedString = decryptedBytes.toString(CryptoJS.enc.Utf8);
+      
+      // If decryption fails (e.g., old unencrypted data or tampered data)
+      if (!decryptedString) {
+        // Fallback: If it looks like valid JSON (old unencrypted session), migrate it
+        if (encryptedValue.startsWith('{') || encryptedValue.startsWith('[')) {
+           secureStorage.setItem(key, encryptedValue); // Re-save as encrypted
+           return encryptedValue;
+        }
+        return null; // Invalid data
+      }
+      return decryptedString;
+    } catch (err) {
+      console.warn('Storage decryption failed, clearing corrupted data.');
+      localStorage.removeItem(key);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      const encryptedValue = CryptoJS.AES.encrypt(value, STORAGE_ENCRYPTION_KEY).toString();
+      localStorage.setItem(key, encryptedValue);
+    } catch (err) {
+      console.error('Storage encryption failed', err);
+    }
+  },
+  removeItem: (key: string): void => {
+    localStorage.removeItem(key);
+  }
+};
+
 
 let cachedSignature: string | null = null;
 let cachedBuildHash: string | null = null;
@@ -78,6 +125,12 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: secureStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  },
   global: {
     headers: {
       'x-app-build': BUILD_INFO.versionCode.toString(),

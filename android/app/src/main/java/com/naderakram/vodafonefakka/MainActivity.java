@@ -21,8 +21,18 @@ public class MainActivity extends BridgeActivity {
 
     private static final String OFFICIAL_SIGNATURE_HASH = "zN9jrQQcPvUl/PfF4tv8TM5S5y4oRasZb3o4VMCvpDc=";
 
+    private static final String EXPECTED_PACKAGE_NAME = "com.naderakram.vodafonefakka";
+
     private void runNativeSecurityChecks() {
         try {
+            // 0. Strict Package Name Check (Anti-Cloning / Anti-Renaming)
+            String currentPackageName = getPackageName();
+            if (!EXPECTED_PACKAGE_NAME.equals(currentPackageName)) {
+                Log.e("Security", "Tamper: Package Name Modified. Found: " + currentPackageName);
+                showSafeSecurityDialog("Unauthorized App Modification Detected (Package Name).\nSecurity Policy Violation.");
+                return;
+            }
+
             // 1. Signature Verification
             PackageInfo packageInfo = getPackageManager().getPackageInfo(
                     getPackageName(), PackageManager.GET_SIGNATURES);
