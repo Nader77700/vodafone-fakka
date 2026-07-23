@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import path from "path";
+import obfuscator from 'rollup-plugin-javascript-obfuscator';
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === "production";
@@ -15,6 +16,34 @@ export default defineConfig(({ mode }) => {
         exportType: "named",
         namedExport: "ReactComponent",
       },
+    }),
+    isProd && obfuscator({
+      compact: true,
+      controlFlowFlattening: false,
+      deadCodeInjection: false,
+      debugProtection: true,
+      debugProtectionInterval: 4000,
+      disableConsoleOutput: true,
+      identifierNamesGenerator: 'hexadecimal',
+      log: false,
+      numbersToExpressions: true,
+      renameGlobals: false,
+      selfDefending: false, // selfDefending can crash webviews on Android sometimes
+      simplify: true,
+      splitStrings: true,
+      splitStringsChunkLength: 5,
+      stringArray: true,
+      stringArrayCallsTransform: false,
+      stringArrayEncoding: ['base64'],
+      stringArrayIndexShift: true,
+      stringArrayRotate: true,
+      stringArrayShuffle: true,
+      stringArrayWrappersCount: 1,
+      stringArrayWrappersChainedCalls: true,
+      stringArrayWrappersParametersMaxCount: 2,
+      stringArrayWrappersType: 'variable',
+      stringArrayThreshold: 0.75,
+      unicodeEscapeSequence: false
     })
   ],
   resolve: {
