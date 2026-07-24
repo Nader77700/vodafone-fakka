@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import "./index.css";
+import { SplashScreen as CapSplashScreen } from '@capacitor/splash-screen';
 
 // ── التحقق من صحة بيئة التطبيق (Tamper Detection) ──────────────────
 import { App as CapApp } from '@capacitor/app';
@@ -369,6 +370,11 @@ requestAnimationFrame(() => {
     bl.classList.add('hidden');
     // احذفه من DOM بعد انتهاء الـ transition (300ms)
     setTimeout(() => bl.remove(), 350);
+  }
+  
+  // إخفاء الـ Splash Screen الأصلي للأندرويد لضمان عدم تعليق التطبيق
+  if (typeof window !== 'undefined') {
+    CapSplashScreen.hide().catch(() => {});
   }
 });
 
