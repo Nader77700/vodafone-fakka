@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.379',
-  versionCode:    379,
+  appVersion:     '3.0.380',
+  versionCode:    380,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_379',
-  bundleFile:     'VodafoneFakka-v3.0.379.apk',
-  bundleHash:     'apk_v3_0_379_code379',
-  apkHash:        'apk_v3_0_379_code379',
-  dbVersion:      'v3.0.379',
+  sourceHash:     'build_fix_380',
+  bundleFile:     'VodafoneFakka-v3.0.380.apk',
+  bundleHash:     'apk_v3_0_380_code380',
+  apkHash:        'apk_v3_0_380_code380',
+  dbVersion:      'v3.0.380',
   releaseNotes: [
+    'v3.0.380: تفعيل حماية متقدمة (تشفير JS ذاتي الدفاع وكراش تلقائي عند التعديل) لمنع الهندسة العكسية',
     'v3.0.379: إصلاح حقيقي لشاشة البداية بإزالة crypto-js الذي كان يسبب تعليق التطبيق',
     'v3.0.376: إصلاح خطأ compile في GitHub Actions بسبب SplashScreen dependency غير موجود',
     'v3.0.375: إزالة Splash الأندرويد الأصلي بالكامل — الثيم الآن أسود حتى يحمل React',
