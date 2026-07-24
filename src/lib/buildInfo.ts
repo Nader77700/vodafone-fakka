@@ -4,16 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.382',
-  versionCode:    382,
+  appVersion:     '3.0.384',
+  versionCode:    384,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_382',
-  bundleFile:     'VodafoneFakka-v3.0.382.apk',
-  bundleHash:     'apk_v3_0_382_code382',
-  apkHash:        'apk_v3_0_382_code382',
-  dbVersion:      'v3.0.382',
+  sourceHash:     'build_fix_384',
+  bundleFile:     'VodafoneFakka-v3.0.384.apk',
+  bundleHash:     'apk_v3_0_384_code384',
+  apkHash:        'apk_v3_0_384_code384',
+  dbVersion:      'v3.0.384',
   releaseNotes: [
-    'v3.0.382: تطبيق التشفير المتقدم بقوة والتأكد من إخفاء الملفات الحساسة',
+    'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',
     'v3.0.380: تفعيل حماية متقدمة (تشفير JS ذاتي الدفاع وكراش تلقائي عند التعديل) لمنع الهندسة العكسية',
     'v3.0.379: إصلاح حقيقي لشاشة البداية بإزالة crypto-js الذي كان يسبب تعليق التطبيق',
     'v3.0.376: إصلاح خطأ compile في GitHub Actions بسبب SplashScreen dependency غير موجود',
