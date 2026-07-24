@@ -148,25 +148,12 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
-        Log.i("VFPMain", "MainActivity.onCreate started");
-        try {
-            super.onCreate(savedInstanceState);
-        } catch (Exception e) {
-            Log.e("VFPMain", "Fatal: BridgeActivity.onCreate crashed", e);
-            showSafeSecurityDialog("Unable to initialize app shell. Please reinstall.");
-            return;
-        }
-
+        super.onCreate(savedInstanceState);
+        
         runNativeSecurityChecks();
-
-        try {
-            registerPlugin(VodafoneDetectorPlugin.class);
-            registerPlugin(ApkInstallerPlugin.class);
-            registerPlugin(PrintPlugin.class);
-            Log.i("VFPMain", "All custom plugins registered");
-        } catch (Exception e) {
-            Log.e("VFPMain", "Plugin registration failed", e);
-            showSafeSecurityDialog("Plugin initialization failed.");
-        }
+        
+        registerPlugin(VodafoneDetectorPlugin.class);
+        registerPlugin(ApkInstallerPlugin.class);
+        registerPlugin(PrintPlugin.class);
     }
 }

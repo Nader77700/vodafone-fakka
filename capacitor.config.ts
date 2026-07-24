@@ -15,11 +15,11 @@ const config: CapacitorConfig = {
       enabled: true,
     },
     SplashScreen: {
-      // ⚠️ لا نعرض Splash أصلي أبدًا؛ الشاشة البدائية كاملة في React
-      // سبب المشكلة: Android SplashScreen API يعلق على بعض الأجهزة قبل تحميل WebView
-      launchShowDuration: 0,
       launchAutoHide: true,
       backgroundColor: "#000000",
+      androidSplashResourceName: "splash",
+      showSpinner: false,
+      launchFadeOutDuration: 200,
     },
   },
 };
