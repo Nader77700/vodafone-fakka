@@ -7,9 +7,10 @@
     "build": "echo 'Do not use this command, only use lint to check'",
     "lint": "tsgo -p tsconfig.check.json; npx biome lint; .rules/check.sh;npx tailwindcss -i ./src/index.css -o /dev/null 2>&1 | grep -E '^(CssSyntaxError|Error):.*' || true;.rules/testBuild.sh"
   },
-  "dependencies": {
+    "dependencies": {
     "@capacitor-community/http": "^1.4.1",
     "@capacitor-community/play-integrity": "^8.0.0",
+    "@capacitor-community/privacy-screen": "^8.0.0",
     "@capacitor/android": "^8.4.1",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
