@@ -1,6 +1,6 @@
 {
   "name": "miaoda-react-admin",
-  "version": "3.0.384",
+  "version": "3.0.385",
   "type": "module",
   "scripts": {
     "dev": "echo 'Do not use this command, only use lint to check'",
@@ -107,6 +107,7 @@
     "terser": "^5.49.0",
     "typescript": "~5.9.3",
     "vite": "^5.1.4",
+    "vite-plugin-javascript-obfuscator": "^3.1.0",
     "vite-plugin-svgr": "^4.5.0"
   }
 }

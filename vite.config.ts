@@ -9,52 +9,38 @@ const customObfuscatorPlugin = () => {
     name: 'custom-obfuscator',
     enforce: 'post',
     apply: 'build',
-    generateBundle(options, bundle) {
-      for (const fileName in bundle) {
-        const chunk = bundle[fileName];
-        if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
-          const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
-            compact: true,
-            controlFlowFlattening: false,
-            controlFlowFlatteningThreshold: 0.75,
-            deadCodeInjection: false,
-            deadCodeInjectionThreshold: 0,
-            debugProtection: false,
-            debugProtectionInterval: 4000,
-            disableConsoleOutput: false,
-            identifierNamesGenerator: 'mangled',
-            log: false,
-            numbersToExpressions: false,
-            renameGlobals: false,
-            selfDefending: false,
-            simplify: true,
-            splitStrings: false,
-            splitStringsChunkLength: 10,
-            stringArray: true,
-            stringArrayCallsTransform: true,
-            stringArrayEncoding: ['base64'],
-            stringArrayIndexShift: true,
-            stringArrayRotate: true,
-            stringArrayShuffle: true,
-            stringArrayWrappersCount: 1,
-            stringArrayWrappersChainedCalls: true,
-            stringArrayWrappersParametersMaxCount: 2,
-            stringArrayWrappersType: 'variable',
-            stringArrayThreshold: 0.75,
-            transformObjectKeys: true,
-            unicodeEscapeSequence: false
-          });
-          chunk.code = obfuscated.getObfuscatedCode();
-        }
+    renderChunk(code, chunk) {
+      if (chunk.fileName.endsWith('.js')) {
+        const obfuscated = JavaScriptObfuscator.obfuscate(code, {
+          compact: true,
+          controlFlowFlattening: true,
+          controlFlowFlatteningThreshold: 1,
+          deadCodeInjection: true,
+          deadCodeInjectionThreshold: 0.4,
+          debugProtection: true,
+          debugProtectionInterval: 4000,
+          disableConsoleOutput: true,
+          identifierNamesGenerator: 'hexadecimal',
+          log: false,
+          renameGlobals: false,
+          selfDefending: true,
+          splitStrings: true,
+          splitStringsChunkLength: 5,
+          stringArray: true,
+          stringArrayCallsTransform: true,
+          stringArrayEncoding: ['rc4'],
+          stringArrayThreshold: 1,
+          transformObjectKeys: true,
+          unicodeEscapeSequence: false
+        });
+        return { code: obfuscated.getObfuscatedCode() };
       }
+      return null;
     }
   };
 };
 
 export default defineConfig(({ mode }) => {
-  // تفعيل التشفير دائماً أثناء البناء لضمان تطبيقه
-  const isProd = mode === "production" || process.env.NODE_ENV === "production" || true;
-  
   return {
   plugins: [
     react(),
@@ -65,8 +51,8 @@ export default defineConfig(({ mode }) => {
         namedExport: "ReactComponent",
       },
     }),
-    // isProd && customObfuscatorPlugin(),
-    isProd && {
+    customObfuscatorPlugin(),
+    {
       name: 'html-obfuscator',
       enforce: 'post',
       apply: 'build',
@@ -107,10 +93,10 @@ export default defineConfig(({ mode }) => {
     },
     rollupOptions: {
       output: {
-        // إخفاء أسماء الملفات بعد البناء (هاش عشوائي فقط)
         entryFileNames: "assets/[hash].js",
         chunkFileNames: "assets/[hash].js",
         assetFileNames: "assets/[hash].[ext]",
+        manualChunks: undefined,
       },
     },
   },
