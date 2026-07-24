@@ -8,9 +8,6 @@ project(':capacitor-community-http').projectDir = new File('../node_modules/.pnp
 include ':capacitor-community-play-integrity'
 project(':capacitor-community-play-integrity').projectDir = new File('../node_modules/.pnpm/@capacitor-community+play-integrity@8.0.0_@capacitor+core@8.4.1/node_modules/@capacitor-community/play-integrity/android')
 
-include ':capacitor-community-privacy-screen'
-project(':capacitor-community-privacy-screen').projectDir = new File('../node_modules/.pnpm/@capacitor-community+privacy-screen@8.0.0_@capacitor+core@8.4.1/node_modules/@capacitor-community/privacy-screen/android')
-
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/android')
 

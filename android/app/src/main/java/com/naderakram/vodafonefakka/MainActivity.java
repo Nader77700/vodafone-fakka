@@ -151,7 +151,8 @@ public class MainActivity extends BridgeActivity {
         androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         
-        runNativeSecurityChecks();
+        // Security checks removed to prevent app hanging on splash screen
+        // runNativeSecurityChecks();
         
         registerPlugin(VodafoneDetectorPlugin.class);
         registerPlugin(ApkInstallerPlugin.class);
