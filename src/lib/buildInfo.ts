@@ -4,14 +4,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.371',
-  versionCode:    371,
+  appVersion:     '3.0.372',
+  versionCode:    372,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'update_security_366',
-  bundleFile:     'VodafoneFakka-v3.0.371.apk',
-  bundleHash:     'apk_v3_0_371_code371',
-  apkHash:        'apk_v3_0_371_code371',
-  dbVersion:      'v3.0.371',
+  bundleFile:     'VodafoneFakka-v3.0.372.apk',
+  bundleHash:     'apk_v3_0_372_code372',
+  apkHash:        'apk_v3_0_372_code372',
+  dbVersion:      'v3.0.372',
   releaseNotes: [
     'v3.0.371: إصدار جديد مع إصلاح تمامًا لمشكلة اللوجو النابض والتشفير',
     'v3.0.370: حل مشكلة تعليق التطبيق على اللوجو وإصلاح التشفير',

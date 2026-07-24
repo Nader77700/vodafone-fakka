@@ -418,9 +418,10 @@ function AppInner() {
   const handleSplashDone = () => {
     // سجّل وقت الانتهاء من Splash في localStorage — يصمد بعد إعادة بناء WebView
     localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+    setShowSplash(false);
     setNavigateNow(true);
   };
-  const handleNavigated  = () => { setShowSplash(false); setNavigateNow(false); };
+  const handleNavigated  = () => { setNavigateNow(false); };
 
   // تسجيل FCM بعد تحميل التطبيق
   usePushNotifications();
