@@ -5,37 +5,31 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { securityManager } from "@/lib/security";
 import { generateRequestSignature } from "@/lib/hmac";
-import CryptoJS from 'crypto-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// مفتاح التشفير السري (Dynamic Key generation based on device/app info makes it harder to extract)
-// We use a combination of Anon Key and Package Name as a static base key for localStorage.
-// Note: In browser, it's easily extractable, but obfuscation protects it. In Capacitor, it's much harder.
-const STORAGE_ENCRYPTION_KEY = CryptoJS.SHA256(supabaseAnonKey + 'com.naderakram.vodafonefakka_VFP_SECURE_STORAGE').toString();
+const STORAGE_ENCRYPTION_KEY = supabaseAnonKey + 'com.naderakram.vodafonefakka_VFP_SECURE_STORAGE';
 
-// Secure Storage Adapter for Supabase
+// Secure Storage Adapter for Supabase (XOR + Base64 Obfuscation)
 const secureStorage = {
   getItem: (key: string): string | null => {
     try {
       const encryptedValue = localStorage.getItem(key);
       if (!encryptedValue) return null;
       
-      // Attempt to decrypt
-      const decryptedBytes = CryptoJS.AES.decrypt(encryptedValue, STORAGE_ENCRYPTION_KEY);
-      const decryptedString = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      
-      // If decryption fails (e.g., old unencrypted data or tampered data)
-      if (!decryptedString) {
-        // Fallback: If it looks like valid JSON (old unencrypted session), migrate it
-        if (encryptedValue.startsWith('{') || encryptedValue.startsWith('[')) {
-           secureStorage.setItem(key, encryptedValue); // Re-save as encrypted
-           return encryptedValue;
-        }
-        return null; // Invalid data
+      // Fallback: If it looks like valid JSON (old unencrypted session), migrate it
+      if (encryptedValue.startsWith('{') || encryptedValue.startsWith('[')) {
+         secureStorage.setItem(key, encryptedValue);
+         return encryptedValue;
       }
-      return decryptedString;
+      
+      const decoded = atob(encryptedValue);
+      let result = '';
+      for (let i = 0; i < decoded.length; i++) {
+        result += String.fromCharCode(decoded.charCodeAt(i) ^ STORAGE_ENCRYPTION_KEY.charCodeAt(i % STORAGE_ENCRYPTION_KEY.length));
+      }
+      return decodeURIComponent(escape(result));
     } catch (err) {
       console.warn('Storage decryption failed, clearing corrupted data.');
       localStorage.removeItem(key);
@@ -44,8 +38,12 @@ const secureStorage = {
   },
   setItem: (key: string, value: string): void => {
     try {
-      const encryptedValue = CryptoJS.AES.encrypt(value, STORAGE_ENCRYPTION_KEY).toString();
-      localStorage.setItem(key, encryptedValue);
+      const utf8Value = unescape(encodeURIComponent(value));
+      let encrypted = '';
+      for (let i = 0; i < utf8Value.length; i++) {
+        encrypted += String.fromCharCode(utf8Value.charCodeAt(i) ^ STORAGE_ENCRYPTION_KEY.charCodeAt(i % STORAGE_ENCRYPTION_KEY.length));
+      }
+      localStorage.setItem(key, btoa(encrypted));
     } catch (err) {
       console.error('Storage encryption failed', err);
     }

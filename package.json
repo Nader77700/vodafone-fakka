@@ -1,6 +1,6 @@
 {
   "name": "miaoda-react-admin",
-  "version": "3.0.378",
+  "version": "3.0.379",
   "type": "module",
   "scripts": {
     "dev": "echo 'Do not use this command, only use lint to check'",
@@ -51,12 +51,10 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/react": "^9.47.1",
     "@supabase/supabase-js": "2.103.1",
-    "@types/crypto-js": "^4.2.2",
     "axios": "^1.13.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "disable-devtool": "^0.3.9",
     "embla-carousel-react": "^8.6.0",
@@ -103,6 +101,7 @@
     "javascript-obfuscator": "^5.5.0",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.6",
+    "puppeteer": "^25.3.0",
     "rollup-plugin-javascript-obfuscator": "^1.0.4",
     "tailwindcss": "^3.4.11",
     "terser": "^5.49.0",
