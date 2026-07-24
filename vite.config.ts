@@ -52,7 +52,8 @@ const customObfuscatorPlugin = () => {
 };
 
 export default defineConfig(({ mode }) => {
-  const isProd = mode === "production";
+  // تفعيل التشفير دائماً أثناء البناء لضمان تطبيقه
+  const isProd = mode === "production" || process.env.NODE_ENV === "production" || true;
   
   return {
   plugins: [
