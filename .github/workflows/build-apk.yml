@@ -150,7 +150,7 @@ jobs:
         run: |
           HTTP_GRADLE=$(find node_modules -path "*capacitor-community/http*/android/build.gradle" | head -1)
           if [[ -n "$HTTP_GRADLE" && $(grep -c "namespace" "$HTTP_GRADLE") -eq 0 ]]; then
-            sed -i "s|android {|android {\n    namespace 'com.getcapacitor.community.http'|" "$HTTP_GRADLE"
+            sed -i "s|android {|android {\n    namespace 'com.getcapacitor.plugin.http'|" "$HTTP_GRADLE"
           fi
           HTTP_MANIFEST=$(find node_modules -path "*capacitor-community/http*/android/src/main/AndroidManifest.xml" | head -1)
           [[ -n "$HTTP_MANIFEST" ]] && sed -i 's/ package="[^"]*"//' "$HTTP_MANIFEST" || true
