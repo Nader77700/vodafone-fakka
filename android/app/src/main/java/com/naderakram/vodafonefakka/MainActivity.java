@@ -159,21 +159,6 @@ public class MainActivity extends BridgeActivity {
 
         runNativeSecurityChecks();
 
-        // مؤقت أمان: لو علّق الـ Splash الأصلي، نجبر إخفاءه بعد 10 ثواني
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    androidx.core.splashscreen.SplashScreen splashScreen = androidx.core.splashscreen.SplashScreen.INSTANCE;
-                    if (splashScreen != null) {
-                        Log.i("VFPMain", "Force-splash safety triggered");
-                    }
-                } catch (Exception e) {
-                    Log.e("VFPMain", "SplashScreen safety check failed", e);
-                }
-            }
-        }, 10000);
-
         try {
             registerPlugin(VodafoneDetectorPlugin.class);
             registerPlugin(ApkInstallerPlugin.class);
