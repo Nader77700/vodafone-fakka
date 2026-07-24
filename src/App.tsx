@@ -396,12 +396,12 @@ function AppInner() {
 
   // isColdStart: فقط إذا لم يكن للتطبيق نشاط حديث (خلال 30 دقيقة)
   const isColdStart = (() => {
-    const ts = Number(localStorage.getItem(ACTIVITY_KEY) ?? 0);
-    if (!ts) return true;
-    return Date.now() - ts > RESUME_TTL_MS;
+    // نجبر الـ Splash تظهر دائمًا في الـ Cold Start أو لا
+    // لقد قمنا بتعديل اللوجيك بحيث يعمل في الويب بطريقة أصح
+    return true; 
   })();
 
-  // نظهر الشاشة البدائية دائماً (حتى لو لم يكن Cold Start) لتغطية الشاشة السوداء وإعطاء التطبيق مساحة للتحميل خلفها
+  // نظهر الشاشة البدائية دائمًا لضمان تهيئة التطبيق
   const [showSplash,  setShowSplash]  = useState(true);
   const [navigateNow, setNavigateNow] = useState(false);
 
