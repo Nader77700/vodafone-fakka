@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
         namedExport: "ReactComponent",
       },
     }),
-    isProd && customObfuscatorPlugin(),
+    // isProd && customObfuscatorPlugin(),
     isProd && {
       name: 'html-obfuscator',
       enforce: 'post',
