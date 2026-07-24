@@ -64,7 +64,15 @@ export default defineConfig(({ mode }) => {
         namedExport: "ReactComponent",
       },
     }),
-    isProd && customObfuscatorPlugin()
+    isProd && customObfuscatorPlugin(),
+    isProd && {
+      name: 'html-obfuscator',
+      enforce: 'post',
+      apply: 'build',
+      transformIndexHtml(html) {
+        return html.replace(/<!--[\s\S]*?-->/g, ''); // إزالة جميع التعليقات من HTML
+      }
+    }
   ],
   resolve: {
     alias: {
