@@ -102,6 +102,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.27",
     "javascript-obfuscator": "^5.5.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.6",
     "rollup-plugin-javascript-obfuscator": "^1.0.4",
     "tailwindcss": "^3.4.11",
