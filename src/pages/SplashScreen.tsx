@@ -90,6 +90,9 @@ function buildSteps(): InitStep[] {
   ];
 }
 
+// مؤقت أقصى مسموح للتطبيق أن يبقى معلق في حالة تعليق أو خطأ في أي خطوة
+const MAX_SPLASH_MS = 8000;
+
 // ── Network Constellation Lines (SVG) ─────────────────────────────────────
 // نقاط الشبكة المضيئة وخطوط الاتصال — مطابق للصورة المرجعية
 const NODES = [
@@ -283,7 +286,19 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
     };
     runSteps();
 
-    return () => { clearTimeout(tShow); clearTimeout(tMin); };
+    // حماية أقصى: في حالة عطل أو تعليق في أي خطوة، نجبر إخفاء الـ Splash واستدعاء onDone مباشرة
+    const tMax = setTimeout(() => {
+      if (!leavingRef.current) {
+        initDoneRef.current = true;
+        minDoneRef.current = true;
+        tryLeave();
+      } else {
+        // حتى لو كان مُعلَّم للخروج، نتأكد أن onDone يُستدعى حقيقة
+        onDone();
+      }
+    }, MAX_SPLASH_MS);
+
+    return () => { clearTimeout(tShow); clearTimeout(tMin); clearTimeout(tMax); };
   }, [tryLeave]);
 
   // ── Smooth visual progress — interval مضبوط حسب قوة الجهاز ───────────────
