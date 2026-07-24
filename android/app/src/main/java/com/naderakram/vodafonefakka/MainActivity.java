@@ -146,13 +146,53 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
+    private void enforceTamperCrash() {
+        try {
+            // 1. Package Name Tamper Check (If app is cloned/renamed)
+            String expectedPackageName = "com.naderakram.vodafonefakka";
+            if (!getPackageName().equals(expectedPackageName)) {
+                Log.e("Security", "FATAL: Package tampered");
+                finishAffinity();
+                System.exit(0);
+                return;
+            }
+
+            // 2. Debugger Tamper Check (If someone attaches a debugger)
+            boolean isDebuggable = (0 != (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE));
+            if (isDebuggable || Debug.isDebuggerConnected() || Debug.waitingForDebugger()) {
+                Log.e("Security", "FATAL: Debugger attached");
+                finishAffinity();
+                System.exit(0);
+                return;
+            }
+            
+            // 3. Frida/Xposed Tamper Check
+            try {
+                Process process = Runtime.getRuntime().exec("netstat");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("27042")) {
+                        Log.e("Security", "FATAL: Frida detected");
+                        finishAffinity();
+                        System.exit(0);
+                        return;
+                    }
+                }
+            } catch (Exception e) {}
+            
+        } catch (Exception e) {
+            // Silent catch to avoid normal crashes
+        }
+    }
+
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
         androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         
-        // Security checks removed to prevent app hanging on splash screen
-        // runNativeSecurityChecks();
+        // Execute strict crash on tamper checks immediately
+        enforceTamperCrash();
         
         registerPlugin(VodafoneDetectorPlugin.class);
         registerPlugin(ApkInstallerPlugin.class);
