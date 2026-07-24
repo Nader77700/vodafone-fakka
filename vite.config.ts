@@ -15,11 +15,11 @@ const customObfuscatorPlugin = () => {
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
           const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
             compact: true,
-            controlFlowFlattening: true,
+            controlFlowFlattening: false,
             controlFlowFlatteningThreshold: 0.75,
             deadCodeInjection: false,
             deadCodeInjectionThreshold: 0,
-            debugProtection: true,
+            debugProtection: false,
             debugProtectionInterval: 4000,
             disableConsoleOutput: true,
             identifierNamesGenerator: 'hexadecimal',
