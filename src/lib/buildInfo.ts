@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.373',
-  versionCode:    373,
+  appVersion:     '3.0.374',
+  versionCode:    374,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'splash_failsafe_373',
-  bundleFile:     'VodafoneFakka-v3.0.373.apk',
-  bundleHash:     'apk_v3_0_373_code373',
-  apkHash:        'apk_v3_0_373_code373',
-  dbVersion:      'v3.0.373',
+  sourceHash:     'native_splash_fix_374',
+  bundleFile:     'VodafoneFakka-v3.0.374.apk',
+  bundleHash:     'apk_v3_0_374_code374',
+  apkHash:        'apk_v3_0_374_code374',
+  dbVersion:      'v3.0.374',
   releaseNotes: [
+    'v3.0.374: إصلاح جذري للـ Splash الأصلي: تعطيل SplashScreen الأندرويد وإزالة حماية السكرينشوت',
     'v3.0.373: حماية أقصى للـ Splash: إجبار إخفاء شاشة التحميل بعد 8 ثواني حتى لو علّق خطوة تهيئة',
     'v3.0.372: إصلاح إخفاء Splash بعد انتهاء التحميل وإزالة حالة التنقل العالقة',
     'v3.0.371: إصدار جديد مع إصلاح تمامًا لمشكلة اللوجو النابض والتشفير',

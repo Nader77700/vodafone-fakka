@@ -148,12 +148,40 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
+        Log.i("VFPMain", "MainActivity.onCreate started");
+        try {
+            super.onCreate(savedInstanceState);
+        } catch (Exception e) {
+            Log.e("VFPMain", "Fatal: BridgeActivity.onCreate crashed", e);
+            showSafeSecurityDialog("Unable to initialize app shell. Please reinstall.");
+            return;
+        }
+
         runNativeSecurityChecks();
-        
-        registerPlugin(VodafoneDetectorPlugin.class);
-        registerPlugin(ApkInstallerPlugin.class);
-        registerPlugin(PrintPlugin.class);
+
+        // مؤقت أمان: لو علّق الـ Splash الأصلي، نجبر إخفاءه بعد 10 ثواني
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    androidx.core.splashscreen.SplashScreen splashScreen = androidx.core.splashscreen.SplashScreen.INSTANCE;
+                    if (splashScreen != null) {
+                        Log.i("VFPMain", "Force-splash safety triggered");
+                    }
+                } catch (Exception e) {
+                    Log.e("VFPMain", "SplashScreen safety check failed", e);
+                }
+            }
+        }, 10000);
+
+        try {
+            registerPlugin(VodafoneDetectorPlugin.class);
+            registerPlugin(ApkInstallerPlugin.class);
+            registerPlugin(PrintPlugin.class);
+            Log.i("VFPMain", "All custom plugins registered");
+        } catch (Exception e) {
+            Log.e("VFPMain", "Plugin registration failed", e);
+            showSafeSecurityDialog("Plugin initialization failed.");
+        }
     }
 }

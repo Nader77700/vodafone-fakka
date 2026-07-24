@@ -14,9 +14,6 @@ importers:
       '@capacitor-community/play-integrity':
         specifier: ^8.0.0
         version: 8.0.0(@capacitor/core@8.4.1)
-      '@capacitor-community/privacy-screen':
-        specifier: ^8.0.0
-        version: 8.0.0(@capacitor/core@8.4.1)
       '@capacitor/android':
         specifier: ^8.4.1
         version: 8.4.1(@capacitor/core@8.4.1)
@@ -471,11 +468,6 @@ packages:
 
   '@capacitor-community/play-integrity@8.0.0':
     resolution: {integrity: sha512-vvX2BK9Wkqwb90aNkZfUIWgXvjHM9hOxHPpWjvrVN0gAIoXoSsb1kmNPLNKZsztyTPdjC1ybUEVbX1MLCNLE9w==}
-    peerDependencies:
-      '@capacitor/core': '>=8.0.0'
-
-  '@capacitor-community/privacy-screen@8.0.0':
-    resolution: {integrity: sha512-XcBTgQ13BdH8xB7arJ2io5rP3aEXcndgDVl/GdFRNwc8TatnV+1U6rGROLtepYLA4Rl0GP7k4zAeykcG+a//3w==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -4901,10 +4893,6 @@ snapshots:
       '@capacitor/ios': 3.9.0(@capacitor/core@3.9.0)
 
   '@capacitor-community/play-integrity@8.0.0(@capacitor/core@8.4.1)':
-    dependencies:
-      '@capacitor/core': 8.4.1
-
-  '@capacitor-community/privacy-screen@8.0.0(@capacitor/core@8.4.1)':
     dependencies:
       '@capacitor/core': 8.4.1
 

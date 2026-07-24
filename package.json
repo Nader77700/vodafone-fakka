@@ -1,6 +1,6 @@
 {
   "name": "miaoda-react-admin",
-  "version": "3.0.373",
+  "version": "3.0.374",
   "type": "module",
   "scripts": {
     "dev": "echo 'Do not use this command, only use lint to check'",
@@ -10,7 +10,6 @@
   "dependencies": {
     "@capacitor-community/http": "^1.4.1",
     "@capacitor-community/play-integrity": "^8.0.0",
-    "@capacitor-community/privacy-screen": "^8.0.0",
     "@capacitor/android": "^8.4.1",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
