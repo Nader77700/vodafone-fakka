@@ -4,16 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.396',
-  versionCode:    396,
+  appVersion:     '3.0.398',
+  versionCode:    398,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_396',
-  bundleFile:     'VodafoneFakka-v3.0.396.apk',
-  bundleHash:     'apk_v3_0_396_code396',
-  apkHash:        'apk_v3_0_396_code396',
-  dbVersion:      'v3.0.396',
+  sourceHash:     'build_fix_398',
+  bundleFile:     'VodafoneFakka-v3.0.398.apk',
+  bundleHash:     'apk_v3_0_398_code398',
+  apkHash:        'apk_v3_0_398_code398',
+  dbVersion:      'v3.0.398',
   releaseNotes: [
-    'v3.0.396: إصلاح مشكلة قراءة شبكة فودافون وإضافة fallback آمن + إصلاح خطأ Cleartext HTTP.',
+    'v3.0.398: إلغاء شروط التعرف الصارمة على الشبكة للسماح للشحن بالعمل حتى لو أخطأ الـ Plugin.',
     'v3.0.394: إصلاح مشكلة عدم توفر ملف التحديث للتحميل، وتأكيد جميع التحسينات السابقة.',
     'v3.0.392: إعادة تفعيل التشفير القصوى (Aggressive Obfuscation) وإلغاء تقسيم الملفات الذي تسبب في أخطاء تحميل واجهة React.',
     'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',
