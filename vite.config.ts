@@ -9,33 +9,39 @@ const customObfuscatorPlugin = () => {
     name: 'custom-obfuscator',
     enforce: 'post',
     apply: 'build',
-    renderChunk(code, chunk) {
-      if (chunk.fileName.endsWith('.js')) {
-        const obfuscated = JavaScriptObfuscator.obfuscate(code, {
-          compact: true,
-          controlFlowFlattening: true,
-          controlFlowFlatteningThreshold: 1,
-          deadCodeInjection: true,
-          deadCodeInjectionThreshold: 0.4,
-          debugProtection: true,
-          debugProtectionInterval: 4000,
-          disableConsoleOutput: true,
-          identifierNamesGenerator: 'hexadecimal',
-          log: false,
-          renameGlobals: false,
-          selfDefending: true,
-          splitStrings: true,
-          splitStringsChunkLength: 5,
-          stringArray: true,
-          stringArrayCallsTransform: true,
-          stringArrayEncoding: ['rc4'],
-          stringArrayThreshold: 1,
-          transformObjectKeys: true,
-          unicodeEscapeSequence: false
-        });
-        return { code: obfuscated.getObfuscatedCode() };
+    generateBundle(options, bundle) {
+      for (const fileName in bundle) {
+        const chunk = bundle[fileName];
+        if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
+          try {
+            const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
+              compact: true,
+              controlFlowFlattening: true,
+              controlFlowFlatteningThreshold: 1,
+              deadCodeInjection: true,
+              deadCodeInjectionThreshold: 0.4,
+              debugProtection: true,
+              debugProtectionInterval: 4000,
+              disableConsoleOutput: true,
+              identifierNamesGenerator: 'hexadecimal',
+              log: false,
+              renameGlobals: false,
+              selfDefending: true,
+              splitStrings: true,
+              splitStringsChunkLength: 5,
+              stringArray: true,
+              stringArrayCallsTransform: true,
+              stringArrayEncoding: ['rc4'],
+              stringArrayThreshold: 1,
+              transformObjectKeys: true,
+              unicodeEscapeSequence: false
+            });
+            chunk.code = obfuscated.getObfuscatedCode();
+          } catch (e) {
+            console.error('Obfuscation failed for', fileName, e);
+          }
+        }
       }
-      return null;
     }
   };
 };
