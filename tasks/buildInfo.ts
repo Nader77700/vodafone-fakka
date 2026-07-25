@@ -4,15 +4,20 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.378',
-  versionCode:    376,
+  appVersion:     '3.0.394',
+  versionCode:    394,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_376',
-  bundleFile:     'VodafoneFakka-v3.0.376.apk',
-  bundleHash:     'apk_v3_0_376_code376',
-  apkHash:        'apk_v3_0_376_code376',
-  dbVersion:      'v3.0.376',
+  sourceHash:     'build_fix_394',
+  bundleFile:     'VodafoneFakka-v3.0.394.apk',
+  bundleHash:     'apk_v3_0_394_code394',
+  apkHash:        'apk_v3_0_394_code394',
+  dbVersion:      'v3.0.394',
   releaseNotes: [
+    'v3.0.394: إصلاح مشكلة عدم توفر ملف التحديث للتحميل، وتأكيد جميع التحسينات السابقة.',
+    'v3.0.392: إعادة تفعيل التشفير القصوى (Aggressive Obfuscation) وإلغاء تقسيم الملفات الذي تسبب في أخطاء تحميل واجهة React.',
+    'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',
+    'v3.0.380: تفعيل حماية متقدمة (تشفير JS ذاتي الدفاع وكراش تلقائي عند التعديل) لمنع الهندسة العكسية',
+    'v3.0.379: إصلاح حقيقي لشاشة البداية بإزالة crypto-js الذي كان يسبب تعليق التطبيق',
     'v3.0.376: إصلاح خطأ compile في GitHub Actions بسبب SplashScreen dependency غير موجود',
     'v3.0.375: إزالة Splash الأندرويد الأصلي بالكامل — الثيم الآن أسود حتى يحمل React',
     'v3.0.374: إصلاح جذري للـ Splash الأصلي: تعطيل SplashScreen الأندرويد وإزالة حماية السكرينشوت',
