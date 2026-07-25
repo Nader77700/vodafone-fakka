@@ -253,8 +253,8 @@ function NativeDebugPanel() {
     setLoading(true);
     setError(null);
     try {
-      if (isNativeAPK && VodafoneDetector && VodafoneDetector.requestPhonePermission) await VodafoneDetector.requestPhonePermission();
-      const result = (isNativeAPK && VodafoneDetector && VodafoneDetector.getNetworkInfo) ? await VodafoneDetector.getNetworkInfo() : { canExecuteNative: false, isVodafoneSim: false, activeNetwork: 'web', activeDataSimOperatorName: 'Web' };
+      if (isNative && VodafoneDetector && VodafoneDetector.requestPhonePermission) await VodafoneDetector.requestPhonePermission();
+      const result = (isNative && VodafoneDetector && VodafoneDetector.getNetworkInfo) ? await VodafoneDetector.getNetworkInfo() : { canExecuteNative: false, isVodafoneSim: false, activeNetwork: 'web', activeDataSimOperatorName: 'Web' };
       setInfo(result);
     } catch (e) {
       const msg = formatError(e);
@@ -1972,12 +1972,14 @@ export default function HomePage() {
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
           {/* P8: لوجو Hero الديناميكي — fallback فوري محلي بدون شبكة */}
-          <img
-            src={heroLogoUrl || headerLogoUrl || '/vfp-logo.png'}
-            alt="Logo"
-            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-primary/20 bg-black"
-            onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }}
-          />
+          <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-primary/20 flex items-center justify-center" style={{ background: '#000000' }}>
+            <img
+              src={heroLogoUrl || headerLogoUrl || '/vfp-logo.png'}
+              alt="Logo"
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }}
+            />
+          </div>
               <div className="space-y-0.5">
                 <h1 className="text-xl font-black tracking-tight text-balance" style={{
                   background: 'linear-gradient(90deg,#00E5FF,#F7C948)',
@@ -2083,8 +2085,9 @@ export default function HomePage() {
               </div>
               {/* Logo */}
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden bg-black"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
                 style={{
+                  background: '#000000',
                   border: '1.5px solid rgba(230,0,0,0.35)',
                   boxShadow: '0 0 16px rgba(230,0,0,0.25)',
                 }}

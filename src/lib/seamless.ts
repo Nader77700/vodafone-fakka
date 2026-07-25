@@ -2,7 +2,7 @@ import { CapacitorHttp, Capacitor } from '@capacitor/core';
 
 export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-seamless"): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
   try {
-    const url = `http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=${clientId}`;
+    const url = `https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=${clientId}`;
     
     const headers = {
       "User-Agent": "okhttp/4.12.0",
