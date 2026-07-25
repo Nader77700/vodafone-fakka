@@ -68,7 +68,38 @@
     <!-- boot-loader: يظهر فوراً قبل React — يمنع الشاشة السوداء الفارغة -->
     <div id="boot-loader">
       <img src="/vfp-logo.png" alt="Vodafone Fakka Premium" style="width: 120px; height: 120px; animation: bl-pulse 2s infinite ease-in-out;" />
+      <div id="startup-step-display" style="color: #666; font-size: 12px; margin-top: 16px; font-family: monospace;">Loading HTML...</div>
+      <div id="startup-error-display" style="color: #ff4444; font-size: 12px; margin-top: 8px; max-width: 80%; text-align: center; word-break: break-all; font-family: monospace;"></div>
     </div>
+    
+    <script>
+      window.__STARTUP_STEP__ = 'HTML Parsed';
+      
+      // Override console.log temporarily to update the screen if needed
+      const originalLog = console.log;
+      console.log = function(...args) {
+        if (args[0] === '[Startup]') {
+          const stepDiv = document.getElementById('startup-step-display');
+          if (stepDiv) stepDiv.innerText = args[1];
+        }
+        originalLog.apply(console, args);
+      };
+
+      window.addEventListener('error', function(e) {
+        const errDiv = document.getElementById('startup-error-display');
+        if (errDiv) {
+          errDiv.innerText += '\n[Err] ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+        }
+      });
+
+      window.addEventListener('unhandledrejection', function(e) {
+        const errDiv = document.getElementById('startup-error-display');
+        if (errDiv) {
+          errDiv.innerText += '\n[Rej] ' + (e.reason ? (e.reason.message || e.reason) : 'Unknown Promise Rejection');
+        }
+      });
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

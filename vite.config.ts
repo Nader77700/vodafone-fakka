@@ -13,24 +13,22 @@ const customObfuscatorPlugin = () => {
       if (chunk.fileName.endsWith('.js')) {
         const obfuscated = JavaScriptObfuscator.obfuscate(code, {
           compact: true,
-          controlFlowFlattening: true,
-          controlFlowFlatteningThreshold: 1,
-          deadCodeInjection: true,
-          deadCodeInjectionThreshold: 0.4,
-          debugProtection: true,
-          debugProtectionInterval: 4000,
-          disableConsoleOutput: true,
+          // controlFlowFlattening: true, // قد تكسر Async/Await في React
+          controlFlowFlattening: false,
+          // deadCodeInjection: true,     // قد تسبب مشاكل أداء أو StrictMode
+          deadCodeInjection: false,
+          debugProtection: false,         // نوقفها مؤقتاً للتأكد من أنها ليست سبب انهيار Startup
+          disableConsoleOutput: false,    // مهم لنرى الأخطاء
           identifierNamesGenerator: 'hexadecimal',
           log: false,
           renameGlobals: false,
-          selfDefending: true,
-          splitStrings: true,
-          splitStringsChunkLength: 5,
+          selfDefending: false,           // قد تكسر React إذا حاول قراءة مكوناته
+          splitStrings: false,            // تم الإيقاف لتجنب مشكلة split strings في main bundle
           stringArray: true,
           stringArrayCallsTransform: true,
           stringArrayEncoding: ['rc4'],
           stringArrayThreshold: 1,
-          transformObjectKeys: true,
+          transformObjectKeys: false,     // تم الإيقاف لأنه يكسر object keys التي تعتمد عليها React
           unicodeEscapeSequence: false
         });
         return { code: obfuscated.getObfuscatedCode() };

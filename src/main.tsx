@@ -1,11 +1,20 @@
+// ── تتبع خطوات بدء التشغيل ─────────────────────────────────
+window.__STARTUP_STEP__ = 'Loading Config';
+console.log('[Startup]', window.__STARTUP_STEP__);
+
 import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
+window.__STARTUP_STEP__ = 'Loading Assets (React/DOM)';
+console.log('[Startup]', window.__STARTUP_STEP__);
+
 import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import "./index.css";
 import { SplashScreen as CapSplashScreen } from '@capacitor/splash-screen';
 
+window.__STARTUP_STEP__ = 'Loading Security & Supabase';
+console.log('[Startup]', window.__STARTUP_STEP__);
 // ── التحقق من صحة بيئة التطبيق (Tamper Detection) ──────────────────
 import { App as CapApp } from '@capacitor/app';
 import { supabase } from '@/db/supabase';
@@ -34,6 +43,8 @@ Sentry.init({
 });
 
 // ── مسح تلقائي للحالة القديمة عند كل تحديث ─────────────────────────────────
+window.__STARTUP_STEP__ = 'Loading Session & Data';
+console.log('[Startup]', window.__STARTUP_STEP__);
 import { BUILD_INFO } from './lib/buildInfo';
 import { GlobalCrashContext } from './lib/crashContext';
 import { securityManager } from './lib/security';
@@ -354,6 +365,8 @@ const styles = {
   },
 } as const;
 
+window.__STARTUP_STEP__ = 'Loading Home/Router';
+console.log('[Startup]', window.__STARTUP_STEP__);
 createRoot(document.getElementById("root")!).render(
   <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
     <AppWrapper>
