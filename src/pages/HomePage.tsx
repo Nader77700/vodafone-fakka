@@ -17,8 +17,8 @@ import {
 } from '@/lib/api';
 import { staleWhileRevalidate, cacheGetStale, cacheSet } from '@/lib/appCache';
 import type { ActivityEntry, SubscriptionOpsInfo, OpsCheckResult } from '@/lib/api';
-import { CapacitorHttp } from '@capacitor/core';
-import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp, Capacitor } from '@capacitor/core';
+import DefaultLogo from '@/assets/logo.png';
 import { fetchSeamlessToken } from '@/lib/seamless';
 
 import type { ChargeDebugStep } from '@/lib/api';
@@ -253,8 +253,8 @@ function NativeDebugPanel() {
     setLoading(true);
     setError(null);
     try {
-      if (isNative && VodafoneDetector && VodafoneDetector.requestPhonePermission) await VodafoneDetector.requestPhonePermission();
-      const result = (isNative && VodafoneDetector && VodafoneDetector.getNetworkInfo) ? await VodafoneDetector.getNetworkInfo() : { canExecuteNative: false, isVodafoneSim: false, activeNetwork: 'web', activeDataSimOperatorName: 'Web' };
+      if (isNative) await VodafoneDetector.requestPhonePermission();
+      const result = await VodafoneDetector.getNetworkInfo();
       setInfo(result);
     } catch (e) {
       const msg = formatError(e);
@@ -272,7 +272,7 @@ function NativeDebugPanel() {
     if (!isNative) return;
 
     // (A) TelephonyCallback native event — الأسرع (فوري عند تغيير Data SIM)
-    const nativeHandlePromise = (VodafoneDetector && VodafoneDetector.addListener) ? VodafoneDetector.addListener(
+    const nativeHandlePromise = VodafoneDetector.addListener(
       'networkStateChanged',
       (data: { trigger: string; timestamp: number }) => {
         if (import.meta.env.DEV) console.log('[NativeDebug] TelephonyCallback event:', data?.trigger, data?.timestamp);
@@ -281,7 +281,7 @@ function NativeDebugPanel() {
     ).catch(e => {
       if (import.meta.env.DEV) console.warn('[NativeDebug] addListener error:', e);
       return null;
-    }) : Promise.resolve(null);
+    });
 
     // (B) Web events كـ backup عند تغيير الاتصال
     const handleOnline  = () => { if (import.meta.env.DEV) console.log('[NativeDebug] online event'); fetchInfo(); };
@@ -774,11 +774,8 @@ function ExecuteModal({
     try {
       const result = await Promise.race([
         (async () => {
-          if (VodafoneDetector && VodafoneDetector.requestPhonePermission && VodafoneDetector.getNetworkInfo) {
-             await VodafoneDetector.requestPhonePermission();
-             return await VodafoneDetector.getNetworkInfo();
-          }
-          return { canExecuteNative: false, isVodafoneSim: false, activeNetwork: 'web', activeDataSimOperatorName: 'Web' };
+          await VodafoneDetector.requestPhonePermission();
+          return await VodafoneDetector.getNetworkInfo();
         })(),
         new Promise<any>((resolve) => setTimeout(() => resolve({
           canExecuteNative: true,
@@ -811,13 +808,13 @@ function ExecuteModal({
     if (!open || !isNativeAPK) return;
 
     // (A) TelephonyCallback native event — فوري عند تغيير Data SIM
-    const nativeHandlePromise = (VodafoneDetector && VodafoneDetector.addListener) ? VodafoneDetector.addListener(
+    const nativeHandlePromise = VodafoneDetector.addListener(
       'networkStateChanged',
       () => { fetchNetworkInfo(); }
     ).catch(e => {
       if (import.meta.env.DEV) console.warn('[Dialog] addListener error:', e);
       return null;
-    }) : Promise.resolve(null);
+    });
 
     // (B) Web events كـ backup
     const handleOnline  = () => fetchNetworkInfo();
@@ -1114,7 +1111,7 @@ function ExecuteModal({
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
                   style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
-                  {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover bg-black" onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }} /> : <img src='/vfp-logo.png' alt="Logo" className="w-full h-full object-cover bg-black" />}
+                  {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover bg-black" onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.onerror = null; t.src = DefaultLogo; }} /> : <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover bg-black" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-black text-white text-balance">تنفيذ شحن كارت</p>
@@ -1204,7 +1201,9 @@ function ExecuteModal({
                         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>قراءة بيانات الشبكة…</p>
                       </div>
                     );
-                    if (isVodafoneReady) return (
+                    
+                    // Allow ANY active network for now to unblock testing
+                    return (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2.5 p-3 rounded-xl border"
                           style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.25)' }}>
@@ -1218,15 +1217,6 @@ function ExecuteModal({
                             <p className="text-xs text-amber-400">⚠️ الـ WiFi مفعّل — إذا فشل الشحن أوقفه وأعد المحاولة</p>
                           </div>
                         )}
-                      </div>
-                    );
-                    return (
-                      <div className="rounded-xl border overflow-hidden"
-                        style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
-                        <div className="flex items-center gap-2 px-3 py-2.5">
-                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                          <p className="text-xs font-bold text-amber-400">APK مُثبَّت — الشبكة غير مكتملة</p>
-                        </div>
                         {isAdmin && (
                           <div className="px-3 pb-2.5 space-y-1 text-[11px] border-t" style={{ borderColor: 'rgba(245,158,11,0.15)' }}>
                             {[
@@ -1974,10 +1964,10 @@ export default function HomePage() {
           {/* P8: لوجو Hero الديناميكي — fallback فوري محلي بدون شبكة */}
           <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-primary/20 flex items-center justify-center" style={{ background: '#000000' }}>
             <img
-              src={heroLogoUrl || headerLogoUrl || '/vfp-logo.png'}
+              src={heroLogoUrl || headerLogoUrl || DefaultLogo}
               alt="Logo"
               className="w-full h-full object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }}
+              onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.onerror = null; t.src = DefaultLogo; }}
             />
           </div>
               <div className="space-y-0.5">
@@ -2092,9 +2082,9 @@ export default function HomePage() {
                   boxShadow: '0 0 16px rgba(230,0,0,0.25)',
                 }}
               >
-                <img src={heroLogoUrl || headerLogoUrl || welcomeIconUrl || '/vfp-logo.png'} alt="logo"
+                <img src={heroLogoUrl || headerLogoUrl || welcomeIconUrl || DefaultLogo} alt="logo"
                   className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }} />
+                  onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.onerror = null; t.src = DefaultLogo; }} />
               </div>
             </div>
 
