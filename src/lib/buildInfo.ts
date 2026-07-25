@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.386',
-  versionCode:    386,
+  appVersion:     '3.0.387',
+  versionCode:    387,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_384',
-  bundleFile:     'VodafoneFakka-v3.0.384.apk',
-  bundleHash:     'apk_v3_0_384_code384',
-  apkHash:        'apk_v3_0_384_code384',
-  dbVersion:      'v3.0.384',
+  sourceHash:     'build_fix_387',
+  bundleFile:     'VodafoneFakka-v3.0.387.apk',
+  bundleHash:     'apk_v3_0_387_code387',
+  apkHash:        'apk_v3_0_387_code387',
+  dbVersion:      'v3.0.387',
   releaseNotes: [
+    'v3.0.387: تعطيل إعدادات التشفير المتسببة في الانهيار، منع تعليق React وإضافة متتبع بدء التشغيل',
     'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',
     'v3.0.380: تفعيل حماية متقدمة (تشفير JS ذاتي الدفاع وكراش تلقائي عند التعديل) لمنع الهندسة العكسية',
     'v3.0.379: إصلاح حقيقي لشاشة البداية بإزالة crypto-js الذي كان يسبب تعليق التطبيق',
