@@ -28,12 +28,9 @@ const customObfuscatorPlugin = () => {
               renameGlobals: false,
               selfDefending: true, // إرجاع الحماية الذاتية
               reservedStrings: ['VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 'getNetworkInfo', 'requestPhonePermission', 'addListener'],
-              splitStrings: true,
-              splitStringsChunkLength: 5,
-              stringArray: true,
-              stringArrayCallsTransform: true,
-              stringArrayEncoding: ['rc4'],
-              stringArrayThreshold: 1,
+              splitStrings: false,
+              stringArray: false,
+              stringArrayCallsTransform: false,
               transformObjectKeys: true,
               unicodeEscapeSequence: false
             });
