@@ -36,7 +36,9 @@ const customObfuscatorPlugin = () => {
                 'networkOperator', 'networkOperatorName', 'isMobileDataActive', 'isWifiActive',
                 'isVodafoneMobile', 'hasPhonePermission', 'deviceModel', 'androidVersion',
                 'trigger', 'timestamp', 'web_fallback', 'timeout_fallback',
-                'error_fallback'
+                'error_fallback', 'PluginListenerHandle', 'NetworkInfo', 'NetworkStateChangedEvent',
+                'VodafoneDetectorWeb', 'getPlatform', 'ApkInstallerPlugin', 'PrintPlugin',
+                'com.naderakram.vodafonefakka', 'MainActivity'
               ],
               splitStrings: false,
               stringArray: true,
