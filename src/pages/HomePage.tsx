@@ -1118,7 +1118,7 @@ function ExecuteModal({
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
                   style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
-                  {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover bg-black" onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.onerror = null; t.src = DefaultLogo; }} /> : <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover bg-black" />}
+                  <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover bg-black" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-black text-white text-balance">تنفيذ شحن كارت</p>
@@ -1968,13 +1968,12 @@ export default function HomePage() {
           {/* اسم التطبيق + شعار ديناميكي */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
-          {/* P8: لوجو Hero الديناميكي — fallback فوري محلي بدون شبكة */}
+          {/* P8: لوجو Hero الثابت — محلي لضمان سرعة الاستجابة وعدم التهنيج */}
           <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-primary/20 flex items-center justify-center bg-black">
             <img
-              src={heroLogoUrl || headerLogoUrl || DefaultLogo}
+              src={DefaultLogo}
               alt="Logo"
               className="w-full h-full object-cover"
-              onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.onerror = null; t.src = DefaultLogo; }}
             />
           </div>
               <div className="space-y-0.5">
@@ -2082,16 +2081,14 @@ export default function HomePage() {
               </div>
               {/* Logo */}
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden bg-black"
                 style={{
-                  background: '#000000',
                   border: '1.5px solid rgba(230,0,0,0.35)',
                   boxShadow: '0 0 16px rgba(230,0,0,0.25)',
                 }}
               >
-                <img src={heroLogoUrl || headerLogoUrl || welcomeIconUrl || DefaultLogo} alt="logo"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.onerror = null; t.src = DefaultLogo; }} />
+                <img src={DefaultLogo} alt="logo"
+                  className="w-full h-full object-cover" />
               </div>
             </div>
 
