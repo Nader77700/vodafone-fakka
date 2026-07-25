@@ -3,7 +3,7 @@
  * جسر TypeScript للبلوجن الأصلي VodafoneDetectorPlugin
  * يقرأ بيانات SIM والشبكة مباشرة من Android TelephonyManager
  */
-import { registerPlugin } from '@capacitor/core';
+import { registerPlugin, Capacitor } from '@capacitor/core';
 import type { PluginListenerHandle } from '@capacitor/core';
 
 // ── واجهة بيانات الشبكة المُرجَعة من Android ──
@@ -72,9 +72,5 @@ export const VodafoneDetector = registerPlugin<VodafoneDetectorPlugin>(
 
 // ── دالة مساعدة: هل التطبيق شغال APK أصلي؟ ──
 export function isNativeAndroid(): boolean {
-  return (
-    typeof (window as unknown as Record<string, unknown>)?.Capacitor !== 'undefined' &&
-    (window as unknown as { Capacitor?: { getPlatform?: () => string } })
-      ?.Capacitor?.getPlatform?.() === 'android'
-  );
+  return Capacitor.getPlatform() === 'android';
 }

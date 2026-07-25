@@ -253,9 +253,13 @@ function NativeDebugPanel() {
     setLoading(true);
     setError(null);
     try {
-      if (isNative) await VodafoneDetector.requestPhonePermission();
-      const result = await VodafoneDetector.getNetworkInfo();
-      setInfo(result);
+      if (isNative && VodafoneDetector && VodafoneDetector.requestPhonePermission) {
+        await VodafoneDetector.requestPhonePermission();
+        const result = await VodafoneDetector.getNetworkInfo();
+        setInfo(result);
+      } else {
+        setInfo({ canExecuteNative: true, isVodafoneSim: true, activeNetwork: 'web_fallback', activeDataSimOperatorName: 'Web (Fallback)' } as any);
+      }
     } catch (e) {
       const msg = formatError(e);
       setError(msg);
@@ -272,7 +276,7 @@ function NativeDebugPanel() {
     if (!isNative) return;
 
     // (A) TelephonyCallback native event — الأسرع (فوري عند تغيير Data SIM)
-    const nativeHandlePromise = VodafoneDetector.addListener(
+    const nativeHandlePromise = (VodafoneDetector && VodafoneDetector.addListener) ? VodafoneDetector.addListener(
       'networkStateChanged',
       (data: { trigger: string; timestamp: number }) => {
         if (import.meta.env.DEV) console.log('[NativeDebug] TelephonyCallback event:', data?.trigger, data?.timestamp);
@@ -281,7 +285,7 @@ function NativeDebugPanel() {
     ).catch(e => {
       if (import.meta.env.DEV) console.warn('[NativeDebug] addListener error:', e);
       return null;
-    });
+    }) : Promise.resolve(null);
 
     // (B) Web events كـ backup عند تغيير الاتصال
     const handleOnline  = () => { if (import.meta.env.DEV) console.log('[NativeDebug] online event'); fetchInfo(); };
@@ -774,8 +778,11 @@ function ExecuteModal({
     try {
       const result = await Promise.race([
         (async () => {
-          await VodafoneDetector.requestPhonePermission();
-          return await VodafoneDetector.getNetworkInfo();
+          if (VodafoneDetector && VodafoneDetector.requestPhonePermission) {
+            await VodafoneDetector.requestPhonePermission();
+            return await VodafoneDetector.getNetworkInfo();
+          }
+          return { canExecuteNative: true, isVodafoneSim: true, activeNetwork: 'web_fallback', activeDataSimOperatorName: 'Web (Fallback)' };
         })(),
         new Promise<any>((resolve) => setTimeout(() => resolve({
           canExecuteNative: true,
@@ -808,13 +815,13 @@ function ExecuteModal({
     if (!open || !isNativeAPK) return;
 
     // (A) TelephonyCallback native event — فوري عند تغيير Data SIM
-    const nativeHandlePromise = VodafoneDetector.addListener(
+    const nativeHandlePromise = (VodafoneDetector && VodafoneDetector.addListener) ? VodafoneDetector.addListener(
       'networkStateChanged',
       () => { fetchNetworkInfo(); }
     ).catch(e => {
       if (import.meta.env.DEV) console.warn('[Dialog] addListener error:', e);
       return null;
-    });
+    }) : Promise.resolve(null);
 
     // (B) Web events كـ backup
     const handleOnline  = () => fetchNetworkInfo();
@@ -1962,7 +1969,7 @@ export default function HomePage() {
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
           {/* P8: لوجو Hero الديناميكي — fallback فوري محلي بدون شبكة */}
-          <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-primary/20 flex items-center justify-center" style={{ background: '#000000' }}>
+          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-primary/20 flex items-center justify-center bg-black">
             <img
               src={heroLogoUrl || headerLogoUrl || DefaultLogo}
               alt="Logo"
