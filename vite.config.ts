@@ -17,26 +17,32 @@ const customObfuscatorPlugin = () => {
         const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
               controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 1, // إرجاع القوة القصوى
-              deadCodeInjection: true, // إرجاع القوة القصوى
+              controlFlowFlatteningThreshold: 1,
+              deadCodeInjection: true,
               deadCodeInjectionThreshold: 0.4,
-              debugProtection: true, // إرجاع القوة القصوى للحماية
+              debugProtection: true,
               debugProtectionInterval: 4000,
               disableConsoleOutput: true,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: true, // إرجاع الحماية الذاتية
+              selfDefending: true,
               reservedStrings: [
                 'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
                 'getNetworkInfo', 'requestPhonePermission', 'addListener',
-                'Capacitor', 'registerPlugin', 'CapacitorHttp', 'web'
+                'Capacitor', 'registerPlugin', 'CapacitorHttp', 'web',
+                'isNativeAndroid', 'activeNetwork', 'isVodafoneSim', 'activeDataSimOperatorName',
+                'canExecuteNative', 'activeDataSimOperator', 'simOperator', 'simOperatorName',
+                'networkOperator', 'networkOperatorName', 'isMobileDataActive', 'isWifiActive',
+                'isVodafoneMobile', 'hasPhonePermission', 'deviceModel', 'androidVersion',
+                'networkStateChanged', 'trigger', 'timestamp', 'web_fallback', 'timeout_fallback',
+                'error_fallback'
               ],
-              splitStrings: false, // يجب أن يبقى false لمنع كسر البلوجنات
-              stringArray: true, // تفعيل التشفير
+              splitStrings: false,
+              stringArray: true,
               stringArrayCallsTransform: true,
               stringArrayEncoding: ['rc4'],
-              stringArrayThreshold: 1,
+              stringArrayThreshold: 0.6, // تقليل النسبة قليلاً لحل مشكلة البطء
               transformObjectKeys: true,
               unicodeEscapeSequence: false
             });
