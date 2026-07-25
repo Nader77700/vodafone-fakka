@@ -455,7 +455,7 @@ function AppInner() {
   const blockingScreen = renderBlockingScreen();
 
   const renderProfileError = () => {
-    if (user && !profile && !loading) {
+    if (user && !profile && !loading && !isLoginPage) { // منع ظهور الشاشة وقت تسجيل الدخول
       return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4" dir="rtl">
           <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">

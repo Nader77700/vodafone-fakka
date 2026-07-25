@@ -260,6 +260,8 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
   const tryLeave = useCallback(() => {
     if (initDoneRef.current && minDoneRef.current && !leavingRef.current) {
       leavingRef.current = true;
+      // ننتظر شريط التقدم يصل إلى 100% نظرياً قبل الإخفاء
+      setDisplayProg(100);
       setLeaving(true);
       setTimeout(onDone, 550);
     }
@@ -309,7 +311,8 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
       setDisplayProg(prev => {
         if (prev >= progress) return prev;
         const diff = progress - prev;
-        return Math.min(progress, prev + Math.max(0.4, diff * 0.1));
+        // تعديل سرعة التقدم لتصل إلى 100% بشكل صحيح ودون توقف
+        return Math.min(progress, prev + Math.max(0.5, diff * 0.15));
       });
     }, tickMs);
     return () => clearInterval(id);

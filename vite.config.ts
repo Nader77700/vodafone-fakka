@@ -14,25 +14,23 @@ const customObfuscatorPlugin = () => {
         const chunk = bundle[fileName];
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
           try {
-            const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
+        const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
               controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 1,
-              deadCodeInjection: true,
-              deadCodeInjectionThreshold: 0.4,
-              debugProtection: true,
-              debugProtectionInterval: 4000,
+              controlFlowFlatteningThreshold: 0.1, // تقليل لزيادة الأداء
+              deadCodeInjection: false, // تعطيل dead code لتحسين الأداء وسرعة الاستجابة
+              debugProtection: false, // تعطيل لتقليل التعليق
               disableConsoleOutput: true,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: true,
+              selfDefending: false, // تعطيل لتحسين الأداء
               splitStrings: true,
               splitStringsChunkLength: 5,
               stringArray: true,
               stringArrayCallsTransform: true,
               stringArrayEncoding: ['rc4'],
-              stringArrayThreshold: 1,
+              stringArrayThreshold: 0.8,
               transformObjectKeys: true,
               unicodeEscapeSequence: false
             });
