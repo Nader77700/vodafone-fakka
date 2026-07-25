@@ -152,18 +152,33 @@ public class MainActivity extends BridgeActivity {
             String expectedPackageName = "com.naderakram.vodafonefakka";
             if (!getPackageName().equals(expectedPackageName)) {
                 Log.e("Security", "FATAL: Package tampered");
-                finishAffinity();
-                System.exit(0);
-                return;
+                throw new RuntimeException("App modified and unauthorized"); // Crash app immediately
+            }
+
+            // 1.5 Signature Verification (Crash if signature modified)
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(
+                    getPackageName(), PackageManager.GET_SIGNATURES);
+            boolean validSignature = false;
+            for (Signature signature : packageInfo.signatures) {
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
+                md.update(signature.toByteArray());
+                String currentSignatureHash = Base64.encodeToString(md.digest(), Base64.DEFAULT).trim();
+                
+                if (OFFICIAL_SIGNATURE_HASH.equals(currentSignatureHash)) {
+                    validSignature = true;
+                    break;
+                }
+            }
+            if (!validSignature) {
+                Log.e("Security", "FATAL: Signature tampered");
+                throw new RuntimeException("App signature modified and unauthorized"); // Crash app immediately
             }
 
             // 2. Debugger Tamper Check (If someone attaches a debugger)
             boolean isDebuggable = (0 != (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE));
             if (isDebuggable || Debug.isDebuggerConnected() || Debug.waitingForDebugger()) {
                 Log.e("Security", "FATAL: Debugger attached");
-                finishAffinity();
-                System.exit(0);
-                return;
+                throw new RuntimeException("Debugger attached"); // Crash app immediately
             }
             
             // 3. Frida/Xposed Tamper Check
@@ -174,13 +189,14 @@ public class MainActivity extends BridgeActivity {
                 while ((line = reader.readLine()) != null) {
                     if (line.contains("27042")) {
                         Log.e("Security", "FATAL: Frida detected");
-                        finishAffinity();
-                        System.exit(0);
-                        return;
+                        throw new RuntimeException("Memory hooking detected"); // Crash app immediately
                     }
                 }
             } catch (Exception e) {}
             
+        } catch (RuntimeException re) {
+            // Re-throw RuntimeException to ensure the app crashes
+            throw re;
         } catch (Exception e) {
             // Silent catch to avoid normal crashes
         }

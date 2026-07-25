@@ -4,16 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.401',
-  versionCode:    401,
+  appVersion:     '3.0.403',
+  versionCode:    403,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_401',
-  bundleFile:     'VodafoneFakka-v3.0.401.apk',
-  bundleHash:     'apk_v3_0_401_code401',
-  apkHash:        'apk_v3_0_401_code401',
-  dbVersion:      'v3.0.401',
+  sourceHash:     'build_fix_403',
+  bundleFile:     'VodafoneFakka-v3.0.403.apk',
+  bundleHash:     'apk_v3_0_403_code403',
+  apkHash:        'apk_v3_0_403_code403',
+  dbVersion:      'v3.0.403',
   releaseNotes: [
-    'v3.0.401: إصلاح التقطيع وسخونة الجهاز بسبب التشفير المبالغ فيه (تم تخفيف التشفير ليناسب أداء أندرويد). تثبيت اللوجو لتجنب تعليق الواجهة. إصلاح مشكلة ربط شبكة فودافون بعد تخفيف تشفير البلوجن. إصلاح مشكلة HTTP 400 في الشحن بإضافة بارامترات المصادقة المطلوبة.',
+    'v3.0.403: تم إعادة تفعيل التشفير القوي جداً (String Array) مع إضافة استثناءات خاصة لمنع تعارضها مع إضافة فودافون (VodafoneDetector). كما تم تطبيق نظام الحماية الصارم (Anti-Tamper) بحيث يقوم التطبيق بعمل Crash تلقائياً في حال تم التعديل على اسمه أو حقوقه أو ملفات الـ Signature الخاصة به.',
     'v3.0.394: إصلاح مشكلة عدم توفر ملف التحديث للتحميل، وتأكيد جميع التحسينات السابقة.',
     'v3.0.392: إعادة تفعيل التشفير القصوى (Aggressive Obfuscation) وإلغاء تقسيم الملفات الذي تسبب في أخطاء تحميل واجهة React.',
     'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',

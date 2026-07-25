@@ -27,10 +27,16 @@ const customObfuscatorPlugin = () => {
               log: false,
               renameGlobals: false,
               selfDefending: true, // إرجاع الحماية الذاتية
-              reservedStrings: ['VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 'getNetworkInfo', 'requestPhonePermission', 'addListener'],
-              splitStrings: false,
-              stringArray: false,
-              stringArrayCallsTransform: false,
+              reservedStrings: [
+                'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
+                'getNetworkInfo', 'requestPhonePermission', 'addListener',
+                'Capacitor', 'registerPlugin', 'CapacitorHttp', 'web'
+              ],
+              splitStrings: false, // يجب أن يبقى false لمنع كسر البلوجنات
+              stringArray: true, // تفعيل التشفير
+              stringArrayCallsTransform: true,
+              stringArrayEncoding: ['rc4'],
+              stringArrayThreshold: 1,
               transformObjectKeys: true,
               unicodeEscapeSequence: false
             });
