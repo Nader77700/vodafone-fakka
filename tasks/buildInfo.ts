@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.409',
-  versionCode:    409,
+  appVersion:     '3.0.410',
+  versionCode:    410,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_408',
-  bundleFile:     'VodafoneFakka-v3.0.409.apk',
-  bundleHash:     'apk_v3_0_409_code409',
-  apkHash:        'apk_v3_0_409_code409',
-  dbVersion:      'v3.0.409',
+  bundleFile:     'VodafoneFakka-v3.0.410.apk',
+  bundleHash:     'apk_v3_0_410_code410',
+  apkHash:        'apk_v3_0_410_code410',
+  dbVersion:      'v3.0.410',
   releaseNotes: [
+    'v3.0.410: تحديث جديد',
     'v3.0.409: تحديث جديد',
     'v3.0.408: حل مشكلة "VodafoneDetector plugin is not implemented on android" بإصلاح تضارب كود Native وإعادة رفع الكود بشكل نظيف.',
     'v3.0.405: تحديث جديد',
