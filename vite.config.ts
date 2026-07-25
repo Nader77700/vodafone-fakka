@@ -100,7 +100,20 @@ export default defineConfig(({ mode }) => {
         entryFileNames: "assets/[hash].js",
         chunkFileNames: "assets/[hash].js",
         assetFileNames: "assets/[hash].[ext]",
-        manualChunks: undefined,
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('lucide-react') || id.includes('@radix-ui')) {
+              return 'vendor-ui';
+            }
+            return 'vendor'; // باقي المكتبات في ملف منفصل
+          }
+        },
       },
     },
   },

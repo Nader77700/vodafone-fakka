@@ -4,16 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.390',
-  versionCode:    390,
+  appVersion:     '3.0.391',
+  versionCode:    391,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_390',
-  bundleFile:     'VodafoneFakka-v3.0.390.apk',
-  bundleHash:     'apk_v3_0_390_code390',
-  apkHash:        'apk_v3_0_390_code390',
-  dbVersion:      'v3.0.390',
+  sourceHash:     'build_fix_391',
+  bundleFile:     'VodafoneFakka-v3.0.391.apk',
+  bundleHash:     'apk_v3_0_391_code391',
+  apkHash:        'apk_v3_0_391_code391',
+  dbVersion:      'v3.0.391',
   releaseNotes: [
-    'v3.0.390: تحسين سرعة التطبيق عن طريق تخفيف قيود التشفير وحل مشكلة شاشة انقطاع الاتصال الوهمية أثناء التسجيل.',
+    'v3.0.391: تحسين سرعة التطبيق والأداء بفصل أكواد المكتبات (Code Splitting).',
     'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',
     'v3.0.380: تفعيل حماية متقدمة (تشفير JS ذاتي الدفاع وكراش تلقائي عند التعديل) لمنع الهندسة العكسية',
     'v3.0.379: إصلاح حقيقي لشاشة البداية بإزالة crypto-js الذي كان يسبب تعليق التطبيق',

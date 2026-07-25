@@ -86,6 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // إذا كانت كل المحاولات بها خطأ → ابقَ على الجلسة (قد يكون خطأ مؤقت)
+    if (lastError !== null) {
         // منع ظهور رسالة الخطأ إذا كان في صفحة اللوجن أو لو كان profile = null لأننا في مرحلة جلب البيانات
         if (!window.location.hash.includes('/login') && !window.location.pathname.includes('/login')) {
             console.error('[AuthContext] all retries failed — keeping session safe:', lastError);
