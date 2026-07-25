@@ -381,8 +381,10 @@ requestAnimationFrame(() => {
   const bl = document.getElementById('boot-loader');
   if (bl) {
     bl.classList.add('hidden');
-    // احذفه من DOM بعد انتهاء الـ transition (300ms)
-    setTimeout(() => bl.remove(), 350);
+    // استخدمنا display: none بدلاً من removeChild لتجنب خطأ الانهيار في React
+    setTimeout(() => {
+      bl.style.display = 'none';
+    }, 350);
   }
   
   // إخفاء الـ Splash Screen الأصلي للأندرويد لضمان عدم تعليق التطبيق
