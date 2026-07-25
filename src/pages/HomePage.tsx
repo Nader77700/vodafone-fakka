@@ -253,8 +253,8 @@ function NativeDebugPanel() {
     setLoading(true);
     setError(null);
     try {
-      if (isNative) await VodafoneDetector.requestPhonePermission();
-      const result = await VodafoneDetector.getNetworkInfo();
+      if (isNativeAPK && VodafoneDetector && VodafoneDetector.requestPhonePermission) await VodafoneDetector.requestPhonePermission();
+      const result = (isNativeAPK && VodafoneDetector && VodafoneDetector.getNetworkInfo) ? await VodafoneDetector.getNetworkInfo() : { canExecuteNative: false, isVodafoneSim: false, activeNetwork: 'web', activeDataSimOperatorName: 'Web' };
       setInfo(result);
     } catch (e) {
       const msg = formatError(e);
@@ -272,7 +272,7 @@ function NativeDebugPanel() {
     if (!isNative) return;
 
     // (A) TelephonyCallback native event — الأسرع (فوري عند تغيير Data SIM)
-    const nativeHandlePromise = VodafoneDetector.addListener(
+    const nativeHandlePromise = (VodafoneDetector && VodafoneDetector.addListener) ? VodafoneDetector.addListener(
       'networkStateChanged',
       (data: { trigger: string; timestamp: number }) => {
         if (import.meta.env.DEV) console.log('[NativeDebug] TelephonyCallback event:', data?.trigger, data?.timestamp);
@@ -281,7 +281,7 @@ function NativeDebugPanel() {
     ).catch(e => {
       if (import.meta.env.DEV) console.warn('[NativeDebug] addListener error:', e);
       return null;
-    });
+    }) : Promise.resolve(null);
 
     // (B) Web events كـ backup عند تغيير الاتصال
     const handleOnline  = () => { if (import.meta.env.DEV) console.log('[NativeDebug] online event'); fetchInfo(); };
@@ -774,8 +774,11 @@ function ExecuteModal({
     try {
       const result = await Promise.race([
         (async () => {
-          await VodafoneDetector.requestPhonePermission();
-          return await VodafoneDetector.getNetworkInfo();
+          if (VodafoneDetector && VodafoneDetector.requestPhonePermission && VodafoneDetector.getNetworkInfo) {
+             await VodafoneDetector.requestPhonePermission();
+             return await VodafoneDetector.getNetworkInfo();
+          }
+          return { canExecuteNative: false, isVodafoneSim: false, activeNetwork: 'web', activeDataSimOperatorName: 'Web' };
         })(),
         new Promise<any>((resolve) => setTimeout(() => resolve({
           canExecuteNative: true,
@@ -808,13 +811,13 @@ function ExecuteModal({
     if (!open || !isNativeAPK) return;
 
     // (A) TelephonyCallback native event — فوري عند تغيير Data SIM
-    const nativeHandlePromise = VodafoneDetector.addListener(
+    const nativeHandlePromise = (VodafoneDetector && VodafoneDetector.addListener) ? VodafoneDetector.addListener(
       'networkStateChanged',
       () => { fetchNetworkInfo(); }
     ).catch(e => {
       if (import.meta.env.DEV) console.warn('[Dialog] addListener error:', e);
       return null;
-    });
+    }) : Promise.resolve(null);
 
     // (B) Web events كـ backup
     const handleOnline  = () => fetchNetworkInfo();
@@ -1111,9 +1114,7 @@ function ExecuteModal({
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
                   style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
-                  {logoUrl && !imgError
-                    ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" onError={() => setImgError(true)} />
-                    : <VFLogo size={28} />}
+                  {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover bg-black" onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }} /> : <img src='/vfp-logo.png' alt="Logo" className="w-full h-full object-cover bg-black" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-black text-white text-balance">تنفيذ شحن كارت</p>
@@ -1191,15 +1192,6 @@ function ExecuteModal({
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* ── رسالة تنبيه قبل التنفيذ ── */}
-                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl"
-                  style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                  <span className="text-amber-400 shrink-0 mt-0.5 text-sm leading-none">⚠</span>
-                  <p className="text-[11px] leading-relaxed text-pretty" style={{ color: 'rgba(245,200,100,0.8)' }}>
-                    يرجى التأكد قبل التنفيذ من عدم وجود أي مبلغ مستحق أو استلاف أو نوتة على الخط المرسل إليه، لأن ذلك قد يؤدي إلى عدم إتمام العملية بنجاح.
-                  </p>
                 </div>
 
                 {/* ── حالة الاتصال ── */}
@@ -1981,9 +1973,9 @@ export default function HomePage() {
             <div className="flex items-center gap-2.5">
           {/* P8: لوجو Hero الديناميكي — fallback فوري محلي بدون شبكة */}
           <img
-            src={heroLogoUrl || headerLogoUrl || HEADER_FALLBACK_LOGO}
+            src={heroLogoUrl || headerLogoUrl || '/vfp-logo.png'}
             alt="Logo"
-            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-primary/20"
+            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-primary/20 bg-black"
             onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }}
           />
               <div className="space-y-0.5">
@@ -2091,20 +2083,15 @@ export default function HomePage() {
               </div>
               {/* Logo */}
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden bg-black"
                 style={{
-                  background: 'linear-gradient(135deg,rgba(230,0,0,0.20),rgba(180,0,0,0.12))',
                   border: '1.5px solid rgba(230,0,0,0.35)',
                   boxShadow: '0 0 16px rgba(230,0,0,0.25)',
                 }}
               >
-                {(heroLogoUrl || headerLogoUrl || welcomeIconUrl) ? (
-                  <img src={heroLogoUrl || headerLogoUrl || welcomeIconUrl!} alt="logo"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }} />
-                ) : (
-                  <VFLogo size={32} />
-                )}
+                <img src={heroLogoUrl || headerLogoUrl || welcomeIconUrl || '/vfp-logo.png'} alt="logo"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/vfp-logo.png'; }} />
               </div>
             </div>
 

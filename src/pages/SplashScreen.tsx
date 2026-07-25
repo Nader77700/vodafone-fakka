@@ -260,10 +260,9 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
   const tryLeave = useCallback(() => {
     if (initDoneRef.current && minDoneRef.current && !leavingRef.current) {
       leavingRef.current = true;
-      // ننتظر شريط التقدم يصل إلى 100% نظرياً قبل الإخفاء
-      setDisplayProg(100);
+      // لا نستخدم setTimeout طويلة هنا بل نعطي وقت لـ setLeaving فقط
       setLeaving(true);
-      setTimeout(onDone, 550);
+      setTimeout(onDone, 300); // تقليل الوقت لتجنب الشاشة السوداء
     }
   }, [onDone]);
 
@@ -280,9 +279,12 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
         try { await step.run(); } catch {}
         acc = Math.min(100, acc + step.weight);
         setProgress(acc);
+        // نعطي displayProg التحديث فورًا لتجنب التأخير
+        setDisplayProg(acc); 
       }
       setProgress(100);
-      setLoadingLabel('جاري التحميل...');
+      setDisplayProg(100);
+      setLoadingLabel('جاهز...');
       initDoneRef.current = true;
       tryLeave();
     };
