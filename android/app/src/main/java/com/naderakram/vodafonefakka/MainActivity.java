@@ -205,13 +205,14 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
         androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
-        super.onCreate(savedInstanceState);
-        
-        // Execute strict crash on tamper checks immediately
-        enforceTamperCrash();
         
         registerPlugin(VodafoneDetectorPlugin.class);
         registerPlugin(ApkInstallerPlugin.class);
         registerPlugin(PrintPlugin.class);
+        
+        super.onCreate(savedInstanceState);
+        
+        // Execute strict crash on tamper checks immediately
+        enforceTamperCrash();
     }
 }
