@@ -77,7 +77,7 @@ const D = {
 function buildSteps(): InitStep[] {
   return [
     { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 5,  run: async () => { await delay(D.init); } },
-    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 5, run: async () => { try { localStorage.getItem('vf_theme'); } catch {} await delay(D.settings); } },
+    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 5, run: async () => { await delay(D.settings); } },
     { id: 'internet',     label: 'التحقق من الاتصال…',     weight: 10, run: async () => { await delay(navigator.onLine ? D.internet : D.internet * 3); } },
     { id: 'security',     label: 'التحقق من الأمان…',      weight: 10, run: async () => { await delay(D.internet); } },
     { id: 'firebase',     label: 'تهيئة Firebase…',        weight: 10, run: async () => { await delay(D.firebase); } },

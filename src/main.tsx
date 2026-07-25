@@ -32,7 +32,8 @@ if (import.meta.env.PROD) {
           reason: `Tamper Detected: Invalid Package Name (${info.id})`
         });
       } catch (e) { /* ignore */ }
-      window.location.href = 'about:blank'; // إيقاف التطبيق
+      // مؤقتاً: تسجيل فقط وليس إغلاق لمعرفة ما إذا كان يسبب المشكلة
+      console.warn('Tamper Detected: Invalid Package Name', info.id);
     }
   }).catch(() => {});
 }
@@ -245,9 +246,16 @@ function CrashFallback({ error, componentStack }: any) {
         try {
           // Capacitor: أغلق التطبيق تماماً (Android)
           import('@capacitor/app').then(({ App: CapApp }) => {
-            CapApp.exitApp().catch(() => window.location.replace('/'));
-          }).catch(() => window.location.replace('/'));
-        } catch { window.location.replace('/'); }
+            CapApp.exitApp().catch(() => {
+               // تجاهل الفشل بدلا من عمل reload
+               console.warn("exitApp failed");
+            });
+          }).catch(() => {
+               console.warn("import capacitor app failed");
+          });
+        } catch { 
+           console.warn("catch block exitApp");
+        }
       }, 2500);
       return () => clearTimeout(t);
     }

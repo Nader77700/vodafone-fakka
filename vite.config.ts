@@ -13,20 +13,24 @@ const customObfuscatorPlugin = () => {
       if (chunk.fileName.endsWith('.js')) {
         const obfuscated = JavaScriptObfuscator.obfuscate(code, {
           compact: true,
-          controlFlowFlattening: false,
-          deadCodeInjection: false,
-          debugProtection: false,
-          disableConsoleOutput: false,
+          controlFlowFlattening: true,
+          controlFlowFlatteningThreshold: 1,
+          deadCodeInjection: true,
+          deadCodeInjectionThreshold: 0.4,
+          debugProtection: true,
+          debugProtectionInterval: 4000,
+          disableConsoleOutput: true,
           identifierNamesGenerator: 'hexadecimal',
           log: false,
           renameGlobals: false,
-          selfDefending: false,
-          splitStrings: false,
+          selfDefending: true,
+          splitStrings: true,
+          splitStringsChunkLength: 5,
           stringArray: true,
           stringArrayCallsTransform: true,
           stringArrayEncoding: ['rc4'],
           stringArrayThreshold: 1,
-          transformObjectKeys: false,
+          transformObjectKeys: true,
           unicodeEscapeSequence: false
         });
         return { code: obfuscated.getObfuscatedCode() };
