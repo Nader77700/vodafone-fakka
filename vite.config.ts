@@ -35,7 +35,7 @@ const customObfuscatorPlugin = () => {
                 'canExecuteNative', 'activeDataSimOperator', 'simOperator', 'simOperatorName',
                 'networkOperator', 'networkOperatorName', 'isMobileDataActive', 'isWifiActive',
                 'isVodafoneMobile', 'hasPhonePermission', 'deviceModel', 'androidVersion',
-                'networkStateChanged', 'trigger', 'timestamp', 'web_fallback', 'timeout_fallback',
+                'trigger', 'timestamp', 'web_fallback', 'timeout_fallback',
                 'error_fallback'
               ],
               splitStrings: false,
