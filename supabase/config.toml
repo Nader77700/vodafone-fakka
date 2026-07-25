@@ -1,0 +1,7 @@
+[auth.email]
+enable_confirmations = false
+
+# serve-app: تخدم SPA علناً — لا تحتاج JWT
+[functions.serve-app]
+verify_jwt = false
+
