@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.392',
-  versionCode:    392,
+  appVersion:     '3.0.394',
+  versionCode:    394,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_392',
-  bundleFile:     'VodafoneFakka-v3.0.392.apk',
-  bundleHash:     'apk_v3_0_392_code392',
-  apkHash:        'apk_v3_0_392_code392',
-  dbVersion:      'v3.0.392',
+  sourceHash:     'build_fix_394',
+  bundleFile:     'VodafoneFakka-v3.0.394.apk',
+  bundleHash:     'apk_v3_0_394_code394',
+  apkHash:        'apk_v3_0_394_code394',
+  dbVersion:      'v3.0.394',
   releaseNotes: [
+    'v3.0.394: إصلاح مشكلة عدم توفر ملف التحديث للتحميل، وتأكيد جميع التحسينات السابقة.',
     'v3.0.392: إعادة تفعيل التشفير القصوى (Aggressive Obfuscation) وإلغاء تقسيم الملفات الذي تسبب في أخطاء تحميل واجهة React.',
     'v3.0.384: تفعيل التشفير بقوة مع إصلاح أداة javascript-obfuscator المدمجة',
     'v3.0.380: تفعيل حماية متقدمة (تشفير JS ذاتي الدفاع وكراش تلقائي عند التعديل) لمنع الهندسة العكسية',
