@@ -17,20 +17,22 @@ const customObfuscatorPlugin = () => {
         const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
               controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 0.1, // تقليل لزيادة الأداء
-              deadCodeInjection: false, // تعطيل dead code لتحسين الأداء وسرعة الاستجابة
-              debugProtection: false, // تعطيل لتقليل التعليق
+              controlFlowFlatteningThreshold: 1, // إرجاع القوة القصوى
+              deadCodeInjection: true, // إرجاع القوة القصوى
+              deadCodeInjectionThreshold: 0.4,
+              debugProtection: true, // إرجاع القوة القصوى للحماية
+              debugProtectionInterval: 4000,
               disableConsoleOutput: true,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: false, // تعطيل لتحسين الأداء
+              selfDefending: true, // إرجاع الحماية الذاتية
               splitStrings: true,
               splitStringsChunkLength: 5,
               stringArray: true,
               stringArrayCallsTransform: true,
               stringArrayEncoding: ['rc4'],
-              stringArrayThreshold: 0.8,
+              stringArrayThreshold: 1,
               transformObjectKeys: true,
               unicodeEscapeSequence: false
             });
@@ -100,20 +102,7 @@ export default defineConfig(({ mode }) => {
         entryFileNames: "assets/[hash].js",
         chunkFileNames: "assets/[hash].js",
         assetFileNames: "assets/[hash].[ext]",
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
-            }
-            if (id.includes('lucide-react') || id.includes('@radix-ui')) {
-              return 'vendor-ui';
-            }
-            return 'vendor'; // باقي المكتبات في ملف منفصل
-          }
-        },
+        manualChunks: undefined,
       },
     },
   },
