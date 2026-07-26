@@ -1,26 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, ArrowLeft, Phone, Lock, AlertTriangle, Eye, EyeOff, Zap, Clock, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Phone, Lock, AlertTriangle, Eye, EyeOff, Zap, Clock, Loader2, ShieldCheck } from 'lucide-react';
 import { VodafoneCashService } from '../../services/vodafone-cash/VodafoneCashService';
 import { fetchSeamlessToken } from '../../lib/seamless';
 import { toast } from 'sonner';
+import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 
 export default function RechargeBalancePage() {
   const navigate = useNavigate();
   const [receiver, setReceiver] = useState('');
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
-  const [savePin, setSavePin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    const savedPin = localStorage.getItem('vcc_saved_pin');
-    if (savedPin) {
-      setPin(savedPin);
-      setSavePin(true);
-    }
-  }, []);
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
@@ -62,11 +53,17 @@ export default function RechargeBalancePage() {
     if (res.success) {
       toast.success(res.message || 'تم الشحن بنجاح', { id: toastId });
       
-      if (savePin) {
-        localStorage.setItem('vcc_saved_pin', pin);
-      } else {
-        localStorage.removeItem('vcc_saved_pin');
-        setPin('');
+      // حفظ الباسورد في حالة نجاح العملية (نفس نظام الشاشة الرئيسية)
+      const pendingPin = localStorage.getItem('vcc_pending_save_pin');
+      if (pendingPin && pendingPin === pin) {
+        const existing = JSON.parse(localStorage.getItem('vcc_saved_pins') || '[]');
+        if (!existing.includes(pin)) {
+          existing.push(pin);
+          localStorage.setItem('vcc_saved_pins', JSON.stringify(existing));
+        }
+        localStorage.setItem('vcc_default_pin', pin);
+        localStorage.removeItem('vcc_pending_save_pin');
+        window.dispatchEvent(new Event('vcc_pins_updated'));
       }
       
       setReceiver('');
@@ -160,42 +157,10 @@ export default function RechargeBalancePage() {
             </div>
 
             {/* Password Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-white/80">كلمة سر Vodafone Cash</label>
-              <div className="flex items-center bg-[#1A1A1A] border border-white/10 rounded-xl overflow-hidden transition-colors focus-within:border-[#E60000]">
-                <div className="pl-3 pr-2 text-white/40">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <input
-                  type={showPin ? "text" : "password"}
-                  dir="ltr"
-                  value={pin}
-                  onChange={handlePinChange}
-                  placeholder={savePin ? "سيتم استخدام كلمة السر المحفوظة" : "****"}
-                  className="flex-1 bg-transparent border-none text-white text-lg py-3 outline-none placeholder:text-white/20"
-                />
-                <button onClick={() => setShowPin(!showPin)} className="px-3 text-white/40 hover:text-white/80">
-                  {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+            <div className="space-y-2 mt-4">
+              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5">
+                <PinInputBlock pin={pin} setPin={setPin} submitting={isSubmitting} />
               </div>
-              <label className="flex items-center gap-2 mt-2 cursor-pointer w-max">
-                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${savePin ? 'bg-[#E60000] border-[#E60000]' : 'border-white/20'}`}>
-                  {savePin && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <input 
-                  type="checkbox" 
-                  className="hidden" 
-                  checked={savePin} 
-                  onChange={(e) => {
-                    setSavePin(e.target.checked);
-                    if (!e.target.checked) {
-                      localStorage.removeItem('vcc_saved_pin');
-                      setPin('');
-                    }
-                  }} 
-                />
-                <span className="text-xs text-white/70">استخدام كلمة السر المحفوظة دائماً (يُحفظ محلياً على جهازك)</span>
-              </label>
             </div>
           </div>
         </div>
