@@ -21,7 +21,9 @@
 # Keep Capacitor Plugins to prevent "Plugin is not implemented" errors
 -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
 -keep class * extends com.getcapacitor.Plugin { *; }
+-keepclassmembers class * extends com.getcapacitor.Plugin { *; }
 -keep class com.naderakram.vodafonefakka.VodafoneDetectorPlugin { *; }
+-keepclassmembers class com.naderakram.vodafonefakka.VodafoneDetectorPlugin { *; }
 -keep class com.naderakram.vodafonefakka.ApkInstallerPlugin { *; }
 -keep class com.naderakram.vodafonefakka.PrintPlugin { *; }
 
