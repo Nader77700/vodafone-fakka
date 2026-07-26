@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    __STARTUP_STEP__: string;
+  }
+}
+
 // ── تتبع خطوات بدء التشغيل ─────────────────────────────────
 window.__STARTUP_STEP__ = 'Loading Config';
 console.log('[Startup]', window.__STARTUP_STEP__);
