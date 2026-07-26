@@ -927,10 +927,12 @@ function ExecuteModal({
     let sMsisdn = null;
     let sError = null;
     try {
+      const toastId = toast.loading('جاري التحقق من فودافون كاش...');
       const seamless = await fetchSeamlessToken();
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
+      toast.dismiss(toastId);
     } catch (e) {
       console.warn("seamless extraction failed", e);
       sError = String(e);
@@ -939,9 +941,12 @@ function ExecuteModal({
     if (!sToken) {
       executingRef.current = false; 
       toast.error(`فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { duration: 6000 }); 
+      setSubmitting(false); // <--- أضف هذا السطر لإيقاف الـ loader 
+      setLoadingStep(0);
       return;
     }
 
+    toast.loading('جاري تنفيذ عملية الشحن...', { id: 'charging' });
     const result = await executeVodafoneOrder({
       product_id: product.id, receiver: trimPhone, pin: trimPin, sender: sMsisdn || trimSender,
       seamless_token: sToken, msisdn: sMsisdn,
@@ -949,6 +954,7 @@ function ExecuteModal({
     });
 
     const executeLatencyMs = Date.now() - executeStartedAt;
+    toast.dismiss('charging');
     if (result.debugSteps?.length) setDebugSteps(result.debugSteps);
 
     const performedAt = new Date().toISOString();
