@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, Phone, CreditCard, Lock, AlertTriangle, Eye, EyeOff, Send, Clock, Loader2 } from 'lucide-react';
 import { VodafoneCashService } from '../../services/vodafone-cash/VodafoneCashService';
@@ -22,7 +22,6 @@ export default function MoneyTransferPage() {
     }
   }, []);
 
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const isReceiverValid = receiver.startsWith('010') || receiver.startsWith('011') || receiver.startsWith('012') || receiver.startsWith('015');
   const isReceiverLengthValid = receiver.length === 11;
   const isAmountValid = amount !== '' && Number(amount) >= 2;

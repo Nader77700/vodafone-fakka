@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { isNativeAndroid } from '../lib/utils';
+import { isNativeAndroid } from '../lib/vodafoneDetector';
 
 // @ts-ignore
 const VodafoneDetector = typeof window !== 'undefined' && window.Capacitor?.Plugins?.VodafoneDetector;
