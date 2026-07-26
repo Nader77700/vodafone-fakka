@@ -27,13 +27,13 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
           if (d?.seamlessToken) {
             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
           } else {
-            return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+            return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}` };
           }
         } catch(e: any) {
-          return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
         }
       } else {
-         return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+         return { token: null, msisdn: null, error: `HTTP ${response.status}` };
       }
     } else {
       const r = await fetch(url, { method: "GET", headers });
@@ -44,16 +44,16 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
           if (d?.seamlessToken) {
              return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
           } else {
-             return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+             return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}` };
           }
         } catch (e: any) {
-           return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
         }
       } else {
-         return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+         return { token: null, msisdn: null, error: `HTTP ${r.status}` };
       }
     }
   } catch (err: any) {
-    return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}` };
   }
 }
