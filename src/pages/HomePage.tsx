@@ -802,10 +802,13 @@ function ExecuteModal({
     }
   }, [isNativeAPK]);
 
-  // ── تهيئة عند الفتح ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
-    setPhone(prefillPhone); setPin(''); setSender(''); setLoadingStep(0);
+    
+    // محاولة استرجاع الباسورد المحفوظ
+    const savedPin = localStorage.getItem('vcc_saved_pin') || '';
+    
+    setPhone(prefillPhone); setPin(savedPin); setSender(''); setLoadingStep(0);
     setLastError(null); setLastErrorType('unknown'); setDebugSteps([]);
     setBridgeActive(null); setNetworkInfo(null); setReceipt(null);
     executingRef.current = false;
@@ -1376,11 +1379,28 @@ function ExecuteModal({
                       placeholder="أدخل الرقم السري" value={pin}
                       onChange={e => setPin(e.target.value)} disabled={submitting} />
                   </div>
-                  {/* تحذير قفل الحساب */}
-                  <p className="text-[11px] pr-1 flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
-                    <span>⚠️</span>
-                    <span>رقم سري Vodafone Cash المكوّن من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
-                  </p>
+                  {/* تحذير قفل الحساب + خيار الحفظ */}
+                  <div className="flex flex-col gap-2 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer w-max">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-white/20 bg-white/5 accent-[#E60000] w-4 h-4"
+                        checked={localStorage.getItem('vcc_saved_pin') === pin && pin.length > 0} 
+                        onChange={(e) => {
+                          if (e.target.checked && pin.length >= 4) {
+                            localStorage.setItem('vcc_saved_pin', pin);
+                          } else {
+                            localStorage.removeItem('vcc_saved_pin');
+                          }
+                        }} 
+                      />
+                      <span className="text-xs text-white/70">حفظ الرقم السري لتسهيل العمليات القادمة</span>
+                    </label>
+                    <p className="text-[11px] pr-1 flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
+                      <span>⚠️</span>
+                      <span>رقم سري Vodafone Cash المكوّن من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
+                    </p>
+                  </div>
                 </div>
 
                 {/* ── بطاقة الخطأ — السبب والحل بشكل واضح ── */}
@@ -1559,7 +1579,7 @@ function ExecuteModal({
           {receipt && (
             <ReceiptView
               invoice={receipt}
-              onChargeAnother={() => { setReceipt(null); setPhone(''); setPin(''); setLastError(null); }}
+              onChargeAnother={() => { setReceipt(null); setPhone(''); setLastError(null); }}
               onClose={onClose}
             />
           )}
