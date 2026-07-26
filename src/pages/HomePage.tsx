@@ -770,7 +770,10 @@ function ExecuteModal({
   const RETRY_COOLDOWN_MS = 15_000; // 15 ثانية بين المحاولات بعد الفشل
 
   const isNativeAPK = isNativeAndroid();
-  const isVodafoneReady = isNativeAPK && (networkInfo?.canExecuteNative ?? false);
+  const isVodafoneReady = isNativeAPK && (networkInfo?.isVodafoneMobile ?? false) && (networkInfo?.isMobileDataActive ?? false);
+
+  // تحديث حالة الأزرار والـ UI لتشمل حالة عدم استخدام Native App (web)
+  const canExecute = isVodafoneReady || !isNativeAPK;
 
   // ── جلب معلومات الشبكة ──────────────────────────────────────────────────
   const fetchNetworkInfo = useCallback(async () => {
@@ -1209,15 +1212,26 @@ function ExecuteModal({
                       </div>
                     );
                     
-                    // Allow ANY active network for now to unblock testing
                     return (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2.5 p-3 rounded-xl border"
-                          style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.25)' }}>
-                          <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
-                          <p className="text-xs font-bold text-green-400">فودافون Native — جاهز للتنفيذ المباشر</p>
-                        </div>
-                        {networkInfo?.isWifiActive && (
+                        {isVodafoneReady ? (
+                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
+                            style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.25)' }}>
+                            <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                            <p className="text-xs font-bold text-green-400">فودافون Native — جاهز للتنفيذ المباشر</p>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
+                            style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                            <p className="text-xs font-bold text-red-400">
+                              {networkInfo?.isWifiActive 
+                                ? 'يجب إيقاف الـ WiFi واستخدام بيانات فودافون'
+                                : 'يجب تفعيل اتصال بيانات فودافون'}
+                            </p>
+                          </div>
+                        )}
+                        {networkInfo?.isWifiActive && isVodafoneReady && (
                           <div className="flex items-center gap-2.5 p-3 rounded-xl border"
                             style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
                             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
@@ -1474,7 +1488,6 @@ function ExecuteModal({
 
                 {/* ── زر التنفيذ ── */}
                 {(() => {
-                  const canExecute = isVodafoneReady || (!isNativeAPK && bridgeActive === true);
                   const accountLocked = isPinLocked(lastErrorType);
                   const isRetry = !!lastError && !accountLocked;
                   const isDisabled = submitting || !phone || !pin || !canExecute || accountLocked;
@@ -1506,8 +1519,8 @@ function ExecuteModal({
                           ? <><AlertTriangle className="w-5 h-5" />الحساب مجمَّد — انتظر 24 ساعة</>
                           : !canExecute
                             ? isNativeAPK
-                              ? <><Signal className="w-5 h-5" />فعّل بيانات فودافون أولاً</>
-                              : <><AlertTriangle className="w-5 h-5" />شغّل الجسر أولاً</>
+                              ? <><AlertTriangle className="w-5 h-5" />الشبكة غير جاهزة للتنفيذ المباشر</>
+                              : <><AlertTriangle className="w-5 h-5" />الشبكة غير جاهزة للتنفيذ المباشر</>
                             : isRetry
                               ? <><Zap className="w-5 h-5" />إعادة المحاولة</>
                               : <><Zap className="w-5 h-5" />{isVodafoneReady ? 'تنفيذ Native مباشر' : 'تنفيذ الشحن الآن'}</>}
