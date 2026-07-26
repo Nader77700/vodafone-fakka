@@ -946,7 +946,6 @@ function ExecuteModal({
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
       toast.dismiss(toastId);
-      
       // إذا فشل التعرف، لا نمنع التنفيذ فوراً ولكن نحذر المستخدم (ربما يعتمد الـ Backend على محاولة أخرى)
       // ولكن لضمان التجربة السلسة، يمكن إظهار تنبيه
       if (!sToken) {
@@ -959,10 +958,8 @@ function ExecuteModal({
 
     if (!sToken) {
       executingRef.current = false; 
-      toast.error(`فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { duration: 6000 }); 
-      setSubmitting(false); // <--- أضف هذا السطر لإيقاف الـ loader 
-      setLoadingStep(0);
-      return;
+      toast.error(`فشل التعرف التلقائي: ${sError || 'تأكد من بيانات فودافون وإغلاق الـ WiFi'} - العملية قد تفشل!`, { duration: 6000 }); 
+      // NOTE: allow to continue to Edge Function instead of blocking
     }
 
     toast.loading('جاري تنفيذ عملية الشحن...', { id: 'charging' });
