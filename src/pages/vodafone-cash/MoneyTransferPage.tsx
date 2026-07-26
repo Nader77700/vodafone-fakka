@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, CreditCard, Lock, AlertTriangle, Eye, EyeOff, Send, Clock, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Phone, CreditCard, Lock, AlertTriangle, Eye, EyeOff, Send, Clock, Loader2 } from 'lucide-react';
 import { VodafoneCashService } from '../../services/vodafone-cash/VodafoneCashService';
 import { fetchSeamlessToken } from '../../lib/seamless';
 import { toast } from 'sonner';
@@ -23,9 +23,7 @@ export default function MoneyTransferPage() {
   }, []);
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
-    setPin(val);
-  };
+  const isReceiverValid = receiver.startsWith('010') || receiver.startsWith('011') || receiver.startsWith('012') || receiver.startsWith('015');
   const isReceiverLengthValid = receiver.length === 11;
   const isAmountValid = amount !== '' && Number(amount) >= 2;
   const isPinValid = pin.length >= 4;

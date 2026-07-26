@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Lock, AlertTriangle, Eye, EyeOff, Zap, Clock, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Phone, Lock, AlertTriangle, Eye, EyeOff, Zap, Clock, Loader2 } from 'lucide-react';
 import { VodafoneCashService } from '../../services/vodafone-cash/VodafoneCashService';
 import { fetchSeamlessToken } from '../../lib/seamless';
 import { toast } from 'sonner';
@@ -11,7 +11,21 @@ export default function RechargeBalancePage() {
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
+  const [savePin, setSavePin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const savedPin = localStorage.getItem('vcc_saved_pin');
+    if (savedPin) {
+      setPin(savedPin);
+      setSavePin(true);
+    }
+  }, []);
+
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+    setPin(val);
+  };
 
   const isReceiverValid = receiver.startsWith('010') || receiver.startsWith('011') || receiver.startsWith('012') || receiver.startsWith('015');
   const isReceiverLengthValid = receiver.length === 11;
@@ -47,9 +61,16 @@ export default function RechargeBalancePage() {
 
     if (res.success) {
       toast.success(res.message || 'تم الشحن بنجاح', { id: toastId });
+      
+      if (savePin) {
+        localStorage.setItem('vcc_saved_pin', pin);
+      } else {
+        localStorage.removeItem('vcc_saved_pin');
+        setPin('');
+      }
+      
       setReceiver('');
       setAmount('');
-      setPin('');
     } else {
       toast.error(res.message || 'فشلت العملية', { id: toastId, duration: 5000 });
     }
@@ -153,13 +174,31 @@ export default function RechargeBalancePage() {
                   dir="ltr"
                   value={pin}
                   onChange={handlePinChange}
-                  placeholder="****"
+                  placeholder={savePin ? "سيتم استخدام كلمة السر المحفوظة" : "****"}
                   className="flex-1 bg-transparent border-none text-white text-lg py-3 outline-none placeholder:text-white/20"
                 />
                 <button onClick={() => setShowPin(!showPin)} className="px-3 text-white/40 hover:text-white/80">
                   {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              <label className="flex items-center gap-2 mt-2 cursor-pointer w-max">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${savePin ? 'bg-[#E60000] border-[#E60000]' : 'border-white/20'}`}>
+                  {savePin && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                </div>
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={savePin} 
+                  onChange={(e) => {
+                    setSavePin(e.target.checked);
+                    if (!e.target.checked) {
+                      localStorage.removeItem('vcc_saved_pin');
+                      setPin('');
+                    }
+                  }} 
+                />
+                <span className="text-xs text-white/70">استخدام كلمة السر المحفوظة دائماً (يُحفظ محلياً على جهازك)</span>
+              </label>
             </div>
           </div>
         </div>
