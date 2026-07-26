@@ -627,6 +627,7 @@ function OperationDetailsDialog({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
         className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[400px] p-0 border-0 max-h-[88dvh] overflow-y-auto"
         style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
         dir="rtl"
@@ -1106,6 +1107,7 @@ function ExecuteModal({
       <TrialExhaustedPopup open={trialExhausted} opsUsed={trialOpsUsed} maxOps={trialMaxOps} isTrial={isTrialMode} />
       <Dialog open={open} onOpenChange={v => { if (!v && !submitting && !receipt) onClose(); }}>
         <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[460px] p-0 border-0 max-h-[92dvh] overflow-y-auto gap-0"
           style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
           dir="rtl"
@@ -1241,9 +1243,8 @@ function ExecuteModal({
                         {isAdmin && (
                           <div className="px-3 pb-2.5 space-y-1 text-[11px] border-t" style={{ borderColor: 'rgba(245,158,11,0.15)' }}>
                             {[
-                              { label: 'SIM',      value: networkInfo.simOperatorName,    ok: networkInfo.isVodafoneSim },
-                              { label: 'الشبكة',   value: networkInfo.networkOperatorName, ok: networkInfo.isVodafoneMobile },
-                              { label: 'البيانات', value: networkInfo.activeNetwork,       ok: networkInfo.isMobileDataActive },
+                              { label: 'شريحة البيانات', value: networkInfo.activeDataSimOperatorName, ok: networkInfo.isVodafoneMobile },
+                              { label: 'الشبكة الفعالة', value: networkInfo.activeNetwork, ok: networkInfo.isMobileDataActive && networkInfo.isVodafoneMobile },
                             ].map(r => (
                               <div key={r.label} className="flex items-center justify-between pt-1">
                                 <span style={{ color: 'rgba(255,255,255,0.35)' }}>{r.label}</span>
