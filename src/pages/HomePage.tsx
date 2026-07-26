@@ -960,8 +960,8 @@ function ExecuteModal({
       setLoadingStep(0);
       toast.dismiss('charging');
       
-      const errorMsg = 'يرجى التأكد من تشغيل بيانات خط فودافون (Vodafone Data) وإغلاق الواي فاي (WiFi) لتتمكن من تنفيذ العملية.';
-      setExecutionError({ message: `فشل التعرف التلقائي: ${errorMsg}`, type: 'network' });
+      const errorMsg = 'يرجى التأكد من تشغيل بيانات خط فودافون وإغلاق الواي فاي (WiFi) لتتمكن من التنفيذ.';
+      toast.error('فشل التعرف التلقائي', { description: errorMsg, duration: 8000 });
       return;
     }
 

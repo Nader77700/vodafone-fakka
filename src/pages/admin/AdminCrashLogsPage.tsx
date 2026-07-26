@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/db/supabase';
-import { ShieldAlert, RefreshCw, ChevronRight, HardDrive, Smartphone, FileWarning, Clock, MapPin, Database } from 'lucide-react';
+import { ShieldAlert, RefreshCw, ChevronRight, HardDrive, Smartphone, FileWarning, Clock, MapPin, Database, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -135,6 +135,20 @@ export default function AdminCrashLogsPage() {
 
               <div className="p-5 space-y-6">
                 
+                {/* معلومات المستخدم */}
+                {selectedLog.additional_data?.user && (
+                  <section>
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      معلومات المستخدم
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <InfoBox label="اسم المستخدم" value={selectedLog.additional_data.user} />
+                      <InfoBox label="رقم الهاتف" value={selectedLog.additional_data.phone || 'N/A'} />
+                    </div>
+                  </section>
+                )}
+
                 {/* معلومات الجهاز */}
                 <section>
                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
