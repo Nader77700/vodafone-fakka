@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.422',
-  versionCode:    422,
+  appVersion:     '3.0.423',
+  versionCode:    423,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
-  bundleFile:     'VodafoneFakka-v3.0.422.apk',
-  bundleHash:     'apk_v3_0_422_code422',
-  apkHash:        'apk_v3_0_422_code422',
-  dbVersion:      'v3.0.422',
+  bundleFile:     'VodafoneFakka-v3.0.423.apk',
+  bundleHash:     'apk_v3_0_423_code423',
+  apkHash:        'apk_v3_0_423_code423',
+  dbVersion:      'v3.0.423',
   releaseNotes: [
+    'v3.0.423: تحديث جديد',
     'v3.0.422: تحديث جديد',
     'v3.0.423: تحديث جديد',
     'v3.0.422: تحديث جديد',
