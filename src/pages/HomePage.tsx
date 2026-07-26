@@ -1123,14 +1123,16 @@ function ExecuteModal({
     }
     } catch (err: any) {
       console.error(err);
-      toast.error('حدث خطأ غير متوقع أثناء تنفيذ العملية.');
+      toast.error(`حدث خطأ غير متوقع: ${err.message || String(err)}`);
       setSubmitting(false); setLoadingStep(0);
       executingRef.current = false;
       import('@/db/supabase').then(({ supabase }) => {
         supabase.from('crash_logs').insert([{
           exception_message: err.message || String(err),
           exception_type: 'HandleExecuteError',
-          current_route: '/home'
+          current_route: '/home',
+          device_model: Capacitor.isNativePlatform() ? 'Android' : 'Web',
+          additional_data: { user: profile?.username || 'Unknown', phone: profile?.phone_number || 'Unknown' }
         }]);
       }).catch(() => {});
     }

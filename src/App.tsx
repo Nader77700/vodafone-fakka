@@ -24,6 +24,8 @@ import { checkDeviceBan, registerDeviceInRegistry } from '@/lib/api';
 import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
 import SplashScreen, { SplashOverlay } from './pages/SplashScreen';
+import UpdateBanner from '@/components/common/UpdateBanner';
+
 // ── استيراد كسول مدعوم بإعادة التحميل عند انقطاع الشبكة ──
 const lazyImport = (fn: () => Promise<any>) => {
   return lazy(async () => {
@@ -594,13 +596,15 @@ function AppInner() {
       <Toaster
         richColors
         position="top-center"
-        expand={false}
+        expand={true}
+        visibleToasts={5}
         duration={3500}
         toastOptions={{
           style: { direction: 'rtl' },
           classNames: { toast: 'font-sans text-sm' },
         }}
       />
+      <UpdateBanner />
     </>
   );
 }

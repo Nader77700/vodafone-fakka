@@ -3810,7 +3810,7 @@ export default function AdminDashboard() {
           {activeTab === 'crash_logs' && (
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى سجلات الأعطال...</p>
-              <Navigate to="/admin/crash-logs" replace />
+              <Navigate to="/admin/crashes" replace />
             </div>
           )}
 

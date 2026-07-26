@@ -81,7 +81,7 @@ export default function UpdatesPage() {
       await ApkInstaller.saveAndInstall({ base64, fileName: `VodafoneFakka-v${version}.apk` });
     } catch (err: any) {
       console.error('Internal update failed:', err);
-      toast.error('فشل التنزيل الداخلي. جاري الفتح في المتصفح...');
+      toast.error(`فشل التنزيل الداخلي: ${err.message || 'خطأ غير معروف'}. جاري الفتح في المتصفح...`);
       Browser.open({ url });
     } finally {
       setIsDownloading(false);
