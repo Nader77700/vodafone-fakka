@@ -4,15 +4,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.414',
-  versionCode:    414,
+  appVersion:     '3.0.416',
+  versionCode:    416,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_413',
-  bundleFile:     'VodafoneFakka-v3.0.414.apk',
-  bundleHash:     'apk_v3_0_414_code414',
-  apkHash:        'apk_v3_0_414_code414',
-  dbVersion:      'v3.0.414',
+  sourceHash:     'build_fix_415',
+  bundleFile:     'VodafoneFakka-v3.0.416.apk',
+  bundleHash:     'apk_v3_0_416_code416',
+  apkHash:        'apk_v3_0_416_code416',
+  dbVersion:      'v3.0.416',
   releaseNotes: [
+    'v3.0.416: تحديث جديد',
+    'v3.0.415: إصلاح مشكلة قراءة البيانات والتأكد من مطابقة الشبكة وتفعيل زر الشحن',
     'v3.0.414: تحديث جديد',
     'v3.0.413: تحديث جديد لإصلاح مشاكل التشفير بالكامل عن طريق تعديل ProGuard.',
     'v3.0.410: تحديث جديد',
