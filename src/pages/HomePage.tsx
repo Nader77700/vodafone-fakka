@@ -946,6 +946,12 @@ function ExecuteModal({
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
       toast.dismiss(toastId);
+      
+      // إذا فشل التعرف، لا نمنع التنفيذ فوراً ولكن نحذر المستخدم (ربما يعتمد الـ Backend على محاولة أخرى)
+      // ولكن لضمان التجربة السلسة، يمكن إظهار تنبيه
+      if (!sToken) {
+        toast.error(`فشل التعرف التلقائي: ${sError || 'تأكد من بيانات فودافون'} - العملية قد تفشل!`, { duration: 4000 });
+      }
     } catch (e) {
       console.warn("seamless extraction failed", e);
       sError = String(e);

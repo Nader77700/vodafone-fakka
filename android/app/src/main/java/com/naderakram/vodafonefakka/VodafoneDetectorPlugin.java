@@ -50,6 +50,7 @@ public class VodafoneDetectorPlugin extends Plugin {
     private static final String TAG = "VodafoneDetector";
 
     // Vodafone Egypt MCC+MNC
+    // MCC 602 (Egypt), MNC 02 (Vodafone)
     private static final String VF_MCCMNC       = "60202";
     private static final String VF_NAME_PATTERN  = "vodafone";
 
