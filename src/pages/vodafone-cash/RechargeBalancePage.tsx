@@ -88,10 +88,7 @@ export default function RechargeBalancePage() {
     setAmount(val);
   };
 
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value;
-    setPin(val);
-  };
+
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo selection:bg-[#E60000]/30 selection:text-white">

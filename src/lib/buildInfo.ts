@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.420',
-  versionCode:    420,
+  appVersion:     '3.0.422',
+  versionCode:    422,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_419',
-  bundleFile:     'VodafoneFakka-v3.0.420.apk',
-  bundleHash:     'apk_v3_0_420_code420',
-  apkHash:        'apk_v3_0_420_code420',
-  dbVersion:      'v3.0.420',
+  bundleFile:     'VodafoneFakka-v3.0.422.apk',
+  bundleHash:     'apk_v3_0_422_code422',
+  apkHash:        'apk_v3_0_422_code422',
+  dbVersion:      'v3.0.422',
   releaseNotes: [
+    'v3.0.422: تحديث جديد',
     'v3.0.420: تحديث جديد',
     'v3.0.419: إصلاح مشكلة انحشار الشحن وإيقاف اللودر عند فشل التحقق من المحفظة',
     'v3.0.418: تحديث جديد',
