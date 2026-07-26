@@ -1,0 +1,133 @@
+
+-- ═══════════════════════════════════════════════════════════
+-- تحديث باقات Vodafone RED الأربع بالمواصفات الكاملة
+-- Phase 1-8: أسماء، أسعار، أوصاف، مميزات، متطلبات، شروط، رقم واتساب
+-- ═══════════════════════════════════════════════════════════
+
+-- ── باقة 1: Vodafone RED 20 ──────────────────────────────
+UPDATE red_packages SET
+  name                     = 'Vodafone RED 20',
+  network_name             = 'Vodafone RED',
+  short_description        = 'باقة شهرية مناسبة للاستخدام اليومي — 20 جيجا + 1500 دقيقة',
+  description              = 'باقة شهرية مناسبة للاستخدام اليومي تشمل إنترنت عالي السرعة و1500 دقيقة لجميع الشبكات مع أفضل قيمة للمستخدم.',
+  full_description         = 'باقة Vodafone RED 20 باقة شهرية مثالية للاستخدام اليومي، توفر لك 20 جيجابايت من الإنترنت عالي السرعة مع 1500 دقيقة مكالمات على جميع الشبكات المصرية. تتجدد تلقائياً كل شهر دون الحاجة إلى أي إجراء من جانبك.',
+  data_gb                  = 20,
+  minutes                  = 1500,
+  base_price               = 150,
+  discounted_price         = NULL,
+  duration                 = '30 يوم',
+  renewal_type             = 'تجديد تلقائي',
+  status                   = 'available',
+  subscription_enabled     = true,
+  is_visible               = true,
+  sort_order               = 1,
+  whatsapp_number          = '201222692182',
+  whatsapp_link            = 'https://wa.me/201222692182',
+  badge_label              = '',
+  card_color               = '#E60000',
+  color_primary            = '#E60000',
+  color_secondary          = '#B30000',
+  features                 = '["سرعة عالية","1500 دقيقة","تجديد تلقائي","استخدام يومي"]'::jsonb,
+  requirements             = '["خط Vodafone RED","الخط أفراد","الخط باسم المشترك","حساب أنا فودافون مفعل"]'::jsonb,
+  terms                    = '["الخط يكون أفراد","يكون مسجل باسمك","لا توجد مديونية أو سلف","توفير رقم الهاتف","توفير باسورد أنا فودافون","عدم تغيير باسورد أنا فودافون طوال الاشتراك","لا يمكن إخراج الخط من النظام قبل مرور 6 أشهر"]'::jsonb,
+  subscription_instructions = 'تواصل معنا عبر واتساب وأرسل بيانات الاشتراك. سيتم تفعيل الباقة خلال 24 ساعة.',
+  pre_subscription_msg     = '',
+  post_subscription_msg    = 'تم إرسال طلب الاشتراك! سيتواصل معك فريقنا قريباً لتفعيل الباقة ✅',
+  updated_at               = now()
+WHERE id = 'beaf0ef8-310a-45e0-8020-e1b1490e40d2';
+
+-- ── باقة 2: Vodafone RED 30 ──────────────────────────────
+UPDATE red_packages SET
+  name                     = 'Vodafone RED 30',
+  network_name             = 'Vodafone RED',
+  short_description        = 'باقة للاستخدام المتوسط إلى المكثف — 30 جيجا + 2000 دقيقة',
+  description              = 'باقة مناسبة للاستخدام المتوسط إلى المكثف مع إنترنت أكبر ودقائق إضافية لجميع الشبكات.',
+  full_description         = 'باقة Vodafone RED 30 مصممة للمستخدم الذي يحتاج مساحة أكبر من الإنترنت ودقائق أوفر. توفر 30 جيجابايت إنترنت سريع مع 2000 دقيقة مكالمات لجميع الشبكات المصرية، مع تجديد تلقائي شهري لاستمرار الخدمة.',
+  data_gb                  = 30,
+  minutes                  = 2000,
+  base_price               = 200,
+  discounted_price         = NULL,
+  duration                 = '30 يوم',
+  renewal_type             = 'تجديد تلقائي',
+  status                   = 'available',
+  subscription_enabled     = true,
+  is_visible               = true,
+  sort_order               = 2,
+  whatsapp_number          = '201222692182',
+  whatsapp_link            = 'https://wa.me/201222692182',
+  badge_label              = 'الأكثر طلباً',
+  card_color               = '#E60000',
+  color_primary            = '#E60000',
+  color_secondary          = '#B30000',
+  features                 = '["30 جيجا","2000 دقيقة","سرعة عالية","أفضل قيمة"]'::jsonb,
+  requirements             = '["خط Vodafone RED","الخط أفراد","الخط باسم المشترك","حساب أنا فودافون مفعل"]'::jsonb,
+  terms                    = '["الخط يكون أفراد","يكون مسجل باسمك","لا توجد مديونية أو سلف","توفير رقم الهاتف","توفير باسورد أنا فودافون","عدم تغيير باسورد أنا فودافون طوال الاشتراك","لا يمكن إخراج الخط من النظام قبل مرور 6 أشهر"]'::jsonb,
+  subscription_instructions = 'تواصل معنا عبر واتساب وأرسل بيانات الاشتراك. سيتم تفعيل الباقة خلال 24 ساعة.',
+  pre_subscription_msg     = '',
+  post_subscription_msg    = 'تم إرسال طلب الاشتراك! سيتواصل معك فريقنا قريباً لتفعيل الباقة ✅',
+  updated_at               = now()
+WHERE id = 'a48f0621-8806-4c9e-ae7f-5d0313d45ad8';
+
+-- ── باقة 3: Vodafone RED 40 ──────────────────────────────
+UPDATE red_packages SET
+  name                     = 'Vodafone RED 40',
+  network_name             = 'Vodafone RED',
+  short_description        = 'للاستخدام المرتفع — 40 جيجا + 3000 دقيقة',
+  description              = 'باقة مناسبة للاستخدام المرتفع وتشمل حجم إنترنت أكبر وعدد دقائق أكثر.',
+  full_description         = 'باقة Vodafone RED 40 للمستخدم المكثف الذي يحتاج بيانات أكبر ودقائق أكثر. توفر 40 جيجابايت إنترنت بسرعة فائقة مع 3000 دقيقة مكالمات على جميع الشبكات، مع تجديد تلقائي شهري دون انقطاع.',
+  data_gb                  = 40,
+  minutes                  = 3000,
+  base_price               = 245,
+  discounted_price         = NULL,
+  duration                 = '30 يوم',
+  renewal_type             = 'تجديد تلقائي',
+  status                   = 'available',
+  subscription_enabled     = true,
+  is_visible               = true,
+  sort_order               = 3,
+  whatsapp_number          = '201222692182',
+  whatsapp_link            = 'https://wa.me/201222692182',
+  badge_label              = '',
+  card_color               = '#E60000',
+  color_primary            = '#E60000',
+  color_secondary          = '#B30000',
+  features                 = '["40 جيجا","3000 دقيقة","سرعة فائقة","استخدام مرتفع"]'::jsonb,
+  requirements             = '["خط Vodafone RED","الخط أفراد","الخط باسم المشترك","حساب أنا فودافون مفعل"]'::jsonb,
+  terms                    = '["الخط يكون أفراد","يكون مسجل باسمك","لا توجد مديونية أو سلف","توفير رقم الهاتف","توفير باسورد أنا فودافون","عدم تغيير باسورد أنا فودافون طوال الاشتراك","لا يمكن إخراج الخط من النظام قبل مرور 6 أشهر"]'::jsonb,
+  subscription_instructions = 'تواصل معنا عبر واتساب وأرسل بيانات الاشتراك. سيتم تفعيل الباقة خلال 24 ساعة.',
+  pre_subscription_msg     = '',
+  post_subscription_msg    = 'تم إرسال طلب الاشتراك! سيتواصل معك فريقنا قريباً لتفعيل الباقة ✅',
+  updated_at               = now()
+WHERE id = 'c97cff8b-320d-4ef6-ac45-8f74b85f8bc5';
+
+-- ── باقة 4: Vodafone RED 50 ──────────────────────────────
+UPDATE red_packages SET
+  name                     = 'Vodafone RED 50',
+  network_name             = 'Vodafone RED',
+  short_description        = 'أكبر باقة — 50 جيجا + 6000 دقيقة للاستخدام المكثف',
+  description              = 'أكبر باقة داخل النظام مناسبة للاستخدام المكثف جداً مع أعلى عدد دقائق وأكبر حجم إنترنت.',
+  full_description         = 'باقة Vodafone RED 50 هي أضخم باقاتنا وتُعدّ الحل الأمثل للاستخدام المكثف جداً. توفر 50 جيجابايت إنترنت بأعلى سرعة ممكنة مع 6000 دقيقة مكالمات على جميع الشبكات المصرية، مع تجديد تلقائي شهري وأولوية في خدمة العملاء.',
+  data_gb                  = 50,
+  minutes                  = 6000,
+  base_price               = 290,
+  discounted_price         = NULL,
+  duration                 = '30 يوم',
+  renewal_type             = 'تجديد تلقائي',
+  status                   = 'available',
+  subscription_enabled     = true,
+  is_visible               = true,
+  sort_order               = 4,
+  whatsapp_number          = '201222692182',
+  whatsapp_link            = 'https://wa.me/201222692182',
+  badge_label              = 'الأقوى',
+  card_color               = '#E60000',
+  color_primary            = '#E60000',
+  color_secondary          = '#B30000',
+  features                 = '["50 جيجا","6000 دقيقة","أعلى سرعة","أفضل قيمة","استخدام مكثف"]'::jsonb,
+  requirements             = '["خط Vodafone RED","الخط أفراد","الخط باسم المشترك","حساب أنا فودافون مفعل"]'::jsonb,
+  terms                    = '["الخط يكون أفراد","يكون مسجل باسمك","لا توجد مديونية أو سلف","توفير رقم الهاتف","توفير باسورد أنا فودافون","عدم تغيير باسورد أنا فودافون طوال الاشتراك","لا يمكن إخراج الخط من النظام قبل مرور 6 أشهر"]'::jsonb,
+  subscription_instructions = 'تواصل معنا عبر واتساب وأرسل بيانات الاشتراك. سيتم تفعيل الباقة خلال 24 ساعة.',
+  pre_subscription_msg     = '',
+  post_subscription_msg    = 'تم إرسال طلب الاشتراك! سيتواصل معك فريقنا قريباً لتفعيل الباقة ✅',
+  updated_at               = now()
+WHERE id = '3be5a83e-f238-4e06-bce3-ccff3e83efcc';

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>دعوة — Vodafone Fakka Premium</title>
+<meta name="theme-color" content="#000000"/>
+<style>
+:root{--accent:#e60000;--bg:#0a0a0a;--card:#141414;--border:#2a2a2a;--text:#f0f0f0;--muted:#888;--green:#22c55e}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(230,0,0,.12) 0%,transparent 65%);pointer-events:none}
+.wrap{position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px}
+.logo-wrap{display:flex;justify-content:center;margin-bottom:8px}
+.logo{width:64px;height:64px;border-radius:18px;overflow:hidden;border:1px solid rgba(230,0,0,.4);box-shadow:0 0 28px rgba(230,0,0,.25);background:#0d0000;padding:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#e60000}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:center}
+.card.merchant{border-color:rgba(230,0,0,.3)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px}
+.badge.ok{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.badge.off{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.25)}
+.badge.loading{background:rgba(150,150,150,.1);color:#aaa;border:1px solid rgba(150,150,150,.2)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.merchant-name{font-size:20px;font-weight:900;color:var(--text);margin-bottom:6px}
+.sub{font-size:13px;color:var(--muted);line-height:1.6}
+.code-box{background:#0d0d0d;border:1px solid rgba(230,0,0,.35);border-radius:14px;padding:16px;margin-top:16px}
+.code-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.code-val{font-size:18px;font-weight:900;font-family:monospace;color:#e60000;letter-spacing:.08em;word-break:break-all}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;border:none;transition:opacity .15s,transform .1s;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:.85;transform:scale(.98)}
+.btn-primary{background:#e60000;color:#fff}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.steps{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:right}
+.steps-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px}
+.step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.step:last-child{margin-bottom:0}
+.step-num{width:22px;height:22px;border-radius:50%;background:rgba(230,0,0,.15);border:1px solid rgba(230,0,0,.3);color:#e60000;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:var(--muted);line-height:1.5}
+.step-text strong{color:var(--text);font-weight:700}
+.footer{font-size:11px;color:#444;text-align:center}
+#copy-btn.copied{background:rgba(34,197,94,.12);color:var(--green);border-color:rgba(34,197,94,.3)}
+.spinner{width:28px;height:28px;border:3px solid rgba(230,0,0,.2);border-top-color:#e60000;border-radius:50%;animation:spin .8s linear infinite;margin:8px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-wrap">
+    <div class="logo">VF</div>
+  </div>
+
+  <div id="main-card" class="card merchant">
+    <div id="loading-state">
+      <div class="spinner"></div>
+      <p class="sub" style="margin-top:8px">جاري التحقق من الدعوة...</p>
+    </div>
+  </div>
+
+  <div id="action-btns" style="display:none;flex-direction:column;gap:12px">
+    <a id="apk-btn" class="btn btn-primary" href="#" download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      تحميل التطبيق
+    </a>
+    <button id="copy-btn" class="btn btn-outline" onclick="copyCode()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span id="copy-txt">نسخ كود الدعوة</span>
+    </button>
+  </div>
+
+  <div id="steps-block" class="steps" style="display:none">
+    <p class="steps-title">كيف تنضم؟</p>
+    <div class="step"><div class="step-num">١</div><p class="step-text">اضغط <strong>تحميل التطبيق</strong> وثبّته على هاتفك</p></div>
+    <div class="step"><div class="step-num">٢</div><p class="step-text">افتح التطبيق وأنشئ حساباً جديداً</p></div>
+    <div class="step"><div class="step-num">٣</div><p class="step-text" id="step3-text">في شاشة التسجيل أدخل <strong>كود الدعوة</strong> وسيتم ربطك تلقائياً</p></div>
+  </div>
+
+  <p class="footer">Vodafone Fakka Premium · نظام إدارة كروت الشحن</p>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://vchmsnavyhripakyvzom.supabase.co';
+const ANON_KEY      = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyODc4NTUsImV4cCI6MjA5Nzg2Mzg1NX0.pnqdmg5BApYx3HAPWR2UFhuV5ewyayvKR_dZk8of4s8';
+
+const params       = new URLSearchParams(location.search);
+const inviteCode   = params.get('merchant') || '';
+const card         = document.getElementById('main-card');
+const actionBtns   = document.getElementById('action-btns');
+const stepsBlock   = document.getElementById('steps-block');
+const apkBtn       = document.getElementById('apk-btn');
+let   currentCode  = inviteCode;
+
+async function apiGet(path) {
+  const r = await fetch(SUPABASE_URL + path, {
+    headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+  });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+async function init() {
+  if (!inviteCode) { showInvalid('لم يتم تقديم كود دعوة.'); return; }
+
+  try {
+    // فحص merchants.invite_code أولاً
+    let merchantName = '', apkUrl = '', valid = false, status = 'active';
+
+    const merchants = await apiGet(`/rest/v1/merchants?invite_code=eq.${encodeURIComponent(inviteCode)}&select=name,invite_enabled,invite_status`);
+    if (merchants && merchants.length > 0) {
+      valid        = merchants[0].invite_enabled && merchants[0].invite_status === 'active';
+      merchantName = merchants[0].name || '';
+      status       = merchants[0].invite_status || 'active';
+    } else {
+      // fallback: merchant_invites.token
+      const invites = await apiGet(`/rest/v1/merchant_invites?token=eq.${encodeURIComponent(inviteCode)}&select=status,merchant_id`);
+      if (invites && invites.length > 0) {
+        valid  = invites[0].status === 'active';
+        status = invites[0].status;
+        const mid  = invites[0].merchant_id;
+        const merch = await apiGet(`/rest/v1/merchants?id=eq.${mid}&select=name`);
+        if (merch && merch.length > 0) merchantName = merch[0].name || '';
+      }
+    }
+
+    // APK URL
+    const cfg = await apiGet(`/rest/v1/app_config?key=eq.version_apk_url&select=value`);
+    apkUrl = (cfg && cfg.length > 0) ? cfg[0].value : '#';
+
+    if (!valid || status !== 'active') {
+      showInvalid(status === 'disabled' ? 'تم تعطيل هذا الرابط من قِبل التاجر.' : 'رابط الدعوة غير نشط أو انتهت صلاحيته.');
+      return;
+    }
+
+    showValid(merchantName, inviteCode, apkUrl);
+
+    // حفظ في localStorage
+    try {
+      localStorage.setItem('pending_invite_token', JSON.stringify({
+        token: inviteCode, merchant_name: merchantName, stored_at: Date.now()
+      }));
+    } catch(_) {}
+
+  } catch(e) {
+    showInvalid('تعذّر التحقق من الدعوة. تحقق من اتصالك بالإنترنت.');
+  }
+}
+
+function showValid(name, code, apkUrl) {
+  card.innerHTML = `
+    <div class="badge ok"><span class="dot"></span>دعوة صالحة</div>
+    <p class="merchant-name">${name || 'دعوة خاصة'}</p>
+    <p class="sub">تمت دعوتك للانضمام إلى منصة<br/><strong style="color:#f0f0f0">Vodafone Fakka Premium</strong></p>
+    <div class="code-box">
+      <p class="code-label">كود الدعوة</p>
+      <p class="code-val" id="invite-code-text">${code}</p>
+    </div>`;
+  apkBtn.href = apkUrl;
+  actionBtns.style.display = 'flex';
+  stepsBlock.style.display  = 'block';
+  document.getElementById('step3-text').innerHTML =
+    `في شاشة التسجيل أدخل <strong>${code}</strong> في حقل كود الدعوة وسيتم ربطك بـ ${name || 'التاجر'} تلقائياً`;
+  currentCode = code;
+}
+
+function showInvalid(msg) {
+  card.innerHTML = `
+    <div class="badge off"><span class="dot"></span>رابط معطّل</div>
+    <p class="merchant-name" style="font-size:16px">رابط الدعوة غير صالح</p>
+    <p class="sub">${msg}<br/>تواصل مع التاجر للحصول على رابط جديد.</p>`;
+}
+
+function copyCode() {
+  const btn = document.getElementById('copy-btn');
+  const txt = document.getElementById('copy-txt');
+  const copy = () => {
+    btn.classList.add('copied');
+    txt.textContent = 'تم النسخ ✓';
+    setTimeout(() => { btn.classList.remove('copied'); txt.textContent = 'نسخ كود الدعوة'; }, 2500);
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(currentCode).then(copy).catch(() => fallbackCopy(copy));
+  } else { fallbackCopy(copy); }
+}
+
+function fallbackCopy(cb) {
+  const el = document.createElement('textarea');
+  el.value = currentCode;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  cb();
+}
+
+init();
+</script>
+</body>
+</html>
+<!-- updated -->

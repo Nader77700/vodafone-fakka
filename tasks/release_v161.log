@@ -1,0 +1,42 @@
+
+╔══════════════════════════════════════╗
+║   🚀 بدء إصدار جديد — 2026-06-30 19:15  ║
+╚══════════════════════════════════════╝
+📌 الإصدار الحالي : v3.0.84 (code 137)
+🚀 الإصدار الجديد  : v3.0.94 (code 138)
+📝 ملاحظات         : v161 — مراجعة تكامل شاملة: إصلاح 5 bugs جذرية (forceLogout + notification_type + Zap + Badge + base64url) + Phase 11 Production Validation
+
+openjdk version "17.0.19" 2026-04-21
+✅ JDK جاهز
+✅ Android SDK جاهز
+
+⚙️  [1/7] تحديث build.gradle...
+✅ build.gradle: v3.0.94 (code 138)
+⚙️  [2/7] تحديث buildInfo.ts...
+  ✅ buildInfo.ts: v3.0.94 (code 138)
+⚙️  [3/7] بناء Vite...
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.1/node_modules/@capacitor/app/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/subscriptionValidator.ts, /workspace/app-ck2v94t1nev5/src/main.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/App.tsx, /workspace/app-ck2v94t1nev5/src/components/common/ForceUpdateScreen.tsx, /workspace/app-ck2v94t1nev5/src/hooks/useUpdateChecker.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/node_modules/.pnpm/@capacitor+browser@8.0.3_@capacitor+core@8.4.1/node_modules/@capacitor/browser/dist/esm/index.js is dynamically imported by /workspace/app-ck2v94t1nev5/src/components/common/UpdateBanner.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/usePushNotifications.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) /workspace/app-ck2v94t1nev5/src/lib/appCache.ts is dynamically imported by /workspace/app-ck2v94t1nev5/src/lib/api.ts, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx but also statically imported by /workspace/app-ck2v94t1nev5/src/hooks/use-assets.ts, /workspace/app-ck2v94t1nev5/src/pages/HomePage.tsx, /workspace/app-ck2v94t1nev5/src/pages/OperationsPage.tsx, /workspace/app-ck2v94t1nev5/src/pages/SubscriptionHistoryPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✅ Vite build مكتمل — 51 ملف
+⚙️  [3/7] مزامنة Capacitor...
+✅ Vite + Capacitor جاهز (bundled)
+  ✔ namespace مُصحَّح في build.gradle
+  ✔ package= أُزيل من AndroidManifest.xml
+⚙️  [4/7] بناء APK (Gradle assembleRelease)...
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 3s
