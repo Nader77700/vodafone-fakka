@@ -946,10 +946,8 @@ function ExecuteModal({
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
       toast.dismiss(toastId);
-      // إذا فشل التعرف، لا نمنع التنفيذ فوراً ولكن نحذر المستخدم (ربما يعتمد الـ Backend على محاولة أخرى)
-      // ولكن لضمان التجربة السلسة، يمكن إظهار تنبيه
       if (!sToken) {
-        toast.error(`فشل التعرف التلقائي: ${sError || 'تأكد من بيانات فودافون'} - العملية قد تفشل!`, { duration: 4000 });
+        toast.error(`فشل التعرف التلقائي: ${sError || 'تأكد من بيانات فودافون'} - العملية ستفشل!`, { duration: 4000 });
       }
     } catch (e) {
       console.warn("seamless extraction failed", e);
@@ -957,9 +955,14 @@ function ExecuteModal({
     }
 
     if (!sToken) {
-      executingRef.current = false; 
-      toast.error(`فشل التعرف التلقائي: ${sError || 'تأكد من بيانات فودافون وإغلاق الـ WiFi'} - العملية قد تفشل!`, { duration: 6000 }); 
-      // NOTE: allow to continue to Edge Function instead of blocking
+      executingRef.current = false;
+      setSubmitting(false);
+      setLoadingStep(0);
+      toast.dismiss('charging');
+      
+      const errorMsg = 'يرجى التأكد من تشغيل بيانات خط فودافون (Vodafone Data) وإغلاق الواي فاي (WiFi) لتتمكن من تنفيذ العملية.';
+      setExecutionError({ message: `فشل التعرف التلقائي: ${errorMsg}`, type: 'network' });
+      return;
     }
 
     toast.loading('جاري تنفيذ عملية الشحن...', { id: 'charging' });
