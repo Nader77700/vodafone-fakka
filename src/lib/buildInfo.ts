@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.423',
-  versionCode:    423,
+  appVersion:     '3.0.421',
+  versionCode:    421,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_419',
-  bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_423_code423',
-  apkHash:        'apk_v3_0_423_code423',
-  dbVersion:      'v3.0.423',
+  sourceHash:     'build_fix_421',
+  bundleFile:     'VodafoneFakka-v3.0.421.apk',
+  bundleHash:     'apk_v3_0_421_code421',
+  apkHash:        'apk_v3_0_421_code421',
+  dbVersion:      'v3.0.421',
   releaseNotes: [
+    'v3.0.421: إعادة ميزات 418 وحل مشكلة لوحة المفاتيح والشبكة بالإضافة لحفظ الباسورد',
     'v3.0.423: تحديث جديد',
     'v3.0.422: تحديث جديد',
     'v3.0.420: تحديث جديد',
