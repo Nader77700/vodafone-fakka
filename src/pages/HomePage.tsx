@@ -62,6 +62,7 @@ import { toast } from 'sonner';
 import { Radio, ArrowLeft, Wallet } from 'lucide-react';
 import PromotionBanner from '@/components/common/PromotionBanner';
 import { formatError } from '@/lib/formatError';
+import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
 
 
 // ── كارت Premium — عروض باقي الشبكات ──
@@ -765,6 +766,14 @@ function ExecuteModal({
 
   // ── حالة الفاتورة الموحّدة بعد النجاح ──
   const [receipt, setReceipt] = useState<InvoiceData | null>(null);
+  const [pinManagerOpen, setPinManagerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenManager = () => setPinManagerOpen(true);
+    window.addEventListener('open-pin-manager', handleOpenManager);
+    return () => window.removeEventListener('open-pin-manager', handleOpenManager);
+  }, []);
+
   // منع تنفيذ متعدد عبر ref متزامن
   const executingRef   = useRef(false);
   const lastFailedAtRef = useRef<number>(0); // cooldown بعد الفشل
@@ -960,6 +969,16 @@ function ExecuteModal({
     const executeLatencyMs = Date.now() - executeStartedAt;
     toast.dismiss('charging');
     if (result.debugSteps?.length) setDebugSteps(result.debugSteps);
+
+    // ✅ حفظ الباسورد فقط عند نجاح العملية وتحديد المستخدم للحفظ مسبقاً
+    if (result.success && localStorage.getItem('vcc_pending_save_pin') === trimPin) {
+      const pins = JSON.parse(localStorage.getItem('vcc_saved_pins') || '[]');
+      if (!pins.includes(trimPin)) {
+        pins.push(trimPin);
+        localStorage.setItem('vcc_saved_pins', JSON.stringify(pins));
+      }
+      localStorage.removeItem('vcc_pending_save_pin'); // تنظيف التخزين المؤقت
+    }
 
     const performedAt = new Date().toISOString();
 
@@ -1585,6 +1604,7 @@ function ExecuteModal({
           )}
         </DialogContent>
       </Dialog>
+      <PinManagerDialog open={pinManagerOpen} onClose={() => setPinManagerOpen(false)} />
     </>
   );
 }
