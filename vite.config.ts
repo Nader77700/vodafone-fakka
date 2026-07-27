@@ -85,12 +85,12 @@ export default defineConfig(({ mode }) => {
     chunkSizeWarningLimit: 1000,
     assetsInlineLimit: 4096,
     target: ['es2015', 'chrome65'],
-    minify: "terser",
+    minify: mode === "production" ? "terser" : false,
     terserOptions: {
       compress: {
         drop_console: true,
         drop_debugger: true,
-        passes: 2,
+        passes: 1,
         toplevel: true,
         reduce_funcs: true,
         reduce_vars: true,
