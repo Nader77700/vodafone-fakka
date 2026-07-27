@@ -21,12 +21,8 @@ export interface AppVersion {
 const STORAGE_KEY = 'vf_update_dismissed_v';
 
 export async function checkApkExists(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, { method: 'HEAD' });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  // Ignore HEAD fetch for CORS reasons, trust the DB URL if it exists
+  return !!url;
 }
 
 async function getNativeVersionCode(): Promise<{ code: number; version: string }> {
@@ -83,8 +79,7 @@ export function useUpdateChecker() {
   const hasUpdate = ready
     && latestVersion !== null
     && isApkUpdate
-    && latestVersion.version_code > installedCode
-    && apkExists === true;
+    && latestVersion.version_code > installedCode;
 
   const isBlocked   = blockedCodes.includes(installedCode);
   const isBelowMin  = minVersionCode > 0 && installedCode < minVersionCode;

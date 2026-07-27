@@ -2,6 +2,7 @@
 // واجهة TypeScript للـ Capacitor Plugin الأصلي ApkInstallerPlugin.java
 // يتولى: تحميل APK بـ fetch + إرسال base64 للـ Native لكتابة الملف وتثبيته
 import { registerPlugin } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 interface ApkInstallerPlugin {
   /** تثبيت APK من مسار ملف محلي */
@@ -10,7 +11,26 @@ interface ApkInstallerPlugin {
   saveAndInstall(options: { base64: string; fileName: string }): Promise<{ filePath: string }>;
 }
 
-export const ApkInstaller = registerPlugin<ApkInstallerPlugin>('ApkInstaller');
+export const ApkInstallerNative = registerPlugin<ApkInstallerPlugin>('ApkInstaller');
+
+export const ApkInstaller = {
+  saveAndInstall: async (options: { base64: string; fileName: string }) => {
+    // Write via Filesystem instead of Native base64 for better performance on large files
+    try {
+      const result = await Filesystem.writeFile({
+        path: options.fileName,
+        data: options.base64,
+        directory: Directory.Cache
+      });
+      // The uri returned is already a content:// or file:// string
+      await ApkInstallerNative.install({ filePath: result.uri });
+      return { filePath: result.uri };
+    } catch (e) {
+      // Fallback to old behavior if filesystem fails
+      return ApkInstallerNative.saveAndInstall(options);
+    }
+  }
+};
 
 // ─── تتبع التقدم ────────────────────────────────────────────────────────────
 export interface DownloadProgress {

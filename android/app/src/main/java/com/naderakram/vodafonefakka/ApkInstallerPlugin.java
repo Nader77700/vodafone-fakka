@@ -27,8 +27,16 @@ public class ApkInstallerPlugin extends Plugin {
             call.reject("filePath مطلوب");
             return;
         }
+    if (!filePath.startsWith("file://") && !filePath.startsWith("/")) {
+        filePath = filePath.replace("content://", ""); // Basic cleanup, though URI handling is better
+    }
         try {
-            File apkFile = new File(filePath);
+            File apkFile;
+            if (filePath.startsWith("file://")) {
+                apkFile = new File(Uri.parse(filePath).getPath());
+            } else {
+                apkFile = new File(filePath);
+            }
             if (!apkFile.exists()) {
                 call.reject("الملف غير موجود: " + filePath);
                 return;
