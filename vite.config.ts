@@ -14,19 +14,16 @@ const customObfuscatorPlugin = () => {
         const chunk = bundle[fileName];
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
           try {
-        const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
+            const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
-              controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 1,
-              deadCodeInjection: true,
-              deadCodeInjectionThreshold: 0.4,
-              debugProtection: true,
-              debugProtectionInterval: 4000,
-              disableConsoleOutput: true,
+              controlFlowFlattening: false,
+              deadCodeInjection: false,
+              debugProtection: false,
+              disableConsoleOutput: false,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: true,
+              selfDefending: false,
               reservedStrings: [
                 'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
                 'getNetworkInfo', 'requestPhonePermission', 'addListener',
@@ -88,7 +85,7 @@ export default defineConfig(({ mode }) => {
     chunkSizeWarningLimit: 1000,
     assetsInlineLimit: 4096,
     target: ['es2015', 'chrome65'],
-    minify: mode === "production" ? "terser" : false,
+    minify: "terser",
     terserOptions: {
       compress: {
         drop_console: true,
