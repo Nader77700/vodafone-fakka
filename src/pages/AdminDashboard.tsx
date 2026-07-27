@@ -130,7 +130,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'product_config', label: 'إدارة الكروت',     desc: 'تفعيل وإيقاف وتعديل إعدادات الكروت', icon: Package },
   { id: 'giftbox',        label: 'صندوق الهدايا',    desc: 'إدارة الهدية الترحيبية للمستخدمين', icon: Gift },
   { id: 'balance_products', label: 'كروت الرصيد',    desc: 'إدارة كروت نظام الشحن من الرصيد',   icon: Banknote },
-  { id: 'legacy_flex',    label: 'أنظمة فليكس',      desc: 'إدارة أنظمة فليكس القديمة (قريباً)',icon: RotateCcw },
+  { id: 'legacy_flex',    label: 'أنظمة فليكس',      desc: 'إدارة أنظمة فليكس القديمة',icon: RotateCcw },
   { id: 'merchants',       label: 'التجار',           desc: 'إدارة حسابات التجار وإنشائها',      icon: Building2 },
   { id: 'member_monitor',  label: 'أعضاء التجار',     desc: 'مراقبة أعضاء واشتراكات التجار',     icon: Users },
   { id: 'duplicate_accounts', label: 'الحسابات المكررة', desc: 'كشف الأجهزة المتعددة الحسابات وحظرها', icon: ShieldAlert },

@@ -946,8 +946,10 @@ function ExecuteModal({
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
       toast.dismiss(toastId);
+      
+      // لا نعرض خطأ هنا، فقط نترك sToken لتكون فارغة وسنتعامل معها في الأسفل
       if (!sToken) {
-        toast.error(`فشل التعرف التلقائي: ${sError || 'تأكد من بيانات فودافون'} - العملية ستفشل!`, { duration: 4000 });
+        console.warn(`فشل التعرف التلقائي: ${sError}`);
       }
     } catch (e) {
       console.warn("seamless extraction failed", e);
@@ -960,8 +962,10 @@ function ExecuteModal({
       setLoadingStep(0);
       toast.dismiss('charging');
       
-      const errorMsg = 'يرجى التأكد من تشغيل بيانات خط فودافون وإغلاق الواي فاي (WiFi) لتتمكن من التنفيذ.';
-      toast.error('فشل التعرف التلقائي', { description: errorMsg, duration: 8000 });
+      toast.error('فشل التعرف التلقائي', { 
+        description: 'تأكد من تشغيل بيانات خط فودافون وإغلاق الـ WiFi لتتمكن من التنفيذ.', 
+        duration: 8000 
+      });
       return;
     }
 
