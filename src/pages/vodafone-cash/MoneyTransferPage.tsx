@@ -29,12 +29,11 @@ export default function MoneyTransferPage() {
     const seamless = await fetchSeamlessToken('cash-app');
     
     if (!seamless.token) {
-      toast.error(`فشل التعرف التلقائي على المحفظة: ${seamless.error || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { id: toastId, duration: 6000 });
-      setIsSubmitting(false);
-      return;
+      console.warn('Seamless token is missing, continuing with backend fallback using PIN...');
+      toast.dismiss(toastId);
+    } else {
+      toast.loading('جاري تنفيذ التحويل...', { id: toastId });
     }
-
-    toast.loading('جاري تنفيذ التحويل...', { id: toastId });
 
     // 2. Execute Transfer
     const res = await VodafoneCashService.initiateMoneyTransfer({

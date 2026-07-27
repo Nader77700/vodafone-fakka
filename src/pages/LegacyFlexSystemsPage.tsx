@@ -200,7 +200,7 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
           <Zap className="w-3.5 h-3.5 text-primary drop-shadow-[0_0_5px_rgba(230,0,0,0.8)]" />
         </div>
         <div>
-          <p className="text-lg font-black text-white leading-none tracking-tight">{system.flexCount.toLocaleString()}</p>
+          <p className="text-lg font-black text-white leading-none tracking-tight">{Number(system.flexCount || 0).toLocaleString()}</p>
           <p className="text-[9px] text-white/40 font-bold -mt-0.5">فليكس</p>
         </div>
       </div>
@@ -391,7 +391,7 @@ function ActivationDialog({
             تفعيل {system?.name}
           </DialogTitle>
           <DialogDescription className="text-xs text-white/50 font-medium">
-            سيتم استهلاك {system?.price} ج.م للحصول على {system?.flexCount.toLocaleString()} فليكس.
+            سيتم استهلاك {system?.price} ج.م للحصول على {Number(system?.flexCount || 0).toLocaleString()} فليكس.
           </DialogDescription>
         </DialogHeader>
 

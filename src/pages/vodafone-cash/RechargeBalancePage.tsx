@@ -34,12 +34,11 @@ export default function RechargeBalancePage() {
     const seamless = await fetchSeamlessToken('cash-app');
     
     if (!seamless.token) {
-      toast.error(`فشل التعرف التلقائي على المحفظة: ${seamless.error || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { id: toastId, duration: 6000 });
-      setIsSubmitting(false);
-      return;
+      console.warn('Seamless token is missing, continuing with backend fallback using PIN...');
+      toast.dismiss(toastId);
+    } else {
+      toast.loading('جاري تنفيذ عملية الشحن...', { id: toastId });
     }
-
-    toast.loading('جاري تنفيذ عملية الشحن...', { id: toastId });
 
     // 2. Execute Recharge
     const res = await VodafoneCashService.initiateRecharge({
