@@ -118,11 +118,11 @@ jobs:
 
           echo "✅ web-live updated (failures: $FAIL)"
 
-      - name: Setup JDK 21
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Setup Android SDK
         run: |
@@ -141,7 +141,11 @@ jobs:
           echo "✅ local.properties → sdk.dir=$SDK_DIR"
 
       - name: Capacitor sync
-        run: pnpm exec cap sync android
+        run: |
+          pnpm exec cap sync android
+          # إجبار كل المكاتب على استخدام جافا 17
+          find node_modules -path "*/android/build.gradle" -type f -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_1_8/g' {} +
+          find node_modules -path "*/android/build.gradle" -type f -exec sed -i 's/JavaVersion.VERSION_17/JavaVersion.VERSION_1_8/g' {} +
 
       - name: Fix gradlew permissions
         run: chmod +x android/gradlew
@@ -149,12 +153,13 @@ jobs:
       - name: Fix HTTP plugin namespace
         run: |
           # Fix @capacitor-community/http plugin namespace for AGP 8
-          HTTP_GRADLE=$(find node_modules -type f -path "*/@capacitor-community+http*/android/build.gradle" | head -1)
-          if [[ -n "$HTTP_GRADLE" && $(grep -c "namespace" "$HTTP_GRADLE") -eq 0 ]]; then
+          find node_modules -type f -path "*/@capacitor-community*http*/android/build.gradle" | while read -r HTTP_GRADLE; do
+            if grep -q "com.getcapacitor.plugin.http" "$HTTP_GRADLE"; then
+              continue
+            fi
             sed -i "s|android {|android {\n    namespace 'com.getcapacitor.plugin.http'|" "$HTTP_GRADLE"
-          fi
-          HTTP_MANIFEST=$(find node_modules -type f -path "*/@capacitor-community+http*/android/src/main/AndroidManifest.xml" | head -1)
-          [[ -n "$HTTP_MANIFEST" ]] && sed -i 's/ package="[^"]*"//' "$HTTP_MANIFEST" || true
+            echo "Fixed namespace in $HTTP_GRADLE"
+          done
 
       # ─── [2] SIGN ──────────────────────────────────────────────────────────
       - name: Build signed APK
