@@ -14,16 +14,19 @@ const customObfuscatorPlugin = () => {
         const chunk = bundle[fileName];
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
           try {
-            const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
+        const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
-              controlFlowFlattening: false,
-              deadCodeInjection: false,
-              debugProtection: false,
-              disableConsoleOutput: false,
+              controlFlowFlattening: true,
+              controlFlowFlatteningThreshold: 1,
+              deadCodeInjection: true,
+              deadCodeInjectionThreshold: 0.4,
+              debugProtection: true,
+              debugProtectionInterval: 4000,
+              disableConsoleOutput: true,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: false,
+              selfDefending: true,
               reservedStrings: [
                 'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
                 'getNetworkInfo', 'requestPhonePermission', 'addListener',
