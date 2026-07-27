@@ -32,6 +32,9 @@ importers:
       '@capacitor/device':
         specifier: ^8.0.2
         version: 8.0.2(@capacitor/core@8.4.1)
+      '@capacitor/filesystem':
+        specifier: ^8.1.2
+        version: 8.1.2(@capacitor/core@8.4.1)
       '@capacitor/preferences':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.4.1)
@@ -534,6 +537,11 @@ packages:
     peerDependencies:
       '@capacitor/core': ^3.0.0
 
+  '@capacitor/filesystem@8.1.2':
+    resolution: {integrity: sha512-doaaMfGoFR2hWU6aV6u83I+5ZsGyJVq+Gz4r9lMpJzUKMm1eMu0hLnFdV1aXZlU9FlK/RndFrVD8oRZfNOqWgQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/ios@3.9.0':
     resolution: {integrity: sha512-GezPCJIujRHnF4wbrKJx6Q/mgFz0f9rmh/steTTXQZI+nEl6mHk6NWh8235p7YbhonYi5WD0rFNirrjGg1EaGw==}
     peerDependencies:
@@ -553,6 +561,9 @@ packages:
     resolution: {integrity: sha512-0C6rYScr13WfAE9nPl4ScOQynmjFv9NT3Th+RZkD4ezYHmER6mcl1/lDYsv7jg3Rj3FOvLrlTlmNkUrr83kZzQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/synapse@1.0.4':
+    resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
 
   '@capgo/capacitor-is-root@8.1.16':
     resolution: {integrity: sha512-Hs4ekW8NtZ+u+zBL+AJUnMv0K3HA+0TCLKxlB/4CarX+f2K0Xy6y8h+E1tzUFIk2hMVWfSLJUPGYuCX65R+eYw==}
@@ -5310,6 +5321,11 @@ snapshots:
     dependencies:
       '@capacitor/core': 3.9.0
 
+  '@capacitor/filesystem@8.1.2(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
+      '@capacitor/synapse': 1.0.4
+
   '@capacitor/ios@3.9.0(@capacitor/core@3.9.0)':
     dependencies:
       '@capacitor/core': 3.9.0
@@ -5325,6 +5341,8 @@ snapshots:
   '@capacitor/splash-screen@8.0.2(@capacitor/core@8.4.1)':
     dependencies:
       '@capacitor/core': 8.4.1
+
+  '@capacitor/synapse@1.0.4': {}
 
   '@capgo/capacitor-is-root@8.1.16(@capacitor/core@8.4.1)':
     dependencies:

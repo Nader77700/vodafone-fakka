@@ -1129,7 +1129,7 @@ function ExecuteModal({
           exception_type: 'HandleExecuteError',
           current_route: '/home',
           device_model: Capacitor.isNativePlatform() ? 'Android' : 'Web',
-          additional_data: { user: profile?.username || 'Unknown', phone: profile?.phone_number || 'Unknown' }
+          additional_data: { user: profile?.username || 'Unknown', phone: profile?.phone || 'Unknown' }
         }]);
       }).catch(() => {});
     }
