@@ -957,16 +957,9 @@ function ExecuteModal({
     }
 
     if (!sToken) {
-      executingRef.current = false;
-      setSubmitting(false);
-      setLoadingStep(0);
-      toast.dismiss('charging');
-      
-      toast.error('فشل التعرف التلقائي', { 
-        description: 'تأكد من تشغيل بيانات خط فودافون وإغلاق الـ WiFi لتتمكن من التنفيذ.', 
-        duration: 8000 
-      });
-      return;
+      // السماح بتمرير العملية للخادم بدلاً من الإيقاف الإجباري
+      // سيحاول الخادم الاعتماد على الرقم السري (PIN) لإكمال العملية إذا كان الـ Seamless غير متوفر
+      console.warn('Seamless token is missing, continuing with backend fallback using PIN...');
     }
 
     toast.loading('جاري تنفيذ عملية الشحن...', { id: 'charging' });
