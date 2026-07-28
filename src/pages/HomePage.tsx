@@ -1357,6 +1357,72 @@ function ExecuteModal({
                   </div>
                 )}
 
+                {/* Debug Panel — Admin فقط */}
+                {isAdmin && (debugSteps.length > 0 || seamlessDebug) && !submitting && (
+                  <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
+                      <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
+                      <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
+                    </div>
+                    <div className="divide-y divide-white/[0.04]">
+                      {seamlessDebug && (
+                        <div className="px-3 py-2 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
+                              SEAMLESS
+                            </span>
+                            <span className="text-[10px] font-mono font-semibold truncate text-blue-300">
+                              Fetch Token Attempt
+                            </span>
+                          </div>
+                          <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                              <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
+                            </div>
+                            <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
+                              <pre style={{ color: '#ffffff80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                                {JSON.stringify(seamlessDebug, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {debugSteps.map(s => (
+                        <div key={s.step} className="px-3 py-2 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
+                              {s.status.toUpperCase()}
+                            </span>
+                            <span className="text-[10px] font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
+                              {s.label}
+                            </span>
+                          </div>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          {s.inspect && (
+                            <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                                <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
+                              </div>
+                              <div className="p-2 space-y-0.5 text-[9px] font-mono">
+                                <Row k="HTTP Status" v={String(s.inspect.httpStatus)} c={s.inspect.httpStatus===200?'#4ade80':'#f87171'} />
+                                {s.inspect.errorCode && <Row k="Error Code" v={s.inspect.errorCode} c="#f87171" />}
+                                {s.inspect.txId && <Row k="TX ID" v={s.inspect.txId} />}
+                                {s.inspect.responseBody && (
+                                  <div className="mt-1 pt-1 border-t" style={{ borderColor: '#00E5FF08' }}>
+                                    <span className="text-[8px] opacity-40 mb-0.5 block">Response Body</span>
+                                    <p className="text-[9px] break-all opacity-70 leading-relaxed max-h-32 overflow-y-auto">{s.inspect.responseBody}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* ── بطاقة التعليمات: رقم المحفظة يُقرأ تلقائياً ── */}
                 <div className="rounded-2xl border overflow-hidden"
                   style={{ background: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.2)' }}>
