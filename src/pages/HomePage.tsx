@@ -957,7 +957,7 @@ function ExecuteModal({
 
     if (!sToken) {
       executingRef.current = false;
-      setChargingStatus('idle');
+      setSubmitting(false);
       setLoadingStep(0);
       toast.error(`فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { duration: 6000 });
       return;
