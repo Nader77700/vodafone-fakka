@@ -133,7 +133,12 @@ export default function LegacyFlexSystemsPage() {
 
       {/* ── CARDS LIST (Mobile Responsive Grid) ── */}
       <div className="p-3 space-y-4">
-        {displayedSystems.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 animate-in fade-in duration-500">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">جاري تحميل الأنظمة...</p>
+          </div>
+        ) : displayedSystems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 animate-in fade-in duration-500">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-lg">
               <Search className="w-8 h-8 text-muted-foreground/50" />
