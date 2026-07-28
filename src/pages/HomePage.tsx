@@ -940,12 +940,11 @@ function ExecuteModal({
     let sMsisdn = null;
     let sError = null;
     try {
-      const toastId = toast.loading('جاري التحقق من فودافون كاش...');
       const seamless = await fetchSeamlessToken();
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
-      toast.dismiss(toastId);
+      // Remove dismiss so it stays until done or fail
       
       // لا نعرض خطأ هنا، فقط نترك sToken لتكون فارغة وسنتعامل معها في الأسفل
       if (!sToken) {
@@ -957,12 +956,13 @@ function ExecuteModal({
     }
 
     if (!sToken) {
-      // السماح بتمرير العملية للخادم بدلاً من الإيقاف الإجباري
-      // سيحاول الخادم الاعتماد على الرقم السري (PIN) لإكمال العملية إذا كان الـ Seamless غير متوفر
-      console.warn('Seamless token is missing, continuing with backend fallback using PIN...');
+      executingRef.current = false;
+      setChargingStatus('idle');
+      setLoadingStep(0);
+      toast.error(`فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { duration: 6000 });
+      return;
     }
 
-    toast.loading('جاري تنفيذ عملية الشحن...', { id: 'charging' });
     const result = await executeVodafoneOrder({
       product_id: product.id, receiver: trimPhone, pin: trimPin, sender: sMsisdn || trimSender,
       seamless_token: sToken, msisdn: sMsisdn,
@@ -970,7 +970,6 @@ function ExecuteModal({
     });
 
     const executeLatencyMs = Date.now() - executeStartedAt;
-    toast.dismiss('charging');
     if (result.debugSteps?.length) setDebugSteps(result.debugSteps);
 
     // ✅ حفظ الباسورد فقط عند نجاح العملية وتحديد المستخدم للحفظ مسبقاً

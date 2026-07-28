@@ -2,7 +2,7 @@ import { CapacitorHttp, Capacitor } from '@capacitor/core';
 
 export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-seamless"): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
   try {
-    const url = `https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=${clientId}`;
+    const url = `https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=${clientId}&response_type=code&scope=openid&redirect_uri=ana-vodafone://seamless-login`;
     
     const headers = {
       "User-Agent": "okhttp/4.12.0",
@@ -18,8 +18,10 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
       "device-id": ""
     };
 
+    const timeout = 6000; // 6 seconds
+    
     if (Capacitor.isNativePlatform()) {
-      const response = await CapacitorHttp.get({ url, headers });
+      const response = await CapacitorHttp.get({ url, headers, connectTimeout: timeout, readTimeout: timeout });
       if (response.status === 200 && response.data) {
         const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         try {
@@ -27,16 +29,19 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
           if (d?.seamlessToken) {
             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
           } else {
-            return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+            return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}` };
           }
         } catch(e: any) {
-          return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
         }
       } else {
-         return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+         return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}` };
       }
     } else {
-      const r = await fetch(url, { method: "GET", headers });
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeout);
+      const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
+      clearTimeout(id);
       if (r.ok) {
         const txt = await r.text();
         try {
@@ -44,16 +49,16 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
           if (d?.seamlessToken) {
              return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
           } else {
-             return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+             return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}` };
           }
         } catch (e: any) {
-           return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
         }
       } else {
-         return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+         return { token: null, msisdn: null, error: `HTTP ${r.status}` };
       }
     }
   } catch (err: any) {
-    return { token: null, msisdn: null, error: `تأكد من تفعيل اتصال بيانات فودافون وإغلاق الـ WiFi` };
+    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}` };
   }
 }

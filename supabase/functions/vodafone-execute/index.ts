@@ -217,30 +217,12 @@ serve(async (req: Request) => {
     // تم إلغاء طلب الـ sender الإجباري لأن التطبيق يعتمد على التعرف التلقائي (Seamless)
     logStep("validate", "ok", `product=${product_id} receiver=${receiver}`);
 
-    // ── Step 1: seamless token (timeout 8s) ──
+    // ── Step 1: seamless token ──
     let seamlessToken: string | null = seamless_token || null;
     let msisdn: string = payload_msisdn || (sender && sender.length > 0 ? (sender.startsWith("0") ? sender.slice(1) : sender) : "");
 
-    // إذا لم يرسل التطبيق التوكن، نحاول جلبه من السيرفر كحل بديل (وإن كان سيفشل غالبا)
     if (!seamlessToken) {
-      try {
-        const r = await fetchWithTimeout(
-          "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless",
-          { method: "GET", headers: DEVICE }, 8
-        );
-        const txt = await r.text();
-        logStep("seamless", r.ok ? "ok" : "fail", `http=${r.status}`, { raw_prefix: txt.slice(0, 100) });
-        if (r.ok) {
-          const d = JSON.parse(txt);
-          seamlessToken = d?.seamlessToken ?? null;
-          if (d?.msisdn) msisdn = String(d.msisdn);
-        }
-      } catch (e) {
-        logStep("seamless", "fail", `network: ${String(e).slice(0, 80)}`, { layer: "Network" });
-      }
-    }
-
-    if (!seamlessToken) {
+      logStep("seamless", "fail", "missing seamlessToken from client");
       return json({
         success: false,
         error: "فشل التعرف التلقائي: يرجى التأكد من تشغيل بيانات خط فودافون (Vodafone Data) وإغلاق الواي فاي (WiFi) لتتمكن من تنفيذ العملية.",
