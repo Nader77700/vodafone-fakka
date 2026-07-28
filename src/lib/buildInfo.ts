@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.429',
-  versionCode:    429,
+  appVersion:     '3.0.430',
+  versionCode:    430,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_423_code423',
-  apkHash:        'apk_v3_0_423_code423',
-  dbVersion:      'v3.0.423',
+  bundleHash:     'apk_v3_0_430_code430',
+  apkHash:        'apk_v3_0_430_code430',
+  dbVersion:      'v3.0.430',
   releaseNotes: [
+    'v3.0.430: إصلاح مشكلة التعرف التلقائي، وتصحيح رابط التوكن، وإضافة أنظمة فليكس المفقودة',
     'v3.0.423: تحديث جديد',
     'v3.0.422: تحديث جديد',
     'v3.0.423: تحديث جديد',
