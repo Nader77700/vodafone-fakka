@@ -24,14 +24,14 @@ allprojects {
     }
 }
 
-// تجاوز Java 21 المطلوبة من بعض مكتبات Capacitor إلى Java 17 المتاحة
+// تجاوز Java Toolchain المطلوبة من بعض مكتبات Capacitor
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
                 compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
+                    sourceCompatibility JavaVersion.VERSION_21
+                    targetCompatibility JavaVersion.VERSION_21
                 }
             }
         }
