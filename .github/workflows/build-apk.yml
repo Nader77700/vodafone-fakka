@@ -156,6 +156,12 @@ jobs:
             sed -i "s|android {|android {\n    namespace 'com.getcapacitor.plugin.http'|" "$HTTP_GRADLE"
             echo "Fixed namespace in $HTTP_GRADLE"
           done
+          
+          # Remove package attribute from AndroidManifest.xml for AGP 8+ compatibility
+          find node_modules -type f -path "*/@capacitor-community*http*/android/src/main/AndroidManifest.xml" | while read -r HTTP_MANIFEST; do
+            sed -i 's/ package="[^"]*"//g' "$HTTP_MANIFEST"
+            echo "Removed package attribute from $HTTP_MANIFEST"
+          done
 
       # ─── [2] SIGN ──────────────────────────────────────────────────────────
       - name: Build signed APK
