@@ -754,6 +754,7 @@ function ExecuteModal({
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastErrorType, setLastErrorType] = useState<import('@/lib/errorMapper').ErrorType>('unknown');
   const [debugSteps, setDebugSteps] = useState<ChargeDebugStep[]>([]);
+  const [seamlessDebug, setSeamlessDebug] = useState<any>(null);
   const [bridgeActive, setBridgeActive] = useState<boolean | null>(null);
   const [networkInfo, setNetworkInfo] = useState<NetworkInfo | null>(null);
   const [trialExhausted, setTrialExhausted] = useState(false);
@@ -939,12 +940,13 @@ function ExecuteModal({
     let sToken = null;
     let sMsisdn = null;
     let sError = null;
+    setSeamlessDebug(null);
     try {
       const seamless = await fetchSeamlessToken();
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
-      // Remove dismiss so it stays until done or fail
+      if (seamless.debugRaw) setSeamlessDebug(seamless.debugRaw);
       
       // لا نعرض خطأ هنا، فقط نترك sToken لتكون فارغة وسنتعامل معها في الأسفل
       if (!sToken) {
@@ -953,6 +955,7 @@ function ExecuteModal({
     } catch (e) {
       console.warn("seamless extraction failed", e);
       sError = String(e);
+      setSeamlessDebug({ exception: String(e) });
     }
 
     if (!sToken) {
@@ -1494,13 +1497,35 @@ function ExecuteModal({
                 })()}
 
                 {/* Debug Panel — Admin فقط */}
-                {isAdmin && debugSteps.length > 0 && !submitting && (
+                {isAdmin && (debugSteps.length > 0 || seamlessDebug) && !submitting && (
                   <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
+                      {seamlessDebug && (
+                        <div className="px-3 py-2 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
+                              SEAMLESS
+                            </span>
+                            <span className="text-[10px] font-mono font-semibold truncate text-blue-300">
+                              Fetch Token Attempt
+                            </span>
+                          </div>
+                          <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                              <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
+                            </div>
+                            <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
+                              <pre style={{ color: '#ffffff80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                                {JSON.stringify(seamlessDebug, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">

@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.432',
-  versionCode:    432,
+  appVersion:     '3.0.433',
+  versionCode:    433,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_432_code432',
-  apkHash:        'apk_v3_0_432_code432',
-  dbVersion:      'v3.0.432',
+  bundleHash:     'apk_v3_0_433_code433',
+  apkHash:        'apk_v3_0_433_code433',
+  dbVersion:      'v3.0.433',
   releaseNotes: [
+    'v3.0.433: إضافة سجل تتبع الأخطاء (Debug Panel) لعملية التعرف التلقائي Seamless لحسابات الإدارة',
     'v3.0.432: إصلاح خطأ الشحن (setChargingStatus) أثناء استخدام الواي فاي بدلاً من بيانات فودافون',
     'v3.0.431: استعادة مسار استخراج التوكن كما في الإصدارات القديمة وحل مشكلة الشحن والبطء',
     'v3.0.430: إصلاح مشكلة التعرف التلقائي، وتصحيح رابط التوكن، وإضافة أنظمة فليكس المفقودة',
