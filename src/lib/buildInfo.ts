@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.435',
-  versionCode:    435,
+  appVersion:     '3.0.436',
+  versionCode:    436,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_435_code435',
-  apkHash:        'apk_v3_0_435_code435',
-  dbVersion:      'v3.0.435',
+  bundleHash:     'apk_v3_0_436_code436',
+  apkHash:        'apk_v3_0_436_code436',
+  dbVersion:      'v3.0.436',
   releaseNotes: [
+    'v3.0.436: إضافة تفاصيل Debug كاملة لمشكلة HTTP 400 في Seamless Token لتظهر للمدير بوضوح',
     'v3.0.435: إصدار التحديث الفعلي لنظام تتبع الأخطاء (Debug Panel) لحل تعارض أرقام الإصدارات السابقة',
     'v3.0.434: نقل لوحة تتبع أخطاء التعرف التلقائي Seamless إلى الأعلى لتكون واضحة للإدارة وتوضيح المشكلة بشكل أفضل',
     'v3.0.433: إضافة سجل تتبع الأخطاء (Debug Panel) لعملية التعرف التلقائي Seamless لحسابات الإدارة',

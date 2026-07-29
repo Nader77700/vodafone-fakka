@@ -1,6 +1,6 @@
 import { CapacitorHttp, Capacitor } from '@capacitor/core';
 
-export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-seamless"): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
+export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-seamless"): Promise<{ token: string | null; msisdn: string | null; error?: string; debugRaw?: any }> {
   try {
     const url = `https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=${clientId}&response_type=code&scope=openid&redirect_uri=ana-vodafone://seamless-login`;
     
@@ -22,43 +22,45 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
     
     if (Capacitor.isNativePlatform()) {
       const response = await CapacitorHttp.get({ url, headers, connectTimeout: timeout, readTimeout: timeout });
+      const debugData = { status: response.status, url, headers, data: response.data };
       if (response.status === 200 && response.data) {
         const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         try {
           const d = JSON.parse(txt);
           if (d?.seamlessToken) {
-            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
+            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
           } else {
-            return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}` };
+            return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
           }
         } catch(e: any) {
-          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
+          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
         }
       } else {
-         return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}` };
+         return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}`, debugRaw: debugData };
       }
     } else {
       const ctrl = new AbortController();
       const id = setTimeout(() => ctrl.abort(), timeout);
       const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
       clearTimeout(id);
+      const txt = await r.text().catch(() => "");
+      const debugData = { status: r.status, url, headers, responseText: txt.slice(0, 1000) };
       if (r.ok) {
-        const txt = await r.text();
         try {
           const d = JSON.parse(txt);
           if (d?.seamlessToken) {
-             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
+             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
           } else {
-             return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}` };
+             return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
           }
         } catch (e: any) {
-           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
+           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
         }
       } else {
-         return { token: null, msisdn: null, error: `HTTP ${r.status}` };
+         return { token: null, msisdn: null, error: `HTTP ${r.status}`, debugRaw: debugData };
       }
     }
   } catch (err: any) {
-    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}` };
+    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}`, debugRaw: { error: err?.message } };
   }
 }

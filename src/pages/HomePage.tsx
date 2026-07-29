@@ -946,7 +946,11 @@ function ExecuteModal({
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
-      if (seamless.debugRaw) setSeamlessDebug(seamless.debugRaw);
+      if (seamless.debugRaw) {
+        setSeamlessDebug(seamless.debugRaw);
+      } else {
+        setSeamlessDebug({ error: sError || 'Unknown error occurred', step: 'fetchSeamlessToken' });
+      }
       
       // لا نعرض خطأ هنا، فقط نترك sToken لتكون فارغة وسنتعامل معها في الأسفل
       if (!sToken) {
