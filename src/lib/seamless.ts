@@ -18,25 +18,30 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
       "device-id": ""
     };
 
-    const timeout = 6000; // 6 seconds
+    const timeout = 12000; // Increased to 12 seconds to prevent Read timed out on slow mobile networks
     
     if (Capacitor.isNativePlatform()) {
-      const response = await CapacitorHttp.get({ url, headers, connectTimeout: timeout, readTimeout: timeout });
-      const debugData = { status: response.status, url, headers, data: response.data };
-      if (response.status === 200 && response.data) {
-        const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-        try {
-          const d = JSON.parse(txt);
-          if (d?.seamlessToken) {
-            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
-          } else {
-            return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
+      try {
+        const response = await CapacitorHttp.get({ url, headers, connectTimeout: timeout, readTimeout: timeout });
+        const debugData = { status: response.status, url, headers, data: response.data };
+        if (response.status === 200 && response.data) {
+          const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+          try {
+            const d = JSON.parse(txt);
+            if (d?.seamlessToken) {
+              return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
+            } else {
+              return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
+            }
+          } catch(e: any) {
+            return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
           }
-        } catch(e: any) {
-          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
+        } else {
+           return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}`, debugRaw: debugData };
         }
-      } else {
-         return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}`, debugRaw: debugData };
+      } catch (capacitorError: any) {
+        // Fallback to standard fetch if CapacitorHttp fails (e.g. Read timed out)
+        return { token: null, msisdn: null, error: `Native fetch error: ${capacitorError?.message || 'Unknown'}`, debugRaw: { error: capacitorError?.message, fallback: 'failed' } };
       }
     } else {
       const ctrl = new AbortController();

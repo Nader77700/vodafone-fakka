@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.437',
-  versionCode:    437,
+  appVersion:     '3.0.439',
+  versionCode:    439,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_437_code437',
-  apkHash:        'apk_v3_0_437_code437',
-  dbVersion:      'v3.0.437',
+  bundleHash:     'apk_v3_0_439_code439',
+  apkHash:        'apk_v3_0_439_code439',
+  dbVersion:      'v3.0.439',
   releaseNotes: [
+    'v3.0.439: إصلاح حقيقي لمشكلة Read timed out بزيادة الوقت لـ 12 ثانية وإضافة Fallback، بعد خطأ في حفظ الملفات في التحديث السابق',
     'v3.0.437: إصلاح مشكلة عدم ظهور لوحة Debug بسبب تعارض تمرير صلاحية Admin للمودال',
     'v3.0.436: إضافة تفاصيل Debug كاملة لمشكلة HTTP 400 في Seamless Token لتظهر للمدير بوضوح',
     'v3.0.435: إصدار التحديث الفعلي لنظام تتبع الأخطاء (Debug Panel) لحل تعارض أرقام الإصدارات السابقة',
