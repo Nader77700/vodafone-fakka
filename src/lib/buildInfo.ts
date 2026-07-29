@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.443',
-  versionCode:    443,
+  appVersion:     '3.0.444',
+  versionCode:    444,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_443_code443',
-  apkHash:        'apk_v3_0_443_code443',
-  dbVersion:      'v3.0.443',
+  bundleHash:     'apk_v3_0_444_code444',
+  apkHash:        'apk_v3_0_444_code444',
+  dbVersion:      'v3.0.444',
   releaseNotes: [
+    'v3.0.444: إيقاف استخدام CapacitorHttp واستخدام Fetch العادي الذي يعمل بنجاح بدون مشاكل التايم أوت',
     'v3.0.443: إيقاف خاصية transformObjectKeys في التشفير والتي كانت تكسر الاتصال بجسر Capacitor وتتسبب في حدوث Read timed out، وإعادة النظام الأساسي للعمل بنجاح',
     'v3.0.439: إصلاح حقيقي لمشكلة Read timed out بزيادة الوقت لـ 12 ثانية وإضافة Fallback، بعد خطأ في حفظ الملفات في التحديث السابق',
     'v3.0.437: إصلاح مشكلة عدم ظهور لوحة Debug بسبب تعارض تمرير صلاحية Admin للمودال',

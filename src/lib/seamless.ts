@@ -18,27 +18,9 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
       "device-id": ""
     };
 
-    const timeout = 12000; // 12 seconds
-    
-    if (Capacitor.isNativePlatform()) {
-      const response = await CapacitorHttp.get({ url, headers, connectTimeout: timeout, readTimeout: timeout });
-      const debugData = { status: response.status, url, headers, data: response.data };
-      if (response.status === 200 && response.data) {
-        const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-        try {
-          const d = JSON.parse(txt);
-          if (d?.seamlessToken) {
-            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
-          } else {
-            return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
-          }
-        } catch(e: any) {
-          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
-        }
-      } else {
-         return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}`, debugRaw: debugData };
-      }
-    } else {
+    const timeout = 12000;
+
+    const doStandardFetch = async () => {
       const ctrl = new AbortController();
       const id = setTimeout(() => ctrl.abort(), timeout);
       const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
@@ -59,8 +41,11 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
       } else {
          return { token: null, msisdn: null, error: `HTTP ${r.status}`, debugRaw: debugData };
       }
-    }
+    };
+
+    return await doStandardFetch();
+
   } catch (err: any) {
-    return { token: null, msisdn: null, error: `Native fetch error: ${err?.message || 'Unknown'}`, debugRaw: { error: err?.message } };
+    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}`, debugRaw: { error: err?.message } };
   }
 }
