@@ -740,11 +740,12 @@ function ReceiptView({
 
 // ── Modal تنفيذ الطلب Premium — هوية Vodafone Fakka الكاملة ──
 function ExecuteModal({
-  product, open, onClose, onSuccess, isAdmin = false, prefillPhone = '', logoUrl = '',
+  product, open, onClose, onSuccess, isAdmin: _ignored_isAdmin = false, prefillPhone = '', logoUrl = '',
 }: {
   product: VodafoneProduct | null; open: boolean; onClose: () => void; onSuccess: () => void; isAdmin?: boolean; prefillPhone?: string; logoUrl?: string;
 }) {
   const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const navigate = useNavigate();
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
