@@ -45,7 +45,7 @@ const customObfuscatorPlugin = () => {
               stringArrayCallsTransform: true,
               stringArrayEncoding: ['rc4'],
               stringArrayThreshold: 0.6, // تقليل النسبة قليلاً لحل مشكلة البطء
-              transformObjectKeys: true,
+              transformObjectKeys: false, // تم الإيقاف: تغيير أسماء مفاتيح الكائنات يكسر اتصال Capacitor للـ Native!
               unicodeEscapeSequence: false
             });
             chunk.code = obfuscated.getObfuscatedCode();
