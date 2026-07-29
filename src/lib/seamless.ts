@@ -19,33 +19,55 @@ export async function fetchSeamlessToken(clientId: string = "ana-vodafone-app-se
     };
 
     const timeout = 12000;
-
-    const doStandardFetch = async () => {
-      const ctrl = new AbortController();
-      const id = setTimeout(() => ctrl.abort(), timeout);
-      const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
-      clearTimeout(id);
-      const txt = await r.text().catch(() => "");
-      const debugData = { status: r.status, url, headers, responseText: txt.slice(0, 1000) };
-      if (r.ok) {
+    
+    if (Capacitor.isNativePlatform()) {
+      // ⚠️ Note: We MUST use CapacitorHttp here because standard Web `fetch()` 
+      // inside Android WebView ignores the `User-Agent` override.
+      // Vodafone requires "User-Agent: okhttp/4.12.0" to work properly.
+      const response = await CapacitorHttp.get({ url, headers, connectTimeout: timeout, readTimeout: timeout });
+      const debugData = { status: response.status, url, headers, data: response.data };
+      if (response.status === 200 && response.data) {
+        const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         try {
           const d = JSON.parse(txt);
           if (d?.seamlessToken) {
-             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
+            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
           } else {
-             return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
+            return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
           }
-        } catch (e: any) {
-           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
+        } catch(e: any) {
+          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
         }
       } else {
-         return { token: null, msisdn: null, error: `HTTP ${r.status}`, debugRaw: debugData };
+         return { token: null, msisdn: null, error: `HTTP ${response.status} - ${JSON.stringify(response.data).slice(0, 50)}`, debugRaw: debugData };
       }
-    };
-
-    return await doStandardFetch();
+    } else {
+      const doStandardFetch = async () => {
+        const ctrl = new AbortController();
+        const id = setTimeout(() => ctrl.abort(), timeout);
+        const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
+        clearTimeout(id);
+        const txt = await r.text().catch(() => "");
+        const debugData = { status: r.status, url, headers, responseText: txt.slice(0, 1000) };
+        if (r.ok) {
+          try {
+            const d = JSON.parse(txt);
+            if (d?.seamlessToken) {
+               return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw: debugData };
+            } else {
+               return { token: null, msisdn: null, error: `Invalid format: ${txt.slice(0, 50)}`, debugRaw: debugData };
+            }
+          } catch (e: any) {
+             return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw: debugData };
+          }
+        } else {
+           return { token: null, msisdn: null, error: `HTTP ${r.status}`, debugRaw: debugData };
+        }
+      };
+      return await doStandardFetch();
+    }
 
   } catch (err: any) {
-    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}`, debugRaw: { error: err?.message } };
+    return { token: null, msisdn: null, error: `Native fetch error: ${err?.message || 'Unknown'}`, debugRaw: { error: err?.message } };
   }
 }
