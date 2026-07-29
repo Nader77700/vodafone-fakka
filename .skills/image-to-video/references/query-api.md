@@ -7,7 +7,7 @@
 | Endpoint | `GET https://app-ck2v94t1nev5-api-oYA6Z8wDBRDa.gateway.appmedo.com/v1/videos/image2video/{id}` |
 | Authentication | `X-Gateway-Authorization: Bearer ${INTEGRATIONS_API_KEY}` |
 | Content-Type | `application/json` |
-| Billing | Not billed |
+| Note | Used only to poll task status; not billed |
 
 > **Note**: This is a GET request. Parameters are passed via the URL path (`{id}`) and cannot be sent through the request body.
 

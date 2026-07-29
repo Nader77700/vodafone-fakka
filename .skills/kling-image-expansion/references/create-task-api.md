@@ -6,7 +6,7 @@
 |------|---------|
 | Endpoint | `POST https://app-ck2v94t1nev5-api-GYX1bbkRQj4a.gateway.appmedo.com/v1/images/editing/expand` |
 | Function | Submits an image expansion task that extends the original image outward in four directions. Returns a `task_id` for subsequent polling. |
-| Billing | Discounted price ¥2.80 / request |
+| Note | Submits the image expansion task; this call is billed |
 
 ## Request Parameters
 

@@ -8,7 +8,7 @@
 | HTTP Method | `POST` |
 | Request Header Content-Type | `application/json` |
 | Auth Header | `X-Gateway-Authorization: Bearer <AUTH_VALUE>` |
-| Billing | Original price ¥45.50 / request, discounted price ¥35.00 / request (this endpoint is billed) |
+| Note | This endpoint submits the video generation task and is billed |
 
 ---
 
@@ -270,6 +270,6 @@ async function submitTextToVideo(
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in Edge Functions; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance); forward these error bodies verbatim to the frontend.
-- **Billing**: Each task submission costs **¥35.00** discounted (¥45.50 original price). After submitting, always pair with the query endpoint for polling to avoid duplicate submissions that waste quota.
+- **Note**: Each task submission is billed. After submitting, always pair with the query endpoint for polling to avoid duplicate submissions that waste quota.
 - **Model selection**: `kling-v2-master` is recommended for best quality; use `kling-v2-5-turbo` if speed is a priority.
 - **Async behavior**: The submit endpoint only returns a `task_id`. Video content must be retrieved by polling the query endpoint (`references/query-api.md`).

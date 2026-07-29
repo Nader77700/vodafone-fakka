@@ -8,7 +8,7 @@ license: MIT
 
 Powered by the Whisper large-v3 model via the LemonFox API. Converts audio files or public audio URLs into text transcripts with support for 100+ languages, speaker recognition, word-level timestamps, and multiple output formats.
 
-**Pricing:** $0.05 per call (discounted) / $0.10 original price — billed per API call.
+**Billing:** Billed per API call.
 
 ---
 
@@ -22,7 +22,7 @@ Powered by the Whisper large-v3 model via the LemonFox API. Converts audio files
 | Max File Size | Upload: 100 MB; URL submission: 1 GB |
 | Supported Formats | mp3, wav, flac, aac, opus, ogg, m4a, mp4, mpeg, mov, webm, and more |
 | Supported Languages | 100+, auto-detected if not specified |
-| Pricing | $0.05 / call (discounted) |
+| Billing | Billed per call |
 
 **Core capabilities:**
 - Audio-to-text transcription, returning plain text or detailed JSON with timestamps

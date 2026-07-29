@@ -22,7 +22,7 @@ Base host: `app-ck2v94t1nev5-api-wL1zlEdVM6DY.gateway.appmedo.com`
 
 **Authentication:** All endpoints are platform-managed. The API key is read from the environment (`INTEGRATIONS_API_KEY`) and sent via the `X-Gateway-Authorization: Bearer <key>` header. Never pass credentials as query parameters.
 
-**Billing:** Each API call is billed. Original price: ¥0.10/call; discounted price: ¥0.03/call. Avoid unnecessary repeated calls.
+**Billing:** Each API call is billed. Avoid unnecessary repeated calls.
 
 ---
 
@@ -88,6 +88,6 @@ Each endpoint requires its own Edge Function to keep the API key off the browser
 
 - **Key security**: `INTEGRATIONS_API_KEY` is a platform-managed credential. In the post-generation (Edge Function) scenario, it must be stored in Deno environment variables and must never be exposed to the frontend.
 - **Error handling**: Always handle `429` (rate limit) and `402` (insufficient balance) responses; also handle `401` (invalid token) and `403` (endpoint access restricted).
-- **Billing**: Each API call is billed at ¥0.03/call (discounted). Avoid unnecessary repeated calls.
+- **Billing**: Each API call is billed. Avoid unnecessary repeated calls.
 - **Pagination limit**: Pagination supports up to 20,000 total results (`page` × `limit` ≤ 20,000).
 - **Data freshness**: News data is fetched in real time; `published_at` uses UTC timezone.

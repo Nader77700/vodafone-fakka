@@ -14,7 +14,7 @@ Translate any text into a specified target language via the Google Cloud Transla
 |------|---------|
 | Endpoint | `POST https://app-ck2v94t1nev5-api-GaDwZ8DX7jPY.gateway.appmedo.com/language/translate/v2` |
 | Auth | platform_managed — key injected via `INTEGRATIONS_API_KEY` |
-| Billing | Original price ¥0.50 / call, discount price ¥0.40 / call |
+| Billing | Billed per call |
 
 **Request Parameters:**
 
@@ -255,7 +255,7 @@ async function translateText(q: string, target: string, source?: string, format?
 
 - **Key Security**: `INTEGRATIONS_API_KEY` may only be read server-side in the Edge Function and must never be exposed to the frontend.
 - **Error Handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance); these error bodies are forwarded verbatim by the Edge Function.
-- **Billing**: This plugin is billed per call — discount price ¥0.40 / call (original price ¥0.50). Confirm that text actually needs translation before calling to avoid unnecessary repeated requests.
+- **Billing**: This plugin is billed per call. Confirm that text actually needs translation before calling to avoid unnecessary repeated requests.
 - **Language Codes**: Target/source languages must use BCP-47 or ISO 639-1 codes (e.g. `zh`, `en`, `fr`, `ja`, `ko`, `de`); full language names are not accepted.
 - **HTML Translation**: If the text contains HTML tags, set `format: "html"` to preserve tag structure and translate only the visible text content.
 - **Single Text Per Request**: The current API endpoint translates one text segment per request (`q` is a single string); batch translation requires multiple calls.

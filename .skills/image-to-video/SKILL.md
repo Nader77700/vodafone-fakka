@@ -17,7 +17,7 @@ Use Kling AI to generate a short video (5 or 10 seconds) from a single image. Su
 | Processing mode | Async — submit then poll, maximum wait 10 minutes |
 | Video duration | `"5"` or `"10"` seconds |
 | Image requirements | JPG/JPEG/PNG, ≤ 10 MB, minimum dimension ≥ 300 px, aspect ratio 1:2.5 ~ 2.5:1 |
-| Billing | Original price ¥91.00 / request, discounted price ¥70.00 / request (only the submit endpoint is billed; query is free) |
+| Note | The submit endpoint is used to create the task and is billed; the query endpoint is used to poll for results and is free |
 
 ### Response Example
 
@@ -115,5 +115,5 @@ In-app integration requires two Edge Functions: one to submit the task and one t
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in Edge Functions — never expose it to the frontend.
 - **Base64 image format**: When using Base64, provide only the pure Base64 string — **do not** include the `data:image/png;base64,` prefix.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: The submit endpoint is billed per request (discounted price ¥70.00 / request); the query endpoint is free. Avoid unnecessary repeated submissions caused by parameter errors.
+- **Note**: The submit endpoint is used to create the task; the query endpoint is used to poll status. Avoid unnecessary repeated submissions caused by parameter errors.
 - **Concurrency limit**: For the same account, keep concurrent submission counts under control to avoid rate limiting.

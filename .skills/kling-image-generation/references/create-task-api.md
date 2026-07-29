@@ -6,7 +6,7 @@
 |------|---------|
 | Endpoint | `POST https://app-ck2v94t1nev5-api-DY8MnRlwkXKa.gateway.appmedo.com/v1/images/generations` |
 | Function | Submit an image generation task; supports text-to-image and image-to-image. Returns a `task_id` for subsequent polling. |
-| Billing | Discounted price ¥0.35 / call |
+| Note | Submits the generation task; this call is billed |
 
 ## Request Parameters
 

@@ -96,12 +96,7 @@ The recommended application-side pattern is:
 
 ---
 
-## Billing
-
-| Item | Price |
-|------|-------|
-| Original price | ¥17.60 / call |
-| Discounted price | ¥13.50 / call |
+## Note
 
 Each complete generation (submit + poll to terminal state) is billed as **1 call**. Avoid resubmitting the same task.
 

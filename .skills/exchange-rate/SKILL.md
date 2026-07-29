@@ -16,7 +16,7 @@ Query real-time exchange rates for all supported currencies against a specified 
 | Auth | Platform-managed gateway (`X-Gateway-Authorization: Bearer <INTEGRATIONS_API_KEY>`) |
 | Supported Currencies | 161 (ISO 4217 three-letter codes) |
 | Data Freshness | Daily updates (not tick-level) |
-| Billing | Original price ¥0.10 / call, discounted price ¥0.04 / call |
+| Billing | Billed per call |
 
 ### Request Parameters
 
@@ -251,7 +251,7 @@ async function fetchExchangeRates(baseCurrency: string) {
 
 - **Key security**: The API key is injected into the Edge Function via `INTEGRATIONS_API_KEY`. Never expose it in frontend code or version control.
 - **Error handling**: Always check the `result` field in the response body. When `"error"`, handle accordingly based on `error-type`, especially `quota-reached`.
-- **Billing**: Each API call costs ¥0.04 (discounted) / ¥0.10 (original). Avoid redundant calls in loops or polling — cache exchange rate data at the application layer (rates update once per day; use `time_next_update_utc` to know when to refresh).
+- **Billing**: This endpoint is billed per call. Avoid redundant calls in loops or polling — cache exchange rate data at the application layer (rates update once per day; use `time_next_update_utc` to know when to refresh).
 - **Currency codes**: Only ISO 4217 standard three-letter codes are supported. Unsupported codes return `unsupported-code` or `unknown-code` errors.
 - **Data freshness**: Rates are updated daily, not tick-level. Not suitable for high-frequency trading use cases.
 - **Single base currency per request**: Each request specifies one base currency and returns rates against all 161 supported currencies.

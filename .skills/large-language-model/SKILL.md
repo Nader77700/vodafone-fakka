@@ -14,7 +14,7 @@ Call the Gemini 2.5 Flash multimodal large language model via the API Gateway. S
 - **Response mode**: SSE streaming (Server-Sent Events)
 - **Supported modalities**: Multi-turn text conversation, Base64 inline images, file URI images
 - **First-token latency**: Up to 30 seconds; extend API timeout settings accordingly
-- **Billing**: Standard price ¥0.30 / call, discounted price ¥0.19 / call
+- **Billing**: This endpoint is billed per call
 
 ### Request Body Structure (Overview)
 
@@ -76,6 +76,6 @@ Key points: The Edge Function passes through the upstream SSE stream; the fronte
 - **Key security**: `INTEGRATIONS_API_KEY` may only be read server-side in the Edge Function; never expose it to the frontend.
 - **Timeout**: First token can take up to 30 seconds; extend the frontend request timeout accordingly (recommend ≥ 60s).
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance) and display friendly messages to the user.
-- **Billing**: Each call costs ¥0.19 (discounted); avoid unnecessary repeated calls (e.g., rapid successive clicks by the user).
+- **Billing**: This endpoint is billed per call; avoid unnecessary repeated calls (e.g., rapid successive clicks by the user).
 - **Streaming dependency**: The frontend must use `EventSource` or `eventsource-parser` to consume SSE; do not use a plain `fetch().json()`.
 - **Markdown rendering**: Model responses contain Markdown formatting; it is recommended to use `streamdown@^1.1.6` for real-time rendering.

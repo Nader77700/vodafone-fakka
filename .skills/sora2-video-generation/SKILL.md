@@ -100,7 +100,7 @@ The security contract for all endpoints:
 
 - **Key security**: `INTEGRATIONS_API_KEY` may only be read server-side in the Edge Function; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: Create Video, Reference Video, and Remix Video are all billed (original price 96 credits/request, discounted price 80 credits/request); Query Status is free. Avoid submitting duplicate jobs in a loop.
+- **Billing**: Create Video, Reference Video, and Remix Video are all billed; Query Status is free. Avoid submitting duplicate jobs in a loop.
 - **Resolution constraint**: When using `input_reference` (reference image), the source image and output video resolutions must match exactly (only `720x1280` / `1280x720` are supported).
 - **Content restrictions**: Only content suitable for audiences under 18 is allowed; no copyrighted characters or music; no real people (including public figures); input images containing human faces require special authorization.
 - **Video expiry**: Generated video CDN URLs are time-limited; download or transfer to Supabase Storage immediately after retrieval.

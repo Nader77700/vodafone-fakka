@@ -10,7 +10,7 @@
 | Auth Header | `X-Gateway-Authorization: Bearer ${INTEGRATIONS_API_KEY}` |
 | Response Mode | SSE (Server-Sent Events) streaming |
 | First-Token Latency | Up to 30 seconds |
-| Pricing | Standard ¥0.30 / call; discounted ¥0.19 / call |
+| Note | Streaming AI search endpoint, billed per call |
 
 ---
 
@@ -492,4 +492,4 @@ async function fetchAiSearch(
 - **Key security**: `INTEGRATIONS_API_KEY` is read only inside the Edge Function; never expose it to the client.
 - **Error handling**: Always handle status 429 (quota exceeded) and 402 (insufficient balance).
 - **Markdown rendering**: Model output is in Markdown format; it is recommended to use `streamdown@^1.1.6` for streaming rendering.
-- **Billing**: Discounted price ¥0.19 / call; avoid unnecessary repeated requests.
+- **Note**: This endpoint is billed per call; avoid unnecessary repeated requests.

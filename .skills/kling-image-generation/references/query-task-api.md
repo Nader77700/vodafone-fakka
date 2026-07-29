@@ -6,7 +6,7 @@
 |------|---------|
 | Endpoint | `GET https://app-ck2v94t1nev5-api-M9v0wzOkZXGY.gateway.appmedo.com/v1/images/generations/{task_id}` |
 | Function | Query the status and result of a single image generation task. Returns image URLs once the task completes. |
-| Billing | Free (not billed) |
+| Note | Used only to poll task status; not billed |
 
 ## Request Parameters
 

@@ -1,7 +1,7 @@
 # Query Image-to-Video Task API
 
 **API ID:** `api-rLobzpqX85m9`
-**Billing:** Disabled (query calls are free)
+**Note:** Query calls are free.
 
 ---
 

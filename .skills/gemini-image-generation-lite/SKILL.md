@@ -16,7 +16,7 @@ Cost-effective multimodal image generation and editing powered by `gemini-3.1-fl
 | Auth | Platform-managed — `INTEGRATIONS_API_KEY` injected by platform |
 | Content-Type | `application/json` |
 | Output | Base64-encoded PNG embedded in response body (no URL) |
-| Billing | Original ¥12.20 / unit · Discounted ¥10.10 / unit (10.1 call-units per request) |
+| Billing | Billed per request |
 
 **Core capabilities:**
 - Background replacement ("replace the background with a beach scene")
@@ -119,7 +119,7 @@ The Edge Function pattern:
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in the Edge Function — never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: Each request costs approximately ¥10.10 (discounted price); image tokens are calculated independently (approximately 500–1000 tokens/MB). Avoid retry loops to prevent unexpected charges.
+- **Billing**: Each request is billed; image tokens are calculated independently (approximately 500–1000 tokens/MB). Avoid retry loops to prevent unexpected charges.
 - **Image size**: Recommend compressing input images to ≤5MB for optimal processing speed.
 - **Thought entry filtering**: Entries with `thought: true` in the response `parts` array are internal thinking logs, not the final image — skip them when extracting; look for entries with `inlineData`.
 - **Chinese instructions**: Chinese editing instructions are supported; specify the operation type clearly (background replacement / element modification / style adjustment).

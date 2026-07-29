@@ -17,7 +17,7 @@ Converts text descriptions into short videos using the Kling AI model, supportin
 | Auth | Bearer Token (platform_managed) |
 | Request Format | `application/json` |
 | Response Format | JSON (includes video URL) |
-| Billing | Original price ¥45.50 / request, discounted price ¥35.00 / request (submit endpoint billed, query endpoint free) |
+| Note | The submit endpoint is used to create the task and is billed; the query endpoint is used to poll for results and is free |
 
 ### Main Request Parameters (Submit)
 

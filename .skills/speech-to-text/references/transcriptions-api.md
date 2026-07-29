@@ -405,9 +405,9 @@ async function transcribeAudio(params: {
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read on the Edge Function server side. Never expose it in frontend code or client-side environments.
 - **Error handling**: Always handle `429` (quota exceeded) and `402` (insufficient balance) responses — these error bodies are forwarded verbatim.
-- **Pricing**: Each call costs $0.05 (discounted), original price $0.10. For long audio, confirm the content before calling to avoid unnecessary repeated requests.
+- **Billing**: This endpoint is billed per call. For long audio, confirm the content before calling to avoid unnecessary repeated requests.
 - **Speaker diarization**: `speaker_labels=true` requires `response_format=verbose_json`; speaker labels will not appear in the response otherwise.
 - **File upload vs URL**: Local files must be uploaded via `multipart/form-data` (do not set `Content-Type` manually — let fetch fill in the boundary automatically); URL submission uses `application/x-www-form-urlencoded` and is simpler.
-- **EU compliance**: To process data on EU servers, replace `app-ck2v94t1nev5-api-DY8MNQoqOnMa.gateway.appmedo.com` with `eu-app-ck2v94t1nev5-api-DY8MNQoqOnMa.gateway.appmedo.com`. Note: EU processing incurs a 20% surcharge (i.e., $0.60 per 3 hours instead of $0.50).
+- **EU compliance**: To process data on EU servers, replace `app-ck2v94t1nev5-api-DY8MNQoqOnMa.gateway.appmedo.com` with `eu-app-ck2v94t1nev5-api-DY8MNQoqOnMa.gateway.appmedo.com`. Note: EU processing incurs a surcharge over standard processing.
 - **Async transcription**: For longer audio (tens of minutes or more), use the `callback_url` parameter to trigger async transcription and avoid request timeouts.
 - **Subtitle generation**: `srt` and `vtt` formats can be used directly as video subtitle files — no additional parsing needed.

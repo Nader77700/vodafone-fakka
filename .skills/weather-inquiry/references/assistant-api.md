@@ -323,5 +323,5 @@ const reply = await weatherApiPost("weather-assistant-resume", {
 ## Notes
 
 - **Session lifecycle**: The validity period of `session_id` is determined by the OpenWeatherMap platform. Use it within the same user conversation flow; do not persist it across separate sessions.
-- **Billing difference**: Starting a new session (`api-79jKPlpvAJ0L`) incurs a charge of ¥0.17 per call; resuming a session (`api-oYA6ZxVqyK8a`) is free and can be called any number of times.
+- **Billing difference**: Starting a new session (`api-79jKPlpvAJ0L`) is billed per call; resuming a session (`api-oYA6ZxVqyK8a`) is free and can be called any number of times.
 - **Multi-turn design guidance**: Store `session_id` in React state or a Zustand store. For each new user message, determine whether it is a first query or a follow-up and call the corresponding Edge Function accordingly.

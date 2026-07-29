@@ -12,7 +12,7 @@ Calls the Huayan AI Search endpoint backed by the Gemini 2.5 Flash model and Goo
 
 - **Endpoint**: `POST https://app-ck2v94t1nev5-api-zYm4ze3j7XvL.gateway.appmedo.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
 - **Response mode**: SSE streaming (Server-Sent Events). The first token may take up to 30 seconds; adjust timeout settings accordingly.
-- **Pricing**: Standard price ¥0.30 / call; discounted price ¥0.19 / call
+- **Billing**: This endpoint is billed per call
 
 ### Core Request Parameters
 
@@ -92,7 +92,7 @@ Render Markdown with streamdown + display source citations
 
 See the **Generation-Time Usage** section of `references/ai-search-api.md`.
 
-Summary: During generation time, call the upstream endpoint directly via SSE, read the stream incrementally, accumulate the full text, and return it. Each call is billed at ¥0.19.
+Summary: During generation time, call the upstream endpoint directly via SSE, read the stream incrementally, accumulate the full text, and return it. Each call is billed.
 
 ---
 
@@ -112,4 +112,4 @@ Summary: Create an Edge Function `ai-search.ts` that proxies the client's `conte
 - **Streaming required**: The endpoint returns an SSE stream; you must use `EventSource` or an equivalent approach to consume the data — do not use plain `fetch().json()`.
 - **Markdown rendering**: Model output is in Markdown format; it is recommended to use `streamdown@^1.1.6` for streaming rendering.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: Discounted price ¥0.19 / call; avoid unnecessary repeated calls.
+- **Billing**: This endpoint is billed per call; avoid unnecessary repeated calls.

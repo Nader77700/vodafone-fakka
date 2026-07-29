@@ -22,7 +22,7 @@ Base host: `app-ck2v94t1nev5-api-oYA6Z8wDBN1a.gateway.appmedo.com`
 
 **Authentication:** All endpoints require `api_token` as a query parameter (user-managed key). In Edge Function deployments, the key is retrieved via `Deno.env.get("INTEGRATIONS_API_KEY")` and passed as `X-Gateway-Authorization: Bearer ${apiKey}` header to the upstream gateway.
 
-**Billing:** Each API call is billed. Original price: ¥0.10/call; discounted price: ¥0.02/call. Avoid unnecessary repeated calls.
+**Billing:** Each API call is billed. Avoid unnecessary repeated calls.
 
 ---
 
@@ -86,7 +86,7 @@ Each endpoint requires its own Edge Function to keep the `api_token` off the bro
 
 - **Key security**: `api_token` is a user-managed credential. In post-generation (Edge Function) scenarios, store it in the Deno environment variable (`INTEGRATIONS_API_KEY`) and never expose it to the frontend.
 - **Error handling**: Always handle `429` (rate limit) and `402` (insufficient balance) responses; also handle `401` (invalid token).
-- **Billing**: Each API call costs ¥0.02/call (discounted; original ¥0.10/call). Avoid unnecessary repeated calls.
+- **Billing**: Each API call is billed. Avoid unnecessary repeated calls.
 - **Data freshness**: Real-time quotes are sourced from IEX trade reports, not tick-level; historical data is adjusted for splits.
 - **Market coverage**: Primarily covers US-listed stocks; the EOD endpoint also supports crypto and forex historical data.
 - **Entity Search limit**: Each request returns at most 50 results.

@@ -15,7 +15,7 @@ Powered by Kling AI, this skill submits image generation tasks and polls for res
 | Create Task Endpoint | `POST https://app-ck2v94t1nev5-api-DY8MnRlwkXKa.gateway.appmedo.com/v1/images/generations` |
 | Query Task Endpoint | `GET https://app-ck2v94t1nev5-api-M9v0wzOkZXGY.gateway.appmedo.com/v1/images/generations/{task_id}` |
 | Authentication | Platform-managed — key injected via `INTEGRATIONS_API_KEY` |
-| Billing | List price ¥0.50 / call, discounted ¥0.35 / call (create task only) |
+| Note | Create task endpoint is billed; query endpoint is free |
 | Async Mode | Returns `task_id` on submission; poll until `task_status` is `succeed` or `failed` |
 | Image Expiry | CDN links expire after 30 days; download or transfer immediately |
 
@@ -192,7 +192,7 @@ async function submitKlingImageTask(params: { prompt: string; n?: number; aspect
 
 - **Key security**: `INTEGRATIONS_API_KEY` may only be read server-side in an Edge Function; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: Only the create task call (`api-DY8MnRlwkXKa`) is billed at ¥0.35 / call (discounted); query task calls are free. Avoid re-submitting new tasks due to polling logic errors.
+- **Note**: Only the create task call (`api-DY8MnRlwkXKa`) is billed; query task calls are free. Avoid re-submitting new tasks due to polling logic errors.
 - **Async wait**: Do not block-wait for task completion within a single request. In Edge Functions, prefer using `callback_url` + webhook, or let the frontend poll `kling-query-task`.
 - **Image expiry**: Upstream CDN links expire after 30 days. In Edge Functions, transfer images to Supabase Storage before returning URLs to the frontend (see `references/create-task-api.md`).
 - **Base64 images**: When passing the `image` parameter, use raw Base64 encoding without the `data:image/...;base64,` prefix.

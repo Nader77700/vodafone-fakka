@@ -16,7 +16,7 @@ Converts text into a synthesized speech audio file using the LemonFox TTS API, w
 | Auth | Bearer Token (platform_managed) |
 | Request Format | `application/json` |
 | Response Format | Binary audio file (`application/octet-stream`) |
-| Pricing | Original price $0.10 / request, discounted price $0.05 / request |
+| Billing | Billed per request |
 
 ### Request Parameters
 

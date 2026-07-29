@@ -129,7 +129,7 @@ See the "Post-generation Usage" section in `references/query-api.md` for the Edg
 
 - **Key security**: `INTEGRATIONS_API_KEY` may only be read server-side in an Edge Function — never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: Each call costs ¥3.40 (original price), ¥2.80 (discounted price). The query endpoint (polling) is not billed. Avoid unnecessary duplicate submissions.
+- **Note**: The submit (create task) endpoint is billed. The query endpoint (polling) is not billed. Avoid unnecessary duplicate submissions.
 - **Image storage**: Generated image URLs are valid for 30 days — transfer them to Supabase Storage or another persistent store promptly.
 - **series_amount constraint**: When `result_type=single`, passing `series_amount` is strictly forbidden and will cause the request to fail.
 - **Base64 images**: Must not include the `data:image/...;base64,` prefix — pass only the raw encoded string.

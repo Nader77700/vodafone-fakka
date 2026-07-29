@@ -16,7 +16,7 @@ Calls the Google Scholar search engine via SerpApi to retrieve academic literatu
 | Authentication | platform_managed (API Key read from `INTEGRATIONS_API_KEY` environment variable) |
 | Search Engine | Google Scholar (`engine=google_scholar` fixed value) |
 | Data Types | Academic papers, citation information, version clusters |
-| Billing | Original price ¥3.00 / request, discounted price ¥2.50 / request |
+| Billing | Billed per request |
 
 ### Request Parameters
 
@@ -351,7 +351,7 @@ async function fetchScholarResults(params: Record<string, string>) {
 
 - **Key Security**: `INTEGRATIONS_API_KEY` must only be read on the Edge Function server side. Never expose it in frontend code or version control.
 - **Error Handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance). SerpApi does not return an error when a search yields no results — it returns an empty `organic_results` array instead. Add null/empty checks at the business layer.
-- **Billing**: Each API call costs a discounted price of **¥2.50** (original price ¥3.00). Cache search results at the application layer where appropriate to avoid redundant calls with the same query parameters.
+- **Billing**: Each API call is billed. Cache search results at the application layer where appropriate to avoid redundant calls with the same query parameters.
 - **Query Parameter Constraints**: At least one of `q`, `cites`, or `cluster` must be provided; otherwise SerpApi returns an error. The `engine` parameter is fixed as `"google_scholar"` and cannot be changed.
 - **Pagination**: Each page returns a fixed 10 results. Control the offset via the `start` parameter (`0`, `10`, `20`, …). The presence of `pagination.next` indicates more results are available.
 - **Citation and Version Retrieval**: When using the `cites` parameter, pass the value of `organic_results[].inline_links.cited_by.cites_id`; when using the `cluster` parameter, pass the value of `organic_results[].inline_links.versions.cluster_id`.

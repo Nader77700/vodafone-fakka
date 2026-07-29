@@ -17,7 +17,7 @@ Generate videos using the Kling AI Omni model, supporting text-to-video, image-t
 | Authentication | Bearer Token (platform_managed — key injected by platform) |
 | Request Format | `application/json` |
 | Response Format | JSON (includes video URL) |
-| Billing | Original price ¥160.80 / request, discounted price ¥134.00 / request (submit endpoint is billed; query endpoint is free) |
+| Note | The submit endpoint is used to create the task and is billed; the query endpoint is used to poll for results and is free |
 
 ### Key Capability Modes
 

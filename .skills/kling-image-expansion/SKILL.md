@@ -16,7 +16,7 @@ Powered by Kling AI, this skill submits image expansion tasks and polls for resu
 | Query Task (Single) Endpoint | `GET https://app-ck2v94t1nev5-api-AalZkkAG5w7L.gateway.appmedo.com/v1/images/editing/expand/{task_id}` |
 | Query Task (List) Endpoint | `GET https://app-ck2v94t1nev5-api-pLVzAAkGZwDL.gateway.appmedo.com/v1/images/editing/expand` |
 | Authentication | Platform-managed — key injected via `INTEGRATIONS_API_KEY` |
-| Billing | Original price ¥3.40 / request, discounted price ¥2.80 / request (billed on task creation only) |
+| Billing | Create task endpoint is billed on task creation only; query endpoints are free |
 | Async Mode | Returns `task_id` after submission; poll until `task_status` becomes `succeed` or `failed` |
 | Image Expiry | CDN links expire after 30 days; download or transfer to storage immediately |
 
@@ -201,7 +201,7 @@ async function submitExpandTask(params: {
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in the Edge Function; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: Only the create task endpoint (`api-GYX1bbkRQj4a`) is billed at a discounted price of ¥2.80 / request; query endpoints are free. Avoid repeatedly submitting new tasks due to polling logic errors.
+- **Billing**: Only the create task endpoint (`api-GYX1bbkRQj4a`) is billed; query endpoints are free. Avoid repeatedly submitting new tasks due to polling logic errors.
 - **Expansion ratio limits**: The total area of the expanded image must not exceed 3× the original; each directional ratio is in the range [0, 2] (as a multiple of the original image dimension).
 - **Image format requirements**: Supports .jpg/.jpeg/.png, file size ≤ 10 MB, minimum dimension 300 px, aspect ratio between 1:2.5 and 2.5:1.
 - **Base64 images**: When passing the `image` parameter as Base64, use raw Base64 encoding without the `data:image/...;base64,` prefix.

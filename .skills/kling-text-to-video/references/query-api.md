@@ -8,7 +8,7 @@
 | HTTP Method | `GET` |
 | Request Header Content-Type | `application/json` |
 | Auth Header | `X-Gateway-Authorization: Bearer <AUTH_VALUE>` |
-| Billing | Free (query endpoint is not billed) |
+| Note | Used only to poll task status; not billed |
 
 ---
 
@@ -336,7 +336,7 @@ async function pollUntilComplete(taskId: string, onProgress?: (status: string) =
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in Edge Functions; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance); forward these error bodies verbatim to the frontend.
-- **Billing**: This query endpoint is free, but each submit costs **¥35.00** discounted (¥45.50 original price). Avoid duplicate submissions due to improper polling.
+- **Note**: This query endpoint is used only to poll task status and is not billed; the submit endpoint is billed. Avoid duplicate submissions due to improper polling.
 - **Video URL expiry**: Upstream CDN video links are temporary. The Edge Function automatically transfers them to Supabase Storage `generated-media` bucket to ensure the frontend receives a persistent URL.
 - **Polling interval**: Recommended every 5–10 seconds; 7 seconds is suggested. Total timeout should not exceed 10 minutes.
 - **Task status**: `submitted` (queued) → `processing` (in progress) → `succeed` (completed) / `failed` (failed). `task_result.videos` is only populated when status is `succeed`.

@@ -14,7 +14,7 @@ This plugin contains two endpoints:
 
 | Endpoint | Method | Description | Billing |
 |----------|--------|-------------|---------|
-| `POST https://app-ck2v94t1nev5-api-W9z3M6eONl3L.gateway.appmedo.com/parse/image` | POST | Core OCR endpoint supporting URL / file upload / Base64 input methods, with advanced features such as table recognition and coordinate overlay | Enabled (per-call billing) |
+| `POST https://app-ck2v94t1nev5-api-W9z3M6eONl3L.gateway.appmedo.com/parse/image` | POST | Core OCR endpoint supporting URL / file upload / Base64 input methods, with advanced features such as table recognition and coordinate overlay | Billed per call |
 | `GET https://app-ck2v94t1nev5-api-m9xKXDbRplNa.gateway.appmedo.com/parse/imageurl` | GET | Simplified GET endpoint supporting URL-only image submission, suitable for quick integration | Not billed |
 
 > Prefer the **GET /parse/imageurl** endpoint (free) for simple URL-based image recognition. Use the **POST /parse/image** endpoint only when you need file upload, Base64 input, table recognition, coordinate overlay, or other advanced features.
@@ -75,6 +75,6 @@ Security contract:
 
 - **Key Security**: `INTEGRATIONS_API_KEY` can only be read server-side in the Edge Function; never expose it to the frontend.
 - **Error Handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance); also check `OCRExitCode` (1=success, 2=partial success, 3=failure, 4=error) and `IsErroredOnProcessing` in the response body.
-- **Billing**: POST `/parse/image` is billed per call at a list price of ¥0.00 (currently free), but unnecessary repeated calls should still be avoided. GET `/parse/imageurl` is not billed and should be preferred.
+- **Billing**: POST `/parse/image` is billed per call, but unnecessary repeated calls should still be avoided. GET `/parse/imageurl` is not billed and should be preferred.
 - **Input Constraints**: The POST endpoint requires one of `url`, `file`, or `base64Image`; Base64 input must include the data type prefix, e.g. `data:image/jpeg;base64,`.
 - **Language Codes**: Use OCR.space proprietary language codes (e.g. `chs` for Simplified Chinese, `cht` for Traditional Chinese), not standard BCP 47 codes.

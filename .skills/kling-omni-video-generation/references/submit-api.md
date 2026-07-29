@@ -8,7 +8,7 @@
 | HTTP Method | `POST` |
 | Request Header Content-Type | `application/json` |
 | Authorization Header | `X-Gateway-Authorization: Bearer ${INTEGRATIONS_API_KEY}` |
-| Billing | Original price ¥160.80 / request, discounted price ¥134.00 / request (this endpoint is billed) |
+| Note | This endpoint submits the video generation task and is billed |
 
 ---
 
@@ -256,7 +256,7 @@ async function submitOmniVideo(options: OmniVideoSubmitOptions) {
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in the Edge Function; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance); these error bodies must be forwarded verbatim to the frontend.
-- **Billing**: Each task submission costs **¥134.00** (discounted; original price ¥160.80). After submission, always poll the query endpoint to avoid duplicate submissions that waste quota.
+- **Note**: Each task submission is billed. After submission, always poll the query endpoint to avoid duplicate submissions that waste quota.
 - **Single-shot vs. multi-shot**: When `multi_shot: false` (default), `prompt` is required; when `multi_shot: true`, both `shot_type` and `multi_prompt` (max 6 shots) are required.
 - **Template prompts**: `prompt` supports `<<<image_1>>>` format to reference images in `image_list` for precise control.
 - **Async nature**: This endpoint only returns a `task_id`; video content must be retrieved by polling the query endpoint (`references/query-api.md`).

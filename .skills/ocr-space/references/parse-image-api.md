@@ -8,7 +8,7 @@
 | Content-Type | `multipart/form-data` |
 | Authentication | user_managed (API Key passed directly) |
 | Auth Header | `X-Gateway-Authorization: K87649693488957` |
-| Billing | Enabled, per-call billing, list price ¥0.00 (currently free) |
+| Billing | Billed per call |
 
 ### Request Parameters
 

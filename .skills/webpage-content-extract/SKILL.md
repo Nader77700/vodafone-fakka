@@ -364,7 +364,7 @@ async function fetchWebpageContentExtract(
 
 - **Key security**: `DIFFBOT_API_KEY` must be set as a Supabase Edge Function secret and must never be exposed to the frontend. The `AUTH_VALUE` embedded in the generation-time call contains credentials — do not commit it to a public repository.
 - **Error handling**: Always handle `429` (quota exceeded) and `402` (insufficient balance); these error bodies are passed through to the client as-is.
-- **Billing**: This plugin is currently free to call (`original_price: "0.00"`); caching results and avoiding repeated calls for the same URL is still recommended.
+- **Billing**: This plugin is currently free to call; caching results and avoiding repeated calls for the same URL is still recommended.
 - **`discussion` is enabled by default**: Diffbot crawls and parses the comment section by default, which increases response time. Pass `discussion: false` explicitly when comment data is not needed.
 - **`quotes` is English only**: Enabling the `quotes` parameter for Chinese or other non-English pages will not return valid data.
 - **POST vs GET**: GET requires Diffbot to remotely fetch the URL; POST (with `html` or `text`) parses local content directly, which is faster and requires no network access — ideal when you already have the HTML.

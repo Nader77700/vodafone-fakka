@@ -1,7 +1,7 @@
 # Create Image-to-Video Task API
 
 **API ID:** `api-eLMlJj3KJD89`
-**Billing:** Enabled — original price ¥100.80, discount price ¥84.00 per 84 calls
+**Note:** This endpoint submits the video generation task and is billed.
 
 ---
 

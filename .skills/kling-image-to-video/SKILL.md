@@ -190,7 +190,7 @@ For full parameter tables, see `references/create-task-api.md` (submit) and `ref
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in Edge Functions; never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing**: The submit task endpoint (`api-eLMlJj3KJD89`) has billing enabled — original price ¥100.80, discount price ¥84.00 (per 84 billing units). The query endpoint (`api-rLobzpqX85m9`) is free. Avoid re-submitting duplicate tasks to minimise unnecessary charges.
+- **Billing**: The submit task endpoint (`api-eLMlJj3KJD89`) is billed. The query endpoint (`api-rLobzpqX85m9`) is free. Avoid re-submitting duplicate tasks to minimise unnecessary charges.
 - **Mutually exclusive parameters**: `image+image_tail`, `dynamic_masks/static_mask`, and `camera_control` cannot be used simultaneously.
 - **Base64 format**: Do not include the `data:image/xxx;base64,` prefix in Base64 image data; pass only the encoded string itself.
 - **Mask images**: The aspect ratio of a mask image must match the input `image`; otherwise the task will fail.

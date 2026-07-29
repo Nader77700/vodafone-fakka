@@ -7,7 +7,7 @@
 | Endpoint | `POST https://app-ck2v94t1nev5-api-rY7JZvg0dqdL.gateway.appmedo.com/v1/videos/image2video` |
 | Authentication | `X-Gateway-Authorization: Bearer ${INTEGRATIONS_API_KEY}` |
 | Content-Type | `application/json` |
-| Billing | Discounted price ¥70.00 / request (billed on submission regardless of final result) |
+| Note | Used to submit the video generation task; billed on submission regardless of final result |
 
 ## Request Parameters
 

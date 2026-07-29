@@ -14,13 +14,7 @@ Covers two endpoints:
 |------|---------|
 | Endpoint | `GET https://app-ck2v94t1nev5-api-AalZkkAG5w7L.gateway.appmedo.com/v1/images/editing/expand/{task_id}` |
 | Function | Queries the status and result of a single image expansion task, including generated image URLs |
-| Billing | Free |
-
-### Request Parameters
-
-| Parameter | Type | Location | Required | Description |
-|-----------|------|----------|----------|-------------|
-| `task_id` | `string` | Path | **Yes** | System-generated task ID, or the `external_task_id` provided at creation time |
+| Billing | Free (query only, not billed) |
 | `external_task_id` | `string` | Query | No | Custom task ID provided when the task was created |
 
 ### Response Fields
@@ -52,12 +46,7 @@ Covers two endpoints:
 |------|---------|
 | Endpoint | `GET https://app-ck2v94t1nev5-api-pLVzAAkGZwDL.gateway.appmedo.com/v1/images/editing/expand` |
 | Function | Retrieves a paginated list of all image expansion tasks |
-| Billing | Free |
-
-### Request Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| Billing | Free (query only, not billed) |
 | `pageNum` | `integer` | No | Page number, range [1, 1000], default 1 |
 | `pageSize` | `integer` | No | Items per page, range [1, 500], default 30 |
 

@@ -22,7 +22,7 @@ Access weather data for any coordinate worldwide via the OpenWeatherMap One Call
 - **Authentication**: `platform_managed` — API key is injected by the platform gateway; use `X-Gateway-Authorization: Bearer ${apiKey}` where `apiKey` comes from `process.env["INTEGRATIONS_API_KEY"]`
 - **Data refresh**: Updated every 10 minutes (based on OpenWeather proprietary models)
 - **Supported languages**: 50+ (specify via the `lang` parameter)
-- **Billing**: Standard ¥0.30 / call, discounted ¥0.17 / call (AI Assistant resume-session endpoint is free)
+- **Billing**: Standard weather/forecast/history/overview and AI Assistant start-session endpoints are billed (AI Assistant resume-session endpoint is free) |
 
 **Response example (current weather + forecast):**
 
@@ -80,7 +80,7 @@ Deploy a separate Edge Function for each endpoint. The Edge Function injects `IN
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side (Edge Function or generation-time agent). Never expose it to the frontend browser.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance).
-- **Billing reminder**: Current weather+forecast, historical timestamp, daily aggregation, AI overview, and AI assistant start-session all incur a charge (¥0.17/call discounted); AI assistant resume-session is free and suitable for follow-up questions at no extra cost.
+- **Billing reminder**: Current weather+forecast, historical timestamp, daily aggregation, AI overview, and AI assistant start-session all incur a charge; AI assistant resume-session is free and suitable for follow-up questions at no extra cost.
 - **Coordinate precision**: `lat` range −90 to 90, `lon` range −180 to 180, in decimal degrees.
 - **Timestamps**: The `timemachine` endpoint's `dt` parameter is a UTC Unix timestamp; only 1979-01-01 to +4 days ahead is supported.
 - **Units**: The `units` parameter defaults to `standard` (Kelvin). Use `metric` (Celsius) or `imperial` (Fahrenheit) for most user-facing applications.

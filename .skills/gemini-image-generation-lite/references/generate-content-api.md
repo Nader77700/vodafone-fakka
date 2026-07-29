@@ -346,4 +346,4 @@ async function callGeminiImageGeneration(
 - **Token billing**: IMAGE modality tokens are calculated independently (approximately 500–1000 tokens/MB); Chinese text is approximately 2–3 tokens per character.
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read server-side in the Edge Function — never expose it to the frontend.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance) and notify the user.
-- **Billing note**: Discounted price ¥10.10 / unit — avoid retry loops to prevent unexpected charges.
+- **Billing note**: This endpoint is billed per request — avoid retry loops to prevent unexpected charges.

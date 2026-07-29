@@ -245,7 +245,7 @@ async function fetchTextToSpeech(
 
 - **Key security**: `INTEGRATIONS_API_KEY` must only be read on the Edge Function server side. Never expose it in frontend code or version control.
 - **Error handling**: Always handle 429 (quota exceeded) and 402 (insufficient balance) — these error bodies must be forwarded verbatim to the frontend.
-- **Pricing**: Each API call costs $0.05 at the discounted rate (original price $0.10). Avoid unnecessary repeated calls for the same text (e.g., synthesizing the same content multiple times).
+- **Billing**: This endpoint is billed per call. Avoid unnecessary repeated calls for the same text (e.g., synthesizing the same content multiple times).
 - **Binary response**: This endpoint does not return JSON — it returns a raw binary audio stream. In the generation-time context, the data must be saved to a file immediately after the call. In-app usage via Edge Function should upload the stream to Supabase Storage and return the URL to the frontend.
 - **Voice selection**: The example value for the `voice` parameter is `heart`. Select from the available voice list as appropriate.
 - **Format support**: Common values for `response_format` are `mp3` (default), `wav`, and `ogg`. Different formats vary in file size and compatibility; `mp3` is recommended for frontend playback.
