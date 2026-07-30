@@ -5,7 +5,7 @@ export async function fetchSeamlessToken(
   customUrl?: string
 ): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
   try {
-    const baseUrl = customUrl || "https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth";
+    const baseUrl = customUrl || "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth";
     const url = `${baseUrl}?client_id=${clientId}`;
     
     const headers = {

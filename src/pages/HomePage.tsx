@@ -958,7 +958,7 @@ function ExecuteModal({
       }
 
       const seamlessClientId = config?.security?.sec_seamless_client_id || 'ana-vodafone-app-seamless';
-      const seamlessUrl = config?.security?.sec_seamless_url || 'https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
+      const seamlessUrl = config?.security?.sec_seamless_url || 'http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
       const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
       
       sToken = seamless.token;
