@@ -1,12 +1,8 @@
 import { CapacitorHttp, Capacitor } from '@capacitor/core';
-import type { DiagnosticTrace } from './DiagnosticTrace';
 
-export async function fetchSeamlessToken(
-  clientId: string = "ana-vodafone-app-seamless",
-  trace?: DiagnosticTrace
-): Promise<{ token: string | null; msisdn: string | null; error?: string; debugRaw?: any; traceId?: string }> {
+export async function fetchSeamlessToken(): Promise<{ token: string | null; msisdn: string | null; error?: string; debugRaw?: any; traceId?: string }> {
   try {
-    const url = `https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=${clientId}`;
+    const url = `https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless`;
     
     const headers = {
       "User-Agent": "okhttp/4.12.0",
@@ -30,15 +26,15 @@ export async function fetchSeamlessToken(
         try {
           const d = JSON.parse(txt);
           if (d?.seamlessToken) {
-            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw, traceId: trace?.traceId };
+            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw };
           } else {
-            return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}`, debugRaw, traceId: trace?.traceId };
+            return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}`, debugRaw };
           }
         } catch(e: any) {
-          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw, traceId: trace?.traceId };
+          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw };
         }
       } else {
-         return { token: null, msisdn: null, error: `HTTP ${response.status}`, debugRaw, traceId: trace?.traceId };
+         return { token: null, msisdn: null, error: `HTTP ${response.status}`, debugRaw };
       }
     } else {
       const r = await fetch(url, { method: "GET", headers });
@@ -48,12 +44,12 @@ export async function fetchSeamlessToken(
         try {
           const d = JSON.parse(txt);
           if (d?.seamlessToken) {
-             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw, traceId: trace?.traceId };
+             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null, debugRaw };
           } else {
-             return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}`, debugRaw, traceId: trace?.traceId };
+             return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}`, debugRaw };
           }
         } catch (e: any) {
-           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw, traceId: trace?.traceId };
+           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}`, debugRaw };
         }
       } else {
          return { token: null, msisdn: null, error: `HTTP ${r.status}` };

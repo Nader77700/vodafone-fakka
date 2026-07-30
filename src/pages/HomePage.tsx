@@ -956,7 +956,7 @@ function ExecuteModal({
          trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', 'Started');
       }
 
-      const seamless = await fetchSeamlessToken('VFP', trace);
+      const seamless = await fetchSeamlessToken();
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;

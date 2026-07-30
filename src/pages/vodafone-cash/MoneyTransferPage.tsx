@@ -26,7 +26,7 @@ export default function MoneyTransferPage() {
     
     // 1. Get Seamless Token
     const toastId = toast.loading('جاري التحقق من فودافون كاش...');
-    const seamless = await fetchSeamlessToken('cash-app');
+    const seamless = await fetchSeamlessToken();
     
     if (!seamless.token) {
       console.warn('Seamless token is missing, continuing with backend fallback using PIN...');
