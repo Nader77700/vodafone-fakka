@@ -144,6 +144,23 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           npx vite build
+          
+          # Fix capacitor-community-http namespace issue
+          cat << 'EOF' > fix-capacitor-http.cjs
+          const fs = require('fs');
+          const path = require('path');
+          const file = path.join(__dirname, 'node_modules', '.pnpm', '@capacitor-community+http@1.4.1', 'node_modules', '@capacitor-community', 'http', 'android', 'build.gradle');
+          if (fs.existsSync(file)) {
+            let content = fs.readFileSync(file, 'utf8');
+            if (!content.includes('namespace')) {
+               content = content.replace('android {', 'android {\n    namespace "com.getcapacitor.plugin.http"\n');
+               fs.writeFileSync(file, content);
+               console.log('Fixed capacitor-community-http namespace issue');
+            }
+          }
+          EOF
+          node fix-capacitor-http.cjs
+          
           pnpm exec cap sync android
 
       - name: Fix gradlew permissions
