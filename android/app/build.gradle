@@ -3,12 +3,17 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.naderakram.vodafonefakka"
     compileSdk = rootProject.ext.compileSdkVersion
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
     defaultConfig {
         applicationId "com.naderakram.vodafonefakka"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 453
-        versionName "3.0.453"
+        versionCode 454
+        versionName "3.0.454"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

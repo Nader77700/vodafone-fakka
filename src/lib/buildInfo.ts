@@ -4,8 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.453',
-  versionCode:    453,
+  appVersion:     '3.0.454',
+  versionCode:    454,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
@@ -142,6 +142,7 @@ export const BUILD_INFO = {
     'v3.0.83: Phase 3 — نظام إدارة مستخدمي التجار، رابط الدعوة، الربط التلقائي',
     'v3.0.82: Phase 2 Merchant Activation — ترقية/تحويل المستخدمين، لوحة التاجر، إدارة الدعوات',
     'v3.0.81: Phase 1 Merchant Foundation — نظام التجار الأساسي: أدوار + قاعدة البيانات + RBAC',
+    'v3.0.454: إصلاح Java Toolchain — إزالة @capacitor-community/http + JDK 21',
     'v3.0.80: صفحة العمليات الشاملة الجديدة — سجل كل عمليات المستخدمين مع Realtime + فلاتر + إحصائيات',
     'v3.0.78: إعادة بناء نظام العمليات — تفاصيل inline Sheet + إحصائيات شاملة',
     'v3.0.77: تطوير شامل — كارت توضيح أقسام الشحن + ترتيب مستخدمين DESC + تقسيم سجل العمليات',

@@ -33,8 +33,6 @@ import type { InvoiceData } from '@/lib/printer/types';
 import { ALL_PRODUCTS, FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
 import type { VodafoneProduct } from '@/data/products';
 
-import { BUILD_INFO } from '@/lib/buildInfo';
-
 // لوجو احتياطي — محلي دائمًا، لا يعتمد على الشبكة
 const HEADER_FALLBACK_LOGO = '/vfp-logo.png';
 import { VodafoneDetector, isNativeAndroid } from '@/lib/vodafoneDetector';

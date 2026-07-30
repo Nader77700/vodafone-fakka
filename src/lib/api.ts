@@ -966,7 +966,8 @@ export async function executeVodafoneOrder(payload: {
   msisdn?: string | null;
   idempotencyKey?: string;    // مفتاح Idempotency — يمنع التنفيذ المزدوج
   correlationId?:  string;    // معرّف ربط للـ Debug
-}): Promise<{ success: boolean; error?: string; via?: 'server'; debugSteps?: ChargeDebugStep[]; retryCount?: number; operation_number?: number | null; registered?: boolean }> {
+  traceId?: string;           // معرّف تتبع للـ Full Trace
+}): Promise<{ success: boolean; error?: string; via?: 'server'; debugSteps?: ChargeDebugStep[]; traceSteps?: ChargeDebugStep[]; retryCount?: number; operation_number?: number | null; registered?: boolean }> {
   GlobalCrashContext.transactionUuid = payload.correlationId || '';
 
   const MAX_RETRIES = 2;  // أقصى عدد إعادة محاولات

@@ -24,7 +24,7 @@ allprojects {
     }
 }
 
-// تجاوز Java Toolchain المطلوبة من بعض مكتبات Capacitor
+// Use Java 21 across all Android modules to match CI JDK
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
