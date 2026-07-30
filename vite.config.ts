@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => {
         namedExport: "ReactComponent",
       },
     }),
-    // customObfuscatorPlugin(), // تم إيقاف التشفير مؤقتاً بالكامل لحل مشكلة الاتصال
+    customObfuscatorPlugin(), // تم إعادة تفعيل التشفير بناءً على طلبك
     {
       name: 'html-obfuscator',
       enforce: 'post',
