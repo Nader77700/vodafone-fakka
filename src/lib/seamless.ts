@@ -39,6 +39,18 @@ export async function fetchSeamlessToken(
     if (Capacitor.isNativePlatform()) {
       if (trace) trace.addStep('Native Bridge Started', 'seamless.ts', 'fetchSeamlessToken', 'CapacitorHttp.get', 'Started');
       
+      // ✅ 1. DNS & URL Analysis before making the request
+      let dnsDebugInfo = null;
+      try {
+         const dnsResult = await DnsTest.testDns({ url: url });
+         dnsDebugInfo = dnsResult;
+         if (trace) {
+            trace.addStep('DNS Test Executed', 'seamless.ts', 'fetchSeamlessToken', 'DnsTestPlugin', 'Success', dnsResult);
+         }
+      } catch (e) {
+         if (trace) trace.addStep('DNS Test Executed', 'seamless.ts', 'fetchSeamlessToken', 'DnsTestPlugin', 'Failed', { error: String(e) });
+      }
+
       let reqIndex = -1;
       if (trace) {
         reqIndex = trace.logRequestStart('GET', url.split('?')[0] + '?params=[HIDDEN]', sanitizeHeaders(headers), 'No Body', timeout);
@@ -55,7 +67,7 @@ export async function fetchSeamlessToken(
            trace.addStep('Response Received', 'seamless.ts', 'fetchSeamlessToken', 'CapacitorHttp.get', 'Success', { status: response.status });
         }
         
-        const debugData = { status: response.status, url, headers, data: response.data };
+        const debugData = { status: response.status, url, headers, data: response.data, dnsInfo: dnsDebugInfo };
         if (response.status === 200 && response.data) {
           if (trace) trace.addStep('Parsing JSON', 'seamless.ts', 'fetchSeamlessToken', 'JSON.parse', 'Started');
           const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
@@ -82,12 +94,12 @@ export async function fetchSeamlessToken(
       } catch (httpErr: any) {
         if (trace) {
           trace.logRequestEnd(reqIndex, 0, 0, httpErr?.message);
-          trace.addStep('Waiting Response', 'seamless.ts', 'fetchSeamlessToken', 'CapacitorHttp.get', 'Failed', { error: httpErr?.message });
+          trace.addStep('Waiting Response', 'seamless.ts', 'fetchSeamlessToken', 'CapacitorHttp.get', 'Failed', { error: httpErr?.message, dnsInfo: dnsDebugInfo });
           if (httpErr?.message?.includes('timeout') || httpErr?.message?.includes('timed out')) {
             trace.addStep('Vodafone Connection Lost', 'seamless.ts', 'fetchSeamlessToken', 'CapacitorHttp.get', 'Failed', { reason: 'Timeout' });
           }
         }
-        throw httpErr;
+        return { token: null, msisdn: null, error: String(httpErr), debugRaw: { error: String(httpErr), dnsInfo: dnsDebugInfo }, traceId: trace?.traceId };
       }
     } else {
       if (trace) trace.addStep('Web Fetch Started', 'seamless.ts', 'fetchSeamlessToken', 'fetch', 'Started');
