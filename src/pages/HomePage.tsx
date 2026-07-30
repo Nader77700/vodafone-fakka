@@ -749,6 +749,7 @@ function ExecuteModal({
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const navigate = useNavigate();
+  const { config } = useRuntimeConfig();
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
   const [sender, setSender] = useState(''); // مقروء تلقائياً من Native — لا يظهر للمستخدم
