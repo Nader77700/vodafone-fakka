@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.0.445',
-  versionCode:    445,
+  appVersion:     '3.0.446',
+  versionCode:    446,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_445_code445',
-  apkHash:        'apk_v3_0_445_code445',
-  dbVersion:      'v3.0.445',
+  bundleHash:     'apk_v3_0_446_code446',
+  apkHash:        'apk_v3_0_446_code446',
+  dbVersion:      'v3.0.446',
   releaseNotes: [
+    'v3.0.446: إضافة نظام تتبع ذكي (Full Trace Mode) لتحليل المشكلة بدون التأثير على الاتصال',
     'v3.0.445: إلغاء التشفير (Obfuscation) بالكامل مؤقتاً لتحديد سبب المشكلة بدقة وإعادة الجسر لطبيعته',
     'v3.0.443: إيقاف خاصية transformObjectKeys في التشفير والتي كانت تكسر الاتصال بجسر Capacitor وتتسبب في حدوث Read timed out، وإعادة النظام الأساسي للعمل بنجاح',
     'v3.0.439: إصلاح حقيقي لمشكلة Read timed out بزيادة الوقت لـ 12 ثانية وإضافة Fallback، بعد خطأ في حفظ الملفات في التحديث السابق',
