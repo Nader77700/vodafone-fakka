@@ -4,8 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.1.1',
-  versionCode:    466,
+  appVersion:     '3.2.0',
+  versionCode:    467,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
@@ -143,6 +143,7 @@ export const BUILD_INFO = {
     'v3.0.82: Phase 2 Merchant Activation — ترقية/تحويل المستخدمين، لوحة التاجر، إدارة الدعوات',
     'v3.0.81: Phase 1 Merchant Foundation — نظام التجار الأساسي: أدوار + قاعدة البيانات + RBAC',
     'v3.0.454: إصلاح Java Toolchain — إزالة @capacitor-community/http + JDK 21',
+    'v3.2.0: إضافة نظام خزنة كلمات المرور المشفرة (Secure Wallet Password Manager) بـ Jetpack Security للحماية الدائمة',
     'v3.1.1: إصدار مستقل لحل تضارب التحديثات وإثبات التغييرات الأمنية (Obfuscation + Edge Functions) للمستخدمين بشكل سليم',
     'v3.1.0: تحديث رئيسي: استقرار خدمة الشحن، تأمين التشفير، وإصلاح توافق أنظمة فليكس القديمة',
     'v3.0.464: إصلاح نهائي لمشكلة HTTP 400 و Cleartext عبر السماح بالاتصال غير المشفر لسيرفر فودافون في إعدادات أندرويد',
