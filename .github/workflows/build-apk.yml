@@ -141,7 +141,10 @@ jobs:
           echo "✅ local.properties → sdk.dir=$SDK_DIR"
 
       - name: Capacitor sync
-        run: pnpm exec cap sync android
+        run: |
+          pnpm install --frozen-lockfile
+          npx vite build
+          pnpm exec cap sync android
 
       - name: Fix gradlew permissions
         run: chmod +x android/gradlew
