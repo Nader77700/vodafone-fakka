@@ -20,6 +20,8 @@ import type { ActivityEntry, SubscriptionOpsInfo, OpsCheckResult } from '@/lib/a
 import { CapacitorHttp, Capacitor } from '@capacitor/core';
 import DefaultLogo from '@/assets/logo.png';
 import { fetchSeamlessToken } from '@/lib/seamless';
+import { DiagnosticTrace } from '@/lib/DiagnosticTrace';
+import { BUILD_INFO } from '@/lib/buildInfo';
 
 import type { ChargeDebugStep } from '@/lib/api';
 import type { Subscription, Operation } from '@/types/types';
@@ -30,6 +32,8 @@ import PrintButton from '@/components/invoice/PrintButton';
 import type { InvoiceData } from '@/lib/printer/types';
 import { ALL_PRODUCTS, FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
 import type { VodafoneProduct } from '@/data/products';
+
+import { BUILD_INFO } from '@/lib/buildInfo';
 
 // لوجو احتياطي — محلي دائمًا، لا يعتمد على الشبكة
 const HEADER_FALLBACK_LOGO = '/vfp-logo.png';
@@ -756,6 +760,7 @@ function ExecuteModal({
   const [lastErrorType, setLastErrorType] = useState<import('@/lib/errorMapper').ErrorType>('unknown');
   const [debugSteps, setDebugSteps] = useState<ChargeDebugStep[]>([]);
   const [seamlessDebug, setSeamlessDebug] = useState<any>(null);
+  const [traceReport, setTraceReport] = useState<any>(null);
   const [bridgeActive, setBridgeActive] = useState<boolean | null>(null);
   const [networkInfo, setNetworkInfo] = useState<NetworkInfo | null>(null);
   const [trialExhausted, setTrialExhausted] = useState(false);
@@ -941,12 +946,28 @@ function ExecuteModal({
     let sToken = null;
     let sMsisdn = null;
     let sError = null;
+    let trace: any = null;
+    
     setSeamlessDebug(null);
+    setTraceReport(null);
+    
     try {
-      const seamless = await fetchSeamlessToken();
+      // ✅ 1. بدء نظام التتبع للأدمن فقط
+      if (isAdmin) {
+         trace = new DiagnosticTrace();
+         trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', 'Started');
+      }
+
+      const seamless = await fetchSeamlessToken('VFP', trace);
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
+      
+      if (trace) {
+         if (seamless.traceId) trace.traceId = seamless.traceId;
+         trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', sToken ? 'Success' : 'Failed');
+      }
+
       if (seamless.debugRaw) {
         setSeamlessDebug(seamless.debugRaw);
       } else {
@@ -961,9 +982,13 @@ function ExecuteModal({
       console.warn("seamless extraction failed", e);
       sError = String(e);
       setSeamlessDebug({ exception: String(e) });
+      if (trace) {
+        trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', 'Failed', { error: String(e) });
+      }
     }
 
     if (!sToken) {
+      if (trace) setTraceReport(trace.getReport());
       executingRef.current = false;
       setSubmitting(false);
       setLoadingStep(0);
@@ -971,11 +996,21 @@ function ExecuteModal({
       return;
     }
 
+    if (trace) trace.addStep('Sending To Server', 'HomePage.tsx', 'executeVodafoneOrder', 'Edge Function', 'Started');
     const result = await executeVodafoneOrder({
       product_id: product.id, receiver: trimPhone, pin: trimPin, sender: sMsisdn || trimSender,
       seamless_token: sToken, msisdn: sMsisdn,
       idempotencyKey, correlationId,
+      traceId: trace?.traceId // تمرير كود التتبع للسيرفر
     });
+
+    if (trace) {
+       trace.addStep('Sending To Server', 'HomePage.tsx', 'executeVodafoneOrder', 'Edge Function', result.success ? 'Success' : 'Failed');
+       if (result.traceSteps && Array.isArray(result.traceSteps)) {
+         trace.steps = [...trace.steps, ...result.traceSteps];
+       }
+       setTraceReport(trace.getReport());
+    }
 
     const executeLatencyMs = Date.now() - executeStartedAt;
     if (result.debugSteps?.length) setDebugSteps(result.debugSteps);
@@ -1363,13 +1398,77 @@ function ExecuteModal({
                 )}
 
                 {/* Debug Panel — Admin فقط */}
-                {isAdmin && (debugSteps.length > 0 || seamlessDebug) && !submitting && (
+                {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
                   <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
+                      {/* ── FULL TRACE REPORT ── */}
+                      {traceReport && (
+                        <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
+                           <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
+                                FULL PIPELINE TRACE
+                              </span>
+                              <span className="text-[10px] font-mono font-semibold truncate text-yellow-200">
+                                {traceReport.traceId}
+                              </span>
+                           </div>
+                           
+                           <div className="space-y-1">
+                             {traceReport.steps.map((step: any, idx: number) => (
+                               <div key={idx} className="flex flex-col text-[10px] font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
+                                 <div className="flex items-center justify-between">
+                                   <span style={{ color: step.status === 'Success' ? '#4ade80' : step.status === 'Failed' ? '#f87171' : '#94a3b8' }}>
+                                     {step.status === 'Success' ? '✅' : step.status === 'Failed' ? '❌' : '⏳'} [{step.id}] {step.name} {step.executionTimeMs ? `(${step.executionTimeMs}ms)` : ''}
+                                   </span>
+                                   <span style={{ color: '#ffffff50', fontSize: '8px' }}>
+                                     {new Date(step.timestamp).toISOString().split('T')[1].replace('Z', '')}
+                                   </span>
+                                 </div>
+                                 <div style={{ color: '#ffffff50', fontSize: '9px', marginTop: '2px' }}>
+                                   {step.file} -&gt; {step.className ? step.className + '.' : ''}{step.funcName}()
+                                 </div>
+                                 {step.status === 'Failed' && step.details && (
+                                   <div className="mt-1 p-1.5 rounded bg-red-500/10 text-red-300 whitespace-pre-wrap break-all text-[8.5px]">
+                                      {typeof step.details === 'object' ? JSON.stringify(step.details, null, 2) : String(step.details)}
+                                   </div>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
+
+                           {traceReport.requests && traceReport.requests.length > 0 && (
+                             <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+                               <div className="text-[9px] font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
+                               {traceReport.requests.map((req: any, idx: number) => (
+                                 <div key={idx} className="p-1.5 rounded border border-blue-500/20 bg-blue-500/5 text-[8.5px] font-mono text-blue-200">
+                                   <div className="font-bold text-white mb-0.5">{req.method} {req.url}</div>
+                                   <div className="flex justify-between mt-1">
+                                     <span>TCP: {req.tcpConnected ? '✅' : '❌'}</span>
+                                     <span>Sent: {req.requestSent ? '✅' : '❌'}</span>
+                                     <span>Bytes: {req.bytesReceived || 0}</span>
+                                   </div>
+                                   <div className="mt-1 opacity-70">
+                                     Timeouts (Conn/Read): {req.timeoutValue}ms
+                                   </div>
+                                   {req.error && <div className="text-red-400 mt-1.5 p-1 bg-red-500/10 rounded">Error ({req.errorSource}): {req.error}</div>}
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+
+                           <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+                              <div className="text-[10px] font-bold text-red-400">PROBLEM SOURCE:</div>
+                              <div className="text-[10px] font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
+                                {traceReport.analysis?.problemSource || 'Unknown'}
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
                       {seamlessDebug && (
                         <div className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
@@ -1568,13 +1667,77 @@ function ExecuteModal({
                 })()}
 
                 {/* Debug Panel — Admin فقط */}
-                {isAdmin && (debugSteps.length > 0 || seamlessDebug) && !submitting && (
+                {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
                   <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
+                      {/* ── FULL TRACE REPORT ── */}
+                      {traceReport && (
+                        <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
+                           <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
+                                FULL PIPELINE TRACE
+                              </span>
+                              <span className="text-[10px] font-mono font-semibold truncate text-yellow-200">
+                                {traceReport.traceId}
+                              </span>
+                           </div>
+                           
+                           <div className="space-y-1">
+                             {traceReport.steps.map((step: any, idx: number) => (
+                               <div key={idx} className="flex flex-col text-[10px] font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
+                                 <div className="flex items-center justify-between">
+                                   <span style={{ color: step.status === 'Success' ? '#4ade80' : step.status === 'Failed' ? '#f87171' : '#94a3b8' }}>
+                                     {step.status === 'Success' ? '✅' : step.status === 'Failed' ? '❌' : '⏳'} [{step.id}] {step.name} {step.executionTimeMs ? `(${step.executionTimeMs}ms)` : ''}
+                                   </span>
+                                   <span style={{ color: '#ffffff50', fontSize: '8px' }}>
+                                     {new Date(step.timestamp).toISOString().split('T')[1].replace('Z', '')}
+                                   </span>
+                                 </div>
+                                 <div style={{ color: '#ffffff50', fontSize: '9px', marginTop: '2px' }}>
+                                   {step.file} -&gt; {step.className ? step.className + '.' : ''}{step.funcName}()
+                                 </div>
+                                 {step.status === 'Failed' && step.details && (
+                                   <div className="mt-1 p-1.5 rounded bg-red-500/10 text-red-300 whitespace-pre-wrap break-all text-[8.5px]">
+                                      {typeof step.details === 'object' ? JSON.stringify(step.details, null, 2) : String(step.details)}
+                                   </div>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
+
+                           {traceReport.requests && traceReport.requests.length > 0 && (
+                             <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+                               <div className="text-[9px] font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
+                               {traceReport.requests.map((req: any, idx: number) => (
+                                 <div key={idx} className="p-1.5 rounded border border-blue-500/20 bg-blue-500/5 text-[8.5px] font-mono text-blue-200">
+                                   <div className="font-bold text-white mb-0.5">{req.method} {req.url}</div>
+                                   <div className="flex justify-between mt-1">
+                                     <span>TCP: {req.tcpConnected ? '✅' : '❌'}</span>
+                                     <span>Sent: {req.requestSent ? '✅' : '❌'}</span>
+                                     <span>Bytes: {req.bytesReceived || 0}</span>
+                                   </div>
+                                   <div className="mt-1 opacity-70">
+                                     Timeouts (Conn/Read): {req.timeoutValue}ms
+                                   </div>
+                                   {req.error && <div className="text-red-400 mt-1.5 p-1 bg-red-500/10 rounded">Error ({req.errorSource}): {req.error}</div>}
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+
+                           <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+                              <div className="text-[10px] font-bold text-red-400">PROBLEM SOURCE:</div>
+                              <div className="text-[10px] font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
+                                {traceReport.analysis?.problemSource || 'Unknown'}
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
                       {seamlessDebug && (
                         <div className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
@@ -1689,13 +1852,77 @@ function ExecuteModal({
                 </button>
 
                 {/* Debug Panel — Admin فقط */}
-                {isAdmin && (debugSteps.length > 0 || seamlessDebug) && !submitting && (
+                {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
                   <div className="rounded-xl overflow-hidden border mt-4" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
+                      {/* ── FULL TRACE REPORT ── */}
+                      {traceReport && (
+                        <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
+                           <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
+                                FULL PIPELINE TRACE
+                              </span>
+                              <span className="text-[10px] font-mono font-semibold truncate text-yellow-200">
+                                {traceReport.traceId}
+                              </span>
+                           </div>
+                           
+                           <div className="space-y-1">
+                             {traceReport.steps.map((step: any, idx: number) => (
+                               <div key={idx} className="flex flex-col text-[10px] font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
+                                 <div className="flex items-center justify-between">
+                                   <span style={{ color: step.status === 'Success' ? '#4ade80' : step.status === 'Failed' ? '#f87171' : '#94a3b8' }}>
+                                     {step.status === 'Success' ? '✅' : step.status === 'Failed' ? '❌' : '⏳'} [{step.id}] {step.name} {step.executionTimeMs ? `(${step.executionTimeMs}ms)` : ''}
+                                   </span>
+                                   <span style={{ color: '#ffffff50', fontSize: '8px' }}>
+                                     {new Date(step.timestamp).toISOString().split('T')[1].replace('Z', '')}
+                                   </span>
+                                 </div>
+                                 <div style={{ color: '#ffffff50', fontSize: '9px', marginTop: '2px' }}>
+                                   {step.file} -&gt; {step.className ? step.className + '.' : ''}{step.funcName}()
+                                 </div>
+                                 {step.status === 'Failed' && step.details && (
+                                   <div className="mt-1 p-1.5 rounded bg-red-500/10 text-red-300 whitespace-pre-wrap break-all text-[8.5px]">
+                                      {typeof step.details === 'object' ? JSON.stringify(step.details, null, 2) : String(step.details)}
+                                   </div>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
+
+                           {traceReport.requests && traceReport.requests.length > 0 && (
+                             <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+                               <div className="text-[9px] font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
+                               {traceReport.requests.map((req: any, idx: number) => (
+                                 <div key={idx} className="p-1.5 rounded border border-blue-500/20 bg-blue-500/5 text-[8.5px] font-mono text-blue-200">
+                                   <div className="font-bold text-white mb-0.5">{req.method} {req.url}</div>
+                                   <div className="flex justify-between mt-1">
+                                     <span>TCP: {req.tcpConnected ? '✅' : '❌'}</span>
+                                     <span>Sent: {req.requestSent ? '✅' : '❌'}</span>
+                                     <span>Bytes: {req.bytesReceived || 0}</span>
+                                   </div>
+                                   <div className="mt-1 opacity-70">
+                                     Timeouts (Conn/Read): {req.timeoutValue}ms
+                                   </div>
+                                   {req.error && <div className="text-red-400 mt-1.5 p-1 bg-red-500/10 rounded">Error ({req.errorSource}): {req.error}</div>}
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+
+                           <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+                              <div className="text-[10px] font-bold text-red-400">PROBLEM SOURCE:</div>
+                              <div className="text-[10px] font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
+                                {traceReport.analysis?.problemSource || 'Unknown'}
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
                       {seamlessDebug && (
                         <div className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
