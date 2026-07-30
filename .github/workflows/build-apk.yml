@@ -144,44 +144,10 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           npx vite build
-          
-          # Fix capacitor-community-http namespace issue
-          cat << 'EOF' > fix-capacitor-http.cjs
-          const fs = require('fs');
-          const path = require('path');
-          const file = path.join(__dirname, 'node_modules', '.pnpm', '@capacitor-community+http@1.4.1', 'node_modules', '@capacitor-community', 'http', 'android', 'build.gradle');
-          if (fs.existsSync(file)) {
-            let content = fs.readFileSync(file, 'utf8');
-            if (!content.includes('namespace')) {
-               content = content.replace('android {', 'android {\n    namespace "com.getcapacitor.plugin.http"\n');
-               fs.writeFileSync(file, content);
-               console.log('Fixed capacitor-community-http namespace issue');
-            }
-          }
-          EOF
-          node fix-capacitor-http.cjs
-          
           pnpm exec cap sync android
 
       - name: Fix gradlew permissions
         run: chmod +x android/gradlew
-
-      - name: Fix HTTP plugin namespace
-        run: |
-          # Fix @capacitor-community/http plugin namespace for AGP 8
-          find node_modules -type f -path "*/@capacitor-community*http*/android/build.gradle" | while read -r HTTP_GRADLE; do
-            if grep -q "com.getcapacitor.plugin.http" "$HTTP_GRADLE"; then
-              continue
-            fi
-            sed -i "s|android {|android {\n    namespace 'com.getcapacitor.plugin.http'|" "$HTTP_GRADLE"
-            echo "Fixed namespace in $HTTP_GRADLE"
-          done
-          
-          # Remove package attribute from AndroidManifest.xml for AGP 8+ compatibility
-          find node_modules -type f -path "*/@capacitor-community*http*/android/src/main/AndroidManifest.xml" | while read -r HTTP_MANIFEST; do
-            sed -i 's/ package="[^"]*"//g' "$HTTP_MANIFEST"
-            echo "Removed package attribute from $HTTP_MANIFEST"
-          done
 
       # ─── [2] SIGN ──────────────────────────────────────────────────────────
       - name: Build signed APK
