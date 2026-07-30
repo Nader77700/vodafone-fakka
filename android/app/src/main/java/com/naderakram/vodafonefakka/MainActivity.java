@@ -209,6 +209,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(VodafoneDetectorPlugin.class);
         registerPlugin(ApkInstallerPlugin.class);
         registerPlugin(PrintPlugin.class);
+        registerPlugin(DnsTestPlugin.class);
         
         super.onCreate(savedInstanceState);
         

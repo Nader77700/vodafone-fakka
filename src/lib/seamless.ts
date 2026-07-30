@@ -1,5 +1,7 @@
-import { CapacitorHttp, Capacitor } from '@capacitor/core';
+import { CapacitorHttp, Capacitor, registerPlugin } from '@capacitor/core';
 import type { DiagnosticTrace } from './DiagnosticTrace';
+
+const DnsTest = registerPlugin<any>('DnsTest');
 
 // Remove sensitive info from headers for logging
 function sanitizeHeaders(headers: any) {
