@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, Phone, Lock, AlertTriangle, Eye, EyeOff, Zap, Clock, Loader2, ShieldCheck } from 'lucide-react';
 import { VodafoneCashService } from '../../services/vodafone-cash/VodafoneCashService';
 import { fetchSeamlessToken } from '../../lib/seamless';
+import { useRuntimeConfig } from '../../contexts/RuntimeConfigContext';
 import { toast } from 'sonner';
 import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 
@@ -13,6 +14,7 @@ export default function RechargeBalancePage() {
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { config } = useRuntimeConfig();
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
     setPin(val);
@@ -31,7 +33,9 @@ export default function RechargeBalancePage() {
     
     // 1. Get Seamless Token
     const toastId = toast.loading('جاري التحقق من فودافون كاش...');
-    const seamless = await fetchSeamlessToken();
+    const seamlessClientId = config?.security?.sec_seamless_client_id || 'ana-vodafone-app-seamless';
+    const seamlessUrl = config?.security?.sec_seamless_url || 'https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
+    const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
     
     if (!seamless.token) {
       console.warn('Seamless token is missing, continuing with backend fallback using PIN...');

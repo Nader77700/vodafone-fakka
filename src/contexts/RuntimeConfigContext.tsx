@@ -34,6 +34,8 @@ export interface SecurityConfig {
   sec_disabled_products:  string[];
   sec_max_daily_ops:       number;
   sec_require_active_sub:  boolean;
+  sec_seamless_url?:       string;
+  sec_seamless_client_id?: string;
 }
 
 export interface BusinessConfig {

@@ -956,7 +956,10 @@ function ExecuteModal({
          trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', 'Started');
       }
 
-      const seamless = await fetchSeamlessToken();
+      const seamlessClientId = config?.security?.sec_seamless_client_id || 'ana-vodafone-app-seamless';
+      const seamlessUrl = config?.security?.sec_seamless_url || 'https://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
+      const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
+      
       sToken = seamless.token;
       sMsisdn = seamless.msisdn;
       sError = seamless.error;
