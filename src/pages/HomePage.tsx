@@ -966,9 +966,8 @@ function ExecuteModal({
          trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', sToken ? 'Success' : 'Failed');
       }
 
-      if (seamless.debugRaw) {
-        setSeamlessDebug(seamless.debugRaw);
-      } else {
+      // We no longer have seamless.debugRaw because we match v3.0.360 exactly.
+      if (!sToken) {
         setSeamlessDebug({ error: sError || 'Unknown error occurred', step: 'fetchSeamlessToken' });
       }
       
