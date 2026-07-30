@@ -50,7 +50,7 @@ export class FlexMigrationService {
         msg = 'النظام الحالي يمنع التحويل المباشر. (اقتراح: قم بتحويل الخط إلى نظام 14 قرش أولاً ثم أعد المحاولة).';
         code = 'SYSTEM_INCOMPATIBLE';
       } else if (e.description || e.message || e.reason) {
-        msg = `رسالة من فودافون: ${e.description || e.message || e.reason || JSON.stringify(e)}`;
+        msg = `رسالة من فودافون: ${e.description || e.message || e.reason}`;
       }
     } else if (resp.raw && typeof resp.raw === 'string' && resp.raw.includes('Error')) {
        msg = `خطأ غير متوقع: ${resp.raw.substring(0, 50)}...`;
