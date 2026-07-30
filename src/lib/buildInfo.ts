@@ -143,6 +143,7 @@ export const BUILD_INFO = {
     'v3.0.82: Phase 2 Merchant Activation — ترقية/تحويل المستخدمين، لوحة التاجر، إدارة الدعوات',
     'v3.0.81: Phase 1 Merchant Foundation — نظام التجار الأساسي: أدوار + قاعدة البيانات + RBAC',
     'v3.0.454: إصلاح Java Toolchain — إزالة @capacitor-community/http + JDK 21',
+    'v3.0.464: إصلاح نهائي لمشكلة HTTP 400 و Cleartext عبر السماح بالاتصال غير المشفر لسيرفر فودافون في إعدادات أندرويد',
     'v3.0.463: إصلاح خطأ ReferenceError: config is not defined في الصفحة الرئيسية',
     'v3.0.462: ربط رابط Seamless Client ID و URL بلوحة التحكم (RuntimeConfig) ليتم تعديلها عن بعد دون الحاجة لتحديث',
     'v3.0.459: إصلاح خطأ Request Rejected — استخدام client_id الأصلي (ana-vodafone-app-seamless) وحذف VFP/cash-app من Seamless URL',
