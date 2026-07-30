@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@capacitor-community/http':
-        specifier: ^1.4.1
-        version: 1.4.1
       '@capacitor-community/play-integrity':
         specifier: ^8.0.0
         version: 8.0.0(@capacitor/core@8.4.1)
@@ -488,18 +485,10 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@capacitor-community/http@1.4.1':
-    resolution: {integrity: sha512-+pCkBXrwfm97UfjOgjV950H/qZ8SE36Mrcb46BlL1ps3VIsGuIO+AulL8GqTC6LewheRVtGJpRspNtneXQotNA==}
-
   '@capacitor-community/play-integrity@8.0.0':
     resolution: {integrity: sha512-vvX2BK9Wkqwb90aNkZfUIWgXvjHM9hOxHPpWjvrVN0gAIoXoSsb1kmNPLNKZsztyTPdjC1ybUEVbX1MLCNLE9w==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
-
-  '@capacitor/android@3.9.0':
-    resolution: {integrity: sha512-YTPyrh1NozEuYXWGtfqN27TLXUrLbZX9fggyd4JQ1yMaUZTmLPm5dCuznONhQ49aPkJnUJB02JfpHy/qGwa2Lw==}
-    peerDependencies:
-      '@capacitor/core': ^3.9.0
 
   '@capacitor/android@8.4.1':
     resolution: {integrity: sha512-igtDCJ7QQn0P2qHFD9p4KXaa6V1b2PRNt+MxjVwtjTm/BJvqmiazOJq6rPjwFSZnfHm6iFoZk8TfzHd44pyBGw==}
@@ -521,9 +510,6 @@ packages:
     engines: {node: '>=22.0.0'}
     hasBin: true
 
-  '@capacitor/core@3.9.0':
-    resolution: {integrity: sha512-j1lL0+/7stY8YhIq1Lm6xixvUqIn89vtyH5ZpJNNmcZ0kwz6K9eLkcG6fvq1UWMDgSVZg9JrRGSFhb4LLoYOsw==}
-
   '@capacitor/core@8.4.1':
     resolution: {integrity: sha512-xqhOGLbTAYeOWK+IDUNSjQJAPapQjRHrIcgk9PYp52or9zFTaaMko31uNi16N6W+CRJ8VrRram6fOYILkBG2Hg==}
 
@@ -532,20 +518,10 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/filesystem@1.1.0':
-    resolution: {integrity: sha512-8O3UuvL8HNUEJvZnmn8yUmvgB1evtXfcF0oxIo3YbSlylqywJwS3JTiuhKmsvSxCdpbTy8IaTsutVh3gZgWbKg==}
-    peerDependencies:
-      '@capacitor/core': ^3.0.0
-
   '@capacitor/filesystem@8.1.2':
     resolution: {integrity: sha512-doaaMfGoFR2hWU6aV6u83I+5ZsGyJVq+Gz4r9lMpJzUKMm1eMu0hLnFdV1aXZlU9FlK/RndFrVD8oRZfNOqWgQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
-
-  '@capacitor/ios@3.9.0':
-    resolution: {integrity: sha512-GezPCJIujRHnF4wbrKJx6Q/mgFz0f9rmh/steTTXQZI+nEl6mHk6NWh8235p7YbhonYi5WD0rFNirrjGg1EaGw==}
-    peerDependencies:
-      '@capacitor/core': ^3.9.0
 
   '@capacitor/preferences@8.0.1':
     resolution: {integrity: sha512-T6no3ebi79XJCk91U3Jp/liJUwgBdvHR+s6vhvPkPxSuch7z3zx5Rv1bdWM6sWruNx+pViuEGqZvbfCdyBvcHQ==}
@@ -5256,20 +5232,9 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@capacitor-community/http@1.4.1':
-    dependencies:
-      '@capacitor/android': 3.9.0(@capacitor/core@3.9.0)
-      '@capacitor/core': 3.9.0
-      '@capacitor/filesystem': 1.1.0(@capacitor/core@3.9.0)
-      '@capacitor/ios': 3.9.0(@capacitor/core@3.9.0)
-
   '@capacitor-community/play-integrity@8.0.0(@capacitor/core@8.4.1)':
     dependencies:
       '@capacitor/core': 8.4.1
-
-  '@capacitor/android@3.9.0(@capacitor/core@3.9.0)':
-    dependencies:
-      '@capacitor/core': 3.9.0
 
   '@capacitor/android@8.4.1(@capacitor/core@8.4.1)':
     dependencies:
@@ -5305,10 +5270,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@capacitor/core@3.9.0':
-    dependencies:
-      tslib: 2.8.1
-
   '@capacitor/core@8.4.1':
     dependencies:
       tslib: 2.8.1
@@ -5317,18 +5278,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.4.1
 
-  '@capacitor/filesystem@1.1.0(@capacitor/core@3.9.0)':
-    dependencies:
-      '@capacitor/core': 3.9.0
-
   '@capacitor/filesystem@8.1.2(@capacitor/core@8.4.1)':
     dependencies:
       '@capacitor/core': 8.4.1
       '@capacitor/synapse': 1.0.4
-
-  '@capacitor/ios@3.9.0(@capacitor/core@3.9.0)':
-    dependencies:
-      '@capacitor/core': 3.9.0
 
   '@capacitor/preferences@8.0.1(@capacitor/core@8.4.1)':
     dependencies:
