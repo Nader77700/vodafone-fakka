@@ -24,10 +24,10 @@ const customObfuscatorPlugin = () => {
               log: false,
               renameGlobals: false,
               selfDefending: false,
-              stringArray: true,
+              stringArray: false,
               stringArrayCallsTransform: false,
               stringArrayEncoding: [],
-              stringArrayThreshold: 0.1,
+              stringArrayThreshold: 0,
               transformObjectKeys: false,
               unicodeEscapeSequence: false,
               renameVariables: false
