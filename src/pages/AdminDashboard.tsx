@@ -1682,7 +1682,7 @@ export default function AdminDashboard() {
     toast.success('تم حذف المستخدم نهائياً');
     loadLinkedUsers();
   };
-  useEffect(() => { if (activeTab === 'giftbox') loadGiftBox(); }, [activeTab]); // eslint-disable-line
+  useEffect(() => { if (activeTab === 'giftbox') loadGiftBox(); }, [activeTab, loadGiftBox]); // eslint-disable-line
 
   // تحميل إعداد مدة الاحتفاظ بالإشعارات + تشغيل التنظيف التلقائي عند فتح لوحة الإدارة
   useEffect(() => {
