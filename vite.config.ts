@@ -16,21 +16,39 @@ const customObfuscatorPlugin = () => {
           try {
         const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
-              controlFlowFlattening: false,
-              deadCodeInjection: false,
-              debugProtection: false,
-              disableConsoleOutput: false,
-              identifierNamesGenerator: 'mangled',
+              controlFlowFlattening: true,
+              controlFlowFlatteningThreshold: 1,
+              deadCodeInjection: true,
+              deadCodeInjectionThreshold: 0.4,
+              debugProtection: false, // تعطيل حتى لا يسبب مشاكل في المتصفح أو التطبيق
+              disableConsoleOutput: true,
+              identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: false,
-              stringArray: false,
-              stringArrayCallsTransform: false,
-              stringArrayEncoding: [],
-              stringArrayThreshold: 0,
-              transformObjectKeys: false,
+              selfDefending: true,
+              reservedStrings: [
+                'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
+                'getNetworkInfo', 'requestPhonePermission', 'addListener',
+                'Capacitor', 'registerPlugin', 'CapacitorHttp', 'web',
+                'isNativeAndroid', 'activeNetwork', 'isVodafoneSim', 'activeDataSimOperatorName',
+                'canExecuteNative', 'activeDataSimOperator', 'simOperator', 'simOperatorName',
+                'networkOperator', 'networkOperatorName', 'isMobileDataActive', 'isWifiActive',
+                'isVodafoneMobile', 'hasPhonePermission', 'deviceModel', 'androidVersion',
+                'trigger', 'timestamp', 'web_fallback', 'timeout_fallback',
+                'error_fallback', 'PluginListenerHandle', 'NetworkInfo', 'NetworkStateChangedEvent',
+                'VodafoneDetectorWeb', 'getPlatform', 'ApkInstallerPlugin', 'PrintPlugin',
+                'com.naderakram.vodafonefakka', 'MainActivity',
+                'loadScheduled', 'loadNotifs', 'isExpired', 'isSuspendedSub'
+              ],
+              splitStrings: true,
+              stringArray: true,
+              stringArrayCallsTransform: true,
+              stringArrayEncoding: ['base64'], // تجنب rc4 الذي قد يكسر الأكواد
+              stringArrayThreshold: 0.4, 
+              transformObjectKeys: false, 
               unicodeEscapeSequence: false,
-              renameVariables: false
+              renameVariables: true, 
+              identifierNamesCache: null
             });
             chunk.code = obfuscated.getObfuscatedCode();
           } catch (e) {
