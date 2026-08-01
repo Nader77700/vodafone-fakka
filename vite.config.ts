@@ -16,37 +16,21 @@ const customObfuscatorPlugin = () => {
           try {
         const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
-              controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 1,
-              deadCodeInjection: true,
-              deadCodeInjectionThreshold: 0.4,
-              debugProtection: true,
-              debugProtectionInterval: 4000,
-              disableConsoleOutput: true,
-              identifierNamesGenerator: 'hexadecimal',
+              controlFlowFlattening: false,
+              deadCodeInjection: false,
+              debugProtection: false,
+              disableConsoleOutput: false,
+              identifierNamesGenerator: 'mangled',
               log: false,
               renameGlobals: false,
-              selfDefending: true,
-              reservedStrings: [
-                'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
-                'getNetworkInfo', 'requestPhonePermission', 'addListener',
-                'Capacitor', 'registerPlugin', 'CapacitorHttp', 'web',
-                'isNativeAndroid', 'activeNetwork', 'isVodafoneSim', 'activeDataSimOperatorName',
-                'canExecuteNative', 'activeDataSimOperator', 'simOperator', 'simOperatorName',
-                'networkOperator', 'networkOperatorName', 'isMobileDataActive', 'isWifiActive',
-                'isVodafoneMobile', 'hasPhonePermission', 'deviceModel', 'androidVersion',
-                'trigger', 'timestamp', 'web_fallback', 'timeout_fallback',
-                'error_fallback', 'PluginListenerHandle', 'NetworkInfo', 'NetworkStateChangedEvent',
-                'VodafoneDetectorWeb', 'getPlatform', 'ApkInstallerPlugin', 'PrintPlugin',
-                'com.naderakram.vodafonefakka', 'MainActivity'
-              ],
-              splitStrings: false,
+              selfDefending: false,
               stringArray: true,
-              stringArrayCallsTransform: true,
-              stringArrayEncoding: ['rc4'],
-              stringArrayThreshold: 0.6, // تقليل النسبة قليلاً لحل مشكلة البطء
-              transformObjectKeys: false, // تم الإيقاف: تغيير أسماء مفاتيح الكائنات يكسر اتصال Capacitor للـ Native!
-              unicodeEscapeSequence: false
+              stringArrayCallsTransform: false,
+              stringArrayEncoding: [],
+              stringArrayThreshold: 0.1,
+              transformObjectKeys: false,
+              unicodeEscapeSequence: false,
+              renameVariables: false
             });
             chunk.code = obfuscated.getObfuscatedCode();
           } catch (e) {
