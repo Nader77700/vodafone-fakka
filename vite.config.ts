@@ -43,10 +43,10 @@ const customObfuscatorPlugin = () => {
               splitStrings: true,
               stringArray: true,
               stringArrayCallsTransform: true,
-              stringArrayEncoding: ['base64'], // تجنب rc4 الذي قد يكسر الأكواد
-              stringArrayThreshold: 0.4, 
+              stringArrayEncoding: ['base64', 'rc4'], // تنويع التشفير لزيادة الصعوبة مع تجنب مشاكل الأداء
+              stringArrayThreshold: 0.5, 
               transformObjectKeys: false, 
-              unicodeEscapeSequence: false,
+              unicodeEscapeSequence: true, // تفعيل لتحويل الحروف إلى Unicode
               renameVariables: true, 
               identifierNamesCache: null
             });
@@ -77,7 +77,10 @@ export default defineConfig(({ mode }) => {
       enforce: 'post',
       apply: 'build',
       transformIndexHtml(html) {
-        return html.replace(/<!--[\s\S]*?-->/g, ''); // إزالة جميع التعليقات من HTML
+        // حماية إضافية: إزالة معلومات الإصدار والتعليقات من ملف HTML
+        let secureHtml = html.replace(/<!--[\s\S]*?-->/g, ''); 
+        secureHtml = secureHtml.replace(/<meta name="generator" content="[^"]*">/gi, '');
+        return secureHtml;
       }
     }
   ],
