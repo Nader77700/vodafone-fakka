@@ -2250,10 +2250,10 @@ export default function HomePage() {
   const [liveTime, setLiveTime] = useState(() => fmtTimeLeft(subscription?.expires_at));
   useEffect(() => {
     if (!subscription?.expires_at || !subActive) return;
-    const update = () => setLiveTime(fmtTimeLeft(subscription.expires_at));
+    const update = () => setLiveTime(fmtTimeLeft(subscription.expires_at!));
     update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
   }, [subscription?.expires_at, subActive]); // eslint-disable-line react-hooks/exhaustive-deps
   const isSuspendedSub = subscription?.status === 'suspended';
   const isExpired      = subscription?.status !== 'active' && !isSuspendedSub;

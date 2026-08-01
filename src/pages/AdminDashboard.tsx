@@ -1462,8 +1462,8 @@ export default function AdminDashboard() {
   useEffect(() => { if (activeTab === 'numbers' || activeTab === 'globalstats') loadPhoneAnalytics(); }, [activeTab, loadPhoneAnalytics]);
   useEffect(() => { if (activeTab === 'operations')     loadOps(); },           [activeTab, loadOps]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);
-  useEffect(() => { if (activeTab === 'notifications' || activeTab === 'notif_automation') { loadNotifs(); loadScheduled(); } }, [activeTab, loadNotifs]); // eslint-disable-line
-  useEffect(() => { if (activeTab === 'assets') loadAssets(); }, [activeTab]); // eslint-disable-line
+  useEffect(() => { if (activeTab === 'notifications' || activeTab === 'notif_automation') { loadNotifs(); loadScheduled(); } }, [activeTab, loadNotifs, loadScheduled]); // eslint-disable-line
+  useEffect(() => { if (activeTab === 'assets') loadAssets(); }, [activeTab, loadAssets]); // eslint-disable-line
 
   // ── Product Config loader ───────────────────────────────────────────────
   const loadProductConfig = useCallback(async () => {
