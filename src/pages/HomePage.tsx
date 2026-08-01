@@ -966,7 +966,7 @@ function ExecuteModal({
       sError = seamless.error;
       
       if (trace) {
-         if (seamless.traceId) trace.traceId = seamless.traceId;
+         if ((seamless as any).traceId) trace.traceId = (seamless as any).traceId;
          trace.addStep('UI Started', 'HomePage.tsx', 'handleExecute', 'fetchSeamlessToken', sToken ? 'Success' : 'Failed');
       }
 

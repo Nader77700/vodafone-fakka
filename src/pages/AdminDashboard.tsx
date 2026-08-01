@@ -1462,6 +1462,13 @@ export default function AdminDashboard() {
   useEffect(() => { if (activeTab === 'numbers' || activeTab === 'globalstats') loadPhoneAnalytics(); }, [activeTab, loadPhoneAnalytics]);
   useEffect(() => { if (activeTab === 'operations')     loadOps(); },           [activeTab, loadOps]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);
+  const loadScheduled = useCallback(async () => {
+    setScheduledLoading(true);
+    const data = await getScheduledNotifications();
+    setScheduledNotifs(data);
+    setScheduledLoading(false);
+  }, []);
+
   useEffect(() => { if (activeTab === 'notifications' || activeTab === 'notif_automation') { loadNotifs(); loadScheduled(); } }, [activeTab, loadNotifs, loadScheduled]); // eslint-disable-line
   useEffect(() => { if (activeTab === 'assets') loadAssets(); }, [activeTab, loadAssets]); // eslint-disable-line
 
@@ -1869,13 +1876,12 @@ export default function AdminDashboard() {
     setSchedSaving(false);
   };
 
-  // ─── Load Scheduled Notifications ───
-  const loadScheduled = useCallback(async () => {
-    setScheduledLoading(true);
-    const data = await getScheduledNotifications();
-    setScheduledNotifs(data);
-    setScheduledLoading(false);
-  }, []);
+  // const loadScheduled = useCallback(async () => {
+  //   setScheduledLoading(true);
+  //   const data = await getScheduledNotifications();
+  //   setScheduledNotifs(data);
+  //   setScheduledLoading(false);
+  // }, []);
 
   // ─── View Delivery ───
   const handleViewDelivery = async (notifId: string) => {
