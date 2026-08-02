@@ -938,6 +938,7 @@ function isTransientError(error?: string, httpStatus?: number): boolean {
     e.includes('3999') || e.includes('مؤقت') || e.includes('timeout') ||
     e.includes('network') || e.includes('انتهت مهلة') || e.includes('اتصال') ||
     e.includes('gateway') || e.includes('rate limit') || e.includes('too many') ||
+    e.includes('ضغط مؤقت') || // إضافة تحقق من عبارة الضغط المؤقت
     (httpStatus !== undefined && [429, 502, 503, 504].includes(httpStatus))
   );
 }
