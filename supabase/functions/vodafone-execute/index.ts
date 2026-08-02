@@ -187,13 +187,17 @@ serve(async (req: Request) => {
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin
       .from("product_config")
-      .select("id, is_enabled, display_name, price")
+      .select("id, is_enabled, display_name, price, status") // تأكدنا من سحب حقل status
       .eq("product_id", product_id)
       .single();
 
-    if (productConfig && !productConfig.is_enabled) {
+    // نتحقق إذا كان الكارت معطل (is_enabled = false) أو غير متوفر حاليا (status = 'inactive' أو أي حالة أخرى تشير للتوقف)
+    if (productConfig && (!productConfig.is_enabled || productConfig.status === 'inactive' || productConfig.status === 'maintenance')) {
       logStep("product_validation", "fail", "product disabled by admin");
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "تم إيقاف هذا المنتج مؤقتاً من قبل الإدارة" }, 400);
+      return await abortAndRefund(caller.id, supabaseAdmin, { 
+         success: false, 
+         error: "عذراً، هذا الكارت متوقف حالياً أو قيد التحديث. يرجى تجربة كارت آخر." 
+      }, 400);
     }
 
     const appBuildStr = req.headers.get("x-app-build");
