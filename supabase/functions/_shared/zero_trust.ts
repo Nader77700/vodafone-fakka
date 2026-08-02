@@ -70,19 +70,10 @@ export async function zeroTrustCheck(req: Request) {
     secureToken === 'vfp_secure_356_kill_switch' || 
     secureToken === 'vfp_secure_355_kill_switch' || 
     secureToken === 'debug_sig' || 
-    (secureToken === 'vfp_secure_354_omega' && appBuild >= 355);
+    (secureToken === 'vfp_secure_354_omega' && appBuild >= 355) ||
+    appBuild >= 473; // Allow the new secure versions
 
-  let userId = null;
-  let isException = false;
-  if (authHeader) {
-    const tempClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
-    const { data: { user } } = await tempClient.auth.getUser();
-    if (user && (user.email?.toLowerCase().includes('nader77') || user.phone?.includes('Nader77'))) {
-        isException = true;
-    }
-  }
-
-  if (!isValidToken && !isException) {
+  if (!isValidToken) {
     const deviceId = req.headers.get("x-device-id") || 'unknown';
     // We can also insert into device_bans if we want to permanently ban the hacker, 
     // but just rejecting it is enough to "burn the bridge".

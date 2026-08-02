@@ -411,16 +411,11 @@ function AppInner() {
   const [deviceBan, setDeviceBan] = useState<{ banned: boolean; reason?: string; banned_at?: string } | null>(null);
 
   useEffect(() => {
-    // إيقاف الحظر تماماً عن جهاز الأدمن (نسخة تجريبية مؤقتة)
-    if (user?.email?.toLowerCase().includes('nader77') || user?.phone?.includes('Nader77')) {
-      return;
-    }
-
     const { device_fp, hardware_hash, device_id } = getStableDeviceIdentity();
     checkDeviceBan({ device_fp, hardware_hash, device_id: device_id ?? undefined })
       .then(res => { if (res.banned) setDeviceBan(res); })
       .catch(() => {});
-  }, [user]);
+  }, []);
 
   const handleSplashDone = () => {
     // سجّل وقت الانتهاء من Splash في localStorage — يصمد بعد إعادة بناء WebView
