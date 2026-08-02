@@ -38,7 +38,8 @@ const customObfuscatorPlugin = () => {
                 'error_fallback', 'PluginListenerHandle', 'NetworkInfo', 'NetworkStateChangedEvent',
                 'VodafoneDetectorWeb', 'getPlatform', 'ApkInstallerPlugin', 'PrintPlugin',
                 'com.naderakram.vodafonefakka', 'MainActivity',
-                'loadScheduled', 'loadNotifs', 'isExpired', 'isSuspendedSub'
+                'loadScheduled', 'loadNotifs', 'isExpired', 'isSuspendedSub',
+                'BUILD_INFO', 'versionCode', 'isCrackedVersion'
               ],
               splitStrings: true,
               stringArray: true,

@@ -2379,6 +2379,22 @@ export default function HomePage() {
     setSheetOpen(true);
   };
 
+  // Obfuscated cracked check to prevent easy bypass for versions <= 470
+  const _0x1a2b = [470, BUILD_INFO.versionCode];
+  const _0xc3d4 = _0x1a2b[1] <= _0x1a2b[0];
+
+  if (_0xc3d4) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <ShieldAlert className="w-16 h-16 text-destructive" />
+        <h2 className="text-xl font-bold text-destructive">تنبيه أمني خطير</h2>
+        <p className="text-muted-foreground max-w-sm px-4">
+          تم إيقاف الخدمات وسحب كروت الشحن في هذا الإصدار بسبب شبهة التعديل أو التهكير. يُرجى تحميل الإصدار الرسمي من الموقع لاستعادة الوصول.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     // skeleton بسيط بدلاً من شاشة تحميل كاملة تحجب المحتوى
     return (
