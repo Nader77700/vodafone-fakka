@@ -199,6 +199,7 @@ serve(async (req: Request) => {
          error: "عذراً، هذا الكارت متوقف حالياً أو قيد التحديث. يرجى تجربة كارت آخر." 
       }, 400);
     }
+    }
 
     const appBuildStr = req.headers.get("x-app-build");
     const appBuild = appBuildStr ? parseInt(appBuildStr, 10) : 0;
