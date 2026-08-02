@@ -2352,23 +2352,27 @@ export default function HomePage() {
 
     // ── فحص حالة الكارت من DB (product_config) ─────────────────────────
     const cfg = productConfigs.find(c => c.product_id === product.id);
-    let isRestricted = false;
-
     if (cfg) {
-      if (['maintenance', 'development', 'unavailable', 'disabled_execution'].includes(cfg.status) || !cfg.is_enabled) {
-        isRestricted = true;
+      // كارت مخفي — الكارت لا يظهر في القائمة أصلاً لكن كحماية إضافية
+      if (!cfg.is_visible) return;
+
+      // حالات التوقف: صيانة / تطوير / غير متوفر
+      if (['maintenance', 'development', 'unavailable'].includes(cfg.status)) {
+        setDisabledProductOpen(true);
+        return;
+      }
+
+      // تعطيل صريح
+      if (cfg.status === 'disabled_execution' || !cfg.is_enabled) {
+        setDisabledProductOpen(true);
+        return;
       }
     } else {
-      // fallback: الحماية القديمة وحماية إضافية لوقف الشحن بالكروت الأساسية في حال فصل الإنترنت
-      const legacyBlockedProducts = ['Fakka_2.5_Unite', 'Fakka_5_Unite', 'Fakka_6_NewUnite', 'Fakka_7_Unite', 'Fakka_9_Unite', 'Fakka_26_Unite', 'Fakka_4.25_Unite', 'Fakka_10.5_Unite'];
-      if (legacyBlockedProducts.includes(product.id)) {
-        isRestricted = true;
+      // fallback: الحماية القديمة لكارت 26 جنيه إذا لم يُحمَّل config بعد
+      if (product.id === 'Fakka_26_Unite') {
+        setDisabledProductOpen(true);
+        return;
       }
-    }
-
-    if (isRestricted) {
-      setDisabledProductOpen(true);
-      return;
     }
 
     setSelectedProduct(product);

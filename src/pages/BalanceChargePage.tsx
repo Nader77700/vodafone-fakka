@@ -1378,12 +1378,6 @@ export default function BalanceChargePage() {
   const maredCount = useMemo(() => products.filter(p => p.category === 'mared' && (isAdmin || p.is_visible)).length, [products, isAdmin]);
 
   const handleSelectProduct = (p: BalanceProduct) => {
-    // ── حماية من الكروت الموقوفة في صفحة الرصيد ──
-    if (!isAdmin && (!p.is_enabled || !p.is_visible)) {
-      toast.error('هذا الكارت متوقف حالياً. يرجى تجربة كارت آخر.');
-      return;
-    }
-    
     if (!session) { setLoginOpen(true); return; }
     // منع الشحن إذا كان Context لم ينتهِ التحميل بعد
     if (isMerchantClient && merchantLoading) {
