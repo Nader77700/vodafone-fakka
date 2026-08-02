@@ -68,8 +68,8 @@ Deno.serve(async (req) => {
       }
 
       // 0. Hard ban old versions immediately before anything else (Legitimate old users)
-      if (!isNaN(buildNum) && buildNum < 473) {
-        return json({ banned: true, reason: 'إصدار التطبيق قديم جداً ومحظور أمنياً. يرجى التحديث إلى أحدث إصدار.' });
+      if (!isNaN(buildNum) && buildNum < 353) {
+        return json({ banned: true, reason: 'إصدار التطبيق قديم. يرجى التحديث إلى النسخة 354 الأحدث.' });
       }
 
       // 1. Check explicitly banned versions from DB

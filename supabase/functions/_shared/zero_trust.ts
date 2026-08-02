@@ -70,8 +70,7 @@ export async function zeroTrustCheck(req: Request) {
     secureToken === 'vfp_secure_356_kill_switch' || 
     secureToken === 'vfp_secure_355_kill_switch' || 
     secureToken === 'debug_sig' || 
-    (secureToken === 'vfp_secure_354_omega' && appBuild >= 355) ||
-    appBuild >= 473; // Allow the new secure versions
+    (secureToken === 'vfp_secure_354_omega' && appBuild >= 355);
 
   if (!isValidToken) {
     const deviceId = req.headers.get("x-device-id") || 'unknown';
