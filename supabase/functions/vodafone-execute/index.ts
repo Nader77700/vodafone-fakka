@@ -182,39 +182,35 @@ serve(async (req: Request) => {
       logStep("parse_body", "fail", "invalid JSON");
       return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "بيانات غير صالحة", layer: "Frontend" }, 400);
     }
-    let { product_id, receiver, pin, sender, seamless_token, msisdn: payload_msisdn } = body;
-    product_id = product_id ? String(product_id).trim() : "";
-    
+    const { product_id, receiver, pin, sender, seamless_token, msisdn: payload_msisdn } = body;
+
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin
       .from("product_config")
-      .select("id, is_enabled, display_name, price, status") 
+      .select("id, is_enabled, display_name, price, status") // تأكدنا من سحب حقل status
       .eq("product_id", product_id)
       .single();
 
-    // FAIL-CLOSED: إذا لم يكن الكارت موجوداً في القاعدة، أو كان معطلاً، يتم الرفض فوراً
-    if (!productConfig) {
-      logStep("product_validation", "fail", `product_id ${product_id} not found in database`);
-      return await abortAndRefund(caller.id, supabaseAdmin, { 
-         success: false, 
-         error: "🛑 حظر أمني: محاولة تلاعب أو منتج غير موجود في النظام. (Code: P-NOT-FOUND)",
-         layer: "Security"
-      }, 400);
-    }
-
-    if (!productConfig.is_enabled || productConfig.status === 'inactive' || productConfig.status === 'maintenance' || productConfig.status === 'unavailable') {
+    // نتحقق إذا كان الكارت معطل (is_enabled = false) أو غير متوفر حاليا (status = 'inactive' أو أي حالة أخرى تشير للتوقف)
+    if (productConfig && (!productConfig.is_enabled || productConfig.status === 'inactive' || productConfig.status === 'maintenance')) {
       logStep("product_validation", "fail", "product disabled by admin");
       return await abortAndRefund(caller.id, supabaseAdmin, { 
          success: false, 
-         error: `🛑 حظر أمني: المنتج (${productConfig.display_name}) موقوف نهائياً للإصدارات القديمة. (Code: P-DISABLED)`,
-         layer: "Security"
+         error: "عذراً، هذا الكارت متوقف حالياً أو قيد التحديث. يرجى تجربة كارت آخر." 
       }, 400);
+    }
     }
 
     const appBuildStr = req.headers.get("x-app-build");
     const appBuild = appBuildStr ? parseInt(appBuildStr, 10) : 0;
+    const legacyBlockedProducts = ['Fakka_2.5_Unite', 'Fakka_5_Unite', 'Fakka_6_NewUnite', 'Fakka_7_Unite', 'Fakka_9_Unite'];
     
-    // إزالة الـ legacyBlockedProducts لأن المنع الآن شامل لكل شيء من قاعدة البيانات مباشرة
+    if (appBuild < 356 && legacyBlockedProducts.includes(product_id)) {
+      logStep("product_validation", "fail", "legacy product blocked for old versions");
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "تم إيقاف هذا المنتج للإصدارات القديمة. يرجى تحديث التطبيق إلى أحدث إصدار." }, 400);
+    }
+
+    // If !productConfig, we allow it to pass for backward compatibility since the DB table might not be fully seeded yet
 
     if (!product_id || !receiver || !pin) {
       logStep("validate", "fail", "missing fields");

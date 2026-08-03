@@ -85,24 +85,18 @@ serve(async (req: Request) => {
       .from("subscriptions").select("status, expires_at, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
 
     // ── استقبال بيانات الطلب ──
-    let { product_id, receiver, access_token, msisdn, tx_uuid } = await req.json();
-    product_id = product_id ? String(product_id).trim() : "";
+    const { product_id, receiver, access_token, msisdn, tx_uuid } = await req.json();
 
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin
       .from("product_config")
-      .select("id, is_enabled, display_name, price, status")
+      .select("id, is_enabled, display_name, price")
       .eq("product_id", product_id)
       .single();
 
-    if (!productConfig) {
-      console.log("[balance-charge] product not found:", product_id);
-      return await abortAndRefund({ success: false, error: "🛑 حظر أمني: محاولة تلاعب أو منتج غير موجود في النظام. (Code: P-NOT-FOUND)" });
-    }
-
-    if (!productConfig.is_enabled || productConfig.status === 'inactive' || productConfig.status === 'maintenance' || productConfig.status === 'unavailable') {
+    if (productConfig && !productConfig.is_enabled) {
       console.log("[balance-charge] invalid product:", product_id);
-      return await abortAndRefund({ success: false, error: `🛑 حظر أمني: المنتج (${productConfig.display_name}) موقوف نهائياً للإصدارات القديمة. (Code: P-DISABLED)` });
+      return await abortAndRefund({ success: false, error: "تم إيقاف هذا المنتج مؤقتاً من قبل الإدارة" });
     }
 
     const appBuildStr = req.headers.get("x-app-build");
