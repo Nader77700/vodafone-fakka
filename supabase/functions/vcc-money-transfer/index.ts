@@ -80,7 +80,7 @@ serve(async (req: Request) => {
     logStep("auth", "ok", `user=${user.id}`);
 
     // Subscription check
-    const { data: sub } = await supabase
+    const { data: sub } = await opsAdminClient
       .from("subscriptions").select("status, expires_at").eq("user_id", user.id).maybeSingle();
     const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
 
@@ -90,7 +90,7 @@ serve(async (req: Request) => {
     }
 
     // ── حماية السيرفر: خصم العملية فوراً لمنع التخطي ──
-    const { data: consumeData, error: consumeError } = await supabase.rpc('atomic_consume_operation', { p_user_id: user.id });
+    const { data: consumeData, error: consumeError } = await opsAdminClient.rpc('atomic_consume_operation', { p_user_id: user.id });
     if (consumeError || !consumeData || !consumeData.allowed) {
       logStep("subscription", "fail", "ops limit reached (server-side enforced)");
       return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "لقد استنفذت الحد الأقصى للعمليات في باقتك", layer: "Authorization" });
@@ -229,7 +229,7 @@ serve(async (req: Request) => {
       logStep("transfer", "ok", "transfer executed", { description });
 
       // Insert DB record
-      const { error: dbErr } = await supabase.from("vcc_transfers").insert({
+      const { error: dbErr } = await opsAdminClient.from("vcc_transfers").insert({
         user_id: user.id,
         receiver_number: receiver,
         amount: Number(amount),
@@ -243,7 +243,7 @@ serve(async (req: Request) => {
     } else {
       logStep("transfer", "fail", `http=${transferRes.status}`, { description, raw: txt.slice(0, 200) });
       
-      const { error: dbErr } = await supabase.from("vcc_transfers").insert({
+      const { error: dbErr } = await opsAdminClient.from("vcc_transfers").insert({
         user_id: user.id,
         receiver_number: receiver,
         amount: Number(amount),
