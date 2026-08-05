@@ -4,8 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.3.5',
-  versionCode:    473,
+  appVersion:     '3.3.6',
+  versionCode:    474,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_fix_421',
   bundleFile:     'VodafoneFakka-v3.0.423.apk',
@@ -13,6 +13,7 @@ export const BUILD_INFO = {
   apkHash:        'apk_v3_0_447_code447',
   dbVersion:      'v3.0.447',
   releaseNotes: [
+    'v3.3.6: إصدار رسمي شامل لجميع التحديثات: تكامل قسم تحويل الأموال وتحديث الواجهة + حل مشكلة الهيدر الأمني في أنظمة فليكس',
     'v3.0.447: إعادة بناء وتفعيل نظام التتبع الكامل Full Pipeline Trace مع بيانات الـ TCP و TLS بعد فقدانها بالتعارض',
     'v3.0.445: إلغاء التشفير (Obfuscation) بالكامل مؤقتاً لتحديد سبب المشكلة بدقة وإعادة الجسر لطبيعته',
     'v3.0.443: إيقاف خاصية transformObjectKeys في التشفير والتي كانت تكسر الاتصال بجسر Capacitor وتتسبب في حدوث Read timed out، وإعادة النظام الأساسي للعمل بنجاح',
