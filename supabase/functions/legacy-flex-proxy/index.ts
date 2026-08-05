@@ -5,6 +5,7 @@ const ALLOWED_TARGET_HOSTS = [
   'web.vodafone.com.eg',
   'api.vodafone.com.eg',
   'services.vodafone.com.eg',
+  'mobile.vodafone.com.eg',
   'vfeg.auth0.com'
 ];
 
@@ -29,11 +30,7 @@ serve(async (req) => {
       throw new Error('targetUrl is required');
     }
 
-    // Force inject the latest Vodafone headers server-side so we don't need app updates
     const finalHeaders = headers || {};
-    finalHeaders['User-Agent'] = "okhttp/4.12.0";
-    finalHeaders['x-agent-version'] = "2026.4.1";
-    finalHeaders['x-agent-build'] = "1139";
 
     // SSRF Prevention: Enforce allowed hosts
     const targetUrlObj = new URL(targetUrl);
