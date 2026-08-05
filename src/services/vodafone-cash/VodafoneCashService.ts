@@ -22,7 +22,7 @@ export class VodafoneCashService {
         return { success: false, message: error.message || "حدث خطأ أثناء الاتصال بالسيرفر", error: error.message };
       }
       if (!data.success) {
-        return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error };
+        return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data: data };
       }
       return { success: true, message: data.message || "تم التحويل بنجاح", data: data };
     } catch (e: any) {
