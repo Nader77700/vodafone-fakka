@@ -107,6 +107,7 @@ serve(async (req: Request) => {
     
     let msisdn = payload_msisdn || "";
     if (msisdn.startsWith("0")) msisdn = msisdn.slice(1);
+    const formattedMsisdn = `0${msisdn}`;
     
     // 1. Get Access Token
     logStep("auth-voda", "pending", "requesting token");
@@ -158,8 +159,10 @@ serve(async (req: Request) => {
       headers: {
         ...DEVICE,
         "api-version": "v2",
-        "msisdn": msisdn,
+        "msisdn": formattedMsisdn,
         "Authorization": `Bearer ${token}`,
+        "api-host": "PaymentManagement",
+        "useCase": "VodafoneCash",
         "X-Request-ID": "",
         "X-App-StackTrace": "onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered"
       }
@@ -207,8 +210,10 @@ serve(async (req: Request) => {
       headers: {
         ...DEVICE,
         "api-version": "v2",
-        "msisdn": msisdn,
+        "msisdn": formattedMsisdn,
         "Authorization": `Bearer ${token}`,
+        "api-host": "PaymentManagement",
+        "useCase": "VodafoneCash",
         "X-Request-ID": "",
         "X-App-StackTrace": "SendMoneyConfirmationScreen opened#onUiEvent triggered#Confirm Transfer button clicked to show Pin Screen#Pin Code entered#transferMoney started in Viewmodel#transferMoney started in UseCase#transferMoney started in Repository#transferMoney network service creation",
         "Content-Type": "application/json; charset=UTF-8"
