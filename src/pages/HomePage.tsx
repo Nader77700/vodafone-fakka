@@ -41,7 +41,7 @@ import { CardFeedbackModal } from '@/components/common/CardFeedbackModal';
 import {
   Bell, Key, Calendar, Clock, Zap, Phone, Lock,
   CheckCircle2, XCircle, AlertTriangle, Loader2,
-  Shield, CreditCard, Users, ChevronLeft,
+  Shield, CreditCard, Users, ChevronLeft, ShieldAlert,
   Database, Sparkles, Gift, Wifi, Signal, RefreshCw,
   Smartphone, Copy, Info, Home, RotateCcw, Tag,
 } from 'lucide-react';

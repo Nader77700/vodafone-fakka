@@ -15,6 +15,7 @@ interface PinInputBlockProps {
 export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
   const { savedPins, defaultPin } = useWalletPins();
   const [useSaved, setUseSaved] = useState(false);
+  const [shouldSaveNew, setShouldSaveNew] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   
   useEffect(() => {
@@ -25,6 +26,14 @@ export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
       setUseSaved(false);
     }
   }, [savedPins, defaultPin]);
+
+  useEffect(() => {
+    if (shouldSaveNew && pin.length >= 4) {
+      localStorage.setItem('vcc_pending_save_pin', pin);
+    } else {
+      localStorage.removeItem('vcc_pending_save_pin');
+    }
+  }, [pin, shouldSaveNew]);
 
   const handleUseSavedChange = (checked: boolean) => {
     setUseSaved(checked);
@@ -96,7 +105,8 @@ export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
             <input 
               type="checkbox" 
               className="rounded border-white/20 bg-white/5 accent-[#E60000] w-4 h-4"
-              onChange={(e) => handleSaveNewChange(e.target.checked)} 
+              checked={shouldSaveNew}
+              onChange={(e) => setShouldSaveNew(e.target.checked)} 
               disabled={submitting}
             />
             <span className="text-xs text-white/70">حفظ الرقم السري بعد نجاح العملية لتسهيل القادم</span>

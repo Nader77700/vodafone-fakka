@@ -180,13 +180,17 @@ serve(async (req: Request) => {
     if (infoRes.ok) {
       const infoText = await infoRes.text();
       try {
-        const infoData = JSON.parse(infoText);
-        if (infoData && infoData.length > 0 && infoData[0]?.paymentMethod?.relatedParty) {
-          relatedId = infoData[0].paymentMethod.relatedParty.id || receiver;
-          relatedName = infoData[0].paymentMethod.relatedParty.name || "";
-          logStep("receiver-info", "ok", `found name=${relatedName}`);
+        if (!infoText || !infoText.trim()) {
+          logStep("receiver-info", "warn", "empty response body from Vodafone");
         } else {
-          logStep("receiver-info", "warn", "empty data returned, using fallback");
+          const infoData = JSON.parse(infoText);
+          if (infoData && infoData.length > 0 && infoData[0]?.paymentMethod?.relatedParty) {
+            relatedId = infoData[0].paymentMethod.relatedParty.id || receiver;
+            relatedName = infoData[0].paymentMethod.relatedParty.name || "";
+            logStep("receiver-info", "ok", `found name=${relatedName}`);
+          } else {
+            logStep("receiver-info", "warn", "empty data returned, using fallback");
+          }
         }
       } catch (parseErr: any) {
         logStep("receiver-info", "fail", "JSON parse error on infoRes", { raw: infoText.slice(0, 300) });
@@ -239,6 +243,25 @@ serve(async (req: Request) => {
     try { data = JSON.parse(txt); } catch(e) {}
 
     let description = data?.description || data?.message || data?.error_description || "حدث خطأ غير معروف";
+    
+    // Attempt to extract ANY Arabic string from the JSON to get the real Vodafone error message
+    const extractArabicText = (obj: any): string | null => {
+      if (!obj) return null;
+      if (typeof obj === 'string' && /[\u0600-\u06FF]/.test(obj)) return obj;
+      if (typeof obj === 'object') {
+        for (const key in obj) {
+          const res = extractArabicText(obj[key]);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+    
+    const arabicError = extractArabicText(data);
+    if (arabicError) {
+      description = arabicError;
+    }
+
     if (txt.trim().toLowerCase().startsWith("<html") || txt.trim().toLowerCase().startsWith("<!doctype html>")) {
       description = "خوادم فودافون محجوبة أو تحت الصيانة (WAF HTML Response)";
     }
