@@ -241,8 +241,27 @@ export class FlexRepository {
 
     try {
         const resp = await this.proxyFetchRaw(url, 'POST', headers, payload);
-        const parsed = await this.parseResponse(resp);
-        return parsed;
+        const status = resp.status;
+        const text = await resp.text();
+        let json: any = null;
+        try { json = JSON.parse(text); } catch {}
+        
+        // Exact Python logic: return resp.status_code == 400
+        const isSuccess = status === 400;
+        
+        // Elevate Vodafone's real error message if any, to be displayed formatted
+        let errorMessage = undefined;
+        if (!isSuccess) {
+            errorMessage = json?.description || json?.message || json?.reason || json?.error || text || 'فشل التفعيل لسبب غير معروف';
+        }
+
+        return {
+            success: isSuccess,
+            httpStatus: status,
+            data: json,
+            error: isSuccess ? undefined : { message: errorMessage },
+            raw: json || text
+        };
     } catch (e: any) {
         return { success: false, httpStatus: 0, error: { message: e.message } };
     }
@@ -289,13 +308,38 @@ export class FlexRepository {
     for (let attempt = 0; attempt < 3; attempt++) {
         try {
             const resp = await this.proxyFetchRaw(url, 'POST', headers, payload);
-            const parsed = await this.parseResponse(resp);
+            const status = resp.status;
+            const text = await resp.text();
+            let json: any = null;
+            try { json = JSON.parse(text); } catch {}
+            
+            let isSuccess = false;
+            
+            // Exact Python logic:
+            if (status === 500 && json?.code === "3999" && json?.reason === "Generic System Error") {
+                isSuccess = true;
+            } else if (status === 200 || status === 201) {
+                isSuccess = true;
+            }
+
+            let errorMessage = undefined;
+            if (!isSuccess) {
+                errorMessage = json?.description || json?.message || json?.reason || json?.error || text || 'فشل التفعيل لسبب غير معروف';
+            }
+
+            const parsed: VFResponse<any> = {
+                success: isSuccess,
+                httpStatus: status,
+                data: json,
+                error: isSuccess ? undefined : { message: errorMessage },
+                raw: json || text
+            };
+            
             lastResp = parsed;
 
-            if (parsed.success) {
+            if (isSuccess) {
                 return parsed;
             }
-            // wait 2 seconds
             await new Promise(r => setTimeout(r, 2000));
         } catch (e: any) {
             lastResp = { success: false, httpStatus: 0, error: { message: e.message } };

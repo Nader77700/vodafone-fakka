@@ -348,8 +348,10 @@ function ActivationDialog({
 
       setResult({
         success: res.isSuccessful,
-        message: res.isSuccessful ? `تم تفعيل ${system.name} بنجاح.` : 'فشل التفعيل',
-        details: res.response.message,
+        message: res.isSuccessful ? '✅ تم تفعيل النظام بنجاح' : 'فشل التفعيل',
+        details: res.isSuccessful 
+           ? 'تم تسجيل طلب تفعيل النظام بنجاح.\nلإكمال العملية، يرجى فتح تطبيق "أنا فودافون" ثم تنفيذ الخطوات التالية:\n1- الدخول إلى قسم "شحن الرصيد".\n2- الدخول إلى "تفاصيل الرصيد والاشتراكات".\n3- مراجعة الاشتراكات القادمة.\n4- إذا ظهر النظام ضمن الاشتراكات القادمة، قم بشحن الرصيد بالقيمة المطلوبة الظاهرة داخل تطبيق أنا فودافون الرسمي لإتمام التفعيل.'
+           : res.response.message,
         executionTime: res.executionTimeMs
       });
 
@@ -536,17 +538,17 @@ function ActivationDialog({
                 {result.success ? <CheckCircle2 className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}
               </div>
               
-              <div className="space-y-1">
+              <div className="space-y-1 w-full px-2">
                 <h3 className={`text-base font-black ${result.success ? 'text-green-500' : 'text-destructive'}`}>
                   {result.message}
                 </h3>
                 {result.details && (
-                  <p className="text-xs text-white/60 leading-relaxed max-w-[250px] mx-auto">
+                  <div className={`text-xs leading-relaxed max-w-[280px] mx-auto text-right ${result.success ? 'text-white/90 bg-white/5 p-3 rounded-xl border border-white/10 mt-3 whitespace-pre-line' : 'text-white/60'}`}>
                     {result.details}
-                  </p>
+                  </div>
                 )}
                 {result.executionTime && (
-                  <p className="text-[10px] text-white/40 mt-2 font-mono">
+                  <p className="text-[10px] text-white/40 mt-2 font-mono text-center">
                     زمن التنفيذ: {(result.executionTime / 1000).toFixed(1)}s
                   </p>
                 )}

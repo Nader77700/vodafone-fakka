@@ -167,8 +167,10 @@ export class FlexMigrationService {
       onProgress?.('waiting_response');
       
       if (!activationResp.success) {
-        const mapped = this.mapVodafoneError(activationResp, 'لم نتمكن من تفعيل النظام. قد يكون غير متاح لخطك حالياً.');
-        throw new Error(`${mapped.code}|${mapped.message}`);
+        // Extract real error message from script response directly
+        const realError = activationResp.error?.message || 'لم يتم تأكيد التفعيل من فودافون.';
+        // We use a specific mapping signature to preserve the exact message for UI
+        throw new Error(`REAL_VODAFONE_ERROR|${realError}`);
       }
 
       onProgress?.('analyzing_result');
@@ -195,7 +197,7 @@ export class FlexMigrationService {
 
     } catch (error: any) {
       const executionTimeMs = Date.now() - startTime;
-      FlexLogger.error('FlexMigrationService', 'Activation failed', { error, executionTimeMs });
+      FlexLogger.error('FlexMigrationService', 'Activation failed', { error: error.message, executionTimeMs });
       
       let errorCode = 'ACTIVATION_FAILED';
       let message = error.message;
@@ -209,6 +211,15 @@ export class FlexMigrationService {
         const parsedError = FlexErrorParser.parseError(error);
         errorCode = parsedError.code;
         message = 'حدث خطأ أثناء الاتصال: ' + parsedError.message;
+      }
+
+      // Professional formatting for real vodafone errors
+      if (errorCode === 'REAL_VODAFONE_ERROR') {
+        // Clean up the message to be professional
+        message = message.replace(/<[^>]*>?/gm, ''); // strip HTML if any
+        if (message.length > 200) {
+            message = 'النظام غير متاح للخط حالياً بحسب رد شركة فودافون.';
+        }
       }
 
       return {
