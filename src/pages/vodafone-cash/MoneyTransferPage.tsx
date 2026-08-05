@@ -9,6 +9,7 @@ import { fetchSeamlessToken } from '../../lib/seamless';
 import { useRuntimeConfig } from '../../contexts/RuntimeConfigContext';
 import { toast } from 'sonner';
 import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
+import { Network } from '@capacitor/network';
 
 export default function MoneyTransferPage() {
   const navigate = useNavigate();
@@ -67,6 +68,22 @@ export default function MoneyTransferPage() {
 
   useEffect(() => {
     checkConnection();
+    
+    // إعداد مستمع مباشر لتغيرات الشبكة
+    let networkListener: any;
+    const setupNetworkListener = async () => {
+      networkListener = await Network.addListener('networkStatusChange', (status) => {
+        // ننتظر ثانية ونصف حتى تستقر الشبكة الجديدة ثم نفحصها
+        setTimeout(() => checkConnection(), 1500);
+      });
+    };
+    setupNetworkListener();
+
+    return () => {
+      if (networkListener && networkListener.remove) {
+        networkListener.remove();
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -189,9 +206,11 @@ export default function MoneyTransferPage() {
           
           {!isConnected && !isCheckingConn && (
             <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <p className="text-[10px] text-red-500/90 leading-relaxed">
-                تأكد أنك مشغل الشريحة على خط فودافون وأنك غير متصل بالواي فاي لتتمكن من استخدام الخدمة.
+                تأكد أنك مشغل الشريحة على خط فودافون وأنك غير متصل بالواي فاي (Wi-Fi) لتتمكن من استخدام الخدمة.
+                <br/>
+                <span className="font-bold opacity-80 mt-1 block">💡 ملاحظة هامة: إذا كنت تستخدم بيانات فودافون وتظهر هذه المشكلة، يرجى إغلاق الـ (VPN) إن وجد. كما أن هذه الميزة مخصصة للعمل داخل تطبيق الأندرويد فقط وليس عبر متصفح الويب.</span>
               </p>
             </div>
           )}
