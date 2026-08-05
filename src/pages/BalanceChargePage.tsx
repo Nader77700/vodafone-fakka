@@ -563,20 +563,14 @@ function BalanceLoginDialog({
     try {
       const ctrl = new AbortController();
       const timerId = setTimeout(() => ctrl.abort(), 20_000);
-      const nonce = securityManager.generateNonce();
-      const payloadString = JSON.stringify({ phone: trimPhone, password: trimPass });
-      const signature = await securityManager.signRequest(payloadString, nonce);
-      const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
-
       const res = await fetch(`${supabaseUrl}/functions/v1/ana-balance-login`, {
         method: 'POST', signal: ctrl.signal,
         headers: {
           'Content-Type':  'application/json',
           'apikey':        supabaseAnon,
           'Authorization': `Bearer ${authToken}`,
-          ...ztHeaders
         },
-        body: payloadString,
+        body: JSON.stringify({ phone: trimPhone, password: trimPass }),
       });
       clearTimeout(timerId);
       const txt = await res.text();
