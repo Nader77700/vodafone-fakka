@@ -59,7 +59,7 @@ serve(async (req: Request) => {
         logStep("ops_refund", "ok", "refunded operation due to failure");
       }
       // ALWAYS RETURN 200 so the frontend can read the JSON payload.
-      return json(payload, 200);
+      return json({ ...payload, debugSteps }, 200);
     };
 
     const sbUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -70,7 +70,10 @@ serve(async (req: Request) => {
 
     // Zero-Trust check
     const authRes = await zeroTrustCheck(req);
-    if (!authRes.ok) return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: authRes.error, layer: "Supabase" });
+    if ('error' in authRes) {
+      logStep("auth", "fail", authRes.error as string);
+      return await abortAndRefund(null, null, { success: false, error: authRes.error, layer: "Supabase" });
+    }
     const user = authRes.user!;
     opCallerId = user.id;
     opsAdminClient = authRes.supabaseAdmin;
