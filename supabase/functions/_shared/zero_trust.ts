@@ -82,7 +82,7 @@ export async function zeroTrustCheck(req: Request) {
   const appSignature = req.headers.get("x-app-signature");
   const bannedConfig = configs?.find(c => c.key === 'banned_app_signatures');
   if (bannedConfig?.value && appSignature) {
-    const bannedSignatures = bannedConfig.value.split(',').map(s => s.trim());
+    const bannedSignatures = bannedConfig.value.split(',').map((s: string) => s.trim());
     if (bannedSignatures.includes(appSignature)) {
       const deviceId = req.headers.get("x-device-id") || 'unknown';
       await supabaseAdmin.from('device_bans').insert({
@@ -110,7 +110,7 @@ export async function zeroTrustCheck(req: Request) {
 
   const { data: prof } = await supabaseAdmin
     .from("profiles")
-    .select("role, is_active, device_id")
+    .select("role, is_active, device_id, vodafone_pin_locked_at")
     .eq("id", user.id)
     .single();
 

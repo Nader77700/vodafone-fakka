@@ -60,16 +60,18 @@ serve(async (req: Request) => {
     }));
   };
 
-  try {
-    const abortAndRefund = async (callerId: string, supabaseAdmin: any, payload: any) => {
+  let opCallerId: string | null = null;
+  let opsAdminClient: any = null;
+
+  const abortAndRefund = async (callerId: string | null, supabaseAdmin: any, payload: any) => {
+    if (callerId && supabaseAdmin) {
       await supabaseAdmin.rpc('atomic_refund_operation', { p_user_id: callerId });
       logStep("ops_refund", "ok", "refunded operation due to failure");
-      return json(payload, 200);
-    };
+    }
+    return json(payload, 200);
+  };
 
-    let opCallerId: string | null = null;
-    let opsAdminClient: any = null;
-
+  try {
     // ── Zero Trust Check (Layer 1-15) ──
     const zt = await zeroTrustCheck(req);
     if (zt.error) {
@@ -77,7 +79,7 @@ serve(async (req: Request) => {
        return json({ success: false, error: zt.error, error_code: "SECURITY_REJECT", layer: "EdgeFunction" });
     }
     const caller = zt.user!;
-    const supabaseAdmin = zt.supabaseAdmin;
+    const supabaseAdmin = zt.supabaseAdmin!;
     opCallerId = caller.id;
     opsAdminClient = supabaseAdmin;
     const isAdmin = zt.isAdmin;
@@ -203,7 +205,7 @@ serve(async (req: Request) => {
     const appBuild = appBuildStr ? parseInt(appBuildStr, 10) : 0;
     const legacyBlockedProducts = ['Fakka_2.5_Unite', 'Fakka_5_Unite', 'Fakka_6_NewUnite', 'Fakka_7_Unite', 'Fakka_9_Unite'];
     
-    if (appBuild < 356 && legacyBlockedProducts.includes(product_id)) {
+    if (appBuild < 356 && legacyBlockedProducts.includes(product_id || "")) {
       logStep("product_validation", "fail", "legacy product blocked for old versions");
       return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "تم إيقاف هذا المنتج للإصدارات القديمة. يرجى تحديث التطبيق إلى أحدث إصدار." });
     }
@@ -444,7 +446,7 @@ serve(async (req: Request) => {
         title:      `شحن ناجح — ${product_id}`,
         description:`الرقم: ${receiver}${opNumber != null ? ` | #${opNumber}` : ""}`,
         metadata:   { product_id, phone: receiver, status: "success", operation_number: opNumber, operation_source: "vodafone_cash" },
-      }).then(() => {}).catch(() => {});
+      });
 
       // سجّل system_logs
       await supabaseAdmin.from("system_logs").insert({
@@ -453,7 +455,7 @@ serve(async (req: Request) => {
         action:  "recharge_success",
         message: `شحن ناجح (Edge Function) — ${product_id} — ${receiver}${opNumber != null ? ` — #${opNumber}` : ""}`,
         metadata:{ product_id, phone: receiver, operation_source: "vodafone_cash", operation_number: opNumber, latency_ms: latencyMs },
-      }).then(() => {}).catch(() => {});
+      });
 
       // أرسل إشعاراً
       await supabaseAdmin.from("notifications").insert({
@@ -463,7 +465,7 @@ serve(async (req: Request) => {
         type:      "operation",
         is_global: false,
         is_read:   false,
-      }).then(() => {}).catch(() => {});
+      });
 
       return json({
         success:          true,

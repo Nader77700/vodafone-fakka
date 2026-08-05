@@ -49,19 +49,19 @@ serve(async (req: Request) => {
     debugSteps.push({ step, status, detail, timestamp: new Date().toISOString(), ...extra });
   };
 
+  let opCallerId: string | null = null;
+  let opsAdminClient: any = null;
+
+  const abortAndRefund = async (callerId: string | null, supabaseAdmin: any, payload: any) => {
+    if (callerId && supabaseAdmin) {
+      await supabaseAdmin.rpc('atomic_refund_operation', { p_user_id: callerId });
+      logStep("ops_refund", "ok", "refunded operation due to failure");
+    }
+    // ALWAYS RETURN 200 so the frontend can read the JSON payload.
+    return json({ ...payload, debugSteps }, 200);
+  };
+
   try {
-    let opCallerId: string | null = null;
-    let opsAdminClient: any = null;
-
-    const abortAndRefund = async (callerId: string | null, supabaseAdmin: any, payload: any) => {
-      if (callerId && supabaseAdmin) {
-        await supabaseAdmin.rpc('atomic_refund_operation', { p_user_id: callerId });
-        logStep("ops_refund", "ok", "refunded operation due to failure");
-      }
-      // ALWAYS RETURN 200 so the frontend can read the JSON payload.
-      return json({ ...payload, debugSteps }, 200);
-    };
-
     const sbUrl = Deno.env.get("SUPABASE_URL") || "";
     const sbKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     const supabase = createClient(sbUrl, sbKey, {
