@@ -53,12 +53,13 @@ serve(async (req: Request) => {
     let opCallerId: string | null = null;
     let opsAdminClient: any = null;
 
-    const abortAndRefund = async (callerId: string | null, supabaseAdmin: any, payload: any, status = 400) => {
+    const abortAndRefund = async (callerId: string | null, supabaseAdmin: any, payload: any) => {
       if (callerId && supabaseAdmin) {
         await supabaseAdmin.rpc('atomic_refund_operation', { p_user_id: callerId });
         logStep("ops_refund", "ok", "refunded operation due to failure");
       }
-      return json(payload, status);
+      // ALWAYS RETURN 200 so the frontend can read the JSON payload.
+      return json(payload, 200);
     };
 
     const sbUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -69,7 +70,7 @@ serve(async (req: Request) => {
 
     // Zero-Trust check
     const authRes = await zeroTrustCheck(req);
-    if (!authRes.ok) return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: authRes.error, layer: "Supabase" }, 401);
+    if (!authRes.ok) return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: authRes.error, layer: "Supabase" });
     const user = authRes.user!;
     opCallerId = user.id;
     opsAdminClient = authRes.supabaseAdmin;
@@ -82,14 +83,14 @@ serve(async (req: Request) => {
 
     if (!hasActive) {
       logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}`);
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" }, 403);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" });
     }
 
     // ── حماية السيرفر: خصم العملية فوراً لمنع التخطي ──
     const { data: consumeData, error: consumeError } = await supabase.rpc('atomic_consume_operation', { p_user_id: user.id });
     if (consumeError || !consumeData || !consumeData.allowed) {
       logStep("subscription", "fail", "ops limit reached (server-side enforced)");
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "لقد استنفذت الحد الأقصى للعمليات في باقتك", layer: "Authorization" }, 403);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "لقد استنفذت الحد الأقصى للعمليات في باقتك", layer: "Authorization" });
     }
     logStep("ops_consume", "ok", `allowed`);
 
@@ -98,7 +99,7 @@ serve(async (req: Request) => {
 
     if (!receiver || !amount || !pin || !seamless_token) {
       logStep("validate", "fail", "missing fields");
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "بيانات غير مكتملة — تأكد من إدخال الرقم والمبلغ وكلمة السر", layer: "Frontend" }, 400);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "بيانات غير مكتملة — تأكد من إدخال الرقم والمبلغ وكلمة السر", layer: "Frontend" });
     }
     
     let msisdn = payload_msisdn || "";
@@ -129,14 +130,14 @@ serve(async (req: Request) => {
     if (!tokenRes.ok) {
       const errTxt = await tokenRes.text();
       logStep("auth-voda", "fail", `http=${tokenRes.status}`, { raw: errTxt });
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "فشل المصادقة مع فودافون كاش، تأكد من تشغيل بيانات فودافون", layer: "Vodafone", debugSteps }, 502);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "فشل المصادقة مع فودافون كاش، تأكد من تشغيل بيانات فودافون", layer: "Vodafone", debugSteps });
     }
     
     const tokenData = await tokenRes.json();
     const token = tokenData.access_token;
     if (!token) {
       logStep("auth-voda", "fail", "no token in response");
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "فشل استخراج توكن المصادقة", layer: "Vodafone", debugSteps }, 502);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "فشل استخراج توكن المصادقة", layer: "Vodafone", debugSteps });
     }
     logStep("auth-voda", "ok", "got token");
 
@@ -248,11 +249,11 @@ serve(async (req: Request) => {
         execution_time_ms: Date.now() - requestStartedAt
       });
 
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: description, layer: "Vodafone", debugSteps }, 400);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: description, layer: "Vodafone", debugSteps });
     }
 
   } catch (err: any) {
     logStep("catch", "error", err.message);
-    return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "حدث خطأ غير متوقع في السيرفر", layer: "Server", debugSteps }, 500);
+    return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "حدث خطأ غير متوقع في السيرفر", layer: "Server", debugSteps });
   }
 });

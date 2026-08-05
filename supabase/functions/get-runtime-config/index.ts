@@ -86,6 +86,6 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("get-runtime-config error:", e);
-    return json({ ok: false, error: String(e) }, 500);
+    return json({ ok: false, error: String(e) }, 200);
   }
 });

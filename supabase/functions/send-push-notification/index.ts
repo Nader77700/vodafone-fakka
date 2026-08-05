@@ -122,7 +122,7 @@ serve(async (req) => {
 
   // ── التحقق من صلاحيات الإدارة ──
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return json({ error: "غير مصرح" }, 401);
+  if (!authHeader) return json({ error: "غير مصرح" }, 200);
 
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -141,12 +141,12 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
     const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser();
-    if (authErr || !caller) return json({ error: "غير مصرح — جلسة غير صحيحية" }, 401);
+    if (authErr || !caller) return json({ error: "غير مصرح — جلسة غير صحيحية" }, 200);
 
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles").select("role").eq("id", caller.id).single();
     if (!callerProfile || !["admin", "super_admin"].includes(callerProfile.role)) {
-      return json({ error: "غير مصرح — يجب أن تكون مسؤولاً للوصول إلى هذه الخدمة" }, 403);
+      return json({ error: "غير مصرح — يجب أن تكون مسؤولاً للوصول إلى هذه الخدمة" }, 200);
     }
   }
 
@@ -161,7 +161,7 @@ serve(async (req) => {
     const payload: NotifPayload = await req.json();
     const { title, body, type = "info", priority = "normal", action_url, user_id, is_global, send_push = true } = payload;
 
-    if (!title?.trim() || !body?.trim()) return json({ error: "title and body required" }, 400);
+    if (!title?.trim() || !body?.trim()) return json({ error: "title and body required" }, 200);
 
     // منع التكرار: إشعارات مطابقة خلال 10 ثوانٍ
     if (user_id) {
@@ -179,7 +179,7 @@ serve(async (req) => {
 
     const { data: notif, error: insertErr } = await supabase
       .from("notifications").insert(insert).select("id").single();
-    if (insertErr) return json({ error: insertErr.message }, 500);
+    if (insertErr) return json({ error: insertErr.message }, 200);
 
     // إرسال FCM HTTP v1
     let fcmSent = 0;
@@ -231,6 +231,6 @@ serve(async (req) => {
 
     return json({ success: true, notification_id: notif.id, fcm_sent: fcmSent });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    return json({ error: String(e) }, 200);
   }
 });

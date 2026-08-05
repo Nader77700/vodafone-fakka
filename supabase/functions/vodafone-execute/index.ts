@@ -61,10 +61,10 @@ serve(async (req: Request) => {
   };
 
   try {
-    const abortAndRefund = async (callerId: string, supabaseAdmin: any, payload: any, status = 400) => {
+    const abortAndRefund = async (callerId: string, supabaseAdmin: any, payload: any) => {
       await supabaseAdmin.rpc('atomic_refund_operation', { p_user_id: callerId });
       logStep("ops_refund", "ok", "refunded operation due to failure");
-      return json(payload, status);
+      return json(payload, 200);
     };
 
     let opCallerId: string | null = null;
@@ -74,7 +74,7 @@ serve(async (req: Request) => {
     const zt = await zeroTrustCheck(req);
     if (zt.error) {
        logStep("zero_trust", "fail", zt.error);
-       return json({ success: false, error: zt.error, error_code: "SECURITY_REJECT", layer: "EdgeFunction" }, zt.status);
+       return json({ success: false, error: zt.error, error_code: "SECURITY_REJECT", layer: "EdgeFunction" });
     }
     const caller = zt.user!;
     const supabaseAdmin = zt.supabaseAdmin;
@@ -92,7 +92,7 @@ serve(async (req: Request) => {
 
     if (!hasActive) {
       logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}`);
-      return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" }, 403);
+      return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" });
     }
 
     // ── فحص قفل Vodafone Cash (error 1118) — 24 ساعة ──
@@ -110,7 +110,7 @@ serve(async (req: Request) => {
           locked_until: new Date(lockedAt + 24 * 60 * 60 * 1000).toISOString(),
           hours_left: hoursLeft,
           request_id: requestId,
-        }, 403);
+        });
       }
       // انتهت مدة القفل — ارفع القفل تلقائياً
       await supabaseAdmin.from("profiles").update({
@@ -126,7 +126,7 @@ serve(async (req: Request) => {
     const { data: consumeData, error: consumeError } = await supabaseAdmin.rpc('atomic_consume_operation', { p_user_id: caller.id });
     if (consumeError || !consumeData || !consumeData.allowed) {
       logStep("subscription", "fail", "ops limit reached (server-side enforced)");
-      return json({ success: false, error: "لقد استنفذت الحد الأقصى للعمليات في باقتك", layer: "Authorization" }, 403);
+      return json({ success: false, error: "لقد استنفذت الحد الأقصى للعمليات في باقتك", layer: "Authorization" });
     }
     logStep("ops_consume", "ok", `used=${consumeData.ops_used}, remaining=${consumeData.ops_remaining}`);
 
@@ -154,7 +154,7 @@ serve(async (req: Request) => {
           error_code: "CHARGE_THROTTLED",
           layer: "ConflictProtection",
           minutes_left: minsLeft,
-        }, 429);
+        });
       }
     }
 
@@ -180,7 +180,7 @@ serve(async (req: Request) => {
     let body: { product_id?: string; receiver?: string; pin?: string; sender?: string; seamless_token?: string | null; msisdn?: string | null; };
     try { body = await req.json(); } catch {
       logStep("parse_body", "fail", "invalid JSON");
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "بيانات غير صالحة", layer: "Frontend" }, 400);
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "بيانات غير صالحة", layer: "Frontend" });
     }
     const { product_id, receiver, pin, sender, seamless_token, msisdn: payload_msisdn } = body;
 
@@ -197,27 +197,25 @@ serve(async (req: Request) => {
       return await abortAndRefund(caller.id, supabaseAdmin, { 
          success: false, 
          error: "عذراً، هذا الكارت متوقف حالياً أو قيد التحديث. يرجى تجربة كارت آخر." 
-      }, 400);
+        });
     }
-    }
-
     const appBuildStr = req.headers.get("x-app-build");
     const appBuild = appBuildStr ? parseInt(appBuildStr, 10) : 0;
     const legacyBlockedProducts = ['Fakka_2.5_Unite', 'Fakka_5_Unite', 'Fakka_6_NewUnite', 'Fakka_7_Unite', 'Fakka_9_Unite'];
     
     if (appBuild < 356 && legacyBlockedProducts.includes(product_id)) {
       logStep("product_validation", "fail", "legacy product blocked for old versions");
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "تم إيقاف هذا المنتج للإصدارات القديمة. يرجى تحديث التطبيق إلى أحدث إصدار." }, 400);
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "تم إيقاف هذا المنتج للإصدارات القديمة. يرجى تحديث التطبيق إلى أحدث إصدار." });
     }
 
     // If !productConfig, we allow it to pass for backward compatibility since the DB table might not be fully seeded yet
 
     if (!product_id || !receiver || !pin) {
       logStep("validate", "fail", "missing fields");
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "بيانات غير مكتملة — أدخل جميع الحقول المطلوبة", layer: "Frontend" }, 400);
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "بيانات غير مكتملة — أدخل جميع الحقول المطلوبة", layer: "Frontend" });
     }
     if (!receiver.startsWith("01") || receiver.length !== 11) {
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "رقم المستفيد غير صحيح — 11 رقم يبدأ بـ 01", layer: "Frontend" }, 400);
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "رقم المستفيد غير صحيح — 11 رقم يبدأ بـ 01", layer: "Frontend" });
     }
     // تم إلغاء طلب الـ sender الإجباري لأن التطبيق يعتمد على التعرف التلقائي (Seamless)
     logStep("validate", "ok", `product=${product_id} receiver=${receiver}`);
@@ -232,7 +230,7 @@ serve(async (req: Request) => {
         success: false,
         error: "فشل التعرف التلقائي: يرجى التأكد من تشغيل بيانات خط فودافون (Vodafone Data) وإغلاق الواي فاي (WiFi) لتتمكن من تنفيذ العملية.",
         layer: "Vodafone",
-      }, 502);
+        });
     }
 
     // ── Step 2: access token (timeout 15s) ──
@@ -261,7 +259,7 @@ serve(async (req: Request) => {
     logStep("token", accessToken ? "ok" : "fail", `http=${tokenRes.status}`, { layer: "Vodafone" });
 
     if (!accessToken) {
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "فشل المصادقة — الرقم السري غير صحيح أو انتهت الجلسة", layer: "Vodafone" }, 502);
+      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "فشل المصادقة — الرقم السري غير صحيح أو انتهت الجلسة", layer: "Vodafone" });
     }
 
     const formatted = msisdn.startsWith("0") ? msisdn : `0${msisdn}`;
@@ -544,7 +542,7 @@ serve(async (req: Request) => {
       request_id: requestId,
       registered: true, // ← العملية الفاشلة سُجِّلت أيضاً سيرفر-سايد
       ...(lockUntil ? { locked_until: lockUntil, hours_left: 24 } : {}),
-    }, 422);
+        });
 
   } catch (err) {
     const errMsg = String(err);
@@ -556,11 +554,11 @@ serve(async (req: Request) => {
     // تحقق من نوع الخطأ — timeout له رسالة مختلفة
     if (opCallerId && opsAdminClient) {
       if (errMsg.includes("AbortError") || errMsg.includes("timeout")) {
-        return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "انتهت مهلة الاتصال بخوادم فودافون — أعد المحاولة", layer: "Network" }, 504);
+        return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "انتهت مهلة الاتصال بخوادم فودافون — أعد المحاولة", layer: "Network" });
       }
-      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى", layer: "EdgeFunction" }, 500);
+      return await abortAndRefund(opCallerId, opsAdminClient, { success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى", layer: "EdgeFunction" });
     }
     
-    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى", layer: "EdgeFunction" }, 500);
+    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى", layer: "EdgeFunction" });
   }
 });

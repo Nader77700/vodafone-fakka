@@ -54,7 +54,7 @@ serve(async (req: Request) => {
     const zt = await zeroTrustCheck(req);
     if (zt.error) {
        console.log("[balance-charge] zero_trust fail:", zt.error);
-       return json({ success: false, error: zt.error, session_expired: zt.status === 401 }, zt.status);
+       return json({ success: false, error: zt.error, session_expired: zt.status === 401 }, 200);
     }
     const caller = zt.user!;
     const supabaseAdmin = zt.supabaseAdmin;
@@ -69,7 +69,7 @@ serve(async (req: Request) => {
 
     if (opError || !opData || !opData.success) {
       console.log("[balance-charge] ops_limit fail");
-      return json({ success: false, error: opData?.error || "لقد استنفذت الحد الأقصى للعمليات في باقتك" }, 403);
+      return json({ success: false, error: opData?.error || "لقد استنفذت الحد الأقصى للعمليات في باقتك" }, 200);
     }
 
     let operationRefunded = false;
@@ -169,7 +169,7 @@ serve(async (req: Request) => {
     );
 
     const orderTxt = await orderRes.text();
-    console.log("[balance-charge] order:", orderRes.status, orderTxt.slice(0, 400));
+    console.log("[balance-charge] order:", orderRes.status, orderTxt.slice(0, 200));
 
     let result: Record<string, unknown> = {};
     try { result = JSON.parse(orderTxt); } catch { /* ignore */ }
@@ -272,6 +272,6 @@ serve(async (req: Request) => {
 
   } catch (err) {
     console.error("[balance-charge] fatal:", String(err));
-    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى" }, 500);
+    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى" }, 200);
   }
 });

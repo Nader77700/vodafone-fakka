@@ -11,9 +11,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
 
   const zt = await zeroTrustCheck(req);
-  if ('error' in zt) return json({ error: zt.error }, zt.status);
+  if ('error' in zt) return json({ error: zt.error }, 200);
   const { user, supabaseAdmin: supabase } = zt;
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!user) return json({ error: "Unauthorized" }, 200);
 
   try {
     const body = await req.json();
@@ -29,7 +29,7 @@ serve(async (req) => {
 
     // تسجيل / تحديث الرمز
     const { token, device_info = {}, app_version, version_code } = body;
-    if (!token) return json({ error: "token required" }, 400);
+    if (!token) return json({ error: "token required" }, 200);
 
     const { error } = await supabase.from("fcm_tokens").upsert({
       user_id: user.id,
@@ -41,9 +41,9 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: "token" });
 
-    if (error) return json({ error: error.message }, 500);
+    if (error) return json({ error: error.message }, 200);
     return json({ success: true });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    return json({ error: String(e) }, 200);
   }
 });

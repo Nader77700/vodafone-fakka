@@ -41,7 +41,7 @@ serve(async (req) => {
 
     if (subsErr) {
       console.error("[expiry-notifier] Error fetching subscriptions:", subsErr);
-      return json({ error: subsErr.message }, 500);
+      return json({ error: subsErr.message }, 200);
     }
 
     if (!expiringSubs || expiringSubs.length === 0) {
@@ -91,6 +91,6 @@ serve(async (req) => {
     return json({ message: "اكتمل الإشعار التلقائي", sent, skipped });
   } catch (err) {
     console.error("[expiry-notifier] Unexpected error:", err);
-    return json({ error: String(err) }, 500);
+    return json({ error: String(err) }, 200);
   }
 });

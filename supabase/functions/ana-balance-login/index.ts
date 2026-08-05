@@ -44,25 +44,25 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   const zt = await zeroTrustCheck(req);
-  if ('error' in zt) return json({ success: false, error: zt.error }, zt.status);
+  if ('error' in zt) return json({ success: false, error: zt.error }, 200);
   const { user: caller, supabaseAdmin } = zt;
 
   try {
     // التحقق من الاشتراك
     const { data: prof } = await supabaseAdmin.from("profiles").select("role, is_active").eq("id", caller.id).single();
-    if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 403);
+    if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 200);
 
     const { data: sub } = await supabaseAdmin
       .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
     const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
     const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
-    if (!hasActive) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 403);
+    if (!hasActive) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);
 
     // ── استقبال بيانات تسجيل الدخول ──
     const { phone, password } = await req.json();
-    if (!phone || !password) return json({ success: false, error: "أدخل رقم الهاتف وكلمة المرور" }, 400);
+    if (!phone || !password) return json({ success: false, error: "أدخل رقم الهاتف وكلمة المرور" }, 200);
     if (!phone.startsWith("01") || phone.length !== 11)
-      return json({ success: false, error: "رقم الهاتف غير صحيح — 11 رقم يبدأ بـ 01" }, 400);
+      return json({ success: false, error: "رقم الهاتف غير صحيح — 11 رقم يبدأ بـ 01" }, 200);
 
     console.log("[balance-login] start for:", phone.slice(0, 6) + "XXXXX");
 
@@ -107,7 +107,7 @@ serve(async (req: Request) => {
       } else if (errDesc) {
         friendly = `❌ ${errDesc}`;
       }
-      return json({ success: false, error: friendly }, 422);
+      return json({ success: false, error: friendly }, 200);
     }
 
     // نجاح تسجيل الدخول
@@ -132,6 +132,6 @@ serve(async (req: Request) => {
 
   } catch (err) {
     console.error("[balance-login] fatal:", String(err));
-    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى" }, 500);
+    return json({ success: false, error: "خطأ داخلي في الخادم — يرجى المحاولة مرة أخرى" }, 200);
   }
 });

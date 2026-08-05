@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
 
     // ── حماية باقي الإجراءات: تطلب توكن أدمن ───────────────────────────────────
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return json({ error: 'Authorization header مطلوب' }, 401);
+    if (!authHeader) return json({ error: 'Authorization header مطلوب' }, 200);
 
     const supabaseUserClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -120,12 +120,12 @@ Deno.serve(async (req) => {
     );
 
     const { data: { user: caller }, error: authErr } = await supabaseUserClient.auth.getUser();
-    if (authErr || !caller) return json({ error: `توكن غير صالح: ${authErr?.message || 'لا يوجد مستخدم'}` }, 401);
+    if (authErr || !caller) return json({ error: `توكن غير صالح: ${authErr?.message || 'لا يوجد مستخدم'}` }, 200);
 
     const { data: callerProfile } = await supabaseAdmin
       .from('profiles').select('role').eq('id', caller.id).single();
     if (!callerProfile || !['admin', 'super_admin'].includes(callerProfile.role ?? '')) {
-      return json({ error: 'يجب أن تكون أدمن لتنفيذ هذا الإجراء' }, 403);
+      return json({ error: 'يجب أن تكون أدمن لتنفيذ هذا الإجراء' }, 200);
     }
 
     const payload = body as {
@@ -134,22 +134,22 @@ Deno.serve(async (req) => {
     };
     const { userId, value, userIds, title, message } = payload;
 
-    if (!action) return json({ error: 'action مطلوب' }, 400);
+    if (!action) return json({ error: 'action مطلوب' }, 200);
 
     // ── الإجراءات التي تحتاج userId فقط ──────────────────────────────
     if (['sign_out_all', 'reset_tokens', 'set_ops_limit', 'delete_account'].includes(action)) {
-      if (!userId) return json({ error: 'userId مطلوب' }, 400);
-      if (userId === caller.id) return json({ error: 'لا يمكن تنفيذ هذا الإجراء على حسابك الخاص' }, 400);
+      if (!userId) return json({ error: 'userId مطلوب' }, 200);
+      if (userId === caller.id) return json({ error: 'لا يمكن تنفيذ هذا الإجراء على حسابك الخاص' }, 200);
 
       const { data: targetProfile } = await supabaseAdmin
         .from('profiles').select('id, username, email').eq('id', userId).single();
-      if (!targetProfile) return json({ error: 'المستخدم غير موجود في profiles' }, 404);
+      if (!targetProfile) return json({ error: 'المستخدم غير موجود في profiles' }, 200);
 
       switch (action) {
 
         case 'sign_out_all': {
           const { error } = await supabaseAdmin.auth.admin.signOut(userId, 'global');
-          if (error) return json({ error: `فشل تسجيل الخروج: ${error.message}` }, 500);
+          if (error) return json({ error: `فشل تسجيل الخروج: ${error.message}` }, 200);
           await supabaseAdmin.from('fcm_tokens')
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
           const { error } = await supabaseAdmin.from('fcm_tokens')
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
-          if (error) return json({ error: `فشل إعادة التعيين: ${error.message}` }, 500);
+          if (error) return json({ error: `فشل إعادة التعيين: ${error.message}` }, 200);
           try { await supabaseAdmin.from('activity_log').insert({
             user_id: userId, event_type: 'admin_reset_device',
             title: 'إعادة تعيين بيانات الجهاز',
@@ -176,11 +176,11 @@ Deno.serve(async (req) => {
 
         case 'set_ops_limit': {
           const newLimit = Number(value);
-          if (isNaN(newLimit) || newLimit < 0) return json({ error: 'قيمة غير صالحة' }, 400);
+          if (isNaN(newLimit) || newLimit < 0) return json({ error: 'قيمة غير صالحة' }, 200);
           const { error } = await supabaseAdmin.from('subscriptions')
             .update({ ops_limit: newLimit, ops_remaining: newLimit, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
-          if (error) return json({ error: `فشل التعديل: ${error.message}` }, 500);
+          if (error) return json({ error: `فشل التعديل: ${error.message}` }, 200);
           try { await supabaseAdmin.from('activity_log').insert({
             user_id: userId, event_type: 'admin_set_ops_limit',
             title: 'تعديل الحد اليومي للعمليات',
@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
             .delete().eq('user_id', userId);
           if (subErr) {
             console.error(`❌ [delete] subscriptions: ${subErr.message}`);
-            return json({ error: `فشل حذف الاشتراكات: ${subErr.message}` }, 500);
+            return json({ error: `فشل حذف الاشتراكات: ${subErr.message}` }, 200);
           }
 
           // ── الخطوة 4: حذف بيانات التاجر (المالك) ────────────────────────
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
             .from('profiles').delete().eq('id', userId);
           if (profErr) {
             console.error(`❌ [delete] profile: ${profErr.message}`);
-            return json({ error: `فشل حذف الملف الشخصي: ${profErr.message}` }, 500);
+            return json({ error: `فشل حذف الملف الشخصي: ${profErr.message}` }, 200);
           }
 
           // ── الخطوة 6: حذف من Auth ─────────────────────────────────────────
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
             const msg = authDelErr.message ?? '';
             if (!msg.includes('not found') && !msg.includes('User not found')) {
               console.error(`❌ [delete] auth: ${msg}`);
-              return json({ error: `فشل حذف المستخدم من Auth: ${msg}` }, 500);
+              return json({ error: `فشل حذف المستخدم من Auth: ${msg}` }, 200);
             }
           }
 
@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
         .select('id, username, email, phone, created_at')
         .order('created_at', { ascending: true });
 
-      if (profErr) return json({ error: `فشل جلب profiles: ${profErr.message}` }, 500);
+      if (profErr) return json({ error: `فشل جلب profiles: ${profErr.message}` }, 200);
 
       const orphans: Array<{ id: string; username: string | null; email: string | null }> = [];
       const valid:   Array<{ id: string; username: string | null; email: string | null }> = [];
@@ -305,8 +305,8 @@ Deno.serve(async (req) => {
 
     // ══ إرسال إشعار لقائمة مستخدمين متضررين ════════════════════════
     if (action === 'notify_affected_users') {
-      if (!userIds?.length) return json({ error: 'userIds مطلوب' }, 400);
-      if (!title || !message) return json({ error: 'title و message مطلوبان' }, 400);
+      if (!userIds?.length) return json({ error: 'userIds مطلوب' }, 200);
+      if (!title || !message) return json({ error: 'title و message مطلوبان' }, 200);
 
       const inserted: string[] = [];
       const failed:   string[] = [];
@@ -341,7 +341,7 @@ Deno.serve(async (req) => {
               ip_address, device_model, platform, associated_user_ids, associated_usernames } = b;
 
       if (!device_fp && !device_id && !hardware_hash)
-        return json({ error: 'يجب توفير device_fp أو device_id على الأقل' }, 400);
+        return json({ error: 'يجب توفير device_fp أو device_id على الأقل' }, 200);
 
       const { data: callerProf } = await supabaseAdmin
         .from('profiles').select('username').eq('id', caller.id).single();
@@ -366,7 +366,7 @@ Deno.serve(async (req) => {
           platform:             platform ?? null,
         }).select('id').single();
 
-      if (banErr) return json({ error: `فشل حظر الجهاز: ${banErr.message}` }, 500);
+      if (banErr) return json({ error: `فشل حظر الجهاز: ${banErr.message}` }, 200);
 
       try { await supabaseAdmin.from('admin_audit_logs').insert({
         action: 'ban_device', performed_by: caller.id,
@@ -380,12 +380,12 @@ Deno.serve(async (req) => {
     // ══ رفع حظر جهاز ════════════════════════════════════════════════════
     if (action === 'unban_device') {
       const { ban_id } = body as { ban_id?: string };
-      if (!ban_id) return json({ error: 'ban_id مطلوب' }, 400);
+      if (!ban_id) return json({ error: 'ban_id مطلوب' }, 200);
       const { error: ubErr } = await supabaseAdmin.from('device_bans').update({
         is_active: false, unbanned_at: new Date().toISOString(),
         unbanned_by: caller.id, updated_at: new Date().toISOString(),
       }).eq('id', ban_id);
-      if (ubErr) return json({ error: `فشل رفع الحظر: ${ubErr.message}` }, 500);
+      if (ubErr) return json({ error: `فشل رفع الحظر: ${ubErr.message}` }, 200);
       try { await supabaseAdmin.from('admin_audit_logs').insert({
         action: 'unban_device', performed_by: caller.id, details: { ban_id },
       }); } catch {}
@@ -395,7 +395,7 @@ Deno.serve(async (req) => {
     // ══ جلب الأجهزة المكررة ══════════════════════════════════════════════
     if (action === 'get_duplicate_devices') {
       const { data: dupes, error: dupErr } = await supabaseAdmin.rpc('get_duplicate_device_groups');
-      if (dupErr) return json({ error: `فشل جلب البيانات: ${dupErr.message}` }, 500);
+      if (dupErr) return json({ error: `فشل جلب البيانات: ${dupErr.message}` }, 200);
 
       const { data: bans } = await supabaseAdmin
         .from('device_bans').select('id, device_fp, device_id, ban_reason, banned_at, banned_by_name')
@@ -418,7 +418,7 @@ Deno.serve(async (req) => {
 
     // ══ تسجيل جهاز في device_registry ════════════════════════════════
     if (action === 'register_device') {
-      if (!userId) return json({ error: 'userId مطلوب' }, 400);
+      if (!userId) return json({ error: 'userId مطلوب' }, 200);
       const { device_fp, device_id, hardware_hash, ip_address, device_model, platform, app_version } =
         body as Record<string, string | undefined>;
       await supabaseAdmin.from('device_registry').upsert({
@@ -434,29 +434,29 @@ Deno.serve(async (req) => {
     if (action === 'get_device_bans') {
       const { data: bans, error: bErr } = await supabaseAdmin
         .from('device_bans').select('*').order('banned_at', { ascending: false }).limit(200);
-      if (bErr) return json({ error: bErr.message }, 500);
+      if (bErr) return json({ error: bErr.message }, 200);
       return json({ success: true, data: bans ?? [] });
     }
 
     // ══ تغيير كلمة المرور ══════════════════════════════════════════════
     if (action === 'change_password') {
-      if (!userId) return json({ error: 'userId مطلوب' }, 400);
-      if (userId === caller.id) return json({ error: 'لا يمكن تغيير كلمة مرور حسابك من هنا' }, 400);
+      if (!userId) return json({ error: 'userId مطلوب' }, 200);
+      if (userId === caller.id) return json({ error: 'لا يمكن تغيير كلمة مرور حسابك من هنا' }, 200);
 
       const newPassword = value as string;
       if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
-        return json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }, 400);
+        return json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }, 200);
       }
 
       const { data: targetProfile } = await supabaseAdmin
         .from('profiles').select('id, username, email').eq('id', userId).single();
-      if (!targetProfile) return json({ error: 'المستخدم غير موجود' }, 404);
+      if (!targetProfile) return json({ error: 'المستخدم غير موجود' }, 200);
 
       // تغيير كلمة المرور عبر Admin API
       const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         password: newPassword.trim(),
       });
-      if (pwErr) return json({ error: `فشل تغيير كلمة المرور: ${pwErr.message}` }, 500);
+      if (pwErr) return json({ error: `فشل تغيير كلمة المرور: ${pwErr.message}` }, 200);
 
       // تسجيل النشاط (fire-and-forget)
       try {
@@ -485,9 +485,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({ error: `إجراء غير معروف: ${action}` }, 400);
+    return json({ error: `إجراء غير معروف: ${action}` }, 200);
 
   } catch (err) {
-    return json({ error: String(err) }, 500);
+    return json({ error: String(err) }, 200);
   }
 });

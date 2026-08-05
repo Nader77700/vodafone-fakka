@@ -110,7 +110,7 @@ serve(async (req) => {
     };
 
     const { version, version_code, apk_url, version_id } = payload;
-    if (!version) return json({ error: "version required" }, 400);
+    if (!version) return json({ error: "version required" }, 200);
 
     // ─── 1. منع التكرار ────────────────────────────────────────────────────
     // تحقق مباشر من قاعدة البيانات
@@ -154,7 +154,7 @@ serve(async (req) => {
 
     if (insertErr) {
       console.error("Failed to insert notification:", insertErr.message);
-      return json({ error: insertErr.message }, 500);
+      return json({ error: insertErr.message }, 200);
     }
 
     // ─── 4. جلب جميع توكنات FCM الفعّالة ─────────────────────────────────
@@ -256,6 +256,6 @@ serve(async (req) => {
 
   } catch (e) {
     console.error("auto-version-notify error:", e);
-    return json({ error: String(e) }, 500);
+    return json({ error: String(e) }, 200);
   }
 });
