@@ -11,6 +11,9 @@ import { toast } from 'sonner';
 import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 import { Network } from '@capacitor/network';
 
+import { Capacitor } from '@capacitor/core';
+import { VodafoneDetector } from '@/lib/vodafoneDetector';
+
 export default function MoneyTransferPage() {
   const navigate = useNavigate();
   const { config } = useRuntimeConfig();
@@ -20,7 +23,6 @@ export default function MoneyTransferPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isCheckingConn, setIsCheckingConn] = useState(true);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [seamlessData, setSeamlessData] = useState<{ token: string | null; msisdn: string | null }>({ token: null, msisdn: null });
 
   // Form State
   const [receiver, setReceiver] = useState('');
@@ -44,23 +46,39 @@ export default function MoneyTransferPage() {
   const checkConnection = async () => {
     setIsCheckingConn(true);
     setNetworkName('جاري فحص الشبكة...');
-    const seamlessClientId = config?.security?.sec_seamless_client_id || 'cash-app';
-    const seamlessUrl = config?.security?.sec_seamless_url || 'http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
     
     try {
-      const res = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
-      if (res.token) {
-        setIsConnected(true);
-        setNetworkName('Vodafone Egypt (Mobile Data)');
-        setSeamlessData({ token: res.token, msisdn: res.msisdn });
+      if (Capacitor.isNativePlatform() && VodafoneDetector && VodafoneDetector.requestPhonePermission) {
+        await VodafoneDetector.requestPhonePermission();
+        const result = await Promise.race([
+          VodafoneDetector.getNetworkInfo(),
+          new Promise<any>((resolve) => setTimeout(() => resolve({
+            canExecuteNative: true,
+            isVodafoneSim: true,
+            activeNetwork: 'timeout_fallback',
+            activeDataSimOperatorName: 'Vodafone (Fallback)'
+          }), 4000))
+        ]);
+
+        const isVfReady = result?.isVodafoneMobile && result?.isMobileDataActive;
+        if (isVfReady) {
+          setIsConnected(true);
+          setNetworkName('Vodafone Egypt (Mobile Data)');
+        } else if (result?.isWifiActive) {
+          setIsConnected(false);
+          setNetworkName('Wi-Fi / شبكة غير مدعومة');
+        } else {
+          setIsConnected(false);
+          setNetworkName('غير متصل / بيانات معطلة');
+        }
       } else {
+        // Fallback for Web / Missing Plugin
         setIsConnected(false);
-        setNetworkName('Wi-Fi / شبكة غير مدعومة');
-        setSeamlessData({ token: null, msisdn: null });
+        setNetworkName('غير مدعوم على المتصفح');
       }
     } catch (err) {
       setIsConnected(false);
-      setNetworkName('غير متصل / فشل الاتصال');
+      setNetworkName('فشل فحص الشبكة');
     }
     setLastChecked(new Date());
     setIsCheckingConn(false);
@@ -94,7 +112,21 @@ export default function MoneyTransferPage() {
     setExecMessage(null);
     setExecLogs([]);
 
-    // We already have seamless token, proceed directly
+    // 1. Fetch Seamless Token
+    setExecLogs(prev => [...prev, { step: 'frontend', status: 'info', detail: 'جاري المصادقة مع شبكة فودافون...', timestamp: new Date().toISOString() }]);
+    
+    const seamlessClientId = config?.security?.sec_seamless_client_id || 'cash-app';
+    const seamlessUrl = config?.security?.sec_seamless_url || 'http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
+    const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
+
+    if (!seamless.token) {
+       setExecLogs(prev => [...prev, { step: 'seamless', status: 'fail', detail: `فشل في استخراج التوكن: ${seamless.error || 'تأكد من إغلاق الـ Wi-Fi والـ VPN.'}`, timestamp: new Date().toISOString() }]);
+       setExecStatus('failed');
+       setExecMessage('فشل المصادقة مع شبكة فودافون كاش. أغلق الواي فاي وجرب مرة أخرى.');
+       setIsSubmitting(false);
+       return;
+    }
+
     setExecStatus('executing');
     setExecLogs(prev => [...prev, { step: 'frontend', status: 'info', detail: 'بدء الاتصال بالخادم...', timestamp: new Date().toISOString() }]);
 
@@ -102,8 +134,8 @@ export default function MoneyTransferPage() {
       receiver_number: receiver,
       amount: Number(amount),
       pin: pin,
-      seamless_token: seamlessData.token,
-      msisdn: seamlessData.msisdn
+      seamless_token: seamless.token,
+      msisdn: seamless.msisdn
     });
 
     if (res.data?.debugSteps) {

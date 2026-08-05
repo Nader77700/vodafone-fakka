@@ -23,7 +23,12 @@ export async function fetchSeamlessToken(
     };
 
     if (Capacitor.isNativePlatform()) {
-      const response = await CapacitorHttp.get({ url, headers });
+      const response = await CapacitorHttp.get({ 
+        url, 
+        headers,
+        connectTimeout: 5000,
+        readTimeout: 5000 
+      });
       if (response.status === 200 && response.data) {
         const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         try {
@@ -40,7 +45,10 @@ export async function fetchSeamlessToken(
          return { token: null, msisdn: null, error: `HTTP ${response.status}` };
       }
     } else {
-      const r = await fetch(url, { method: "GET", headers });
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), 5000);
+      const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
+      clearTimeout(id);
       if (r.ok) {
         const txt = await r.text();
         try {
