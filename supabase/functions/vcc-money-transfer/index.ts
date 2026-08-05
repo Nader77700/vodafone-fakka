@@ -109,6 +109,8 @@ serve(async (req: Request) => {
     if (msisdn.startsWith("0")) msisdn = msisdn.slice(1);
     const formattedMsisdn = `0${msisdn}`;
     
+    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "163.121.214.12";
+    
     // 1. Get Access Token
     logStep("auth-voda", "pending", "requesting token");
     const tokenRes = await fetchWithTimeout(
@@ -121,6 +123,8 @@ serve(async (req: Request) => {
           "seamlessToken": seamless_token,
           "firstTimeLogin": "false",
           "msisdn": msisdn,
+          "X-Forwarded-For": clientIp,
+          "True-Client-IP": clientIp,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
@@ -163,6 +167,8 @@ serve(async (req: Request) => {
         "Authorization": `Bearer ${token}`,
         "api-host": "PaymentManagement",
         "useCase": "VodafoneCash",
+        "X-Forwarded-For": clientIp,
+        "True-Client-IP": clientIp,
         "X-Request-ID": "",
         "X-App-StackTrace": "onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered#onUiEvent triggered"
       }
@@ -172,13 +178,18 @@ serve(async (req: Request) => {
     let relatedName = "";
 
     if (infoRes.ok) {
-      const infoData = await infoRes.json();
-      if (infoData && infoData.length > 0 && infoData[0]?.paymentMethod?.relatedParty) {
-        relatedId = infoData[0].paymentMethod.relatedParty.id || receiver;
-        relatedName = infoData[0].paymentMethod.relatedParty.name || "";
-        logStep("receiver-info", "ok", `found name=${relatedName}`);
-      } else {
-        logStep("receiver-info", "warn", "empty data returned, using fallback");
+      const infoText = await infoRes.text();
+      try {
+        const infoData = JSON.parse(infoText);
+        if (infoData && infoData.length > 0 && infoData[0]?.paymentMethod?.relatedParty) {
+          relatedId = infoData[0].paymentMethod.relatedParty.id || receiver;
+          relatedName = infoData[0].paymentMethod.relatedParty.name || "";
+          logStep("receiver-info", "ok", `found name=${relatedName}`);
+        } else {
+          logStep("receiver-info", "warn", "empty data returned, using fallback");
+        }
+      } catch (parseErr: any) {
+        logStep("receiver-info", "fail", "JSON parse error on infoRes", { raw: infoText.slice(0, 300) });
       }
     } else {
       const errTxt = await infoRes.text();
@@ -214,6 +225,8 @@ serve(async (req: Request) => {
         "Authorization": `Bearer ${token}`,
         "api-host": "PaymentManagement",
         "useCase": "VodafoneCash",
+        "X-Forwarded-For": clientIp,
+        "True-Client-IP": clientIp,
         "X-Request-ID": "",
         "X-App-StackTrace": "SendMoneyConfirmationScreen opened#onUiEvent triggered#Confirm Transfer button clicked to show Pin Screen#Pin Code entered#transferMoney started in Viewmodel#transferMoney started in UseCase#transferMoney started in Repository#transferMoney network service creation",
         "Content-Type": "application/json; charset=UTF-8"
@@ -225,7 +238,10 @@ serve(async (req: Request) => {
     let data;
     try { data = JSON.parse(txt); } catch(e) {}
 
-    const description = data?.description || data?.message || data?.error_description || "حدث خطأ غير معروف";
+    let description = data?.description || data?.message || data?.error_description || "حدث خطأ غير معروف";
+    if (txt.trim().toLowerCase().startsWith("<html") || txt.trim().toLowerCase().startsWith("<!doctype html>")) {
+      description = "خوادم فودافون محجوبة أو تحت الصيانة (WAF HTML Response)";
+    }
     
     // Check if success
     const isSuccess = transferRes.ok && (txt.includes("تم تحويل") || txt.includes("successfully") || data?.status === "completed" || data?.status === "Executed");
