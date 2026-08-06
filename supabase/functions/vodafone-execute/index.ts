@@ -235,6 +235,12 @@ serve(async (req: Request) => {
         });
     }
 
+    // ── استخراج IP الحقيقي للمستخدم لتجاوز WAF فودافون ──
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("cf-connecting-ip")
+      || req.headers.get("x-real-ip")
+      || "156.216.100.50";
+
     // ── Step 2: access token (timeout 15s) ──
     const tokenRes = await fetchWithTimeout(
       "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token",
@@ -247,6 +253,8 @@ serve(async (req: Request) => {
           "firstTimeLogin": "true",
           "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21520_165",
           "Content-Type": "application/x-www-form-urlencoded",
+          "X-Forwarded-For": clientIp,
+          "True-Client-IP": clientIp,
         },
         body: new URLSearchParams({
           grant_type: "password",
@@ -312,6 +320,8 @@ serve(async (req: Request) => {
             "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_2_160",
             "api-version": "v2", "msisdn": formatted,
             "Authorization": `Bearer ${accessToken}`,
+            "X-Forwarded-For": clientIp,
+            "True-Client-IP": clientIp,
           },
           body: JSON.stringify(orderPayload),
         }, 20
@@ -478,8 +488,31 @@ serve(async (req: Request) => {
     }
 
     // ── فشل الشحن: سجّل العملية الفاشلة أيضاً سيرفر-سايد ──
-    const rawErr  = String(result?.message ?? result?.description ?? result?.error ?? "");
-    const errCode = String(result?.code ?? result?.errorCode ?? result?.error_code ?? "");
+
+    // استخراج أي نص عربي من أعماق JSON استجابة فودافون
+    const extractArabicText = (obj: unknown): string | null => {
+      if (!obj) return null;
+      if (typeof obj === "string" && /[\u0600-\u06FF]/.test(obj) && obj.length > 3) return obj;
+      if (typeof obj === "object") {
+        for (const key of Object.keys(obj as Record<string, unknown>)) {
+          const res = extractArabicText((obj as Record<string, unknown>)[key]);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+
+    // WAF HTML block
+    const isHtmlBlock = (txt: string) =>
+      txt.trim().toLowerCase().startsWith("<html") ||
+      txt.trim().toLowerCase().startsWith("<!doctype");
+
+    // احصل على كل نصوص الخطأ الممكنة
+    const fault = (result as Record<string, unknown>)?.fault as Record<string, unknown> | undefined;
+    const faultDetail = fault?.detail as Record<string, unknown> | undefined;
+    const rawErr  = String(result?.message ?? result?.description ?? result?.error ?? fault?.faultstring ?? "");
+    const errCode = String(result?.code ?? result?.errorCode ?? result?.error_code ?? faultDetail?.errorcode ?? "");
+
     let friendly = "فشل الطلب — تحقق من رصيدك وبيانات المحفظة";
     let errorLayer = "Vodafone";
 
@@ -498,7 +531,13 @@ serve(async (req: Request) => {
     else if (["6051","1057","1058"].includes(errCode)) { friendly = "💳 رصيد محفظتك غير كافٍ\nاشحن المحفظة ثم أعد المحاولة"; errorLayer = "Vodafone-InsufficientBalance"; }
     else if (rawErr.toLowerCase().includes("insufficient") || rawErr.includes("رصيد")) { friendly = "❌ رصيد محفظتك غير كافٍ لإتمام العملية"; errorLayer = "Vodafone-InsufficientBalance"; }
     else if (rawErr.toLowerCase().includes("pin") || rawErr.includes("سري")) { friendly = "❌ الرقم السري للمحفظة غير صحيح"; errorLayer = "Vodafone-WrongPIN"; }
-    else if (rawErr) { friendly = `❌ ${rawErr}`; }
+    else {
+      // محاولة أخيرة: سحب أي نص عربي مدفون في الـ JSON
+      const arabicFromJson = extractArabicText(result);
+      if (arabicFromJson) { friendly = arabicFromJson; }
+      else if (rawErr && !isHtmlBlock(rawErr)) { friendly = rawErr; }
+      else if (isHtmlBlock(rawErr)) { friendly = "خوادم فودافون محجوبة أو تحت الصيانة — حاول لاحقاً"; }
+    }
 
     // سجّل العملية الفاشلة سيرفر-سايد أيضاً
     const { error: failInsertErr } = await supabaseAdmin.from("operations").insert({
