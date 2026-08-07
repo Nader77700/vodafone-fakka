@@ -1,6 +1,5 @@
-// طبقة وصول البيانات — جميع استدعاءات Supabase
-import { supabase } from '@/db/supabase';
 import { GlobalCrashContext } from './crashContext';
+import { supabase } from '@/db/supabase';
 import type {
   Profile, LicenseKey, Subscription, Favorite,
   Operation, Notification, SystemLog, PaginatedResult, UserStatistics
@@ -3841,6 +3840,160 @@ export async function adminGetAllMembers(opts: {
 // ══════════════════════════════════════════════════════════════════
 import type { MerchantInvite, PendingInviteToken, InviteTokenStatus } from '@/types/types';
 import { formatError } from '@/lib/formatError';
+
+// ══════════════════════════════════════════════════════════════
+// نظام الإحالات — المرحلة الأولى (Foundation)
+// ══════════════════════════════════════════════════════════════
+
+export interface ReferralStats {
+  code:     string | null;
+  accepted: number;
+  pending:  number;
+  rejected: number;
+  total:    number;
+}
+
+export interface ReferralRecord {
+  id:               string;
+  referrer_id:      string;
+  referred_id:      string;
+  referral_code:    string;
+  status:           'pending' | 'accepted' | 'rejected';
+  rejection_reason: string | null;
+  referred_at:      string;
+  resolved_at:      string | null;
+}
+
+export interface ReferralSettings {
+  system_enabled:      boolean;
+  accepting_referrals: boolean;
+  counting_paused:     boolean;
+}
+
+export interface AdminReferralRow {
+  user_id:       string;
+  username:      string;
+  referral_code: string;
+  total:         number;
+  accepted:      number;
+  pending:       number;
+  rejected:      number;
+}
+
+/** الحصول على كود الإحالة — يُنشئه تلقائياً إن لم يكن موجوداً */
+export async function getOrCreateReferralCode(userId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_or_create_referral_code', { p_user_id: userId });
+  if (error) { console.error('[referral] getOrCreateReferralCode:', error); return null; }
+  return data as string | null;
+}
+
+/** التحقق من كود الإحالة وإرجاع بيانات صاحبه */
+export async function validateReferralCode(code: string): Promise<{
+  valid: boolean; user_id?: string; username?: string; error?: string;
+}> {
+  const { data, error } = await supabase.rpc('validate_referral_code', { p_code: code });
+  if (error) return { valid: false, error: error.message };
+  return data as { valid: boolean; user_id?: string; username?: string; error?: string };
+}
+
+/** تسجيل إحالة جديدة بعد إنشاء الحساب */
+export async function registerReferral(referralCode: string, referredId: string): Promise<{
+  success: boolean; status?: string; error?: string;
+}> {
+  const { data, error } = await supabase.rpc('register_referral', {
+    p_referral_code: referralCode,
+    p_referred_id:   referredId,
+  });
+  if (error) return { success: false, error: error.message };
+  return data as { success: boolean; status?: string; error?: string };
+}
+
+/** إحصائيات الإحالات للمستخدم الحالي */
+export async function getReferralStats(userId: string): Promise<ReferralStats> {
+  const { data, error } = await supabase.rpc('get_referral_stats', { p_user_id: userId });
+  if (error || !data) return { code: null, accepted: 0, pending: 0, rejected: 0, total: 0 };
+  return data as ReferralStats;
+}
+
+/** قائمة الأشخاص الذين دعاهم المستخدم مع تفاصيلهم */
+export async function getReferralRecords(userId: string): Promise<(ReferralRecord & { referred_username?: string })[]> {
+  const { data, error } = await supabase
+    .from('referral_records')
+    .select(`
+      *,
+      profiles!referral_records_referred_id_fkey(username)
+    `)
+    .eq('referrer_id', userId)
+    .order('referred_at', { ascending: false });
+  if (error || !data) return [];
+  return (data as any[]).map(r => ({
+    ...r,
+    referred_username: r.profiles?.username ?? '',
+  }));
+}
+
+/** [أدمن] إحصائيات جميع المستخدمين */
+export async function getAllReferralStats(): Promise<AdminReferralRow[]> {
+  const { data, error } = await supabase.rpc('get_all_referral_stats');
+  if (error || !data) return [];
+  return data as AdminReferralRow[];
+}
+
+/** [أدمن] سجلات إحالات مستخدم بعينه مع بيانات المُدعوّ */
+export async function getAdminReferralRecords(userId: string): Promise<(ReferralRecord & { referred_username?: string })[]> {
+  const { data, error } = await supabase
+    .from('referral_records')
+    .select(`
+      *,
+      profiles!referral_records_referred_id_fkey(username)
+    `)
+    .eq('referrer_id', userId)
+    .order('referred_at', { ascending: false });
+  if (error || !data) return [];
+  return (data as any[]).map(r => ({
+    ...r,
+    referred_username: r.profiles?.username ?? '',
+  }));
+}
+
+/** [أدمن] تحديث حالة إحالة */
+export async function updateReferralStatus(
+  recordId: string,
+  status: 'accepted' | 'rejected',
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('referral_records')
+    .update({ status, rejection_reason: reason ?? null, resolved_at: new Date().toISOString() })
+    .eq('id', recordId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** [أدمن] الحصول على إعدادات نظام الإحالات */
+export async function getReferralSettings(): Promise<ReferralSettings> {
+  const { data } = await supabase
+    .from('referral_settings')
+    .select('system_enabled, accepting_referrals, counting_paused')
+    .eq('id', 1)
+    .single();
+  return (data as ReferralSettings | null) ?? {
+    system_enabled: true, accepting_referrals: true, counting_paused: false,
+  };
+}
+
+/** [أدمن] تحديث إعدادات نظام الإحالات */
+export async function updateReferralSettings(
+  settings: Partial<ReferralSettings>
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('referral_settings')
+    .update({ ...settings, updated_at: new Date().toISOString() })
+    .eq('id', 1);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 
 
 /** المفتاح المستخدم لتخزين دعوة الانتظار في localStorage */

@@ -31,6 +31,8 @@ const ESimDetailPage        = lazy(() => import('./pages/networks/ESimDetailPage
 const BalanceChargePage     = lazy(() => import('./pages/BalanceChargePage'));
 const InvitePage            = lazy(() => import('./pages/InvitePage'));
 const DownloadPage          = lazy(() => import('./pages/DownloadPage'));
+const ReferralPage          = lazy(() => import('./pages/ReferralPage'));
+const RefLandingPage        = lazy(() => import('./pages/RefLandingPage'));
 
 // Fallback خفيف أثناء التحميل الكسول
 const PageLoader = () => (
@@ -83,11 +85,13 @@ export const routes: RouteConfig[] = [
       { name: 'BuildInfo',           path: '/build-info',           element: <S><BuildInfoPage /></S> },
       { name: 'Updates',             path: '/updates',              element: <S><UpdatesPage /></S> },
       { name: 'BalanceCharge',       path: '/balance-charge',       element: <S><BalanceChargePage /></S> },
+      { name: 'Referral',            path: '/referrals',            element: <S><ReferralPage /></S> },
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],
   },
 
   { name: 'SystemLogs', path: '/system-logs', element: <S><SystemLogsPage /></S>, adminOnly: true },
   { name: 'InvitePage', path: '/invite/:token', element: <S><InvitePage /></S>, public: true },
+  { name: 'RefPage',    path: '/ref/:code',     element: <S><RefLandingPage /></S>, public: true },
   { name: 'Download',   path: '/download',    element: <S><DownloadPage /></S>, public: true },
 ];

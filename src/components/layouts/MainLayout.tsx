@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import {
   Home, Radio, Heart, Clock, Bell, Settings, Download,
-  Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2
+  Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2, Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -21,6 +21,7 @@ const navItems = [
   { to: '/favorites',     icon: Heart,    label: 'المفضلة' },
   { to: '/operations',    icon: Clock,    label: 'العمليات' },
   { to: '/notifications', icon: Bell,     label: 'الإشعارات' },
+  { to: '/referrals',     icon: Gift,     label: 'الإحالات' },
   { to: '/updates',       icon: Download, label: 'التحديثات' },
   { to: '/settings',      icon: Settings, label: 'الإعدادات' },
 ];

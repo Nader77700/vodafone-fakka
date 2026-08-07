@@ -88,6 +88,7 @@ import NavLinksManager from '@/components/admin/NavLinksManager';
 import NotifAutomation from '@/components/admin/NotifAutomation';
 import ServerConfigTab from '@/components/admin/ServerConfigTab';
 import AdminSmartEngine from '@/components/admin/AdminSmartEngine';
+import AdminReferralManagement from '@/components/admin/AdminReferralManagement';
 import { formatError } from '@/lib/formatError';
 
 
@@ -99,7 +100,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management';
 
 interface TabMeta {
   id: AdminTab;
@@ -118,7 +119,8 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'numbers',        label: 'الأرقام',          desc: 'تحليل أرقام الهاتف المشحونة',       icon: Phone },
   { id: 'globalstats',    label: 'إحصائيات',         desc: 'تقارير وإحصائيات متقدمة',           icon: TrendingUp },
   { id: 'recharge',       label: 'محرك الشحن',       desc: 'ربط سكربت الشحن الخارجي',          icon: Zap },
-  { id: 'vodafone_cash_center', label: 'Vodafone Cash', desc: 'إدارة عمليات فودافون كاش',          icon: Wallet },
+  { id: 'vodafone_cash_center', label: 'Vodafone Cash',    desc: 'إدارة عمليات فودافون كاش',          icon: Wallet },
+  { id: 'referral_management', label: 'نظام الإحالات',    desc: 'إدارة أكواد الإحالة وسجلاتها',       icon: Gift },
   { id: 'operations',     label: 'العمليات',          desc: 'سجل جميع عمليات الشحن',            icon: Clock },
   { id: 'logs',           label: 'السجلات',           desc: 'سجلات النظام والأخطاء',             icon: FileText },
   { id: 'crash_logs',     label: 'سجلات الأعطال',     desc: 'استعراض تقارير وإغلاقات التطبيق المفاجئة', icon: AlertTriangle },
@@ -3035,6 +3037,15 @@ export default function AdminDashboard() {
             <div className="py-8 text-center space-y-4 page-enter">
               <p className="text-muted-foreground text-sm">جارٍ الانتقال إلى Vodafone Cash Center...</p>
               {(() => { navigate('/admin/vodafone-cash-center'); return null; })()}
+            </div>
+          )}
+
+          {/* ════════════════════════════════════
+              نظام الإحالات — Referral Management
+          ════════════════════════════════════ */}
+          {activeTab === 'referral_management' && (
+            <div className="page-enter">
+              <AdminReferralManagement />
             </div>
           )}
 

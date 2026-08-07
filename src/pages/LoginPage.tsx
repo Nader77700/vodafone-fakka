@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
 import { toast } from 'sonner';
-import { Eye, EyeOff, LogIn, UserPlus, Lock, User, Phone, Building2, MessageCircle } from 'lucide-react';
+import { Eye, EyeOff, LogIn, UserPlus, Lock, User, Phone, Building2, MessageCircle, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import {
   assignUserToMerchantSecure,
   getPendingInviteToken, clearPendingInviteToken, linkUserToInviteToken,
   validateInviteToken,
+  validateReferralCode, registerReferral,
 } from '@/lib/api';
 import { getDeviceId } from '@/lib/deviceId';
 import OnboardingTrialModal from '@/components/onboarding/OnboardingTrialModal';
@@ -49,6 +50,11 @@ export default function LoginPage() {
   const [inviteCodeInput, setInviteCodeInput]   = useState('');
   const [inviteCodeState, setInviteCodeState]   = useState<'idle'|'checking'|'valid'|'invalid'>('idle');
   const [inviteMerchantName, setInviteMerchantName] = useState('');
+
+  // ── نظام الإحالات: حقل مستقل لكود الإحالة الشخصي ──
+  const [referralCodeInput,  setReferralCodeInput]  = useState('');
+  const [referralCodeState,  setReferralCodeState]  = useState<'idle'|'checking'|'valid'|'invalid'>('idle');
+  const [referralOwnerName,  setReferralOwnerName]  = useState('');
   useEffect(() => {
     const inv = consumePendingInvite();
     if (inv) setPendingInvite(inv);
@@ -230,6 +236,10 @@ export default function LoginPage() {
         phone: phone.trim()
       }).eq('id', data.user.id);
       const linked = await applyPendingInvites(data.user.id);
+      // تسجيل إحالة شخصية إن وُجد كود إحالة صالح
+      if (referralCodeInput.trim() && referralCodeState === 'valid') {
+        await registerReferral(referralCodeInput.trim().toUpperCase(), data.user.id);
+      }
       // تحديث الـ profile لضمان قراءة merchant_id الجديد
       if (linked) await refreshProfile();
       setLoading(false);
@@ -371,11 +381,11 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* ─── حقل كود الدعوة (اختياري) ─── */}
+            {/* ─── حقل كود دعوة التاجر (اختياري) ─── */}
             {mode === 'register' && !pendingInvite && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-normal text-muted-foreground">
-                  كود الدعوة <span className="text-muted-foreground/50">(اختياري)</span>
+                  كود دعوة التاجر <span className="text-muted-foreground/50">(اختياري)</span>
                 </Label>
                 <div className={`relative input-premium rounded-lg transition-colors ${
                   inviteCodeState === 'valid'   ? 'ring-1 ring-success/50'   :
@@ -387,7 +397,7 @@ export default function LoginPage() {
                   }`} />
                   <Input
                     className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
-                    placeholder="أدخل كود الدعوة إن وُجد"
+                    placeholder="أدخل كود دعوة التاجر إن وُجد"
                     value={inviteCodeInput}
                     onChange={async e => {
                       const val = e.target.value.trim();
@@ -417,6 +427,56 @@ export default function LoginPage() {
                 )}
                 {inviteCodeState === 'invalid' && (
                   <p className="text-xs text-destructive pr-1">كود الدعوة غير صالح أو منتهي</p>
+                )}
+              </div>
+            )}
+
+            {/* ─── حقل كود الإحالة الشخصي (اختياري — نظام الإحالات) ─── */}
+            {mode === 'register' && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-normal text-muted-foreground">
+                  كود الإحالة <span className="text-muted-foreground/50">(اختياري)</span>
+                </Label>
+                <div className={`relative input-premium rounded-lg transition-colors ${
+                  referralCodeState === 'valid'   ? 'ring-1 ring-success/50'   :
+                  referralCodeState === 'invalid' ? 'ring-1 ring-destructive/50' : ''
+                }`}>
+                  <Gift className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
+                    referralCodeState === 'valid'   ? 'text-success'     :
+                    referralCodeState === 'invalid' ? 'text-destructive' : 'text-muted-foreground'
+                  }`} />
+                  <Input
+                    className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
+                    placeholder="أدخل كود الإحالة من صديق"
+                    value={referralCodeInput}
+                    onChange={async e => {
+                      const val = e.target.value.toUpperCase().trim();
+                      setReferralCodeInput(val);
+                      setReferralCodeState('idle');
+                      setReferralOwnerName('');
+                      if (val.length >= 8) {
+                        setReferralCodeState('checking');
+                        const res = await validateReferralCode(val);
+                        if (res.valid) {
+                          setReferralCodeState('valid');
+                          setReferralOwnerName(res.username ?? '');
+                        } else {
+                          setReferralCodeState('invalid');
+                        }
+                      }
+                    }}
+                  />
+                  {referralCodeState === 'checking' && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  )}
+                </div>
+                {referralCodeState === 'valid' && referralOwnerName && (
+                  <p className="text-xs text-success pr-1 flex items-center gap-1">
+                    <span>✓</span> كود صحيح — دعوة من: <span className="font-bold">{referralOwnerName}</span>
+                  </p>
+                )}
+                {referralCodeState === 'invalid' && (
+                  <p className="text-xs text-destructive pr-1">كود الإحالة غير موجود</p>
                 )}
               </div>
             )}
