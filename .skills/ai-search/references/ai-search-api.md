@@ -78,101 +78,29 @@ Each SSE event's data payload is JSON with the following structure:
 
 ## Generation-Time Usage (Direct Agent Call)
 
-In the generation-time scenario (direct Agent call), use the following TypeScript code to call the AI Search endpoint, read the SSE stream incrementally, and accumulate the full response text.
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. The Bash tool timeout must be set to `600000` ms.
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed key injected by the platform
+```bash
+# Single question
+python3 <skill-path>/scripts/call_ai_search.py --query "Who won the euro 2024?"
 
-interface ContentPart {
-  text: string;
-}
-
-interface ContentItem {
-  role: "user" | "model";
-  parts: ContentPart[];
-}
-
-interface AiSearchResult {
-  text: string;
-  sources: Array<{ uri: string; title: string }>;
-  webSearchQueries: string[];
-}
-
-async function callAiSearch(contents: ContentItem[]): Promise<AiSearchResult> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-zYm4ze3j7XvL.gateway.appmedo.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ contents }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  if (!response.body) throw new Error("No response body");
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-
-  let fullText = "";
-  const sources: Array<{ uri: string; title: string }> = [];
-  const webSearchQueries: string[] = [];
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const dataStr = line.slice(6).trim();
-      if (dataStr === "[DONE]") break;
-      try {
-        const parsed = JSON.parse(dataStr);
-        const candidate = parsed?.candidates?.[0];
-        if (!candidate) continue;
-
-        // Accumulate text
-        const textChunk = candidate?.content?.parts?.[0]?.text ?? "";
-        fullText += textChunk;
-
-        // Collect sources (may appear in last chunk)
-        const meta = candidate?.groundingMetadata;
-        if (meta) {
-          for (const chunk of meta.groundingChunks ?? []) {
-            if (chunk?.web?.uri) {
-              sources.push({ uri: chunk.web.uri, title: chunk.web.title ?? "" });
-            }
-          }
-          for (const q of meta.webSearchQueries ?? []) {
-            if (!webSearchQueries.includes(q)) webSearchQueries.push(q);
-          }
-        }
-      } catch {
-        // Incomplete JSON chunk — skip
-      }
-    }
-  }
-
-  return { text: fullText, sources, webSearchQueries };
-}
-
-// Usage example
-const result = await callAiSearch([
-  { role: "user", parts: [{ text: "Who won the euro 2024?" }] },
-]);
-console.log("Answer:", result.text);
-console.log("Sources:", result.sources);
+# Multi-turn conversation
+python3 <skill-path>/scripts/call_ai_search.py --contents '[
+  {"role":"user","parts":[{"text":"What is the capital of France?"}]},
+  {"role":"model","parts":[{"text":"The capital of France is Paris."}]},
+  {"role":"user","parts":[{"text":"What is the population of that city?"}]}
+]'
 ```
 
-> **Note**: The first token may take up to 30 seconds. Ensure the request timeout for your runtime is at least 60 seconds.
+The script reads `INTEGRATIONS_API_KEY`, consumes the SSE stream, and prints one JSON line:
+
+```json
+{"status":"succeed","text":"<accumulated answer>","sources":[{"uri":"https://...","title":"..."}],"webSearchQueries":["..."]}
+```
+
+On failure it prints an error to stderr and exits with a non-zero code.
+
+> **Note**: The first token may take up to 30 seconds; the script's default timeout is 600 seconds (override with `--timeout`).
 
 ---
 

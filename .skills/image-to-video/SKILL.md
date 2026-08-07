@@ -80,28 +80,48 @@ async function generateAndWait(
 
 ## Generation-Time Usage (Agent Direct Call)
 
-For full parameter documentation and generation-time code, refer to:
+Use the built-in scripts for generation-time calls. The scripts read `INTEGRATIONS_API_KEY` from the environment.
 
-- `references/submit-api.md` — Submit task endpoint (POST)
-- `references/query-api.md` — Query task endpoint (GET)
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
+
+**Submit + poll (all-in-one):**
+
+```bash
+# From a local image file
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image /path/to/image.jpg \
+  --prompt "A cat running through a garden" \
+  --duration 5 \
+  --output-dir /tmp/video_output
+
+# From an image URL
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image-url "https://example.com/photo.jpg" \
+  --prompt "Slow camera zoom" \
+  --output-dir /tmp/video_output
+```
+
+**Resume polling an existing task:**
+
+```bash
+python3 <skill-path>/scripts/query_image_to_video.py --task-id "<task_id>" --output-dir /tmp/video_output
+```
+
+The scripts print one JSON line:
+- On success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- If still processing: `{"status":"processing","task_id":"..."}`
+
+On failure they print an error to stderr and exit with a non-zero code.
 
 **Generation-time file download (required):**
 
-The video URL returned by the API is a temporary CDN link. Once the URL is obtained, **you must immediately download the file to local storage using the Bash tool** so the user can view the result.
+Video URLs are temporary CDN links (expire after 30 days). If `--output-dir` is not passed to the script, download the video immediately:
 
 ```bash
 curl -L -o ./output_video.mp4 "<generated video URL>"
 ```
 
-**Complete generation-time workflow (including download step):**
-
-1. Call the submit function to obtain `task_id`
-2. Poll the query endpoint until `task_status === "succeed"`
-3. Retrieve `task_result.videos[0].url`
-4. Use the Bash tool to run `curl -L -o ./output_video.mp4 "<url>"` to download the video locally
-5. Inform the user that the file has been saved to the corresponding path
-
-> **Note**: Upstream CDN links are time-limited. Download immediately after obtaining the URL — do not delay.
+See `references/submit-api.md` and `references/query-api.md` for the full parameter tables.
 
 ## Post-Generation Usage (In-App via Edge Function)
 

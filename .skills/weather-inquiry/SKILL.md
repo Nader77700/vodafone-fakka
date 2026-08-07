@@ -50,21 +50,33 @@ Access weather data for any coordinate worldwide via the OpenWeatherMap One Call
 
 ## Generation-time usage (Agent calls directly)
 
-All endpoints use platform-managed authentication. Read the API key from the environment:
+Use the built-in script for generation-time calls. The script reads `INTEGRATIONS_API_KEY` from the environment and sends it via the `X-Gateway-Authorization: Bearer <key>` header.
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
-const AUTH_VALUE = `Bearer ${apiKey}`;
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
+
+```bash
+# Current weather + forecast
+python3 <skill-path>/scripts/call_weather.py --endpoint onecall --lat 40.7128 --lon -74.0060 --units metric
+
+# Historical weather for a timestamp
+python3 <skill-path>/scripts/call_weather.py --endpoint timemachine --lat 40.7128 --lon -74.0060 --dt 1684929490
+
+# Daily aggregated statistics
+python3 <skill-path>/scripts/call_weather.py --endpoint day_summary --lat 40.7128 --lon -74.0060 --date "2024-06-15"
+
+# AI weather overview
+python3 <skill-path>/scripts/call_weather.py --endpoint overview --lat 40.7128 --lon -74.0060
+
+# AI assistant — start a new session
+python3 <skill-path>/scripts/call_weather.py --endpoint assistant_create --message "What is the weather like in New York today?"
+
+# AI assistant — continue an existing session
+python3 <skill-path>/scripts/call_weather.py --endpoint assistant_continue --session-id "<session_id>" --message "Will it rain tomorrow?"
 ```
 
-Choose the appropriate function based on the user's request:
+The script prints `{"status":"succeed","result":{...}}` on success. On failure it prints an error to stderr and exits with a non-zero code.
 
-- **Current weather + forecast** → call `getCurrentAndForecast(lat, lon)`, see `references/onecall-api.md`
-- **Historical weather for a timestamp** → call `getWeatherByTimestamp(lat, lon, dt)`, see `references/onecall-api.md`
-- **Daily aggregated statistics** → call `getDailyAggregation(lat, lon, date)`, see `references/onecall-api.md`
-- **AI weather overview** → call `getWeatherOverview(lat, lon)`, see `references/onecall-api.md`
-- **AI assistant — start session** → call `startAssistantSession(prompt)`, see `references/assistant-api.md`
-- **AI assistant — resume session** → call `resumeAssistantSession(sessionId, prompt)`, see `references/assistant-api.md`
+See `references/onecall-api.md` (weather data endpoints) and `references/assistant-api.md` (AI assistant endpoints) for full parameter tables.
 
 ---
 

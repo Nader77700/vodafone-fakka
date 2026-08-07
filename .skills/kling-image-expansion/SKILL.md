@@ -55,85 +55,43 @@ async function expandAndWait(submitFn: () => Promise<{ taskId: string }>) {
 
 > For detailed parameter descriptions, see `references/create-task-api.md` (create task) and `references/query-task-api.md` (query task).
 
-A complete generation-phase call should follow these steps:
-1. Call `createExpandTask()` to submit the expansion request and obtain a `task_id`
-2. Poll `queryExpandTask(taskId)` until the task completes
-3. Download the image immediately using `curl`
+Use the built-in scripts for generation-time calls. The scripts read `INTEGRATIONS_API_KEY` from the environment.
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed key injected by the platform
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
 
-// Step 1: Submit expansion task
-async function createExpandTask(params: {
-  image: string;
-  up_expansion_ratio: number;
-  down_expansion_ratio: number;
-  left_expansion_ratio: number;
-  right_expansion_ratio: number;
-  prompt?: string;
-  n?: number;
-  watermark_info?: { enabled: boolean };
-  callback_url?: string;
-  external_task_id?: string;
-}): Promise<{ task_id: string; task_status: string }> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-GYX1bbkRQj4a.gateway.appmedo.com/v1/images/editing/expand",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(params),
-    }
-  );
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data;
-}
+**Submit + poll (all-in-one):**
 
-// Step 2: Query task status
-async function queryExpandTask(taskId: string): Promise<{
-  task_id: string;
-  task_status: string;
-  task_status_msg?: string;
-  task_result?: { images: Array<{ index: number; url: string }> };
-}> {
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-AalZkkAG5w7L.gateway.appmedo.com/v1/images/editing/expand/${taskId}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-    }
-  );
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data;
-}
+```bash
+# From a local image file
+python3 <skill-path>/scripts/generate_image_expansion.py \
+  --image /path/to/image.jpg \
+  --up-ratio 0.5 --down-ratio 0.5 --left-ratio 0 --right-ratio 0 \
+  --prompt "extend the sky" \
+  --output-dir /tmp/expand_output
+
+# From an image URL
+python3 <skill-path>/scripts/generate_image_expansion.py \
+  --image-url "https://example.com/photo.jpg" \
+  --up-ratio 1.0 --down-ratio 0 --left-ratio 0.5 --right-ratio 0.5
+```
+
+The script submits the task, polls every 7 seconds (up to ~550s), and prints:
+- On success: `{"status":"succeed","task_id":"...","images":[{"url":"...","file":"..."}]}`
+- If still processing: `{"status":"processing","task_id":"..."}`
+
+**Resume polling an existing task:**
+
+```bash
+python3 <skill-path>/scripts/query_image_expansion.py --task-id "<task_id>" [--output-dir /tmp/out]
 ```
 
 **Generation-phase file download (required):**
 
-The image URLs returned by the generation API are temporary CDN links (expire after 30 days). After obtaining the URL during the generation phase (direct Agent call), **you must immediately use the Bash tool to download the file locally** so the user can view the result.
+Image URLs are temporary CDN links (expire after 30 days). If `--output-dir` is not passed to the script, download the image immediately after receiving the URL:
 
 ```bash
 curl -L -o <local-path>.jpg "<generated image URL>"
 ```
-
-**Complete generation-phase workflow (including download step):**
-
-1. Call `createExpandTask()` to submit the task and obtain `task_id`
-2. Call `queryExpandTask(taskId)` every 7 seconds until `task_status === "succeed"` or `"failed"`
-3. Extract the image URL from `task_result.images[].url`
-4. Use the Bash tool to run `curl -L -o <local-path>.jpg "<url>"` to download the image locally
-5. Inform the user that the file has been saved to the corresponding path
-
-> **Note**: The upstream CDN link expires after 30 days. Download immediately after obtaining the URL — do not delay.
 
 ## Post-Generation Usage (In-App via Edge Function)
 

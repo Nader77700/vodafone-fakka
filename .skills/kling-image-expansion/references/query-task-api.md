@@ -62,60 +62,17 @@ Same as the single task query, but `data` is an array where each element contain
 
 ## Generation-Phase Usage (Direct Agent Call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
+Use the built-in script to poll an existing task — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-// Query a single task
-async function queryExpandTask(taskId: string): Promise<{
-  task_id: string;
-  task_status: string;
-  task_status_msg?: string;
-  watermark_info?: { enabled: boolean };
-  task_result?: { images: Array<{ index: number; url: string }> };
-  created_at: number;
-  updated_at: number;
-}> {
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-AalZkkAG5w7L.gateway.appmedo.com/v1/images/editing/expand/${taskId}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-    }
-  );
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data;
-}
-
-// Query task list
-async function listExpandTasks(pageNum = 1, pageSize = 30): Promise<Array<{
-  task_id: string;
-  task_status: string;
-  task_result?: { images: Array<{ index: number; url: string; watermark_url?: string }> };
-}>> {
-  const url = new URL(
-    "https://app-ck2v94t1nev5-api-pLVzAAkGZwDL.gateway.appmedo.com/v1/images/editing/expand"
-  );
-  url.searchParams.set("pageNum", String(pageNum));
-  url.searchParams.set("pageSize", String(pageSize));
-
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Gateway-Authorization": `Bearer ${apiKey}`,
-    },
-  });
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data;
-}
+```bash
+python3 <skill-path>/scripts/query_image_expansion.py --task-id "<task_id>" [--output-dir /tmp/out]
 ```
+
+The script polls the task every 7 seconds (up to ~550s) and prints one JSON line:
+- Success: `{"status":"succeed","task_id":"...","images":[{"url":"...","file":"..."}]}`
+- Still processing: `{"status":"processing","task_id":"..."}`
+
+On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

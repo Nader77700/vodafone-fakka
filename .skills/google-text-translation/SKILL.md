@@ -51,52 +51,24 @@ Translate any text into a specified target language via the Google Cloud Transla
 
 > Use case: The Agent calls the API directly during generation to complete a translation task, returning the result as text to the user.
 
-```typescript
-// platform_managed — key is injected by the platform at runtime
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
+Use the built-in script for generation-time calls. The script reads `INTEGRATIONS_API_KEY` from the environment.
 
-interface TranslateParams {
-  q: string;           // Text to translate
-  target: string;      // Target language code, e.g. "zh", "en", "fr"
-  source?: string;     // Source language code (optional; omit for auto-detection)
-  format?: "text" | "html"; // Text format (default "text")
-}
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
 
-interface TranslationResult {
-  translatedText: string;
-  detectedSourceLanguage?: string;
-}
-
-async function translateText(params: TranslateParams): Promise<TranslationResult[]> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-GaDwZ8DX7jPY.gateway.appmedo.com/language/translate/v2",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        q: params.q,
-        target: params.target,
-        ...(params.source && { source: params.source }),
-        ...(params.format && { format: params.format }),
-      }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  // Google Translation API returns data directly (no code/msg wrapper)
-  return json.data.translations as TranslationResult[];
-}
-
-// Usage example
-const results = await translateText({ q: "Hello, world!", target: "zh" });
-console.log(results[0].translatedText);          // "你好，世界！"
-console.log(results[0].detectedSourceLanguage);  // "en" (returned when auto-detection is active)
+```bash
+python3 google-text-translation/scripts/call_google_translation.py --q "Hello, world!" --target zh
 ```
+
+The script reads `INTEGRATIONS_API_KEY` and calls the upstream API via `X-Gateway-Authorization`. On success it prints one JSON line to stdout (the upstream response as-is). On failure it prints an error to stderr and exits with a non-zero code.
+
+**Available arguments:**
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--q` | Yes | Text content to be translated |
+| `--target` | Yes | Target language code (e.g. `en`, `zh`, `fr`, `ja`) |
+| `--source` | No | Source language code (omit for auto-detection) |
+| `--format` | No | Text format: `text` (default) or `html` |
 
 ---
 

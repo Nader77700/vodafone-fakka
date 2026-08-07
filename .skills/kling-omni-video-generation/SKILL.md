@@ -68,28 +68,48 @@ Task status descriptions:
 
 ## Generation-time Usage (Direct Agent Call)
 
-Call both endpoints directly during generation to complete the full submit → poll → download workflow.
+Use the built-in scripts for generation-time calls. The scripts read `INTEGRATIONS_API_KEY` from the environment.
 
-> For the full TypeScript submit function, see the "Generation-time Usage" section in `references/submit-api.md`.
-> For the query function, see the "Generation-time Usage" section in `references/query-api.md`.
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
+
+**Submit + poll (all-in-one):**
+
+```bash
+# Text-to-video
+python3 <skill-path>/scripts/generate_omni_video.py \
+  --prompt "A futuristic city with flying cars at dusk" \
+  --aspect-ratio 16:9 \
+  --duration 5 \
+  --output-dir /tmp/omni_video
+
+# Image-to-video (repeat --image / --image-url for multiple references)
+python3 <skill-path>/scripts/generate_omni_video.py \
+  --prompt "Animate this scene" \
+  --image /path/to/ref.jpg \
+  --output-dir /tmp/omni_video
+```
+
+**Resume polling an existing task:**
+
+```bash
+python3 <skill-path>/scripts/query_omni_video.py --task-id "<task_id>" --output-dir /tmp/omni_video
+```
+
+The scripts print one JSON line:
+- On success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- If still processing: `{"status":"processing","task_id":"..."}`
+
+On failure they print an error to stderr and exit with a non-zero code.
 
 **Generation-time file download (required):**
 
-The video URL returned by the generation API is an ephemeral CDN link. After obtaining the URL, **you must immediately use the Bash tool to download the file locally** so the user can view the result.
+Video URLs are ephemeral CDN links (expire after 30 days). If `--output-dir` is not passed, download immediately:
 
 ```bash
 curl -L -o /tmp/generated_omni_video.mp4 "<task_result.videos[0].url>"
 ```
 
-**Complete generation-time workflow:**
-
-1. Call the submit function to obtain `task_id` (see `references/submit-api.md`)
-2. Call the query function every 7 seconds until `task_status === "succeed"`
-3. Retrieve the video URL from `task_result.videos[0].url`
-4. Use the Bash tool to run `curl -L -o <local-path>.mp4 "<url>"` to download the video locally
-5. Inform the user that the file has been saved to the corresponding path
-
-> **Note**: The upstream CDN link expires after 30 days. Download immediately after obtaining the URL — do not delay.
+> For full parameter details, see `references/submit-api.md` (submit) and `references/query-api.md` (query).
 
 ---
 

@@ -143,169 +143,28 @@ Returns an AI-generated natural-language weather summary for today or tomorrow.
 
 ## Generation-time usage (Agent calls directly)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
-const AUTH_VALUE = `Bearer ${apiKey}`;
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-// --- Endpoint 1: Current weather + forecast ---
-interface WeatherData {
-  lat: number;
-  lon: number;
-  timezone: string;
-  timezone_offset: number;
-  current?: object;
-  minutely?: object[];
-  hourly?: object[];
-  daily?: object[];
-  alerts?: object[];
-}
+```bash
+# Endpoint 1 — current weather + forecast
+python3 <skill-path>/scripts/call_weather.py --endpoint onecall \
+  --lat 40.7128 --lon -74.0060 \
+  [--units metric] [--lang en] [--exclude minutely,alerts]
 
-async function getCurrentAndForecast(
-  lat: number,
-  lon: number,
-  options?: { exclude?: string; units?: string; lang?: string }
-): Promise<WeatherData> {
-  const params = new URLSearchParams({
-    lat: String(lat),
-    lon: String(lon),
-    ...(options?.exclude && { exclude: options.exclude }),
-    ...(options?.units && { units: options.units }),
-    ...(options?.lang && { lang: options.lang }),
-  });
+# Endpoint 2 — historical weather for a timestamp
+python3 <skill-path>/scripts/call_weather.py --endpoint timemachine \
+  --lat 40.7128 --lon -74.0060 --dt 1684929490 [--units metric]
 
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-wL1zlmgJGAlY.gateway.appmedo.com/data/3.0/onecall?${params}`,
-    {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "X-Gateway-Authorization": AUTH_VALUE,
-      },
-    }
-  );
+# Endpoint 3 — daily aggregated statistics
+python3 <skill-path>/scripts/call_weather.py --endpoint day_summary \
+  --lat 40.7128 --lon -74.0060 --date 2024-06-15 [--units metric]
 
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  return response.json();
-}
-
-// --- Endpoint 2: Historical weather for a timestamp ---
-interface TimemachineData {
-  lat: number;
-  lon: number;
-  timezone: string;
-  data: object[];
-}
-
-async function getWeatherByTimestamp(
-  lat: number,
-  lon: number,
-  dt: number,
-  options?: { units?: string; lang?: string }
-): Promise<TimemachineData> {
-  const params = new URLSearchParams({
-    lat: String(lat),
-    lon: String(lon),
-    dt: String(dt),
-    ...(options?.units && { units: options.units }),
-    ...(options?.lang && { lang: options.lang }),
-  });
-
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-Aa2PZmgJq5OL.gateway.appmedo.com/data/3.0/onecall/timemachine?${params}`,
-    {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "X-Gateway-Authorization": AUTH_VALUE,
-      },
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  return response.json();
-}
-
-// --- Endpoint 3: Daily aggregated statistics ---
-interface DayAggregation {
-  lat: number;
-  lon: number;
-  tz: string;
-  date: string;
-  temperature: { min: number; max: number; afternoon: number; night: number; evening: number; morning: number };
-  precipitation: { total: number };
-  wind: { max: { speed: number; direction: number } };
-  cloud_cover: { afternoon: number };
-  humidity: { afternoon: number };
-  pressure: { afternoon: number };
-}
-
-async function getDailyAggregation(
-  lat: number,
-  lon: number,
-  date: string,
-  options?: { units?: string; lang?: string; tz?: string }
-): Promise<DayAggregation> {
-  const params = new URLSearchParams({
-    lat: String(lat),
-    lon: String(lon),
-    date,
-    ...(options?.units && { units: options.units }),
-    ...(options?.lang && { lang: options.lang }),
-    ...(options?.tz && { tz: options.tz }),
-  });
-
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-2Y00zmgJ8lBY.gateway.appmedo.com/data/3.0/onecall/day_summary?${params}`,
-    {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "X-Gateway-Authorization": AUTH_VALUE,
-      },
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  return response.json();
-}
-
-// --- Endpoint 4: AI weather overview ---
-interface WeatherOverview {
-  lat: number;
-  lon: number;
-  tz: string;
-  date: string;
-  units: string;
-  weather_overview: string;
-}
-
-async function getWeatherOverview(
-  lat: number,
-  lon: number,
-  options?: { date?: string; units?: string }
-): Promise<WeatherOverview> {
-  const params = new URLSearchParams({
-    lat: String(lat),
-    lon: String(lon),
-    ...(options?.date && { date: options.date }),
-    ...(options?.units && { units: options.units }),
-  });
-
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-oYA6ZxVqenDa.gateway.appmedo.com/data/3.0/onecall/overview?${params}`,
-    {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "X-Gateway-Authorization": AUTH_VALUE,
-      },
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  return response.json();
-}
+# Endpoint 4 — AI weather overview
+python3 <skill-path>/scripts/call_weather.py --endpoint overview \
+  --lat 40.7128 --lon -74.0060 [--units metric]
 ```
+
+The script reads `INTEGRATIONS_API_KEY`, calls the selected endpoint, and prints one JSON line to stdout: `{"status":"succeed","result":{...}}`. On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

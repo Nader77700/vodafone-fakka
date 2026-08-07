@@ -80,60 +80,17 @@
 
 ## Generation-time Usage (Direct Agent Call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — key injected by platform
-
-interface OmniVideoQueryResult {
-  task_status: string;
-  task_status_msg?: string;
-  task_result?: {
-    videos: Array<{
-      id: string;
-      url: string;
-      watermark_url?: string;
-      duration: string;
-    }>;
-  };
-}
-
-async function queryOmniVideoTask(taskId: string): Promise<OmniVideoQueryResult> {
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-pLVzAEz1ZQOL.gateway.appmedo.com/v1/videos/omni-video/${encodeURIComponent(taskId)}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-
-  return json.data as OmniVideoQueryResult;
-}
-```
-
-**Generation-time file download (required):**
-
-The video URL returned by the generation API is an ephemeral CDN link. In generation-time scenarios (direct Agent call), once you obtain the URL, **you must immediately use the Bash tool to download the file locally** so the user can view the result.
+Use the built-in script to poll an existing task — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
 ```bash
-curl -L -o /tmp/generated_omni_video.mp4 "<task_result.videos[0].url>"
+python3 <skill-path>/scripts/query_omni_video.py --task-id "<task_id>" [--output-dir /tmp/out]
 ```
 
-**Complete generation-time workflow (including download step):**
+The script polls the task every 7 seconds (up to ~550s) and prints one JSON line:
+- Success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- Still processing: `{"status":"processing","task_id":"..."}`
 
-1. Call `submitOmniVideo(options)` to obtain `task_id` (see `references/submit-api.md`)
-2. Call `queryOmniVideoTask(taskId)` every 7 seconds until `task_status === "succeed"` or `"failed"`
-3. Retrieve the video URL from `task_result.videos[0].url`
-4. Use the Bash tool to run `curl -L -o <local-path>.mp4 "<url>"` to download the video locally
-5. Inform the user that the file has been saved to the corresponding path
-
-> **Note**: The upstream CDN link expires after 30 days. Download immediately after obtaining the URL — do not delay.
+On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

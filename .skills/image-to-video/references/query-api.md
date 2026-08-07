@@ -49,67 +49,18 @@
 
 ## Generation-Time Usage (Agent Direct Call)
 
-```typescript
-const AUTH_VALUE = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — injected by platform
-
-interface VideoInfo {
-  id: string;
-  url: string;
-  duration: string;
-}
-
-interface QueryResponse {
-  task_id: string;
-  task_status: "submitted" | "processing" | "succeed" | "failed";
-  task_status_msg?: string;
-  task_info: {
-    external_task_id: string;
-  };
-  created_at: number;
-  updated_at: number;
-  task_result?: {
-    videos: VideoInfo[];
-  };
-}
-
-async function queryImageToVideoTask(taskId: string): Promise<QueryResponse> {
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-oYA6Z8wDBRDa.gateway.appmedo.com/v1/videos/image2video/${encodeURIComponent(taskId)}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${AUTH_VALUE}`,
-      },
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-
-  return json.data as QueryResponse;
-}
-```
-
-**Generation-time file download (required):**
-
-The video URL returned by the API is a temporary CDN link. Once the URL is obtained in the generation-time scenario (Agent direct call), **you must immediately download the file to local storage using the Bash tool** so the user can view the result.
+Use the built-in script to poll an existing task — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
 ```bash
-curl -L -o ./output_video.mp4 "<generated video URL>"
+python3 <skill-path>/scripts/query_image_to_video.py --task-id "<task_id>" [--output-dir /tmp/out]
 ```
 
-**Complete generation-time workflow (including download step):**
+The script polls the task until it succeeds or fails, downloads the resulting video (upstream CDN links are time-limited, so it downloads immediately), and prints one JSON line to stdout:
 
-1. Call `submitImageToVideo()` to obtain `task_id` (see `submit-api.md`)
-2. Call `queryImageToVideoTask(taskId)` every 7 seconds to poll status
-3. When `task_status === "succeed"`, retrieve `task_result.videos[0].url`
-4. Use the Bash tool to run `curl -L -o ./output_video.mp4 "<url>"` to download the video locally
-5. Inform the user that the file has been saved to the corresponding path
+- Success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- Still processing after the safe polling window: `{"status":"processing","task_id":"..."}`
 
-> **Note**: Upstream CDN links are time-limited. Download immediately after obtaining the URL — do not delay.
+On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

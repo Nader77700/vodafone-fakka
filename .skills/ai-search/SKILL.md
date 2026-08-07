@@ -90,9 +90,21 @@ Render Markdown with streamdown + display source citations
 
 ## Generation-Time Usage (Direct Agent Call)
 
-See the **Generation-Time Usage** section of `references/ai-search-api.md`.
+Use the built-in script for generation-time calls. The script reads `INTEGRATIONS_API_KEY` from the environment, calls the SSE endpoint, aggregates the streamed events, and prints one JSON line.
 
-Summary: During generation time, call the upstream endpoint directly via SSE, read the stream incrementally, accumulate the full text, and return it. Each call is billed.
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).** (First-token latency can reach 30 seconds.)
+
+```bash
+# Single question
+python3 <skill-path>/scripts/call_ai_search.py --query "Who won Euro 2024?"
+
+# Multi-turn conversation (JSON array of role/parts items)
+python3 <skill-path>/scripts/call_ai_search.py --contents '[{"role":"user","parts":[{"text":"..."}]}]'
+```
+
+The script prints `{"status":"succeed","text":"...","sources":[{"uri":"...","title":"..."}],"webSearchQueries":[...]}`. Per API terms, when displaying the generated content you **must show** the source URLs. On failure it prints an error to stderr and exits with a non-zero code.
+
+See `references/ai-search-api.md` for the full parameter table.
 
 ---
 

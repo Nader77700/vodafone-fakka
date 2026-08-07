@@ -37,9 +37,31 @@ Powered by the Whisper large-v3 model via the LemonFox API. Converts audio files
 
 ## Generation-time Usage (Agent Direct Call)
 
-The platform injects the API key — no user-supplied key is needed.
+Use the built-in script for generation-time calls. The script reads `INTEGRATIONS_API_KEY` from the environment.
 
-> For complete TypeScript code (URL submission and local file upload), see the "Generation-time Usage" section in `references/transcriptions-api.md`.
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
+
+```bash
+# From a public audio URL (recommended, supports up to 1 GB)
+python3 <skill-path>/scripts/call_speech_to_text.py \
+  --file-url "https://example.com/audio.mp3" \
+  --response-format json
+
+# From a local audio file (multipart upload, up to 100 MB)
+python3 <skill-path>/scripts/call_speech_to_text.py \
+  --file /path/to/audio.mp3 \
+  --response-format verbose_json \
+  --speaker-labels --word-timestamps
+
+# Translate audio to English
+python3 <skill-path>/scripts/call_speech_to_text.py \
+  --file-url "https://example.com/chinese_audio.wav" \
+  --translate
+```
+
+The script prints one JSON line on success: `{"status":"succeed","result":{...}}` (where `result` is the upstream response). For `text`, `srt`, or `vtt` formats, the result is `{"text":"..."}`. On failure it prints an error to stderr and exits with a non-zero code.
+
+> For complete parameter details and response field tables, see `references/transcriptions-api.md`.
 
 ---
 

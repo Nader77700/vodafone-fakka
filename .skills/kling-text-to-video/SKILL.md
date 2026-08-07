@@ -74,28 +74,42 @@ Task status descriptions:
 
 ## Generation-Time Usage (Direct Agent Call)
 
-Call both endpoints directly during generation time to complete the full submit → poll → download workflow.
+Use the built-in scripts for generation-time calls. The scripts read `INTEGRATIONS_API_KEY` from the environment.
 
-> For the complete TypeScript code see the "Generation-Time Usage" section in `references/submit-api.md` (contains the submit function).
-> For the query function code see the "Generation-Time Usage" section in `references/query-api.md`.
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
+
+**Submit + poll (all-in-one):**
+
+```bash
+python3 <skill-path>/scripts/generate_text_to_video.py \
+  --prompt "A serene mountain stream flowing through a forest" \
+  --aspect-ratio 16:9 \
+  --duration 5 \
+  --mode std \
+  --output-dir /tmp/text2video
+```
+
+**Resume polling an existing task:**
+
+```bash
+python3 <skill-path>/scripts/query_text_to_video.py --task-id "<task_id>" --output-dir /tmp/text2video
+```
+
+The scripts print one JSON line:
+- On success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- If still processing: `{"status":"processing","task_id":"..."}`
+
+On failure they print an error to stderr and exit with a non-zero code.
 
 **Generation-time file download (required):**
 
-The video URL returned by the generation endpoint is a CDN temporary link. After obtaining the URL you **must immediately use the Bash tool to download the file locally** so the user can view the result.
+Video URLs are ephemeral CDN links. If `--output-dir` is not passed, download immediately:
 
 ```bash
 curl -L -o /tmp/generated_video.mp4 "<task_result.videos[0].url>"
 ```
 
-**Complete generation-time workflow:**
-
-1. Call the submit function to obtain `task_id`
-2. Call the query function every 7 seconds until `task_status === "succeed"`
-3. Retrieve the video URL from `task_result.videos[0].url`
-4. Use the Bash tool to run `curl -L -o <local-path>.mp4 "<url>"` to download the video locally
-5. Inform the user of the path where the file has been saved
-
-> **Note**: Upstream CDN links are time-limited. Download immediately after obtaining the URL; do not delay.
+> For full parameter details, see `references/submit-api.md` (submit) and `references/query-api.md` (query).
 
 ---
 

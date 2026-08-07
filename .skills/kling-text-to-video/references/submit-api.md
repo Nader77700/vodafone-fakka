@@ -63,44 +63,21 @@
 
 ## Generation-Time Usage (Direct Agent Call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — key injected by platform
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-async function submitTextToVideo(
-  prompt: string,
-  options?: {
-    model_name?: string;
-    negative_prompt?: string;
-    cfg_scale?: number;
-    aspect_ratio?: string;
-    duration?: string;
-    callback_url?: string;
-    external_task_id?: string;
-  }
-): Promise<{ taskId: string }> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-qYGWo8XA7JVY.gateway.appmedo.com/v1/videos/text2video",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        prompt,
-        ...options,
-      }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-
-  return { taskId: json.data.task_id };
-}
+```bash
+python3 <skill-path>/scripts/generate_text_to_video.py \
+  --prompt "..." \
+  [--negative-prompt "..."] \
+  [--model kling-v1-6] \
+  [--mode std] \
+  [--duration 5] \
+  [--aspect-ratio 16:9] \
+  [--cfg-scale 0.5] \
+  [--output-dir /tmp/out]
 ```
+
+The script submits the task, polls until it succeeds/fails/exceeds the safe time limit, and prints one JSON line to stdout: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}` or `{"status":"processing","task_id":"..."}`. On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

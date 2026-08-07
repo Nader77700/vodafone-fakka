@@ -19,102 +19,49 @@ This is an **async** skill: submitting the task returns a `task_id` immediately;
 
 ### Generation-time usage (Agent direct call)
 
-Use this pattern when working directly as an agent (no application frontend needed).
+Use the built-in scripts for generation-time calls. The scripts read `INTEGRATIONS_API_KEY` from the environment.
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — injected by platform
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
 
-// Step 1: Submit the image-to-video task
-async function submitImage2VideoTask(params: {
-  image: string;           // Required: Base64 string or accessible URL (jpg/jpeg/png, max 10MB)
-  prompt?: string;         // Optional: text description, max 2500 chars
-  model_name?: string;     // Optional: default "kling-v2-6"
-  mode?: "std" | "pro";   // Optional: default "pro"
-  duration?: "5" | "10";  // Optional: default "5"
-  image_tail?: string;     // Optional: end-frame control image
-  negative_prompt?: string;
-  cfg_scale?: number;      // [0,1], not supported in v2.x
-  voice_list?: { voice_id: string }[];
-  sound?: "on" | "off";
-  static_mask?: string;    // Optional: static motion brush mask image (Base64 or URL)
-  camera_control?: {
-    type: "simple" | "down_back" | "forward_up" | "right_turn_forward" | "left_turn_forward";
-    config?: { horizontal?: number; vertical?: number; pan?: number; tilt?: number; roll?: number; zoom?: number };
-  };
-  external_task_id?: string;
-  callback_url?: string;
-}): Promise<string> {
-  const response = await fetch("https://app-ck2v94t1nev5-api-eLMlJj3KJD89.gateway.appmedo.com/v1/videos/image2video", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Gateway-Authorization": `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(params),
-  });
+**Submit + poll (all-in-one):**
 
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data.task_id;
-}
+```bash
+# From a local image file
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image /path/to/image.jpg \
+  --prompt "A slow camera pan across the scene" \
+  --duration 5 \
+  --output-dir /tmp/kling_video
 
-// Step 2: Poll until the video is ready
-async function pollUntilDone(taskId: string): Promise<{ id: string; url: string; duration: string }[]> {
-  const POLL_INTERVAL_MS = 7000;
-  const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-  const deadline = Date.now() + TIMEOUT_MS;
-
-  while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-
-    const res = await fetch(
-      `https://app-ck2v94t1nev5-api-rLobzpqX85m9.gateway.appmedo.com/v1/videos/image2video/${taskId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Gateway-Authorization": `Bearer ${apiKey}`,
-        },
-      }
-    );
-    if (!res.ok) throw new Error(`Poll HTTP error: ${res.status}`);
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(`Poll API error ${json.code}: ${json.message}`);
-
-    const { task_status, task_status_msg, task_result } = json.data;
-    if (task_status === "succeed") return task_result.videos;
-    if (task_status === "failed") throw new Error(`Task failed: ${task_status_msg}`);
-    // submitted / processing — keep polling
-  }
-  throw new Error(`Task ${taskId} timed out after 10 minutes`);
-}
-
-// Full workflow
-async function generateVideo(image: string, prompt?: string) {
-  const taskId = await submitImage2VideoTask({ image, prompt });
-  console.log(`Task submitted: ${taskId}`);
-  const videos = await pollUntilDone(taskId);
-  return videos; // [{ id, url, duration }]
-}
+# From an image URL
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image-url "https://example.com/photo.jpg" \
+  --prompt "Gentle wind blowing through the trees" \
+  --mode pro \
+  --output-dir /tmp/kling_video
 ```
+
+**Resume polling an existing task:**
+
+```bash
+python3 <skill-path>/scripts/query_image_to_video.py --task-id "<task_id>" --output-dir /tmp/kling_video
+```
+
+The scripts print one JSON line:
+- On success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- If still processing: `{"status":"processing","task_id":"..."}`
+
+On failure they print an error to stderr and exit with a non-zero code.
 
 **Generation-time file download (required):**
 
-The video URL returned by the generation API is an ephemeral CDN link with a 30-day TTL. After obtaining the URL during generation (Agent direct call scenario), **immediately use the Bash tool to download the file locally** so the user can view the result.
+Video URLs are ephemeral CDN links (expire after 30 days). If `--output-dir` is not passed, download immediately:
 
 ```bash
 curl -L -o ./output_video.mp4 "<generated video URL>"
 ```
 
-**Complete generation-time workflow (including download step):**
-
-1. Call `submitImage2VideoTask` to obtain the `task_id`
-2. Call `pollUntilDone` to poll until status is `succeed` and obtain the video URL
-3. Use the Bash tool to run `curl -L -o <local-path>.mp4 "<url>"` to download the video locally
-4. Inform the user of the file path where the video has been saved
-
-> **Note**: The upstream CDN link expires after 30 days; download immediately after obtaining the URL.
+> For detailed parameter descriptions, see `references/create-task-api.md` (submit) and `references/query-task-api.md` (query).
 
 ---
 

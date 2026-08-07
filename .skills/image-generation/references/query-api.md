@@ -76,57 +76,18 @@
 
 ## Generation-Time Usage (Agent Direct Call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-interface TaskResult {
-  taskId: string;
-  status: "PENDING" | "SUCCESS" | "FAILED" | "TIMEOUT";
-  result?: {
-    candidates: Array<{
-      content: { role: string; parts: Array<{ text: string }> };
-      finishReason: string;
-      index: number;
-      safetyRatings: unknown[];
-    }>;
-  };
-  error?: { code: string; message: string };
-}
-
-async function queryTask(taskId: string): Promise<TaskResult> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-GYX1lzGw0DQa.gateway.appmedo.com/image-generation/task",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ taskId }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  if (json.status !== 0) throw new Error(`API error: ${JSON.stringify(json)}`);
-
-  return json.data;
-}
-
-// ── Extract Base64 image from a SUCCESS result ─────────────────
-function extractBase64(taskResult: TaskResult): string {
-  const markdownText = taskResult.result!.candidates[0].content.parts[0].text;
-  // Format: ![image](data:image/jpeg;base64,<BASE64_DATA>)
-  const match = markdownText.match(/data:[^;]+;base64,([^)]+)/);
-  if (!match) throw new Error("Could not extract Base64 from response");
-  return match[1];
-}
-
-// ── Save to disk (use Bash tool in generation-time context) ─────
-// After extracting base64:
-//   echo "<base64>" | base64 -d > ~/generated-image.jpg
+```bash
+python3 <skill-path>/scripts/query_image.py --task-id "<task_id>" --output /tmp/out.jpg
 ```
+
+The script polls the task until it reaches `SUCCESS`, `FAILED`, or `TIMEOUT`, extracts the Base64 image from the markdown result, and saves it to `--output`. It prints one JSON line to stdout:
+
+- Success: `{"status":"succeed","task_id":"...","file":"/tmp/out.jpg"}`
+- Still processing after the safe polling window: `{"status":"processing","task_id":"..."}`
+
+On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

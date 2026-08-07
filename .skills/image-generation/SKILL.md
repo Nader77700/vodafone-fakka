@@ -60,26 +60,38 @@ async function generateAndWait(
 
 ## Generation-Time Usage (Agent Direct Call)
 
-See `references/submit-api.md` and `references/query-api.md` for the individual function implementations. Compose them with the `generateAndWait` loop above.
+Use the built-in scripts for generation-time calls. The scripts read `INTEGRATIONS_API_KEY` from the environment, submit the task, poll until it finishes, extract the Base64 image embedded in the Markdown result, and save it to disk.
 
-**Generation-time file saving (required):**
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
 
-The query response embeds the image directly as **Base64 data** inside a Markdown string (not a URL). After receiving the result, extract the Base64 payload and save it to disk immediately.
+**Submit + poll (all-in-one):**
 
 ```bash
-# Extract Base64 from the markdown string and decode to a file
-echo "<base64_data>" | base64 -d > ~/generated-image.jpg
+# Text-to-image
+python3 <skill-path>/scripts/generate_image.py \
+  --prompt "A cute orange kitten in a sunny garden, cartoon style" \
+  --output /tmp/generated-image.jpg
+
+# Image-to-image / multi-image composition (repeat --image)
+python3 <skill-path>/scripts/generate_image.py \
+  --prompt "Convert to cartoon illustration style" \
+  --image /path/to/photo.png \
+  --output /tmp/generated-image.jpg
 ```
 
-**Complete generation-time workflow (including save step):**
+**Resume polling an existing task:**
 
-1. Call `submitTask(contents)` to submit the generation job → receive `taskId`
-2. Poll `queryTask(taskId)` every 7 seconds until `status === "SUCCESS"`, `"FAILED"`, or `"TIMEOUT"` (timeout 10 min)
-3. Extract the Base64 string from `candidates[0].content.parts[0].text` (strip the `![image](data:image/jpeg;base64,` prefix and the closing `)`)
-4. Use Bash tool: `echo "<base64>" | base64 -d > <local-path>.jpg`
-5. Tell the user the file has been saved
+```bash
+python3 <skill-path>/scripts/query_image.py --task-id "<task_id>" --output /tmp/generated-image.jpg
+```
 
-> **Note**: The Base64 image data exists only in the current response. Save it immediately — it will be lost if not persisted.
+The scripts print one JSON line:
+- On success: `{"status":"succeed","task_id":"...","file":"/tmp/generated-image.jpg"}`
+- If still processing: `{"status":"processing","task_id":"..."}`
+
+On failure they print an error to stderr and exit with a non-zero code.
+
+> **Note**: The Base64 image data exists only in the current response. The script saves it to `--output` immediately — always pass `--output`.
 
 ---
 

@@ -61,46 +61,32 @@ data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAA...
 
 ## Generation-Time Usage (Agent Direct Call)
 
-```typescript
-const AUTH_VALUE = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — injected by platform
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-interface SubmitResponse {
-  taskId: string;
-}
+```bash
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image /path/img.jpg \
+  [--prompt "optional motion prompt"] \
+  [--negative-prompt "things to avoid"] \
+  [--model kling-v1-6] \
+  [--mode pro] \
+  [--duration 5] \
+  [--aspect-ratio 16:9] \
+  [--cfg-scale 0.5] \
+  [--output-dir /tmp/out]
 
-async function submitImageToVideo(params: {
-  modelName: string;
-  image: string;       // pure Base64 string or image URL
-  prompt?: string;
-  duration: "5" | "10";
-}): Promise<SubmitResponse> {
-  const body: Record<string, string> = {
-    model_name: params.modelName,
-    image: params.image,
-    duration: params.duration,
-  };
-  if (params.prompt) body.prompt = params.prompt;
-
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-rY7JZvg0dqdL.gateway.appmedo.com/v1/videos/image2video",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${AUTH_VALUE}`,
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-
-  return { taskId: json.data.task_id };
-}
+# Or use a URL instead of a local file:
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image-url "https://example.com/photo.jpg" \
+  --output-dir /tmp/out
 ```
+
+The script submits the task, polls until it succeeds or fails, downloads the video, and prints one JSON line to stdout:
+
+- Success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- Still processing after the safe polling window: `{"status":"processing","task_id":"..."}`
+
+On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

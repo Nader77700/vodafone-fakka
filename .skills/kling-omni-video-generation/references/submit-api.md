@@ -70,48 +70,23 @@
 
 ## Generation-time Usage (Direct Agent Call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — key injected by platform
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-interface OmniVideoSubmitOptions {
-  model_name?: string;
-  multi_shot?: boolean;
-  shot_type?: string;
-  prompt?: string;
-  multi_prompt?: Array<{ index: number; prompt: string; duration?: string }>;
-  image_list?: Array<{ image_url?: string; image_base64?: string }>;
-  element_list?: Array<{ element_id: string }>;
-  video_list?: Array<{ video_url: string }>;
-  sound?: string;
-  mode?: string;
-  aspect_ratio?: string;
-  duration?: string;
-  watermark_info?: { enabled: boolean };
-  callback_url?: string;
-  external_task_id?: string;
-}
-
-async function submitOmniVideo(options: OmniVideoSubmitOptions): Promise<{ taskId: string }> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-k93RvqRrRZba.gateway.appmedo.com/v1/videos/omni-video",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(options),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-
-  return { taskId: json.data.task_id };
-}
+```bash
+python3 <skill-path>/scripts/generate_omni_video.py \
+  --prompt "..." \
+  [--negative-prompt "..."] \
+  [--image /path/ref.jpg] \
+  [--image-url "https://..."] \
+  [--model kling-v2] \
+  [--aspect-ratio 16:9] \
+  [--duration 5] \
+  [--cfg-scale 0.5] \
+  [--mode pro] \
+  [--output-dir /tmp/out]
 ```
+
+The script submits the task, polls until it succeeds/fails/exceeds the safe time limit, and prints one JSON line to stdout: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}` or `{"status":"processing","task_id":"..."}`. On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

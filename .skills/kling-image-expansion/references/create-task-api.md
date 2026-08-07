@@ -38,38 +38,18 @@
 
 ## Generation-Phase Usage (Direct Agent Call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-async function createExpandTask(params: {
-  image: string;
-  up_expansion_ratio: number;
-  down_expansion_ratio: number;
-  left_expansion_ratio: number;
-  right_expansion_ratio: number;
-  prompt?: string;
-  n?: number;
-  watermark_info?: { enabled: boolean };
-  callback_url?: string;
-  external_task_id?: string;
-}): Promise<{ task_id: string; task_status: string }> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-GYX1bbkRQj4a.gateway.appmedo.com/v1/images/editing/expand",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(params),
-    }
-  );
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data;
-}
+```bash
+python3 <skill-path>/scripts/generate_image_expansion.py \
+  --image-url "https://example.com/photo.jpg" \
+  --up-ratio 0.5 --down-ratio 0.5 --left-ratio 0 --right-ratio 0 \
+  --prompt "extend the sky" \
+  -n 1 \
+  --output-dir /tmp/expand_output
 ```
+
+The script submits the task, polls until it succeeds/fails/exceeds the safe limit, and prints one JSON line to stdout. On failure it prints an error to stderr and exits with a non-zero code.
 
 ## Post-Generation Usage (Edge Function)
 

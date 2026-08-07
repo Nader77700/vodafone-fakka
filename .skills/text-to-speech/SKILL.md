@@ -36,9 +36,21 @@ The endpoint directly returns **binary audio file content**, with response heade
 
 ## Generation-time Usage (Agent Direct Call)
 
-After calling the API, binary audio data is returned directly and must be saved to a local file.
+Use the built-in script for generation-time calls. The script reads `INTEGRATIONS_API_KEY` from the environment, calls the upstream API, and saves the returned binary audio to the file given by `--output`.
 
-> For complete TypeScript code and the download workflow, see the "Generation-time Usage" section in `references/speech-api.md`.
+**The Bash tool timeout MUST be set to 600000ms (600 seconds).**
+
+```bash
+python3 <skill-path>/scripts/call_text_to_speech.py \
+  --input "Hello, world!" \
+  --voice heart \
+  --response-format mp3 \
+  --output /tmp/output.mp3
+```
+
+On success it prints one JSON line to stdout, e.g. `{"status":"succeed","file":"/tmp/output.mp3","bytes":12345}`. On failure it prints an error to stderr and exits with a non-zero code. After the file is saved, tell the user the path and how to play it.
+
+> For complete parameter details, see the "Generation-time Usage" section in `references/speech-api.md`.
 
 ---
 

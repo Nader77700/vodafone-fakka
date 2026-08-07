@@ -33,57 +33,39 @@
 
 ## Generation-time Usage (Agent Direct Call)
 
-In the generation-time scenario (Agent direct call), the API returns **binary audio data**. The response body must be saved to a local file before it can be used by the end user.
-
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — key injected by the platform
-
-async function textToSpeech(
-  input: string,
-  voice: string = "heart",
-  responseFormat: string = "mp3"
-): Promise<ArrayBuffer> {
-  const response = await fetch("https://app-ck2v94t1nev5-api-GYX1lzGw01Xa.gateway.appmedo.com/v1/audio/speech", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Gateway-Authorization": `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      input,
-      voice,
-      response_format: responseFormat,
-    }),
-  });
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  // Response body is binary audio data — return as ArrayBuffer
-  return response.arrayBuffer();
-}
-```
-
-**Generation-time file download (required):**
-
-This endpoint returns **binary audio data directly** (no URL). After obtaining the audio data in the generation-time context, you **must immediately use the Bash tool to save it to a local file** so that the user can view or play the result.
-
-Save the binary response directly using `curl` (recommended):
+In the generation-time scenario (Agent direct call), the API returns **binary audio data**. Use the built-in script — do not hand-write TypeScript request code. The script saves the response body to a local file so the end user can play it. Bash tool timeout must be set to `600000` ms.
 
 ```bash
-curl -s -X POST "https://app-ck2v94t1nev5-api-GYX1lzGw01Xa.gateway.appmedo.com/v1/audio/speech" \
-  -H "Content-Type: application/json" \
-  -H "X-Gateway-Authorization: Bearer $INTEGRATIONS_API_KEY" \
-  -d '{"input": "Hello, world!", "voice": "heart", "response_format": "mp3"}' \
-  -o /tmp/output.mp3
+python3 <skill-path>/scripts/call_text_to_speech.py \
+  --input "Hello, world!" \
+  --voice heart \
+  --response-format mp3 \
+  --output /tmp/output.mp3
 ```
 
-**Complete generation-time workflow (including save step):**
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--input` | Yes | Text content to convert to speech |
+| `--output` | Yes | Local file path to write the audio to |
+| `--voice` | No | Voice type, default `heart` |
+| `--response-format` | No | `mp3` (default), `wav`, `ogg` |
+| `--timeout` | No | Request timeout in seconds, default 600 |
 
-1. Make the request using the `curl` command above (or the TypeScript function)
-2. Use the Bash tool to run `curl ... -o <local-path>.mp3` to save the audio locally
+The script reads `INTEGRATIONS_API_KEY` and calls the upstream API via `X-Gateway-Authorization`. On success it prints one JSON line:
+
+```json
+{"status":"succeed","file":"/tmp/output.mp3","bytes":12345}
+```
+
+If the upstream returns a JSON/text error body instead of audio, the script prints the error to stderr and exits with a non-zero code.
+
+**Complete generation-time workflow:**
+
+1. Run the script above with an `--output` path
+2. Confirm the printed `bytes` count is non-zero
 3. Inform the user that the file has been saved to the specified path and explain how to play it
 
-> **Note**: Binary audio data exists only within the current response. It must be saved promptly or the data will be lost.
+> **Note**: Binary audio data exists only within the current response. The script writes it to disk immediately; without `--output` there is nowhere to persist it, which is why the argument is required.
 
 ---
 

@@ -79,31 +79,17 @@ The `{id}` path segment must be replaced with either `task_id` (system-generated
 
 ## Generation-time usage (Agent direct call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — injected by platform
+Use the built-in script to poll an existing task — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-async function queryImage2VideoTask(taskId: string): Promise<{
-  task_status: string;
-  task_status_msg?: string;
-  task_result?: { videos: { id: string; url: string; duration: string }[] };
-}> {
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-rLobzpqX85m9.gateway.appmedo.com/v1/videos/image2video/${taskId}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data;
-}
+```bash
+python3 <skill-path>/scripts/query_image_to_video.py --task-id "<task_id>" [--output-dir /tmp/out]
 ```
+
+The script polls the task every 7 seconds (up to ~550s) and prints one JSON line:
+- Success: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}`
+- Still processing: `{"status":"processing","task_id":"..."}`
+
+On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

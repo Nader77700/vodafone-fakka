@@ -79,57 +79,23 @@ Submit a video-generation task that animates a static image. The API accepts a r
 
 ## Generation-time usage (Agent direct call)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — injected by platform
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-async function submitImage2VideoTask(params: {
-  image: string;
-  prompt?: string;
-  model_name?: string;
-  mode?: "std" | "pro";
-  duration?: "5" | "10";
-  image_tail?: string;
-  negative_prompt?: string;
-  cfg_scale?: number;
-  voice_list?: { voice_id: string }[];
-  sound?: "on" | "off";
-  static_mask?: string;
-  dynamic_masks?: {
-    mask: string;
-    trajectories: { x: number; y: number }[];
-  }[];
-  camera_control?: {
-    type: "simple" | "down_back" | "forward_up" | "right_turn_forward" | "left_turn_forward";
-    config?: {
-      horizontal?: number;
-      vertical?: number;
-      pan?: number;
-      tilt?: number;
-      roll?: number;
-      zoom?: number;
-    };
-  };
-  callback_url?: string;
-  external_task_id?: string;
-}): Promise<string> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-eLMlJj3KJD89.gateway.appmedo.com/v1/videos/image2video",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(params),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  const json = await response.json();
-  if (json.code !== 0) throw new Error(`API error ${json.code}: ${json.message}`);
-  return json.data.task_id;
-}
+```bash
+python3 <skill-path>/scripts/generate_image_to_video.py \
+  --image /path/img.jpg \
+  [--image-url "https://..."] \
+  [--prompt "..."] \
+  [--negative-prompt "..."] \
+  [--model kling-v1-6] \
+  [--mode pro] \
+  [--duration 5] \
+  [--aspect-ratio 16:9] \
+  [--cfg-scale 0.5] \
+  [--output-dir /tmp/out]
 ```
+
+The script submits the task, polls until it succeeds/fails/exceeds the safe time limit, and prints one JSON line to stdout: `{"status":"succeed","task_id":"...","videos":[{"url":"...","file":"..."}]}` or `{"status":"processing","task_id":"..."}`. On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

@@ -59,67 +59,19 @@ Continues an existing conversation; the assistant retains previous messages and 
 
 ## Generation-time usage (Agent calls directly)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
-const AUTH_VALUE = `Bearer ${apiKey}`;
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. Bash tool timeout must be set to `600000` ms.
 
-// --- Endpoint 1: Start new session ---
-interface AssistantResponse {
-  answer: string;
-  data: object;
-  session_id: string;
-}
+```bash
+# Endpoint 1 — start a new session
+python3 <skill-path>/scripts/call_weather.py --endpoint assistant_create \
+  --message "What is the weather in New York?" [--units metric]
 
-async function startAssistantSession(prompt: string): Promise<AssistantResponse> {
-  const response = await fetch(
-    "https://app-ck2v94t1nev5-api-79jKPlpvAJ0L.gateway.appmedo.com/assistant/session",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": AUTH_VALUE,
-      },
-      body: JSON.stringify({ prompt }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  return response.json();
-}
-
-// --- Endpoint 2: Resume existing session ---
-async function resumeAssistantSession(
-  sessionId: string,
-  prompt: string
-): Promise<AssistantResponse> {
-  const response = await fetch(
-    `https://app-ck2v94t1nev5-api-oYA6ZxVqyK8a.gateway.appmedo.com/assistant/session/${sessionId}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Gateway-Authorization": AUTH_VALUE,
-      },
-      body: JSON.stringify({ prompt }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-  return response.json();
-}
-
-// --- Multi-turn conversation example ---
-// Step 1: Start a new session
-const session = await startAssistantSession("What is the weather like in London?");
-console.log(session.answer);
-// → "Currently in London, it's partly cloudy with a temperature of 15°C..."
-const sessionId = session.session_id;
-
-// Step 2: Follow up (not billed)
-const followUp = await resumeAssistantSession(sessionId, "Do I need a hat?");
-console.log(followUp.answer);
-// → "With the current wind speeds of 20 km/h, a hat would be advisable..."
+# Endpoint 2 — resume an existing session
+python3 <skill-path>/scripts/call_weather.py --endpoint assistant_continue \
+  --session-id "<session_id>" --message "Will it rain tomorrow?"
 ```
+
+The script reads `INTEGRATIONS_API_KEY`, calls the selected endpoint, and prints one JSON line to stdout: `{"status":"succeed","result":{...}}`. On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 

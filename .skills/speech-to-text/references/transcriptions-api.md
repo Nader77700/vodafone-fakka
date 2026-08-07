@@ -96,130 +96,46 @@
 
 ## Generation-time Usage (Agent Direct Call)
 
-The platform injects the API key via the environment variable — no user-supplied key is needed.
+Use the built-in script for generation-time calls — do not hand-write TypeScript request code. The script reads `INTEGRATIONS_API_KEY` from the environment and handles both public-URL submission and local-file (multipart) upload. Bash tool timeout must be set to `600000` ms.
 
 ### Submit Audio via URL (Recommended)
 
-```typescript
-const apiKey = process.env["INTEGRATIONS_API_KEY"]!; // platform_managed — key injected by the platform
-
-interface TranscriptionOptions {
-  fileUrl: string;             // Public URL of the audio file (max 1 GB)
-  language?: string;           // e.g., "english", "chinese"; auto-detected if omitted
-  responseFormat?: "json" | "text" | "srt" | "verbose_json" | "vtt"; // default: "json"
-  speakerLabels?: boolean;     // Enable speaker diarization (requires verbose_json)
-  minSpeakers?: number;        // Min speaker count (use with speakerLabels)
-  maxSpeakers?: number;        // Max speaker count (use with speakerLabels)
-  prompt?: string;             // Prompt to guide transcription style
-  translate?: boolean;         // Translate audio to English
-  callbackUrl?: string;        // Async callback URL
-  timestampGranularities?: string[]; // e.g., ["word"], requires verbose_json
-}
-
-interface TranscriptionResult {
-  text: string;
-  task?: string;
-  language?: string;
-  duration?: number;
-  segments?: Array<{
-    id: number;
-    text: string;
-    start: number;
-    end: number;
-    language?: string;
-    speaker?: string;
-    words?: Array<{ word: string; start: number; end: number; speaker?: string }>;
-  }>;
-}
-
-async function transcribeAudio(options: TranscriptionOptions): Promise<TranscriptionResult> {
-  const params: Record<string, string> = {
-    file: options.fileUrl,
-  };
-  if (options.language)             params.language = options.language;
-  if (options.responseFormat)       params.response_format = options.responseFormat;
-  if (options.speakerLabels)        params.speaker_labels = "true";
-  if (options.minSpeakers != null)  params.min_speakers = String(options.minSpeakers);
-  if (options.maxSpeakers != null)  params.max_speakers = String(options.maxSpeakers);
-  if (options.prompt)               params.prompt = options.prompt;
-  if (options.translate)            params.translate = "true";
-  if (options.callbackUrl)          params.callback_url = options.callbackUrl;
-  if (options.timestampGranularities) {
-    // API expects repeated keys: timestamp_granularities[]=word
-    params["timestamp_granularities[]"] = options.timestampGranularities.join(",");
-  }
-
-  const response = await fetch("https://app-ck2v94t1nev5-api-DY8MNQoqOnMa.gateway.appmedo.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "X-Gateway-Authorization": `Bearer ${apiKey}`,
-    },
-    body: new URLSearchParams(params).toString(),
-  });
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  // The API returns plain text for response_format=text/srt/vtt,
-  // and JSON for response_format=json/verbose_json
-  const format = options.responseFormat ?? "json";
-  if (format === "text" || format === "srt" || format === "vtt") {
-    const text = await response.text();
-    return { text };
-  }
-
-  const json = await response.json();
-  return json;
-}
+```bash
+python3 <skill-path>/scripts/call_speech_to_text.py \
+  --file-url "https://example.com/audio.mp3" \
+  --response-format json \
+  --language english
 ```
 
 ### Upload a Local File (multipart/form-data)
 
-When a local file must be uploaded, use `FormData` instead of `URLSearchParams`:
-
-```typescript
-async function transcribeLocalFile(
-  filePath: string,
-  fileBuffer: Buffer,
-  fileName: string,
-  options: Omit<TranscriptionOptions, "fileUrl"> = {}
-): Promise<TranscriptionResult> {
-  const apiKey = process.env["INTEGRATIONS_API_KEY"]!;
-
-  const formData = new FormData();
-  formData.append("file", new Blob([fileBuffer]), fileName);
-  if (options.language)             formData.append("language", options.language);
-  if (options.responseFormat)       formData.append("response_format", options.responseFormat);
-  if (options.speakerLabels)        formData.append("speaker_labels", "true");
-  if (options.minSpeakers != null)  formData.append("min_speakers", String(options.minSpeakers));
-  if (options.maxSpeakers != null)  formData.append("max_speakers", String(options.maxSpeakers));
-  if (options.prompt)               formData.append("prompt", options.prompt);
-  if (options.translate)            formData.append("translate", "true");
-  if (options.timestampGranularities) {
-    // Append each granularity value separately to correctly form repeated keys
-    for (const g of options.timestampGranularities) {
-      formData.append("timestamp_granularities[]", g);
-    }
-  }
-
-  const response = await fetch("https://app-ck2v94t1nev5-api-DY8MNQoqOnMa.gateway.appmedo.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: {
-      // DO NOT set Content-Type manually — let fetch set the multipart boundary automatically
-      "X-Gateway-Authorization": `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-  const format = options.responseFormat ?? "json";
-  if (format === "text" || format === "srt" || format === "vtt") {
-    return { text: await response.text() };
-  }
-  return await response.json();
-}
+```bash
+python3 <skill-path>/scripts/call_speech_to_text.py \
+  --file /path/to/audio.mp3 \
+  --response-format verbose_json \
+  --speaker-labels --min-speakers 2 --max-speakers 4 --word-timestamps
 ```
+
+| Argument | Description |
+|----------|-------------|
+| `--file-url` / `--file` | Audio source (mutually exclusive, one required): public URL or local path |
+| `--response-format` | `json` (default), `text`, `srt`, `verbose_json`, `vtt` |
+| `--language` | Audio language (e.g. `english`, `chinese`); auto-detected if omitted |
+| `--speaker-labels` | Enable speaker diarization (requires `--response-format verbose_json`) |
+| `--min-speakers` / `--max-speakers` | Speaker count hints (use with `--speaker-labels`) |
+| `--prompt` | Guide transcription style / proper nouns |
+| `--translate` | Translate the audio content to English |
+| `--callback-url` | Async callback URL for long audio |
+| `--word-timestamps` | Request word-level timestamps (requires `verbose_json`) |
+| `--timeout` | Request timeout in seconds, default 600 |
+
+The script prints one JSON line on success:
+
+```json
+{"status":"succeed","result":{"text":"Artificial intelligence is..."}}
+```
+
+For `text`/`srt`/`vtt` formats the upstream returns plain text, which the script wraps as `{"text":"..."}`. On failure it prints an error to stderr and exits with a non-zero code.
 
 ---
 
