@@ -52,7 +52,7 @@ import {
   Plus, Search, RefreshCw, Loader2,
   ToggleLeft, ToggleRight, Send, LogOut,
   TrendingUp, Phone, BarChart2, Activity, Eye,
-  Home, Copy, Filter, Calendar, Hash, Gift,
+  Home, Copy, Filter, Calendar, Hash, Gift, Trophy,
   AlertTriangle, Layers, UserCheck, Image,
   Crown, Timer, DatabaseZap, UserX, UserMinus,
   RotateCcw, CalendarDays, Infinity as InfinityIcon,
@@ -89,6 +89,7 @@ import NotifAutomation from '@/components/admin/NotifAutomation';
 import ServerConfigTab from '@/components/admin/ServerConfigTab';
 import AdminSmartEngine from '@/components/admin/AdminSmartEngine';
 import AdminReferralManagement from '@/components/admin/AdminReferralManagement';
+import AdminReferralRewards from '@/components/admin/AdminReferralRewards';
 import { formatError } from '@/lib/formatError';
 
 
@@ -100,7 +101,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards';
 
 interface TabMeta {
   id: AdminTab;
@@ -121,6 +122,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'recharge',       label: 'محرك الشحن',       desc: 'ربط سكربت الشحن الخارجي',          icon: Zap },
   { id: 'vodafone_cash_center', label: 'Vodafone Cash',    desc: 'إدارة عمليات فودافون كاش',          icon: Wallet },
   { id: 'referral_management', label: 'نظام الإحالات',    desc: 'إدارة أكواد الإحالة وسجلاتها',       icon: Gift },
+  { id: 'referral_rewards',   label: 'Referral Rewards', desc: 'مهام ومكافآت وتحويلات الإحالات',      icon: Trophy },
   { id: 'operations',     label: 'العمليات',          desc: 'سجل جميع عمليات الشحن',            icon: Clock },
   { id: 'logs',           label: 'السجلات',           desc: 'سجلات النظام والأخطاء',             icon: FileText },
   { id: 'crash_logs',     label: 'سجلات الأعطال',     desc: 'استعراض تقارير وإغلاقات التطبيق المفاجئة', icon: AlertTriangle },
@@ -3046,6 +3048,15 @@ export default function AdminDashboard() {
           {activeTab === 'referral_management' && (
             <div className="page-enter">
               <AdminReferralManagement />
+            </div>
+          )}
+
+          {/* ════════════════════════════════════
+              Referral Rewards — مكافآت الإحالات
+          ════════════════════════════════════ */}
+          {activeTab === 'referral_rewards' && (
+            <div className="page-enter">
+              <AdminReferralRewards />
             </div>
           )}
 

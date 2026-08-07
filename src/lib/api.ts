@@ -5231,6 +5231,276 @@ export async function extendSubscriptionPro(
 // END نظام الاشتراكات الاحترافي
 // ══════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════
+// نظام مكافآت الإحالات — المرحلة الثانية
+// ══════════════════════════════════════════════════════════════
+
+export interface ReferralTask {
+  id: string;
+  title: string;
+  description: string | null;
+  required_referrals: number;
+  reward_type: 'operations';
+  reward_value: number;
+  daily_limit: number;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReferralTaskProgress extends ReferralTask {
+  current_progress: number;
+  is_completed: boolean;
+  claim_status: 'unclaimed' | 'claimed' | 'failed' | 'rejected';
+  claimed_at: string | null;
+  reward_value_granted: number | null;
+}
+
+export interface ReferralBalance {
+  total_earned: number;
+  total_used: number;
+  available: number;
+  last_claim_at: string | null;
+  last_transfer_at: string | null;
+  min_transfer: number;
+  transfer_validity_days: number;
+  transfers_enabled: boolean;
+}
+
+export interface ReferralRewardLog {
+  id: string;
+  task_title: string | null;
+  log_type: 'claim' | 'transfer' | 'manual_grant' | 'manual_deduct' | 'transfer_cancel';
+  operations: number;
+  status: 'success' | 'failed' | 'rejected' | 'pending' | 'cancelled';
+  transfer_valid_from: string | null;
+  transfer_valid_until: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ReferralRewardSettings {
+  id: number;
+  rewards_system_enabled: boolean;
+  tasks_enabled: boolean;
+  claims_enabled: boolean;
+  transfers_enabled: boolean;
+  min_transfer_ops: number;
+  transfer_validity_days: number;
+  max_claims_per_day: number;
+  updated_at: string;
+}
+
+/** جلب المهام مع تقدم المستخدم */
+export async function rwGetTasksWithProgress(userId: string): Promise<{
+  enabled: boolean;
+  tasks: ReferralTaskProgress[];
+  current_progress: number;
+  claims_enabled: boolean;
+}> {
+  const { data, error } = await supabase.rpc('rw_get_tasks_with_progress', { p_user_id: userId });
+  if (error || !data) return { enabled: false, tasks: [], current_progress: 0, claims_enabled: false };
+  const d = typeof data === 'string' ? JSON.parse(data) : data;
+  return {
+    enabled: !!d.enabled,
+    tasks: Array.isArray(d.tasks) ? d.tasks : [],
+    current_progress: d.current_progress ?? 0,
+    claims_enabled: !!d.claims_enabled,
+  };
+}
+
+/** المطالبة بمكافأة مهمة */
+export async function rwClaimReward(userId: string, taskId: string): Promise<{
+  success: boolean; reason?: string; reward_value?: number;
+}> {
+  const { data, error } = await supabase.rpc('rw_claim_reward', { p_user_id: userId, p_task_id: taskId });
+  if (error) return { success: false, reason: error.message };
+  const d = typeof data === 'string' ? JSON.parse(data) : data;
+  return d;
+}
+
+/** جلب رصيد الإحالات */
+export async function rwGetBalance(userId: string): Promise<ReferralBalance> {
+  const { data, error } = await supabase.rpc('rw_get_balance', { p_user_id: userId });
+  if (error || !data) return {
+    total_earned: 0, total_used: 0, available: 0,
+    last_claim_at: null, last_transfer_at: null,
+    min_transfer: 10, transfer_validity_days: 7, transfers_enabled: true,
+  };
+  return typeof data === 'string' ? JSON.parse(data) : data;
+}
+
+/** تنفيذ التحويل */
+export async function rwTransferBalance(userId: string, amount?: number): Promise<{
+  success: boolean; reason?: string; transferred?: number;
+  valid_until?: string; remaining_balance?: number;
+  minimum?: number; available?: number;
+}> {
+  const params: Record<string, unknown> = { p_user_id: userId };
+  if (amount !== undefined) params.p_amount = amount;
+  const { data, error } = await supabase.rpc('rw_transfer_balance', params);
+  if (error) return { success: false, reason: error.message };
+  return typeof data === 'string' ? JSON.parse(data) : data;
+}
+
+/** سجل المكافآت */
+export async function rwGetRewardLogs(userId: string, limit = 50, offset = 0): Promise<{
+  logs: ReferralRewardLog[]; total: number;
+}> {
+  const { data, error } = await supabase.rpc('rw_get_reward_logs', {
+    p_user_id: userId, p_limit: limit, p_offset: offset,
+  });
+  if (error || !data) return { logs: [], total: 0 };
+  const d = typeof data === 'string' ? JSON.parse(data) : data;
+  return { logs: Array.isArray(d.logs) ? d.logs : [], total: d.total ?? 0 };
+}
+
+/** إعدادات نظام المكافآت */
+export async function rwGetRewardSettings(): Promise<ReferralRewardSettings | null> {
+  const { data, error } = await supabase.from('referral_reward_settings').select('*').eq('id', 1).single();
+  if (error) return null;
+  return data as ReferralRewardSettings;
+}
+
+/** تحديث الإعدادات (أدمن) */
+export async function rwUpdateRewardSettings(
+  updates: Partial<Omit<ReferralRewardSettings, 'id' | 'updated_at' | 'updated_by'>>
+): Promise<{ success: boolean }> {
+  const { error } = await supabase.from('referral_reward_settings')
+    .update({ ...updates, updated_at: new Date().toISOString() }).eq('id', 1);
+  return { success: !error };
+}
+
+/** جلب جميع المهام (أدمن) */
+export async function rwAdminGetTasks(): Promise<ReferralTask[]> {
+  const { data, error } = await supabase.from('referral_tasks')
+    .select('*').order('required_referrals', { ascending: true });
+  if (error) return [];
+  return (data ?? []) as ReferralTask[];
+}
+
+/** إنشاء مهمة جديدة */
+export async function rwAdminCreateTask(
+  task: Pick<ReferralTask, 'title' | 'description' | 'required_referrals' | 'reward_value' | 'daily_limit' | 'starts_at' | 'ends_at'>
+): Promise<{ success: boolean; id?: string }> {
+  const { data, error } = await supabase.from('referral_tasks').insert(task).select('id').single();
+  if (error) return { success: false };
+  return { success: true, id: data?.id };
+}
+
+/** تعديل مهمة */
+export async function rwAdminUpdateTask(
+  id: string,
+  updates: Partial<ReferralTask>
+): Promise<{ success: boolean }> {
+  const { error } = await supabase.from('referral_tasks')
+    .update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+  return { success: !error };
+}
+
+/** حذف مهمة */
+export async function rwAdminDeleteTask(id: string): Promise<{ success: boolean }> {
+  const { error } = await supabase.from('referral_tasks').delete().eq('id', id);
+  return { success: !error };
+}
+
+/** منح/خصم يدوي */
+export async function rwAdminAdjustBalance(
+  adminId: string, userId: string, amount: number,
+  logType: 'manual_grant' | 'manual_deduct', notes?: string
+): Promise<{ success: boolean; reason?: string }> {
+  const { data, error } = await supabase.rpc('rw_admin_adjust_balance', {
+    p_admin_id: adminId, p_user_id: userId, p_amount: amount,
+    p_log_type: logType, p_notes: notes ?? null,
+  });
+  if (error) return { success: false, reason: error.message };
+  return typeof data === 'string' ? JSON.parse(data) : data;
+}
+
+/** إلغاء تحويل */
+export async function rwAdminCancelTransfer(
+  adminId: string, logId: string
+): Promise<{ success: boolean; reason?: string }> {
+  const { data, error } = await supabase.rpc('rw_admin_cancel_transfer', {
+    p_admin_id: adminId, p_log_id: logId,
+  });
+  if (error) return { success: false, reason: error.message };
+  return typeof data === 'string' ? JSON.parse(data) : data;
+}
+
+/** نظرة عامة للأدمن */
+export async function rwAdminGetOverview(): Promise<{
+  total_claimed: number; total_transferred: number;
+  pending_claims: number; active_tasks: number; active_users_30d: number;
+}> {
+  const { data, error } = await supabase.rpc('rw_admin_get_overview');
+  if (error || !data) return { total_claimed: 0, total_transferred: 0, pending_claims: 0, active_tasks: 0, active_users_30d: 0 };
+  return typeof data === 'string' ? JSON.parse(data) : data;
+}
+
+/** جلب جميع سجلات المكافآت (أدمن) */
+export async function rwAdminGetAllLogs(limit = 100, offset = 0): Promise<{
+  logs: (ReferralRewardLog & { username?: string; user_id: string })[]; total: number;
+}> {
+  const { data, error, count } = await supabase
+    .from('referral_reward_logs')
+    .select('*, profiles(username)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return { logs: [], total: 0 };
+  const logs = (data ?? []).map((r: Record<string, unknown>) => ({
+    ...(r as unknown as ReferralRewardLog & { user_id: string }),
+    username: (r.profiles as { username?: string } | null)?.username ?? '—',
+  }));
+  return { logs, total: count ?? 0 };
+}
+
+/** جلب جميع أرصدة الإحالات (أدمن) */
+export async function rwAdminGetAllBalances(limit = 100, offset = 0): Promise<{
+  items: (ReferralBalance & { user_id: string; username?: string })[]; total: number;
+}> {
+  const { data, error, count } = await supabase
+    .from('referral_balances')
+    .select('*, profiles(username)', { count: 'exact' })
+    .order('total_earned', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return { items: [], total: 0 };
+  const items = (data ?? []).map((r: Record<string, unknown>) => ({
+    ...(r as unknown as ReferralBalance & { user_id: string }),
+    username: (r.profiles as { username?: string } | null)?.username ?? '—',
+  }));
+  return { items, total: count ?? 0 };
+}
+
+/** جلب جميع المطالبات (أدمن) */
+export async function rwAdminGetAllClaims(limit = 100, offset = 0): Promise<{
+  items: unknown[]; total: number;
+}> {
+  const { data, error, count } = await supabase
+    .from('referral_task_completions')
+    .select('*, profiles(username), referral_tasks(title)', { count: 'exact' })
+    .order('completed_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return { items: [], total: 0 };
+  return { items: data ?? [], total: count ?? 0 };
+}
+
+/** جلب جميع التحويلات (أدمن) */
+export async function rwAdminGetAllTransfers(limit = 100, offset = 0): Promise<{
+  items: unknown[]; total: number;
+}> {
+  const { data, error, count } = await supabase
+    .from('referral_reward_logs')
+    .select('*, profiles(username)', { count: 'exact' })
+    .eq('log_type', 'transfer')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return { items: [], total: 0 };
+  return { items: data ?? [], total: count ?? 0 };
+}
+
 /** جلب تفاصيل تاجر واحد: أعضاء + عمليات + نقاط + اشتراكات + أكواد + logs */
 export async function adminGetMerchantDetail(merchantId: string): Promise<{
   merchant:      MerchantFull | null;

@@ -1,5 +1,5 @@
-// صفحة الإحالات — نظام الإحالات المرحلة الأولى
-import { useState, useEffect, useCallback } from 'react';
+// صفحة الإحالات — نظام الإحالات المرحلة الأولى + المرحلة الثانية (مكافآت)
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Share2, Copy, Check, Users, Clock, XCircle, CheckCircle, Gift, Link2 } from 'lucide-react';
@@ -15,6 +15,9 @@ import {
   type ReferralRecord,
   type ReferralSettings,
 } from '@/lib/api';
+import ReferralBalanceCard from '@/components/referral/ReferralBalanceCard';
+import ReferralTasksSection from '@/components/referral/ReferralTasksSection';
+import ReferralRewardsLog, { type ReferralRewardsLogHandle } from '@/components/referral/ReferralRewardsLog';
 
 const APP_BASE_URL = window.location.origin;
 
@@ -35,6 +38,12 @@ export default function ReferralPage() {
 
   const [codeCopied, setCodeCopied]   = useState(false);
   const [linkCopied, setLinkCopied]   = useState(false);
+
+  // مرجع لإعادة تحميل سجل المكافآت بعد المطالبة/التحويل
+  const rewardsLogRef = useRef<ReferralRewardsLogHandle | null>(null);
+  const loadBalance = useCallback(() => {
+    rewardsLogRef.current?.reload();
+  }, []);
 
   const referralLink = code ? `${APP_BASE_URL}/ref/${code}` : '';
 
@@ -245,6 +254,11 @@ export default function ReferralPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ══ المرحلة الثانية: مكافآت الإحالات ══ */}
+      <ReferralBalanceCard onTransferred={loadBalance} />
+      <ReferralTasksSection onClaimed={loadBalance} />
+      <ReferralRewardsLog ref={rewardsLogRef} />
     </div>
   );
 }
