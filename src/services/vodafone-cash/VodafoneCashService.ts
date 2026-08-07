@@ -18,13 +18,27 @@ export class VodafoneCashService {
         }
       });
       if (error) {
-        // Handle Edge Function network errors
-        return { success: false, message: error.message || "حدث خطأ أثناء الاتصال بالسيرفر", error: error.message };
+        // حاول تقرأ الـ body الفعلي من Edge Function (Supabase بيرمي FunctionsHttpError)
+        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
+        let debugSteps: any[] = [];
+        try {
+          const ctx = (error as any)?.context;
+          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
+          if (rawTxt) {
+            const parsed = JSON.parse(rawTxt);
+            if (parsed?.error) errMsg = parsed.error;
+            if (parsed?.debugSteps) debugSteps = parsed.debugSteps;
+          }
+        } catch { /* ignore */ }
+        return { success: false, message: errMsg, error: errMsg, data: { debugSteps } };
+      }
+      if (!data) {
+        return { success: false, message: "لا يوجد رد من الخادم", error: "no_data" };
       }
       if (!data.success) {
-        return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data: data };
+        return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data };
       }
-      return { success: true, message: data.message || "تم التحويل بنجاح", data: data };
+      return { success: true, message: data.message || "تم التحويل بنجاح", data };
     } catch (e: any) {
       return { success: false, message: e.message || "حدث خطأ غير متوقع", error: e.message };
     }

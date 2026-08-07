@@ -121,7 +121,8 @@ serve(async (req: Request) => {
           ...DEVICE,
           "CRP": "false",
           "seamlessToken": seamless_token,
-          "firstTimeLogin": "false",
+          "silentLogin": "true",
+          "firstTimeLogin": "true",
           "msisdn": msisdn,
           "X-Forwarded-For": clientIp,
           "True-Client-IP": clientIp,
@@ -266,8 +267,21 @@ serve(async (req: Request) => {
       description = "خوادم فودافون محجوبة أو تحت الصيانة (WAF HTML Response)";
     }
     
-    // Check if success
-    const isSuccess = transferRes.ok && (txt.includes("تم تحويل") || txt.includes("successfully") || data?.status === "completed" || data?.status === "Executed");
+    // ── تحقق من النجاح: فودافون بتبعت ردود متعددة كلها صح ──
+    // HTTP 200 + أي من: status/state = Completed/completed/Executed/inProgress
+    // أو: id موجود (رقم مرجعي للعملية) = نجاح
+    const statusVal = String(data?.status ?? data?.state ?? "").toLowerCase();
+    const isSuccess = transferRes.ok && (
+      statusVal === "completed" ||
+      statusVal === "executed" ||
+      statusVal === "inprogress" ||
+      statusVal === "in progress" ||
+      statusVal === "success" ||
+      txt.includes("تم تحويل") ||
+      txt.includes("successfully") ||
+      txt.includes("Successfully") ||
+      (!!data?.id && transferRes.status === 200)
+    );
 
     if (isSuccess) {
       logStep("transfer", "ok", "transfer executed", { description });
