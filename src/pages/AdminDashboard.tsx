@@ -62,6 +62,7 @@ import {
   AlertCircle, Pencil, Save, X as XIcon,
   Link as LinkIcon, ShieldCheck, ShieldAlert, ShieldX, Wallet,
   User, Share2, Check, Building2, ExternalLink,
+  FlaskConical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +91,7 @@ import ServerConfigTab from '@/components/admin/ServerConfigTab';
 import AdminSmartEngine from '@/components/admin/AdminSmartEngine';
 import AdminReferralManagement from '@/components/admin/AdminReferralManagement';
 import AdminReferralRewards from '@/components/admin/AdminReferralRewards';
+import AdminReferralTesting from '@/components/admin/AdminReferralTesting';
 import { formatError } from '@/lib/formatError';
 
 
@@ -101,7 +103,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing';
 
 interface TabMeta {
   id: AdminTab;
@@ -123,6 +125,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'vodafone_cash_center', label: 'Vodafone Cash',    desc: 'إدارة عمليات فودافون كاش',          icon: Wallet },
   { id: 'referral_management', label: 'نظام الإحالات',    desc: 'إدارة أكواد الإحالة وسجلاتها',       icon: Gift },
   { id: 'referral_rewards',   label: 'Referral Rewards', desc: 'مهام ومكافآت وتحويلات الإحالات',      icon: Trophy },
+  { id: 'referral_testing',   label: 'Referral Testing', desc: 'Sandbox — اختبار معزول عن Production', icon: FlaskConical },
   { id: 'operations',     label: 'العمليات',          desc: 'سجل جميع عمليات الشحن',            icon: Clock },
   { id: 'logs',           label: 'السجلات',           desc: 'سجلات النظام والأخطاء',             icon: FileText },
   { id: 'crash_logs',     label: 'سجلات الأعطال',     desc: 'استعراض تقارير وإغلاقات التطبيق المفاجئة', icon: AlertTriangle },
@@ -3057,6 +3060,15 @@ export default function AdminDashboard() {
           {activeTab === 'referral_rewards' && (
             <div className="page-enter">
               <AdminReferralRewards />
+            </div>
+          )}
+
+          {/* ════════════════════════════════════
+              Referral Testing — Sandbox
+          ════════════════════════════════════ */}
+          {activeTab === 'referral_testing' && (
+            <div className="page-enter">
+              <AdminReferralTesting />
             </div>
           )}
 
