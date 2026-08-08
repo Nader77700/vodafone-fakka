@@ -116,6 +116,8 @@ const ESimDetailPage         = lazyImport(() => import('./pages/networks/ESimDet
 const BalanceChargePage      = lazyImport(() => import('./pages/BalanceChargePage'));
 const LegacyFlexSystemsPage  = lazyImport(() => import('./pages/LegacyFlexSystemsPage'));
 const LegacyFlexSubRequiredPage = lazyImport(() => import('./pages/LegacyFlexSubRequiredPage'));
+const ReferralPage              = lazyImport(() => import('./pages/ReferralPage'));
+const RefLandingPage            = lazyImport(() => import('./pages/RefLandingPage'));
 
 // مؤشر تحميل خفيف أثناء lazy loading
 const PageSpinner = () => (
@@ -559,8 +561,11 @@ function AppInner() {
           <Route path="legacy-flex/subscription-required" element={<PageErrorBoundary pageName="legacy-flex-sub-required"><S><LegacyFlexSubRequiredPage /></S></PageErrorBoundary>} />
           <Route path="notifications"        element={<PageErrorBoundary pageName="notifications"><S><NotificationsPage /></S></PageErrorBoundary>} />
           <Route path="settings"             element={<PageErrorBoundary pageName="settings"><S><SettingsPage /></S></PageErrorBoundary>} />
+          <Route path="referrals"            element={<PageErrorBoundary pageName="referrals"><S><ReferralPage /></S></PageErrorBoundary>} />
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
+
+        <Route path="/ref/:code" element={<PageErrorBoundary pageName="ref-landing"><S><RefLandingPage /></S></PageErrorBoundary>} />
 
         <Route path="/admin" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin"><S><AdminDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/users/:id" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user"><S><AdminUserDetail /></S></PageErrorBoundary></RouteGuard>} />
