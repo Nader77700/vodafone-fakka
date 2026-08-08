@@ -3921,14 +3921,14 @@ export async function getReferralRecords(userId: string): Promise<(ReferralRecor
     .from('referral_records')
     .select(`
       *,
-      profiles!referral_records_referred_id_fkey(username)
+      core_profiles!referral_records_referred_core_fk(username)
     `)
     .eq('referrer_id', userId)
     .order('referred_at', { ascending: false });
   if (error || !data) return [];
   return (data as any[]).map(r => ({
     ...r,
-    referred_username: r.profiles?.username ?? '',
+    referred_username: r.core_profiles?.username ?? '',
   }));
 }
 
@@ -3945,14 +3945,14 @@ export async function getAdminReferralRecords(userId: string): Promise<(Referral
     .from('referral_records')
     .select(`
       *,
-      profiles!referral_records_referred_id_fkey(username)
+      core_profiles!referral_records_referred_core_fk(username)
     `)
     .eq('referrer_id', userId)
     .order('referred_at', { ascending: false });
   if (error || !data) return [];
   return (data as any[]).map(r => ({
     ...r,
-    referred_username: r.profiles?.username ?? '',
+    referred_username: r.core_profiles?.username ?? '',
   }));
 }
 
@@ -5446,13 +5446,13 @@ export async function rwAdminGetAllLogs(limit = 100, offset = 0): Promise<{
 }> {
   const { data, error, count } = await supabase
     .from('referral_reward_logs')
-    .select('*, profiles(username)', { count: 'exact' })
+    .select('*, core_profiles!referral_reward_logs_user_core_fk(username)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) return { logs: [], total: 0 };
   const logs = (data ?? []).map((r: Record<string, unknown>) => ({
     ...(r as unknown as ReferralRewardLog & { user_id: string }),
-    username: (r.profiles as { username?: string } | null)?.username ?? '—',
+    username: (r.core_profiles as { username?: string } | null)?.username ?? '—',
   }));
   return { logs, total: count ?? 0 };
 }
@@ -5463,13 +5463,13 @@ export async function rwAdminGetAllBalances(limit = 100, offset = 0): Promise<{
 }> {
   const { data, error, count } = await supabase
     .from('referral_balances')
-    .select('*, profiles(username)', { count: 'exact' })
+    .select('*, core_profiles!referral_balances_user_core_fk(username)', { count: 'exact' })
     .order('total_earned', { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) return { items: [], total: 0 };
   const items = (data ?? []).map((r: Record<string, unknown>) => ({
     ...(r as unknown as ReferralBalance & { user_id: string }),
-    username: (r.profiles as { username?: string } | null)?.username ?? '—',
+    username: (r.core_profiles as { username?: string } | null)?.username ?? '—',
   }));
   return { items, total: count ?? 0 };
 }
@@ -5480,7 +5480,7 @@ export async function rwAdminGetAllClaims(limit = 100, offset = 0): Promise<{
 }> {
   const { data, error, count } = await supabase
     .from('referral_task_completions')
-    .select('*, profiles(username), referral_tasks(title)', { count: 'exact' })
+    .select('*, core_profiles!referral_task_completions_user_core_fk(username), referral_tasks(title)', { count: 'exact' })
     .order('completed_at', { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) return { items: [], total: 0 };
@@ -5493,7 +5493,7 @@ export async function rwAdminGetAllTransfers(limit = 100, offset = 0): Promise<{
 }> {
   const { data, error, count } = await supabase
     .from('referral_reward_logs')
-    .select('*, profiles(username)', { count: 'exact' })
+    .select('*, core_profiles!referral_reward_logs_user_core_fk(username)', { count: 'exact' })
     .eq('log_type', 'transfer')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);

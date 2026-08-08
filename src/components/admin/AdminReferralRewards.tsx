@@ -317,7 +317,7 @@ function ClaimsLog() {
           </tr></thead>
           <tbody className="divide-y divide-border">
             {items.map((item, i) => {
-              const prof = item.profiles as Record<string,string>|null;
+              const prof = item.core_profiles as Record<string,string>|null;
               const task = item.referral_tasks as Record<string,string>|null;
               return (
                 <tr key={i} className="text-xs">
@@ -377,7 +377,7 @@ function TransfersLog() {
           </tr></thead>
           <tbody className="divide-y divide-border">
             {items.map((item, i) => {
-              const prof = item.profiles as Record<string,string>|null;
+              const prof = item.core_profiles as Record<string,string>|null;
               return (
                 <tr key={i} className="text-xs">
                   <td className="py-2 pr-0 font-mono text-foreground/80 whitespace-nowrap">{prof?.username ?? '—'}</td>
@@ -460,7 +460,7 @@ function BalancesTable() {
           </tr></thead>
           <tbody className="divide-y divide-border">
             {items.map((item, i) => {
-              const prof = item.profiles as Record<string,string>|null;
+              const prof = item.core_profiles as Record<string,string>|null;
               const avail = (item.total_earned as number) - (item.total_used as number);
               return (
                 <tr key={i} className="text-xs">
@@ -543,7 +543,7 @@ function AllLogsTable() {
           </tr></thead>
           <tbody className="divide-y divide-border">
             {items.map((item, i) => {
-              const prof = item.profiles as Record<string,string>|null;
+              const prof = item.core_profiles as Record<string,string>|null;
               const isDebit = ['manual_deduct','transfer'].includes(item.log_type as string);
               return (
                 <tr key={i} className="text-xs">
