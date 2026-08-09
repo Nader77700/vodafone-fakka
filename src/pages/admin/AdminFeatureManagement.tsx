@@ -35,6 +35,13 @@ interface FeatureRow {
 // تعريف الـ Features مع مجموعاتها
 const FEATURE_GROUPS = [
   {
+    id: 'access', label: 'التحكم في الوصول',
+    icon: Shield, color: 'text-destructive',
+    keys: [
+      { key: 'ff_allow_browse_no_sub', label: 'تصفح بدون اشتراك (Guest Mode)', desc: 'يسمح لغير المشتركين بتصفح التطبيق — يُوقَف فوراً عند أي ثغرة' },
+    ],
+  },
+  {
     id: 'ff', label: 'Feature Flags',
     icon: Zap, color: 'text-primary',
     keys: [

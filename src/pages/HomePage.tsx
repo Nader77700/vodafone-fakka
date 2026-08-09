@@ -61,7 +61,7 @@ import SubscriptionPremiumCard from '@/components/subscription/SubscriptionPremi
 import TrialExhaustedPopup from '@/components/TrialExhaustedPopup';
 import { fmtTimeLeft } from '@/lib/formatUtils';
 import { toast } from 'sonner';
-import { Radio, ArrowLeft, Wallet } from 'lucide-react';
+import { Radio, ArrowLeft, Wallet, Eye } from 'lucide-react';
 import PromotionBanner from '@/components/common/PromotionBanner';
 import { formatError } from '@/lib/formatError';
 import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
@@ -2151,11 +2151,13 @@ export default function HomePage() {
       if (isMounted) setSubscription(effectiveSub);
 
       if (!isMerchantClient && (!effectiveSub || effectiveSub.status !== 'active')) {
+        // Guest Browse Mode: إذا مُفعَّل من السيرفر → لا إعادة توجيه، يبقى على الصفحة
+        const guestBrowseAllowed = config.feature_flags.ff_allow_browse_no_sub;
         // فحص فترة السماح
         if (effectiveSub?.in_grace_period && effectiveSub.grace_ends_at) {
           const graceExpired = new Date(effectiveSub.grace_ends_at) < new Date();
           if (graceExpired) {
-            if (isMounted) navigate('/activate', { replace: true });
+            if (!guestBrowseAllowed && isMounted) navigate('/activate', { replace: true });
             return;
           }
           // لا يزال في فترة السماح — يبقى على الصفحة
@@ -2170,7 +2172,8 @@ export default function HomePage() {
             }).eq('user_id', user.id);
             if (isMounted) setSubscription({ ...effectiveSub, in_grace_period: true, grace_ends_at: graceEnds.toISOString() } as typeof effectiveSub);
           } else {
-            if (isMounted) navigate('/activate', { replace: true });
+            // لا يوجد اشتراك إطلاقاً
+            if (!guestBrowseAllowed && isMounted) navigate('/activate', { replace: true });
             return;
           }
         }
@@ -2353,9 +2356,10 @@ export default function HomePage() {
 
   const handleSelectProduct = (product: VodafoneProduct) => {
     // ── حظر الاستخدام للجميع (بمن فيهم الأدمن) إذا لم يكن الاشتراك نشطاً ──
-    const skipChecks = false; 
+    const skipChecks = false;
     if (!subActive && !isMerchantClient && !skipChecks) {
-      toast.error('اشتراكك غير نشط، يرجى التفعيل أولاً');
+      // Guest Browse Mode: يمنع العملية ويُوجّه للتفعيل دائماً
+      toast.error('يجب تفعيل الاشتراك لتنفيذ عمليات الشحن', { duration: 3000 });
       navigate('/activate'); return;
     }
     // فحص اشتراك التاجر لعملاء التجار
@@ -2811,15 +2815,35 @@ export default function HomePage() {
       {/* حالة الاشتراك للجميع */}
       {!subActive && !isMerchantClient && (
         <div className="px-4 pt-3">
-          <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-            <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-destructive">اشتراكك غير نشط</p>
-              <p className="text-xs text-foreground/60 mt-0.5">يجب تفعيل الاشتراك لتنفيذ عمليات الشحن.</p>
+          {config.feature_flags.ff_allow_browse_no_sub ? (
+            /* ── بانر Guest Browse Mode ── */
+            <div className="flex items-start gap-3 p-3.5 rounded-xl border"
+              style={{ background: 'rgba(251,191,36,0.07)', borderColor: 'rgba(251,191,36,0.25)' }}>
+              <Eye className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-1">
+                <p className="text-sm font-bold text-yellow-300">وضع التصفح فقط</p>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  أنت تتصفح التطبيق بدون اشتراك — لا يمكن تنفيذ أي عمليات شحن.
+                  فعّل اشتراكك للاستفادة الكاملة.
+                </p>
+              </div>
+              <Button size="sm" className="h-8 text-xs bg-primary text-primary-foreground shrink-0"
+                onClick={() => navigate('/activate')}>
+                تفعيل
+              </Button>
             </div>
-            <Button size="sm" className="h-8 text-xs bg-primary text-primary-foreground shrink-0"
-              onClick={() => navigate('/activate')}>تفعيل</Button>
-          </div>
+          ) : (
+            /* ── بانر الاشتراك المنتهي الاعتيادي ── */
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+              <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-destructive">اشتراكك غير نشط</p>
+                <p className="text-xs text-foreground/60 mt-0.5">يجب تفعيل الاشتراك لتنفيذ عمليات الشحن.</p>
+              </div>
+              <Button size="sm" className="h-8 text-xs bg-primary text-primary-foreground shrink-0"
+                onClick={() => navigate('/activate')}>تفعيل</Button>
+            </div>
+          )}
         </div>
       )}
       {subActive && (

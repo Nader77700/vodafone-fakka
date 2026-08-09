@@ -6,18 +6,19 @@ import { supabase } from '@/db/supabase';
 
 // ── أنواع الإعدادات ──────────────────────────────────────────────────────────
 export interface FeatureFlags {
-  ff_recharge_enabled:       boolean;
-  ff_esim_enabled:           boolean;
-  ff_vodafone_enabled:       boolean;
-  ff_orange_enabled:         boolean;
-  ff_etisalat_enabled:       boolean;
-  ff_we_enabled:             boolean;
-  ff_favorites_enabled:      boolean;
-  ff_statistics_enabled:     boolean;
-  ff_operations_enabled:     boolean;
-  ff_notifications_enabled:  boolean;
-  ff_maintenance_mode:       boolean;
-  ff_card_feedback_enabled:  boolean;
+  ff_recharge_enabled:         boolean;
+  ff_esim_enabled:             boolean;
+  ff_vodafone_enabled:         boolean;
+  ff_orange_enabled:           boolean;
+  ff_etisalat_enabled:         boolean;
+  ff_we_enabled:               boolean;
+  ff_favorites_enabled:        boolean;
+  ff_statistics_enabled:       boolean;
+  ff_operations_enabled:       boolean;
+  ff_notifications_enabled:    boolean;
+  ff_maintenance_mode:         boolean;
+  ff_card_feedback_enabled:    boolean;
+  ff_allow_browse_no_sub:      boolean; // تصفح بدون اشتراك (Guest Mode)
 }
 
 export interface VersionConfig {
@@ -76,6 +77,7 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     ff_notifications_enabled:  true,
     ff_maintenance_mode:       false,
     ff_card_feedback_enabled:  true,
+    ff_allow_browse_no_sub:    false, // مُعطَّل افتراضياً — يُفعَّل من لوحة التحكم
   },
   version: {
     version_min_supported:    94,

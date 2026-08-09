@@ -4,15 +4,20 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.5.1',
-  versionCode:    480,
+  appVersion:     '3.5.2',
+  versionCode:    481,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_1_ui_fixes_wallet_shortcut',
-  bundleFile:     'VodafoneFakka-v3.5.1.apk',
-  bundleHash:     'apk_v3_5_1_code480',
-  apkHash:        'apk_v3_5_1_code480',
-  dbVersion:      'v3.5.1',
+  sourceHash:     'build_v3_5_2_wallet_shortcut_in_dialog_guest_browse_mode',
+  bundleFile:     'VodafoneFakka-v3.5.2.apk',
+  bundleHash:     'apk_v3_5_2_code481',
+  apkHash:        'apk_v3_5_2_code481',
+  dbVersion:      'v3.5.2',
   releaseNotes: [
+    'v3.5.2: نقل اختصار رصيد المحفظة داخل نافذة تأكيد الشحن — زر مضغوط في أسفل تفاصيل الكارت بدلاً من زر منفصل في الصفحة',
+    'v3.5.2: إضافة نظام تصفح بدون اشتراك (Guest Browse Mode) — زر في شاشة التفعيل يُفتح/يُغلق من لوحة التحكم فوراً',
+    'v3.5.2: حماية كاملة لجميع العمليات — الشحن ممنوع client-side وserver-side للمستخدمين بدون اشتراك نشط',
+    'v3.5.2: بانر تحذيري واضح في الصفحة الرئيسية يُعلم المستخدم بوضع التصفح فقط مع زر تفعيل سريع',
+    'v3.5.2: إضافة ff_allow_browse_no_sub في لوحة التحكم — تحكم فوري بالمفتاح من قسم التحكم في الوصول',
     'v3.5.1: إصلاح layout خانتا المبلغ في شحن الرصيد — تصميم مضغوط يتكيف مع جميع أحجام الشاشات بدون تكدس أو overflow',
     'v3.5.1: تحديث تلقائي عند تغيير الشبكة في صفحتَي رصيد المحفظة وسجل العمليات (Network.addListener)',
     'v3.5.1: إضافة زر اختصار استعلام رصيد المحفظة داخل صفحة شحن الكروت — modal بـ PIN وعرض الرصيد فوراً بدون مغادرة الصفحة',

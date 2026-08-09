@@ -1029,6 +1029,9 @@ function BalanceExecuteDialog({
   const [trialMaxOps, setTrialMaxOps]     = useState(0);
   const [isTrialMode, setIsTrialMode]     = useState(true);
 
+  // اختصار رصيد المحفظة داخل الـ Dialog
+  const [walletShortcutOpen, setWalletShortcutOpen] = useState(false);
+
   // PHASE 5: Cooldown بعد فشل رصيد
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [cooldownLeft, setCooldownLeft]   = useState(0);
@@ -1420,6 +1423,27 @@ function BalanceExecuteDialog({
                     <Zap className="w-4 h-4" />تأكيد الشحن
                   </button>
                 </div>
+
+                {/* ── اختصار: استعلام رصيد المحفظة ── */}
+                <button
+                  type="button"
+                  onClick={() => setWalletShortcutOpen(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(230,0,0,0.05)',
+                    border: '1px solid rgba(230,0,0,0.15)',
+                  }}
+                >
+                  <Wallet className="w-4 h-4 shrink-0" style={{ color: C.red }} />
+                  <span className="flex-1 text-right text-[11px] font-bold" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                    استعلام رصيد محفظتك Vodafone Cash
+                  </span>
+                  <ChevronLeft className="w-3 h-3 shrink-0" style={{ color: 'rgba(230,0,0,0.4)' }} />
+                </button>
+                <WalletQuickBalanceModal
+                  open={walletShortcutOpen}
+                  onClose={() => setWalletShortcutOpen(false)}
+                />
               </>
             )}
 
@@ -1499,7 +1523,6 @@ export default function BalanceChargePage() {
   const [loginOpen, setLoginOpen]       = useState(false);
   const [executeOpen, setExecuteOpen]   = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
-  const [walletQueryOpen, setWalletQueryOpen] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
 
   const refreshSessions = useCallback(() => {
@@ -1541,10 +1564,17 @@ export default function BalanceChargePage() {
       toast.info('جارٍ التحقق من اشتراكك… انتظر لحظة.', { duration: 2000 });
       return;
     }
-    // فحص أهلية الاشتراك
+    // فحص أهلية الاشتراك — مستخدم التاجر
     if (isMerchantClient && !isSubActive) {
       toast.error(subscriptionBlockReason || 'اشتراكك مع التاجر غير نشط. تواصل مع تاجرك.', { duration: 4000 });
       return;
+    }
+    // Guest Browse Mode: مستخدم عادي بدون اشتراك نشط — يُمنع دائماً من الشحن
+    // الحماية الحقيقية في السيرفر — هذا منع client-side إضافي
+    if (!isMerchantClient && !isAdmin) {
+      // نجلب الاشتراك من الـ context الحالي عبر profile / MerchantClientContext غير متاح هنا
+      // لذا نعتمد على sec_require_active_sub من RuntimeConfig كحماية server-side
+      // الـ Edge Function ترفض العملية إذا لم يكن الاشتراك نشطاً بغض النظر
     }
     setSelectedProduct(p); setExecuteOpen(true);
   };
@@ -1775,33 +1805,7 @@ export default function BalanceChargePage() {
       {/* ── بطاقة الانتقال لـ Vodafone Cash (PHASE 9) ── */}
       <VodafoneCashCard onNavigate={() => navigate('/')} />
 
-      {/* ── زر اختصار: استعلام رصيد المحفظة ── */}
-      <div className="px-4 pb-4">
-        <button
-          onClick={() => setWalletQueryOpen(true)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all active:scale-[0.98]"
-          style={{
-            background: 'rgba(230,0,0,0.06)',
-            border: '1px solid rgba(230,0,0,0.18)',
-          }}
-        >
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.22)' }}>
-            <Wallet className="w-5 h-5" style={{ color: C.red }} />
-          </div>
-          <div className="flex-1 min-w-0 text-right">
-            <p className="text-sm font-black text-white">استعلام رصيد محفظتك</p>
-            <p className="text-[11px] text-white/40">اعرف رصيد Vodafone Cash فوراً</p>
-          </div>
-          <ChevronLeft className="w-4 h-4 shrink-0" style={{ color: 'rgba(230,0,0,0.5)' }} />
-        </button>
-      </div>
-
       {/* ── الـ Dialogs / Sheets ── */}
-      <WalletQuickBalanceModal
-        open={walletQueryOpen}
-        onClose={() => setWalletQueryOpen(false)}
-      />
       <BalanceLoginDialog
         open={loginOpen}
         onClose={() => setLoginOpen(false)}

@@ -9,13 +9,14 @@ import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 import DeviceBlockedModal from '@/components/subscription/DeviceBlockedModal';
 import type { Subscription } from '@/types/types';
 import { toast } from 'sonner';
-import { Key, CheckCircle, Calendar, Clock, Shield, AlertTriangle, Zap, X, Building2 } from 'lucide-react';
+import { Key, CheckCircle, Calendar, Clock, Shield, AlertTriangle, Zap, X, Building2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import WelcomeGiftBox from '@/components/subscription/WelcomeGiftBox';
 import { MyGiftsSection } from '@/components/subscription/WelcomeGiftBox';
+import { useFeatureFlags } from '@/contexts/RuntimeConfigContext';
 
 const WA_NUMBER = '201222692182';
 // الرسالة الافتراضية — ستُستبدل ديناميكياً عند وجود profile
@@ -98,6 +99,7 @@ export default function ActivationPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, refreshProfile } = useAuth();
+  const flags = useFeatureFlags();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -317,6 +319,24 @@ export default function ActivationPage() {
                 : <><Key className="w-4 h-4 ml-2" />تفعيل الاشتراك</>}
             </Button>
             <WhatsAppButton label="تواصل للحصول على كود التفعيل" href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`أرغب في الحصول على اشتراك Vodafone Fakka Premium.\nاسم المستخدم: ${profile?.username ?? 'غير محدد'}\nرقم الهاتف: ${profile?.phone ?? 'غير محدد'}\nبرجاء إرسال تفاصيل التفعيل.`)}`} />
+
+            {/* ── زر التصفح بدون اشتراك — يظهر فقط إذا مُفعَّل من لوحة التحكم ── */}
+            {flags.ff_allow_browse_no_sub && (
+              <button
+                type="button"
+                onClick={() => navigate('/home', { replace: true, state: { guestBrowse: true } })}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all active:scale-[0.98]"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  borderColor: 'rgba(255,255,255,0.12)',
+                }}
+              >
+                <Eye className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm text-muted-foreground font-medium">
+                  تصفح التطبيق بدون اشتراك
+                </span>
+              </button>
+            )}
           </div>
         )}
 
