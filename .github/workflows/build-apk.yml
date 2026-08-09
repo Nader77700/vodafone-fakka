@@ -318,7 +318,7 @@ jobs:
             }"
           echo "✅ DB: v${{ env.APP_VERSION }} is_latest=true apk_deployed=true"
 
-          # تحديث app_config — فقط لإعلام النظام بوجود تحديث جديد (اختياري)
+          # تحديث core_app_config (الجدول الأصلي — app_config هو VIEW فقط لا يقبل PATCH)
           # لا نُحدث version_min_supported أو version_force_update هنا، بل من خلال لوحة التحكم
           for ENTRY in \
             "version_latest_name=${{ env.APP_VERSION }}" \
@@ -326,12 +326,17 @@ jobs:
             "version_apk_url=$FINAL_URL"; do
             KEY="${ENTRY%%=*}"
             VAL="${ENTRY#*=}"
-            curl -s -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/app_config?key=eq.$KEY" \
+            R=$(curl -s -o /tmp/cfg_resp.txt -w "%{http_code}" \
+              -X PATCH "${{ env.SUPABASE_URL }}/rest/v1/core_app_config?key=eq.$KEY" \
               -H "Authorization: Bearer $SB_SERVICE_KEY" \
               -H "apikey: $SB_SERVICE_KEY" \
               -H "Content-Type: application/json" \
-              -d "{\"value\":\"$VAL\"}"
-            echo "✅ app_config[$KEY] = $VAL"
+              -d "{\"value\":\"$VAL\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}")
+            if [[ "$R" == "200" || "$R" == "204" ]]; then
+              echo "✅ core_app_config[$KEY] = $VAL"
+            else
+              echo "⚠️ core_app_config[$KEY] HTTP $R — $(cat /tmp/cfg_resp.txt)"
+            fi
           done
 
           echo "✅ DB fully updated — v${{ env.APP_VERSION }} → $FINAL_URL"
