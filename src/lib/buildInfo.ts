@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.4.0',
-  versionCode:    477,
+  appVersion:     '3.4.1',
+  versionCode:    478,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_4_0_wallet_lines',
-  bundleFile:     'VodafoneFakka-v3.4.0.apk',
-  bundleHash:     'apk_v3_4_0_code477',
-  apkHash:        'apk_v3_4_0_code477',
-  dbVersion:      'v3.4.0',
+  sourceHash:     'build_v3_4_1_recharge_fix',
+  bundleFile:     'VodafoneFakka-v3.4.1.apk',
+  bundleHash:     'apk_v3_4_1_code478',
+  apkHash:        'apk_v3_4_1_code478',
+  dbVersion:      'v3.4.1',
   releaseNotes: [
+    'v3.4.1: ربط قسم شحن الرصيد بنظام الجسر — Edge Function vcc-recharge + checkbox شحن لنفسي + إصلاح خطأ duplicate export في البناء',
     'v3.4.0: إضافة قسم خدمات خطوط فودافون والمحافظ — تسجيل دخول، إنشاء حساب OTP، استعلام بالرقم القومي + لوحة أخطاء الأدمن + نظام تسجيل الأخطاء التلقائي',
     'v3.3.8: إصلاح مشكلة التحميل اللانهائي في فحص الشبكة بقسم تحويل الأموال واعتماد قراءة الشبكة محلياً',
     'v3.3.7: إصلاح مشكلة عدم ظهور التحديث في التطبيق (تحديث أرقام البناء في Gradle بشكل صحيح)',
