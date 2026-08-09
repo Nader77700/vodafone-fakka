@@ -260,14 +260,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const currentDeviceId = getDeviceId();
-    
+    // اسم فريد لكل اشتراك لتجنب "cannot add callbacks after subscribe()"
+    const channelName = `profile-device-watch-${user.id}-${Date.now()}`;
+
     const profileSub = supabase
-      .channel(`public:profiles:id=eq.${user.id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
         (payload) => {
-          const newDeviceId = payload.new.device_id;
+          const newDeviceId = (payload.new as { device_id?: string }).device_id;
           // إذا تم تحديث معرف الجهاز ولم يعد يطابق جهازنا الحالي
           if (newDeviceId && newDeviceId !== currentDeviceId) {
             console.warn('[AuthContext] Device conflict detected via realtime! Signing out...');

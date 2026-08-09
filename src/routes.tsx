@@ -34,6 +34,15 @@ const DownloadPage          = lazy(() => import('./pages/DownloadPage'));
 const ReferralPage          = lazy(() => import('./pages/ReferralPage'));
 const RefLandingPage        = lazy(() => import('./pages/RefLandingPage'));
 
+// ── PHASE 1: Services Hub + Wallet Lines ─────────────────────────
+const ServicesPage              = lazy(() => import('./pages/ServicesPage'));
+const WalletLinesPage           = lazy(() => import('./pages/wallet-lines/WalletLinesPage'));
+const WalletLinesLoginPage      = lazy(() => import('./pages/wallet-lines/WalletLinesLoginPage'));
+const WalletLinesRegisterPage   = lazy(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
+const WalletLinesOtpPage        = lazy(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
+const WalletLinesNationalIdPage = lazy(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
+const WalletLinesResultsPage    = lazy(() => import('./pages/wallet-lines/WalletLinesResultsPage'));
+
 // Fallback خفيف أثناء التحميل الكسول
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -86,6 +95,16 @@ export const routes: RouteConfig[] = [
       { name: 'Updates',             path: '/updates',              element: <S><UpdatesPage /></S> },
       { name: 'BalanceCharge',       path: '/balance-charge',       element: <S><BalanceChargePage /></S> },
       { name: 'Referral',            path: '/referrals',            element: <S><ReferralPage /></S> },
+
+      // ── PHASE 1: Services Hub + Wallet Lines (لا تُعدِّل Routes القديمة) ──
+      { name: 'Services',                path: '/services',                        element: <S><ServicesPage /></S> },
+      { name: 'WalletLines',             path: '/wallet-lines',                    element: <S><WalletLinesPage /></S> },
+      { name: 'WalletLinesLogin',        path: '/wallet-lines/login',              element: <S><WalletLinesLoginPage /></S> },
+      { name: 'WalletLinesRegister',     path: '/wallet-lines/register',           element: <S><WalletLinesRegisterPage /></S> },
+      { name: 'WalletLinesOtp',          path: '/wallet-lines/otp',                element: <S><WalletLinesOtpPage /></S> },
+      { name: 'WalletLinesNationalId',   path: '/wallet-lines/national-id',        element: <S><WalletLinesNationalIdPage /></S> },
+      { name: 'WalletLinesResults',      path: '/wallet-lines/results',            element: <S><WalletLinesResultsPage /></S> },
+
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],
   },

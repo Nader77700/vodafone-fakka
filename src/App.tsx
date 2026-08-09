@@ -96,6 +96,7 @@ const AdminDuplicateAccounts = lazyImport(() => import('./pages/admin/AdminDupli
 const AdminDuplicateGroupDetail = lazyImport(() => import('./pages/admin/AdminDuplicateGroupDetail'));
 const AdminThrottleLogs      = lazyImport(() => import('./pages/admin/AdminThrottleLogs'));
 const AdminLegacyFlexPage    = lazyImport(() => import('./pages/admin/AdminLegacyFlexPage'));
+const WalletLinesLogsPage    = lazyImport(() => import('./pages/admin/WalletLinesLogsPage'));
 const MerchantDashboard      = lazyImport(() => import('./pages/merchant/MerchantDashboard'));
 const MerchantClientLayout   = lazyImport(() => import('@/components/merchant-client/MerchantClientLayout'));
 const JoinPage               = lazyImport(() => import('./pages/JoinPage'));
@@ -118,6 +119,15 @@ const LegacyFlexSystemsPage  = lazyImport(() => import('./pages/LegacyFlexSystem
 const LegacyFlexSubRequiredPage = lazyImport(() => import('./pages/LegacyFlexSubRequiredPage'));
 const ReferralPage              = lazyImport(() => import('./pages/ReferralPage'));
 const RefLandingPage            = lazyImport(() => import('./pages/RefLandingPage'));
+
+// ── PHASE 1: Services Hub + Wallet Lines ──────────────────────────────
+const ServicesPage              = lazyImport(() => import('./pages/ServicesPage'));
+const WalletLinesPage           = lazyImport(() => import('./pages/wallet-lines/WalletLinesPage'));
+const WalletLinesLoginPage      = lazyImport(() => import('./pages/wallet-lines/WalletLinesLoginPage'));
+const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
+const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
+const WalletLinesNationalIdPage = lazyImport(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
+const WalletLinesResultsPage    = lazyImport(() => import('./pages/wallet-lines/WalletLinesResultsPage'));
 
 // مؤشر تحميل خفيف أثناء lazy loading
 const PageSpinner = () => (
@@ -562,6 +572,16 @@ function AppInner() {
           <Route path="notifications"        element={<PageErrorBoundary pageName="notifications"><S><NotificationsPage /></S></PageErrorBoundary>} />
           <Route path="settings"             element={<PageErrorBoundary pageName="settings"><S><SettingsPage /></S></PageErrorBoundary>} />
           <Route path="referrals"            element={<PageErrorBoundary pageName="referrals"><S><ReferralPage /></S></PageErrorBoundary>} />
+
+          {/* ── PHASE 1: Services Hub + Wallet Lines ── */}
+          <Route path="services"                    element={<PageErrorBoundary pageName="services"><S><ServicesPage /></S></PageErrorBoundary>} />
+          <Route path="wallet-lines"                element={<PageErrorBoundary pageName="wallet-lines"><S><WalletLinesPage /></S></PageErrorBoundary>} />
+          <Route path="wallet-lines/login"          element={<PageErrorBoundary pageName="wl-login"><S><WalletLinesLoginPage /></S></PageErrorBoundary>} />
+          <Route path="wallet-lines/register"       element={<PageErrorBoundary pageName="wl-register"><S><WalletLinesRegisterPage /></S></PageErrorBoundary>} />
+          <Route path="wallet-lines/otp"            element={<PageErrorBoundary pageName="wl-otp"><S><WalletLinesOtpPage /></S></PageErrorBoundary>} />
+          <Route path="wallet-lines/national-id"    element={<PageErrorBoundary pageName="wl-national-id"><S><WalletLinesNationalIdPage /></S></PageErrorBoundary>} />
+          <Route path="wallet-lines/results"        element={<PageErrorBoundary pageName="wl-results"><S><WalletLinesResultsPage /></S></PageErrorBoundary>} />
+
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
 
@@ -585,6 +605,7 @@ function AppInner() {
         <Route path="/admin/duplicates/:id" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-dup-group"><S><AdminDuplicateGroupDetail /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/throttle-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-throttles"><S><AdminThrottleLogs /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/legacy-flex" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-legacy-flex"><S><AdminLegacyFlexPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/wallet-lines-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-wl-logs"><S><WalletLinesLogsPage /></S></PageErrorBoundary></RouteGuard>} />
 
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />

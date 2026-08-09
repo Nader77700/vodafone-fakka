@@ -67,116 +67,130 @@ import { formatError } from '@/lib/formatError';
 import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
 
 
-// ── كارت Premium — عروض باقي الشبكات ──
 // ══════════════════════════════════════════════════════════
-// HomeServicesGrid: استبدال الكروت الطويلة بـ Grid احترافي
+// HomeServicesCard: كرت واحد موحد يفتح صفحة الخدمات
+// — يحل محل HomeServicesGrid القديمة دون حذف أي منطق —
 // ══════════════════════════════════════════════════════════
 
-function HomeServicesGrid() {
+function HomeServicesCard() {
   const navigate = useNavigate();
-
-  const services = [
-    {
-      id: 'legacy-flex',
-      title: 'أنظمة فليكس القديمة',
-      desc: 'استعد باقات فليكس الكلاسيكية القديمة بكل سهولة وبدون تعقيد.',
-      icon: <RotateCcw className="w-5 h-5 text-white" />,
-      color: '#E60000',
-      badge: 'حصري',
-      bgImage: 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_00244a03-c11f-4fc0-9c12-663794891d9e.jpg',
-      path: '/legacy-flex'
-    },
-    {
-      id: 'balance',
-      title: 'الشحن من رصيد Ana Vodafone',
-      desc: 'اشحن كروت الفكة مباشرة من رصيد خطك بدون استخدام Vodafone Cash.',
-      icon: <Wallet className="w-5 h-5 text-white" />,
-      color: '#00C896',
-      badge: 'جديد',
-      bgImage: 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_1a88f3b4-b999-4571-8be4-a6500d03f5c1.jpg',
-      path: '/balance-charge'
-    },
-    {
-      id: 'networks',
-      title: 'عروض باقي الشبكات',
-      desc: 'عروض حصرية لجميع الشبكات (فودافون، أورانج، اتصالات، وي).',
-      icon: <Radio className="w-5 h-5 text-white" />,
-      color: '#F7C948',
-      badge: 'Premium',
-      bgImage: 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_8b380f76-5fd3-40a0-a550-2936d7aed23d.jpg',
-      path: '/networks'
-    },
-    {
-      id: 'vodafone-cash-center',
-      title: 'تحويل الأموال وشحن الرصيد',
-      desc: 'قم بتحويل الأموال أو شحن الرصيد مباشرة باستخدام محفظة Vodafone Cash الخاصة بك بطريقة آمنة وسريعة.',
-      icon: <Wallet className="w-5 h-5 text-white" />,
-      color: '#E60000',
-      badge: 'NEW',
-      bgImage: 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_7f156ea6-4446-42f3-b569-1695e9e2c1f1.jpg',
-      path: '/vodafone-cash-center',
-      disabled: false
-    }
-  ];
 
   return (
     <div className="px-4 pt-3">
-      <div className="grid grid-cols-1 gap-4">
-        {services.map(svc => (
-          <div
-            key={svc.id}
-            onClick={() => !svc.disabled && svc.path && navigate(svc.path)}
-            className={`group relative rounded-[28px] overflow-hidden flex flex-col justify-end transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)]
-              ${svc.disabled ? 'opacity-80 grayscale-[30%] cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02] active:scale-95 hover:shadow-[0_10px_40px_rgba(230,0,0,0.2)]'}`}
-          >
-            {/* 1. Background Image */}
-            <div className="absolute inset-0 w-full h-full">
-              <img src={svc.bgImage} alt={svc.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-            </div>
+      <div
+        onClick={() => navigate('/services')}
+        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95"
+        aria-label="فتح قسم الخدمات"
+      >
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a1a] via-[#0d1020] to-[#0a0d1a]" />
+        {/* Animated glow */}
+        <div className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700"
+          style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.25) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.18) 0%, transparent 55%)' }} />
+        {/* Border */}
+        <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-indigo-500/30 transition-colors duration-500" />
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
+          style={{ background: 'linear-gradient(90deg, #6366f1 0%, #E60000 50%, #F7C948 100%)' }} />
 
-            {/* 2. Overlays */}
-            <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
-            
-            {/* Glow Layer */}
-            {!svc.disabled && (
-               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
-                 style={{ background: `radial-gradient(circle at center, ${svc.color}60 0%, transparent 70%)` }} />
-            )}
-
-            {/* Border Layer */}
-            <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-white/20 transition-colors" />
-
-            {/* 3. Content */}
-            <div className="relative z-10 p-5 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center backdrop-blur-md bg-white/10 border border-white/20 shadow-inner">
-                    {svc.icon}
-                  </div>
-                  <h3 className="text-lg font-black text-white drop-shadow-md">{svc.title}</h3>
-                </div>
-                {svc.badge && (
-                  <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md bg-black/50 border border-white/10"
-                    style={{ color: svc.color }}>
-                    {svc.badge}
-                  </span>
-                )}
+        {/* Content */}
+        <div className="relative z-10 p-5 flex flex-col gap-3">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/15 shadow-inner"
+                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(230,0,0,0.2))' }}>
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-              
-              <div className="flex items-end justify-between gap-4 mt-1">
-                <p className="text-xs text-white/60 font-medium leading-relaxed max-w-[80%]">
-                  {svc.desc}
-                </p>
-                {!svc.disabled && (
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors border border-white/10 group-hover:border-primary">
-                    <ChevronLeft className="w-4 h-4 text-white" />
-                  </div>
-                )}
+              <div>
+                <h3 className="text-lg font-black text-white drop-shadow-md leading-tight">الخدمات</h3>
+                <p className="text-[10px] text-white/40 font-medium">جميع خدمات التطبيق في مكان واحد</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg backdrop-blur-md"
+                style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
+                4+
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-indigo-500/60 transition-colors border border-white/10 group-hover:border-indigo-400/50">
+                <ChevronLeft className="w-4 h-4 text-white" />
               </div>
             </div>
           </div>
-        ))}
+
+          {/* Mini service badges */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { label: 'فليكس', color: '#E60000' },
+              { label: 'شحن الرصيد', color: '#00C896' },
+              { label: 'تحويل الأموال', color: '#E60000' },
+              { label: 'الخطوط والمحافظ', color: '#6366f1' },
+            ].map(s => (
+              <span key={s.label}
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` }}>
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// HomeNetworksCard: كرت "عروض باقي الشبكات" مستقل في Home
+// ══════════════════════════════════════════════════════════
+
+function HomeNetworksCard() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="px-4 pt-3">
+      <div
+        onClick={() => navigate('/networks')}
+        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95 hover:shadow-[0_10px_40px_rgba(247,201,72,0.15)]"
+        aria-label="عروض باقي الشبكات"
+      >
+        {/* Background Image */}
+        <div className="absolute inset-0 w-full h-full">
+          <img
+            src="https://miaoda-site-img.s3cdn.medo.dev/images/KLing_8b380f76-5fd3-40a0-a550-2936d7aed23d.jpg"
+            alt="عروض باقي الشبكات"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        </div>
+        {/* Overlays */}
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
+          style={{ background: 'radial-gradient(circle at center, #F7C94860 0%, transparent 70%)' }} />
+        <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-white/20 transition-colors" />
+
+        {/* Content */}
+        <div className="relative z-10 p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center backdrop-blur-md bg-white/10 border border-white/20 shadow-inner">
+                <Radio className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-black text-white drop-shadow-md">عروض باقي الشبكات</h3>
+            </div>
+            <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md bg-black/50 border border-white/10"
+              style={{ color: '#F7C948' }}>
+              Premium
+            </span>
+          </div>
+          <div className="flex items-end justify-between gap-4 mt-1">
+            <p className="text-xs text-white/60 font-medium leading-relaxed max-w-[80%]">
+              عروض حصرية لجميع الشبكات (فودافون، أورانج، اتصالات، وي).
+            </p>
+            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors border border-white/10 group-hover:border-primary">
+              <ChevronLeft className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2699,9 +2713,14 @@ export default function HomePage() {
       <PromotionBanner />
 
       {/* ══════════════════════════════════════
-          4. SERVICES GRID
+          4. SERVICES HUB CARD
          ══════════════════════════════════════ */}
-      <HomeServicesGrid />
+      <HomeServicesCard />
+
+      {/* ══════════════════════════════════════
+          4.1. NETWORKS CARD — مستقل خارج قسم الخدمات
+         ══════════════════════════════════════ */}
+      <HomeNetworksCard />
 
       {/* ══════════════════════════════════════
           4.7 VODAFONE CASH CLARIFICATION BANNER

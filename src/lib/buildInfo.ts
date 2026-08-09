@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.3.8',
-  versionCode:    476,
+  appVersion:     '3.4.0',
+  versionCode:    477,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_fix_421',
-  bundleFile:     'VodafoneFakka-v3.0.423.apk',
-  bundleHash:     'apk_v3_0_447_code447',
-  apkHash:        'apk_v3_0_447_code447',
-  dbVersion:      'v3.0.447',
+  sourceHash:     'build_v3_4_0_wallet_lines',
+  bundleFile:     'VodafoneFakka-v3.4.0.apk',
+  bundleHash:     'apk_v3_4_0_code477',
+  apkHash:        'apk_v3_4_0_code477',
+  dbVersion:      'v3.4.0',
   releaseNotes: [
+    'v3.4.0: إضافة قسم خدمات خطوط فودافون والمحافظ — تسجيل دخول، إنشاء حساب OTP، استعلام بالرقم القومي + لوحة أخطاء الأدمن + نظام تسجيل الأخطاء التلقائي',
     'v3.3.8: إصلاح مشكلة التحميل اللانهائي في فحص الشبكة بقسم تحويل الأموال واعتماد قراءة الشبكة محلياً',
     'v3.3.7: إصلاح مشكلة عدم ظهور التحديث في التطبيق (تحديث أرقام البناء في Gradle بشكل صحيح)',
     'v3.3.6: إصدار رسمي شامل لجميع التحديثات: تكامل قسم تحويل الأموال وتحديث الواجهة + حل مشكلة الهيدر الأمني في أنظمة فليكس',
