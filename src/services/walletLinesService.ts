@@ -34,7 +34,7 @@ class RealWalletLinesService implements IWalletLinesService {
     if (!result.success) return result;
     // بعد OTP ناجح → token موجود بالفعل في sessionStorage من login
     // نُعيد token placeholder — الجلسة محفوظة في apiWalletLines
-    const sessionKey = sessionStorage.getItem('wl_session_key') ?? '';
+    const sessionKey = sessionStorage.getItem('wl_session_token') ?? '';
     return {
       success: true,
       data: {
