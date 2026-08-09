@@ -4,16 +4,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.4.1',
-  versionCode:    478,
+  appVersion:     '3.5.0',
+  versionCode:    479,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_4_1_recharge_fix',
-  bundleFile:     'VodafoneFakka-v3.4.1.apk',
-  bundleHash:     'apk_v3_4_1_code478',
-  apkHash:        'apk_v3_4_1_code478',
-  dbVersion:      'v3.4.1',
+  sourceHash:     'build_v3_5_0_wallet_balance_bugs_fix_smart_amount',
+  bundleFile:     'VodafoneFakka-v3.5.0.apk',
+  bundleHash:     'apk_v3_5_0_code479',
+  apkHash:        'apk_v3_5_0_code479',
+  dbVersion:      'v3.5.0',
   releaseNotes: [
-    'v3.4.1: ربط قسم شحن الرصيد بنظام الجسر — Edge Function vcc-recharge + checkbox شحن لنفسي + إصلاح خطأ duplicate export في البناء',
+    'v3.5.0: تطوير قسم قيمة الشحن — خانتان ذكيتان (الرصيد الصافي / المبلغ الإجمالي) مع حساب ضريبة 30% تلقائياً في الاتجاهين + خيارات رصيد سريعة (50/70/80)',
+    'v3.5.0: إصلاح 3 مشاكل رئيسية: (1) زر شحن لنفسي يُفعَّل فور الاتصال بدون اشتراط detectedMsisdn (2) apiLookup يُرجع availability=loaded بدل available (3) رسائل خطأ الـ API كلها بالعربي',
+    'v3.5.0: إضافة صفحات رصيد محفظة Vodafone Cash وسجل العمليات الكامل مع Edge Function vcc-wallet-balance',
     'v3.4.0: إضافة قسم خدمات خطوط فودافون والمحافظ — تسجيل دخول، إنشاء حساب OTP، استعلام بالرقم القومي + لوحة أخطاء الأدمن + نظام تسجيل الأخطاء التلقائي',
     'v3.3.8: إصلاح مشكلة التحميل اللانهائي في فحص الشبكة بقسم تحويل الأموال واعتماد قراءة الشبكة محلياً',
     'v3.3.7: إصلاح مشكلة عدم ظهور التحديث في التطبيق (تحديث أرقام البناء في Gradle بشكل صحيح)',
