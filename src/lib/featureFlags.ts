@@ -5,7 +5,7 @@
  * التحكم الكامل من السيرفر دون الحاجة لتحديث التطبيق.
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/db/supabase';
 
 export interface FeatureFlags {
   servicesHubEnabled: boolean;
