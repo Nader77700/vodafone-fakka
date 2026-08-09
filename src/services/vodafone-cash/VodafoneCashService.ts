@@ -79,6 +79,80 @@ export class VodafoneCashService {
     }
   }
 
+  // ─── رصيد المحفظة ───────────────────────────────────────────────────
+  static async getWalletBalance(payload: {
+    pin: string;
+    seamless_token: string | null;
+    msisdn: string | null;
+  }): Promise<{ success: boolean; balance?: string; msisdn?: string; queried_at?: string; message: string; data?: any }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('vcc-wallet-balance', {
+        body: {
+          action: 'balance',
+          pin: payload.pin,
+          seamless_token: payload.seamless_token,
+          payload_msisdn: payload.msisdn,
+        }
+      });
+      if (error) {
+        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
+        try {
+          const ctx = (error as any)?.context;
+          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
+          if (rawTxt) { const p = JSON.parse(rawTxt); if (p?.error) errMsg = p.error; }
+        } catch { /* ignore */ }
+        return { success: false, message: errMsg };
+      }
+      if (!data?.success) return { success: false, message: data?.error || "تعذر الحصول على الرصيد", data };
+      return { success: true, message: "تم الحصول على الرصيد بنجاح", balance: data.balance, msisdn: data.msisdn, queried_at: data.queried_at, data };
+    } catch (e: any) {
+      return { success: false, message: e.message || "حدث خطأ غير متوقع" };
+    }
+  }
+
+  // ─── سجل العمليات ────────────────────────────────────────────────────
+  static async getTransactionHistory(payload: {
+    pin: string;
+    seamless_token: string | null;
+    msisdn: string | null;
+    start_date: string; // ISO string
+    end_date: string;   // ISO string
+  }): Promise<{ success: boolean; transactions?: any[]; total?: number; period?: any; pagination_error?: boolean; message: string; data?: any }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('vcc-wallet-balance', {
+        body: {
+          action: 'transactions',
+          pin: payload.pin,
+          seamless_token: payload.seamless_token,
+          payload_msisdn: payload.msisdn,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+        }
+      });
+      if (error) {
+        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
+        try {
+          const ctx = (error as any)?.context;
+          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
+          if (rawTxt) { const p = JSON.parse(rawTxt); if (p?.error) errMsg = p.error; }
+        } catch { /* ignore */ }
+        return { success: false, message: errMsg };
+      }
+      if (!data?.success) return { success: false, message: data?.error || "تعذر جلب سجل العمليات", data };
+      return {
+        success: true,
+        message: data.pagination_error ? "تم تحميل جزء من السجل (خطأ في التصفح)" : "تم تحميل سجل العمليات",
+        transactions: data.transactions || [],
+        total: data.total || 0,
+        period: data.period,
+        pagination_error: data.pagination_error,
+        data,
+      };
+    } catch (e: any) {
+      return { success: false, message: e.message || "حدث خطأ غير متوقع" };
+    }
+  }
+
   static async getTransferHistory(userId: string): Promise<MoneyTransfer[]> {
     return [];
   }

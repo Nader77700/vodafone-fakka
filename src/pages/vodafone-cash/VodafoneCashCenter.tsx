@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Phone } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Wallet } from 'lucide-react';
 
 export default function VodafoneCashCenter() {
   const navigate = useNavigate();
@@ -25,6 +25,16 @@ export default function VodafoneCashCenter() {
       color: '#E60000',
       bgImage: 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_15ca0ce1-0365-4506-8f8e-28fd0bd0eb14.jpg',
       path: '/vodafone-cash-center/recharge'
+    },
+    {
+      id: 'wallet-balance',
+      title: 'رصيد المحفظة وسجل العمليات',
+      titleEn: 'Wallet Balance & History',
+      desc: 'استعلم عن رصيد محفظتك وتصفح سجل كل عملياتك.',
+      icon: <Wallet className="w-5 h-5 text-white" />,
+      color: '#6B21A8',
+      bgImage: 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_b5e4bc31-8171-46fd-9189-4cc5458a9ef1.jpg',
+      path: '/vodafone-cash-center/wallet-balance'
     }
   ];
 

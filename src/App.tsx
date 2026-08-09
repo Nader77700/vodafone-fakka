@@ -85,6 +85,9 @@ const MoneyTransferPage      = lazyImport(() => import('./pages/vodafone-cash/Mo
 const RechargeBalancePage    = lazyImport(() => import('./pages/vodafone-cash/RechargeBalancePage'));
 const TransferHistoryPage    = lazyImport(() => import('./pages/vodafone-cash/history/TransferHistoryPage'));
 const RechargeHistoryPage    = lazyImport(() => import('./pages/vodafone-cash/history/RechargeHistoryPage'));
+const WalletBalancePage          = lazyImport(() => import('./pages/vodafone-cash/WalletBalancePage'));
+const WalletBalanceQueryPage     = lazyImport(() => import('./pages/vodafone-cash/WalletBalanceQueryPage'));
+const TransactionHistoryPage     = lazyImport(() => import('./pages/vodafone-cash/TransactionHistoryPage'));
 const AdminVersionCenter     = lazyImport(() => import('./pages/admin/AdminVersionCenter'));
 const AdminLiveMonitoring    = lazyImport(() => import('./pages/admin/AdminLiveMonitoring'));
 const AdminCrashLogsPage     = lazyImport(() => import('./pages/admin/AdminCrashLogsPage'));
@@ -567,6 +570,9 @@ function AppInner() {
           <Route path="vodafone-cash-center/recharge"         element={<PageErrorBoundary pageName="vcc-recharge"><S><RechargeBalancePage /></S></PageErrorBoundary>} />
           <Route path="vodafone-cash-center/history/transfer" element={<PageErrorBoundary pageName="vcc-hist-tx"><S><TransferHistoryPage /></S></PageErrorBoundary>} />
           <Route path="vodafone-cash-center/history/recharge" element={<PageErrorBoundary pageName="vcc-hist-rx"><S><RechargeHistoryPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-cash-center/wallet-balance"              element={<PageErrorBoundary pageName="vcc-wallet-main"><S><WalletBalancePage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-cash-center/wallet-balance/query"        element={<PageErrorBoundary pageName="vcc-wallet-query"><S><WalletBalanceQueryPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-cash-center/wallet-balance/transactions" element={<PageErrorBoundary pageName="vcc-wallet-tx"><S><TransactionHistoryPage /></S></PageErrorBoundary>} />
           <Route path="legacy-flex"          element={<PageErrorBoundary pageName="legacy-flex"><S><LegacyFlexSystemsPage /></S></PageErrorBoundary>} />
           <Route path="legacy-flex/subscription-required" element={<PageErrorBoundary pageName="legacy-flex-sub-required"><S><LegacyFlexSubRequiredPage /></S></PageErrorBoundary>} />
           <Route path="notifications"        element={<PageErrorBoundary pageName="notifications"><S><NotificationsPage /></S></PageErrorBoundary>} />
