@@ -5,6 +5,7 @@ import {
   Wifi, WifiOff, RefreshCw, ShieldCheck, AlertTriangle, Clock
 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { Network } from '@capacitor/network';
 import { VodafoneDetector } from '@/lib/vodafoneDetector';
 import { fetchSeamlessToken } from '@/lib/seamless';
 import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
@@ -68,6 +69,17 @@ export default function WalletBalanceQueryPage() {
   };
 
   useEffect(() => { checkConnection(); }, []);
+
+  // ── تحديث تلقائي عند تغيير الشبكة ─────────────────────────────
+  useEffect(() => {
+    let listener: any;
+    (async () => {
+      listener = await Network.addListener('networkStatusChange', () => {
+        checkConnection();
+      });
+    })();
+    return () => { listener?.remove?.(); };
+  }, []);
 
   const handleQuery = async () => {
     if (!canSubmit) return;

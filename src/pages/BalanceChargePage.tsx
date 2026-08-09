@@ -33,6 +33,12 @@ import {
   ChevronRight, RefreshCw, Clock, Shield, User, Info,
   Users, Plus, Trash2, ChevronLeft, SwitchCamera,
 } from 'lucide-react';
+import { fetchSeamlessToken } from '@/lib/seamless';
+import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
+import { Capacitor } from '@capacitor/core';
+import { VodafoneDetector } from '@/lib/vodafoneDetector';
+import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
+import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +62,150 @@ const C = {
   greenBg:     'rgba(74,222,128,0.10)',
   greenBd:     'rgba(74,222,128,0.22)',
 };
+
+// ══════════════════════════════════════════════════════════
+// مكوّن: استعلام سريع عن رصيد المحفظة (Modal مدمج)
+// ══════════════════════════════════════════════════════════
+function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { config } = useRuntimeConfig();
+  const [pin, setPin]           = useState('');
+  const [status, setStatus]     = useState<'idle' | 'loading' | 'success' | 'failed'>('idle');
+  const [balance, setBalance]   = useState<string | null>(null);
+  const [msisdn, setMsisdn]     = useState<string | null>(null);
+  const [queriedAt, setQueriedAt] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const reset = () => { setPin(''); setStatus('idle'); setBalance(null); setErrorMsg(null); };
+
+  const handleClose = () => { reset(); onClose(); };
+
+  const handleQuery = async () => {
+    if (pin.length < 4 || status === 'loading') return;
+    setStatus('loading');
+    setErrorMsg(null);
+    try {
+      const seamlessClientId = config?.security?.sec_seamless_client_id || 'ana-vodafone-app-seamless';
+      const seamlessUrl      = config?.security?.sec_seamless_url;
+      const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
+      const res = await VodafoneCashService.getWalletBalance({
+        pin,
+        seamless_token: seamless.token,
+        msisdn: seamless.msisdn,
+      });
+      if (res.success) {
+        setBalance(res.balance ?? null);
+        setMsisdn(res.msisdn ?? null);
+        setQueriedAt(res.queried_at ?? null);
+        setStatus('success');
+      } else {
+        setErrorMsg(res.message ?? 'تعذر الحصول على الرصيد');
+        setStatus('failed');
+      }
+    } catch {
+      setErrorMsg('حدث خطأ غير متوقع');
+      setStatus('failed');
+    }
+  };
+
+  const formatQueriedAt = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('ar-EG', {
+        hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit',
+      });
+    } catch { return iso; }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
+      <DialogContent
+        className="max-w-[calc(100%-2rem)] md:max-w-sm rounded-2xl p-0 overflow-hidden border-0"
+        style={{ background: '#111', border: '1px solid rgba(230,0,0,0.25)' }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/5">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.25)' }}>
+            <Wallet className="w-5 h-5" style={{ color: C.red }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-black text-white">استعلام رصيد المحفظة</p>
+            <p className="text-[11px] text-white/40">Vodafone Cash</p>
+          </div>
+        </div>
+
+        <div className="px-4 pb-5 pt-3 space-y-4">
+          {/* نتيجة النجاح */}
+          {status === 'success' && balance !== null ? (
+            <div className="space-y-3">
+              <div className="rounded-2xl p-4 text-center space-y-1"
+                style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
+                <CheckCircle2 className="w-6 h-6 mx-auto" style={{ color: '#4ade80' }} />
+                <p className="text-[11px] text-white/40">رصيد المحفظة الحالي</p>
+                <p className="text-2xl font-black" style={{ color: '#4ade80' }}>
+                  {balance} <span className="text-sm font-medium text-white/40">جنيه</span>
+                </p>
+                {msisdn && <p className="text-[11px] text-white/40 font-mono">{msisdn}</p>}
+                {queriedAt && (
+                  <p className="text-[10px] text-white/25 flex items-center justify-center gap-1">
+                    <Clock className="w-3 h-3" /> {formatQueriedAt(queriedAt)}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={reset}
+                className="w-full py-2.5 rounded-xl text-sm font-bold border border-white/10 text-white/60 hover:text-white transition-colors"
+              >
+                استعلام جديد
+              </button>
+            </div>
+          ) : status === 'failed' ? (
+            <div className="space-y-3">
+              <div className="rounded-2xl p-4 text-center space-y-1"
+                style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.2)' }}>
+                <XCircle className="w-6 h-6 mx-auto" style={{ color: C.red }} />
+                <p className="text-sm text-white/70 font-medium">{errorMsg}</p>
+              </div>
+              <button onClick={reset}
+                className="w-full py-2.5 rounded-xl text-sm font-bold border border-white/10 text-white/60 hover:text-white transition-colors">
+                المحاولة مجدداً
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* تعليمات */}
+              <p className="text-xs text-white/40 text-center">
+                أدخل الرقم السري لمحفظتك لعرض رصيدك فوراً
+              </p>
+              {/* PIN */}
+              <div className="bg-[#1A1A1A] rounded-2xl p-3 border border-white/5">
+                <PinInputBlock pin={pin} setPin={setPin} submitting={status === 'loading'} />
+              </div>
+              <p className="text-[10px] text-amber-400/70 flex items-start gap-1.5">
+                <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                <span>رقم سري Vodafone Cash من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
+              </p>
+              {/* زر الاستعلام */}
+              <button
+                onClick={handleQuery}
+                disabled={pin.length < 4 || status === 'loading'}
+                className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all"
+                style={{
+                  background: pin.length >= 4 && status !== 'loading' ? C.red : 'rgba(255,255,255,0.05)',
+                  color: pin.length >= 4 && status !== 'loading' ? '#fff' : 'rgba(255,255,255,0.25)',
+                  boxShadow: pin.length >= 4 && status !== 'loading' ? `0 0 16px ${C.redGlow}` : 'none',
+                }}
+              >
+                {status === 'loading'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الاستعلام...</>
+                  : <><Wallet className="w-4 h-4" />عرض الرصيد</>}
+              </button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ══════════════════════════════════════════════════════════
 // مكوّن: كارت منتج الشحن من الرصيد
@@ -1349,6 +1499,7 @@ export default function BalanceChargePage() {
   const [loginOpen, setLoginOpen]       = useState(false);
   const [executeOpen, setExecuteOpen]   = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
+  const [walletQueryOpen, setWalletQueryOpen] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
 
   const refreshSessions = useCallback(() => {
@@ -1624,7 +1775,33 @@ export default function BalanceChargePage() {
       {/* ── بطاقة الانتقال لـ Vodafone Cash (PHASE 9) ── */}
       <VodafoneCashCard onNavigate={() => navigate('/')} />
 
+      {/* ── زر اختصار: استعلام رصيد المحفظة ── */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={() => setWalletQueryOpen(true)}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all active:scale-[0.98]"
+          style={{
+            background: 'rgba(230,0,0,0.06)',
+            border: '1px solid rgba(230,0,0,0.18)',
+          }}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.22)' }}>
+            <Wallet className="w-5 h-5" style={{ color: C.red }} />
+          </div>
+          <div className="flex-1 min-w-0 text-right">
+            <p className="text-sm font-black text-white">استعلام رصيد محفظتك</p>
+            <p className="text-[11px] text-white/40">اعرف رصيد Vodafone Cash فوراً</p>
+          </div>
+          <ChevronLeft className="w-4 h-4 shrink-0" style={{ color: 'rgba(230,0,0,0.5)' }} />
+        </button>
+      </div>
+
       {/* ── الـ Dialogs / Sheets ── */}
+      <WalletQuickBalanceModal
+        open={walletQueryOpen}
+        onClose={() => setWalletQueryOpen(false)}
+      />
       <BalanceLoginDialog
         open={loginOpen}
         onClose={() => setLoginOpen(false)}

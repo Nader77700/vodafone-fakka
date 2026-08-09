@@ -57,6 +57,17 @@ export default function WalletBalancePage() {
 
   useEffect(() => { checkConnection(); }, []);
 
+  // ── تحديث تلقائي عند تغيير الشبكة ─────────────────────────────
+  useEffect(() => {
+    let listener: any;
+    (async () => {
+      listener = await Network.addListener('networkStatusChange', () => {
+        checkConnection();
+      });
+    })();
+    return () => { listener?.remove?.(); };
+  }, []);
+
   const services = [
     {
       id: 'balance',

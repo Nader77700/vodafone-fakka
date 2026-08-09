@@ -347,21 +347,21 @@ export default function RechargeBalancePage() {
             <div className="space-y-3">
               <label className="text-sm font-bold text-white/80">قيمة الشحن</label>
 
-              {/* الخانتان جنباً إلى جنب */}
-              <div className="flex items-center gap-2">
+              {/* الخانتان جنباً إلى جنب — layout مضغوط يتكيف مع أي شاشة */}
+              <div className="flex items-stretch gap-2 w-full">
 
                 {/* خانة الرصيد الصافي */}
-                <div className="flex-1 relative">
-                  <span className="absolute -top-[9px] right-3 text-[10px] font-bold px-1 bg-[#111]"
-                    style={{ color: lastEdited === 'net' ? '#E60000' : 'rgba(255,255,255,0.35)' }}>
+                <div className="flex-1 min-w-0 relative pt-2">
+                  <span
+                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-[#111] leading-none whitespace-nowrap"
+                    style={{ color: lastEdited === 'net' ? '#E60000' : 'rgba(255,255,255,0.35)' }}
+                  >
                     الرصيد الصافي
                   </span>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200 h-12
                     ${lastEdited === 'net'
-                      ? 'border-[#E60000] shadow-[0_0_10px_rgba(230,0,0,0.18)]'
-                      : netAmount !== '' && Number(netAmount) < 2
-                        ? 'border-red-500/60'
-                        : 'border-white/10'}`}>
+                      ? 'border-[#E60000] shadow-[0_0_8px_rgba(230,0,0,0.15)]'
+                      : 'border-white/10'}`}>
                     <input
                       type="tel"
                       dir="ltr"
@@ -370,36 +370,33 @@ export default function RechargeBalancePage() {
                       onChange={handleNetChange}
                       onFocus={() => setLastEdited('net')}
                       placeholder="0"
-                      className="flex-1 bg-transparent border-none text-white text-xl font-bold py-3.5 px-3 outline-none placeholder:text-white/20 text-center"
+                      className="w-full bg-transparent border-none text-white text-base font-bold py-0 px-2 outline-none placeholder:text-white/20 text-center"
                     />
-                    <span className="text-[10px] font-bold text-white/30 pl-2 pr-1 shrink-0">ج</span>
+                    <span className="text-[10px] font-bold text-white/30 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
                 </div>
 
-                {/* سهم التحويل */}
-                <div className="flex flex-col items-center shrink-0 gap-0.5">
+                {/* أيقونة التحويل */}
+                <div className="flex items-center justify-center shrink-0 pt-2">
                   <div className="w-7 h-7 rounded-full border border-white/10 bg-[#1A1A1A] flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M2 5.5 L8.5 5.5 L6.5 3.5 M12 8.5 L5.5 8.5 L7.5 10.5" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 5 L8 5 L6 3 M11 8 L5 8 L7 10" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
-                  {netAmount && totalAmount && (
-                    <span className="text-[8px] text-white/20 font-bold">30%</span>
-                  )}
                 </div>
 
-                {/* خانة المبلغ الإجمالي (المخصوم من الكاش) */}
-                <div className="flex-1 relative">
-                  <span className="absolute -top-[9px] right-3 text-[10px] font-bold px-1 bg-[#111]"
-                    style={{ color: lastEdited === 'total' ? '#E60000' : 'rgba(255,255,255,0.35)' }}>
+                {/* خانة المبلغ الإجمالي */}
+                <div className="flex-1 min-w-0 relative pt-2">
+                  <span
+                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-[#111] leading-none whitespace-nowrap"
+                    style={{ color: lastEdited === 'total' ? '#E60000' : 'rgba(255,255,255,0.35)' }}
+                  >
                     المبلغ الإجمالي
                   </span>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200 h-12
                     ${lastEdited === 'total'
-                      ? 'border-[#E60000] shadow-[0_0_10px_rgba(230,0,0,0.18)]'
-                      : totalAmount !== '' && Number(totalAmount) < 3
-                        ? 'border-red-500/60'
-                        : 'border-white/10'}`}>
+                      ? 'border-[#E60000] shadow-[0_0_8px_rgba(230,0,0,0.15)]'
+                      : 'border-white/10'}`}>
                     <input
                       type="tel"
                       dir="ltr"
@@ -408,28 +405,25 @@ export default function RechargeBalancePage() {
                       onChange={handleTotalChange}
                       onFocus={() => setLastEdited('total')}
                       placeholder="0"
-                      className="flex-1 bg-transparent border-none text-white text-xl font-bold py-3.5 px-3 outline-none placeholder:text-white/20 text-center"
+                      className="w-full bg-transparent border-none text-white text-base font-bold py-0 px-2 outline-none placeholder:text-white/20 text-center"
                     />
-                    <span className="text-[10px] font-bold text-white/30 pl-2 pr-1 shrink-0">ج</span>
+                    <span className="text-[10px] font-bold text-white/30 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
                 </div>
               </div>
 
-              {/* تلميح توضيحي */}
-              {netAmount && totalAmount && Number(netAmount) >= 2 && (
-                <div className="flex items-center justify-between text-[11px] px-1">
-                  <span className="text-white/30">💡 يُضاف 30% ضريبة على المبلغ الإجمالي</span>
-                  <span className="text-white/40 font-mono">
-                    {netAmount} + {Number(totalAmount) - Number(netAmount)} = {totalAmount} ج
-                  </span>
+              {/* تلميح حساب + رسالة خطأ */}
+              {netAmount && totalAmount && Number(netAmount) >= 2 ? (
+                <div className="flex items-center justify-between text-[10px] px-1">
+                  <span className="text-white/30">30% ضريبة مشمولة</span>
+                  <span className="text-white/40 font-mono">{netAmount} + {Number(totalAmount) - Number(netAmount)} = {totalAmount} ج</span>
                 </div>
-              )}
-              {totalAmount !== '' && Number(totalAmount) < 3 && (
-                <p className="text-xs text-red-500 font-medium">الحد الأدنى للشحن 3 جنيه إجمالي</p>
-              )}
+              ) : totalAmount !== '' && Number(totalAmount) < 3 ? (
+                <p className="text-xs text-red-500 font-medium">الحد الأدنى 3 جنيه إجمالي</p>
+              ) : null}
 
-              {/* Quick-picks (رصيد صافي مقترح) */}
-              <div className="space-y-1.5">
+              {/* Quick-picks */}
+              <div className="space-y-1">
                 <p className="text-[11px] text-white/35 font-semibold">خيارات مقترحة للرصيد</p>
                 <div className="flex gap-2">
                   {QUICK_PICKS_NET.map(n => (
@@ -437,7 +431,7 @@ export default function RechargeBalancePage() {
                       key={n}
                       type="button"
                       onClick={() => handleQuickPick(n)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border
+                      className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all duration-200 border
                         ${Number(netAmount) === n
                           ? 'bg-[#E60000]/15 border-[#E60000]/60 text-[#E60000]'
                           : 'bg-[#1A1A1A] border-white/8 text-white/60 hover:border-white/20 active:scale-95'}`}
