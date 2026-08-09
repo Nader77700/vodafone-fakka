@@ -27,9 +27,28 @@ export default function RechargeBalancePage() {
   const [rechargeForSelf, setRechargeForSelf] = useState(false);
   const [detectedMsisdn, setDetectedMsisdn] = useState<string | null>(null);
   const [receiver, setReceiver] = useState('');
-  const [amount, setAmount] = useState('');
+  // خانتا المبلغ — الرصيد الصافي والمبلغ الإجمالي المخصوم من الكاش
+  const [netAmount, setNetAmount]     = useState('');   // الرصيد الصافي
+  const [totalAmount, setTotalAmount] = useState('');   // المبلغ الإجمالي (يشمل 30%)
+  const [lastEdited, setLastEdited]   = useState<'net' | 'total'>('net');
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── حسابات الضريبة 30% ──────────────────────────────────────────
+  // إجمالي = صافي × (100 / 70) ≈ صافي × 1.4286  (تقريباً للأعلى)
+  // صافي   = إجمالي × (70 / 100) = إجمالي × 0.7
+  const TAX_RATE = 0.30; // 30%
+  function netToTotal(net: number): number {
+    return Math.ceil(net / (1 - TAX_RATE));
+  }
+  function totalToNet(total: number): number {
+    return Math.floor(total * (1 - TAX_RATE));
+  }
+
+  // القيمة الفعلية للـ submit هي دائماً المبلغ الإجمالي
+  const amount = totalAmount;
+
+  const QUICK_PICKS_NET = [50, 70, 80]; // رصيد صافي مقترح
 
   // ── حالة التنفيذ ────────────────────────────────────────────────
   const [execStatus, setExecStatus] = useState<'idle' | 'success' | 'failed'>('idle');
@@ -41,7 +60,7 @@ export default function RechargeBalancePage() {
   const isReceiverValid = activeReceiver.startsWith('010') || activeReceiver.startsWith('011')
     || activeReceiver.startsWith('012') || activeReceiver.startsWith('015');
   const isReceiverLengthValid = activeReceiver.length === 11;
-  const isAmountValid = amount !== '' && Number(amount) >= 2;
+  const isAmountValid = totalAmount !== '' && Number(totalAmount) >= 3;
   const isPinValid = pin.length >= 4;
   // عند "شحن لنفسي" الرقم يأتي من seamless أثناء التنفيذ — لا نشترط detectedMsisdn مسبقاً
   const receiverReady = rechargeForSelf ? isConnected : (isReceiverValid && isReceiverLengthValid);
@@ -130,7 +149,7 @@ export default function RechargeBalancePage() {
 
     const res = await VodafoneCashService.initiateRecharge({
       receiver_number: rechargeForSelf ? (seamless.msisdn || detectedMsisdn || activeReceiver) : activeReceiver,
-      amount: Number(amount),
+      amount: Number(totalAmount),
       pin,
       seamless_token: seamless.token,
       msisdn: seamless.msisdn,
@@ -153,7 +172,8 @@ export default function RechargeBalancePage() {
       }
 
       if (!rechargeForSelf) setReceiver('');
-      setAmount('');
+      setNetAmount('');
+      setTotalAmount('');
     } else {
       toast.error(res.message || 'فشلت العملية', { id: toastId, duration: 5000 });
       setExecStatus('failed');
@@ -170,8 +190,29 @@ export default function RechargeBalancePage() {
     setReceiver(val);
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(e.target.value.replace(/\D/g, ''));
+  // ── handlers الخانتين ───────────────────────────────────────────
+  const handleNetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\D/g, '');
+    setNetAmount(v);
+    setLastEdited('net');
+    if (v === '') { setTotalAmount(''); return; }
+    const n = Number(v);
+    setTotalAmount(n > 0 ? String(netToTotal(n)) : '');
+  };
+
+  const handleTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\D/g, '');
+    setTotalAmount(v);
+    setLastEdited('total');
+    if (v === '') { setNetAmount(''); return; }
+    const n = Number(v);
+    setNetAmount(n > 0 ? String(totalToNet(n)) : '');
+  };
+
+  const handleQuickPick = (netVal: number) => {
+    setNetAmount(String(netVal));
+    setTotalAmount(String(netToTotal(netVal)));
+    setLastEdited('net');
   };
 
   // ── وقت آخر فحص ───────────────────────────────────────────────
@@ -302,26 +343,110 @@ export default function RechargeBalancePage() {
               )}
             </div>
 
-            {/* المبلغ */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-white/80">المبلغ</label>
-              <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors
-                ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
-                <div className="pl-3 pr-2 text-white/40">
-                  <span className="text-sm font-bold">EGP</span>
+            {/* ── قيمة الشحن — خانتان ذكيتان ─────────────────────── */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-white/80">قيمة الشحن</label>
+
+              {/* الخانتان جنباً إلى جنب */}
+              <div className="flex items-center gap-2">
+
+                {/* خانة الرصيد الصافي */}
+                <div className="flex-1 relative">
+                  <span className="absolute -top-[9px] right-3 text-[10px] font-bold px-1 bg-[#111]"
+                    style={{ color: lastEdited === 'net' ? '#E60000' : 'rgba(255,255,255,0.35)' }}>
+                    الرصيد الصافي
+                  </span>
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200
+                    ${lastEdited === 'net'
+                      ? 'border-[#E60000] shadow-[0_0_10px_rgba(230,0,0,0.18)]'
+                      : netAmount !== '' && Number(netAmount) < 2
+                        ? 'border-red-500/60'
+                        : 'border-white/10'}`}>
+                    <input
+                      type="tel"
+                      dir="ltr"
+                      inputMode="numeric"
+                      value={netAmount}
+                      onChange={handleNetChange}
+                      onFocus={() => setLastEdited('net')}
+                      placeholder="0"
+                      className="flex-1 bg-transparent border-none text-white text-xl font-bold py-3.5 px-3 outline-none placeholder:text-white/20 text-center"
+                    />
+                    <span className="text-[10px] font-bold text-white/30 pl-2 pr-1 shrink-0">ج</span>
+                  </div>
                 </div>
-                <input
-                  type="tel"
-                  dir="ltr"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  placeholder="0"
-                  className="flex-1 bg-transparent border-none text-white text-lg py-3 outline-none placeholder:text-white/20"
-                />
+
+                {/* سهم التحويل */}
+                <div className="flex flex-col items-center shrink-0 gap-0.5">
+                  <div className="w-7 h-7 rounded-full border border-white/10 bg-[#1A1A1A] flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2 5.5 L8.5 5.5 L6.5 3.5 M12 8.5 L5.5 8.5 L7.5 10.5" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  {netAmount && totalAmount && (
+                    <span className="text-[8px] text-white/20 font-bold">30%</span>
+                  )}
+                </div>
+
+                {/* خانة المبلغ الإجمالي (المخصوم من الكاش) */}
+                <div className="flex-1 relative">
+                  <span className="absolute -top-[9px] right-3 text-[10px] font-bold px-1 bg-[#111]"
+                    style={{ color: lastEdited === 'total' ? '#E60000' : 'rgba(255,255,255,0.35)' }}>
+                    المبلغ الإجمالي
+                  </span>
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200
+                    ${lastEdited === 'total'
+                      ? 'border-[#E60000] shadow-[0_0_10px_rgba(230,0,0,0.18)]'
+                      : totalAmount !== '' && Number(totalAmount) < 3
+                        ? 'border-red-500/60'
+                        : 'border-white/10'}`}>
+                    <input
+                      type="tel"
+                      dir="ltr"
+                      inputMode="numeric"
+                      value={totalAmount}
+                      onChange={handleTotalChange}
+                      onFocus={() => setLastEdited('total')}
+                      placeholder="0"
+                      className="flex-1 bg-transparent border-none text-white text-xl font-bold py-3.5 px-3 outline-none placeholder:text-white/20 text-center"
+                    />
+                    <span className="text-[10px] font-bold text-white/30 pl-2 pr-1 shrink-0">ج</span>
+                  </div>
+                </div>
               </div>
-              {amount !== '' && !isAmountValid && (
-                <p className="text-xs text-red-500 font-medium">الحد الأدنى للشحن هو 2 جنيه</p>
+
+              {/* تلميح توضيحي */}
+              {netAmount && totalAmount && Number(netAmount) >= 2 && (
+                <div className="flex items-center justify-between text-[11px] px-1">
+                  <span className="text-white/30">💡 يُضاف 30% ضريبة على المبلغ الإجمالي</span>
+                  <span className="text-white/40 font-mono">
+                    {netAmount} + {Number(totalAmount) - Number(netAmount)} = {totalAmount} ج
+                  </span>
+                </div>
               )}
+              {totalAmount !== '' && Number(totalAmount) < 3 && (
+                <p className="text-xs text-red-500 font-medium">الحد الأدنى للشحن 3 جنيه إجمالي</p>
+              )}
+
+              {/* Quick-picks (رصيد صافي مقترح) */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] text-white/35 font-semibold">خيارات مقترحة للرصيد</p>
+                <div className="flex gap-2">
+                  {QUICK_PICKS_NET.map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => handleQuickPick(n)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border
+                        ${Number(netAmount) === n
+                          ? 'bg-[#E60000]/15 border-[#E60000]/60 text-[#E60000]'
+                          : 'bg-[#1A1A1A] border-white/8 text-white/60 hover:border-white/20 active:scale-95'}`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* كلمة السر */}
