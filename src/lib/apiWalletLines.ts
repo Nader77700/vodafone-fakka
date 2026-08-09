@@ -98,16 +98,41 @@ function loadToken(): string | null {
 // ── رسائل الخطأ العربية ───────────────────────────────────────────
 function mapError(code: string, fallback = 'حدث خطأ غير متوقع. حاول مجدداً.'): string {
   const MAP: Record<string, string> = {
-    CONNECTION_ERROR:   'تعذر الاتصال بالخادم. تأكد من اتصالك بالإنترنت.',
-    TIMEOUT:            'انتهت مهلة الاتصال. حاول مجدداً.',
-    GEO_BLOCKED:        'الخدمة مقيدة جغرافياً. يجب الاتصال من داخل مصر.',
-    INVALID_CREDENTIALS:'بيانات تسجيل الدخول غير صحيحة.',
-    REGISTER_FAILED:    'فشل إنشاء الحساب. قد يكون الرقم مسجلاً مسبقاً.',
-    OTP_INVALID:        'رمز التحقق غير صحيح. تأكد وأعد المحاولة.',
-    SESSION_EXPIRED:    'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.',
-    UNEXPECTED_ERROR:   fallback,
+    CONNECTION_ERROR:    'تعذر الاتصال بالخادم. تأكد من اتصالك بالإنترنت.',
+    TIMEOUT:             'انتهت مهلة الاتصال. حاول مجدداً.',
+    GEO_BLOCKED:         'الخدمة مقيدة جغرافياً. يجب الاتصال من داخل مصر.',
+    INVALID_CREDENTIALS: 'بيانات تسجيل الدخول غير صحيحة. تحقق من رقم الهاتف وكلمة المرور.',
+    REGISTER_FAILED:     'فشل إنشاء الحساب. قد يكون رقم الهاتف مسجلاً مسبقاً.',
+    OTP_INVALID:         'رمز التحقق غير صحيح. تأكد من الرمز وأعد المحاولة.',
+    SESSION_EXPIRED:     'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.',
+    UNEXPECTED_ERROR:    fallback,
   };
   return MAP[code] ?? fallback;
+}
+
+// ── ترجمة رسائل الخطأ الإنجليزية من الـ API إلى عربي ──────────────
+function translateApiError(rawMsg: string): string {
+  if (!rawMsg) return '';
+  const m = rawMsg.toLowerCase();
+  if (m.includes('invalid') && (m.includes('credential') || m.includes('password') || m.includes('username')))
+    return 'بيانات تسجيل الدخول غير صحيحة.';
+  if (m.includes('not found') || m.includes('no account') || m.includes('user not exist'))
+    return 'لا يوجد حساب بهذه البيانات.';
+  if (m.includes('password') && m.includes('wrong'))
+    return 'كلمة المرور غير صحيحة.';
+  if (m.includes('locked') || m.includes('blocked'))
+    return 'تم تعليق الحساب مؤقتاً. تواصل مع الدعم.';
+  if (m.includes('otp') || m.includes('verification code'))
+    return 'رمز التحقق غير صحيح أو منتهي الصلاحية.';
+  if (m.includes('already') && m.includes('register'))
+    return 'رقم الهاتف مسجل مسبقاً.';
+  if (m.includes('national') && m.includes('id'))
+    return 'الرقم القومي غير صحيح أو غير مطابق.';
+  if (m.includes('expired'))
+    return 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.';
+  // إذا لم تُعرَّف — نعيد الرسالة الأصلية بدون ترجمة فقط إذا كانت عربية
+  const isArabic = /[\u0600-\u06FF]/.test(rawMsg);
+  return isArabic ? rawMsg : 'حدث خطأ في تسجيل الدخول. تحقق من بياناتك وأعد المحاولة.';
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -145,8 +170,8 @@ export async function apiLogin(
     const statusObj = (d?.status ?? {}) as Record<string, unknown>;
 
     if (status !== 200 || statusObj?.code !== 200) {
-      const msg = String(statusObj?.errorMsg ?? 'بيانات الدخول غير صحيحة.');
-      return { success: false, errorCode: 'INVALID_CREDENTIALS', userMessage: msg };
+      const rawMsg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'بيانات الدخول غير صحيحة.');
+      return { success: false, errorCode: 'INVALID_CREDENTIALS', userMessage: translateApiError(rawMsg) };
     }
 
     const resultData = (d?.result ?? {}) as Record<string, unknown>;
@@ -280,74 +305,136 @@ export async function apiLookup(
       }),
     ]);
 
+    // ── مساعد: تحديد الشركة من النص ──────────────────────────
+    function carrierFromText(text: string): 'vodafone' | 'orange' | 'etisalat' | 'we' | null {
+      const t = String(text ?? '').trim().toLowerCase();
+      if (t.includes('vodafone')) return 'vodafone';
+      if (t.includes('orange'))   return 'orange';
+      if (t.includes('etisalat') || t.includes('e&')) return 'etisalat';
+      if (t === 'we' || t.includes('telecom egypt')) return 'we';
+      return null;
+    }
+
+    const CARRIER_NAMES = { vodafone: 'Vodafone', orange: 'Orange', etisalat: 'e& (Etisalat)', we: 'WE' };
+    const ALL_CARRIERS = ['vodafone', 'orange', 'etisalat', 'we'] as const;
+    type CK = typeof ALL_CARRIERS[number];
+
     // ── تحليل المحافظ (wallets) ────────────────────────────────
-    const wallets: WalletLinesResult['wallets'] = [];
-    if (walletsRes.status === 'fulfilled') {
-      const wd = walletsRes.value.data as Record<string, unknown> | null;
-      const raw = (wd?.result as Record<string, unknown>)?.values;
-      if (Array.isArray(raw)) {
-        for (const w of raw) {
-          const item = w as Record<string, unknown>;
-          const providerRaw = String(
-            item.provider ?? item.providerName ?? item.company ?? item.operator ?? ''
-          ).toLowerCase();
-          const carrier = providerRaw.includes('vodafone') ? 'vodafone'
-            : providerRaw.includes('orange') ? 'orange'
-            : providerRaw.includes('etisalat') ? 'etisalat'
-            : providerRaw.includes('we') || providerRaw.includes('telecom') ? 'we'
-            : 'vodafone';
-          const number = String(
-            item.number ?? item.mobileNumber ?? item.walletNumber ?? item.msisdn ?? item.phone ?? ''
-          );
-          const regDate = String(item.regDate ?? item.registrationDate ?? item.createdDate ?? '');
-          wallets.push({
-            carrier,
-            carrierName: carrier === 'vodafone' ? 'Vodafone' : carrier === 'orange' ? 'Orange' : carrier === 'etisalat' ? 'Etisalat' : 'WE',
-            walletNumbers: number ? [number] : [],
-            walletCount: 1,
-            registrationDate: regDate || undefined,
-            availability: 'available',
-          });
+    const walletsMap: Record<CK, { avail: 'loaded' | 'empty' | 'unavailable' | 'no_response' | 'conn_error' | 'invalid'; nums: string[]; name?: string; regDate?: string; status?: string }> = {
+      vodafone: { avail: 'no_response', nums: [] },
+      orange:   { avail: 'no_response', nums: [] },
+      etisalat: { avail: 'no_response', nums: [] },
+      we:       { avail: 'no_response', nums: [] },
+    };
+
+    if (walletsRes.status === 'rejected') {
+      for (const c of ALL_CARRIERS) walletsMap[c].avail = 'conn_error';
+    } else {
+      const { status: wStatus, data: wData } = walletsRes.value;
+      if (wStatus === 401 || wStatus === 403) {
+        return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+      }
+      if (!wData || typeof wData !== 'object') {
+        for (const c of ALL_CARRIERS) walletsMap[c].avail = 'invalid';
+      } else {
+        const wd = wData as Record<string, unknown>;
+        const statusCode = (wd.status as Record<string, unknown>)?.code;
+        // قد يكون statusCode null أو 200 عند النجاح
+        if (wStatus !== 200 && statusCode !== 200 && statusCode !== null) {
+          for (const c of ALL_CARRIERS) walletsMap[c].avail = 'unavailable';
+        } else {
+          // البنية: result.values = [{ provider, walletNumber/msisdn, name, registrationDate, status }]
+          const values = (wd.result as Record<string, unknown> | null)?.values;
+          const list = Array.isArray(values) ? values : [];
+          for (const c of ALL_CARRIERS) walletsMap[c].avail = list.length === 0 ? 'empty' : 'empty';
+          for (const item of list) {
+            const w = item as Record<string, unknown>;
+            const cKey = carrierFromText(
+              String(w.provider ?? w.providerName ?? w.company ?? w.operator ?? w.operatorName ?? '')
+            );
+            if (!cKey) continue;
+            walletsMap[cKey].avail = 'loaded';
+            walletsMap[cKey].nums.push(
+              String(w.walletNumber ?? w.msisdn ?? w.number ?? w.mobileNumber ?? w.phone ?? '')
+            );
+            if (!walletsMap[cKey].name)    walletsMap[cKey].name    = String(w.name ?? w.fullName ?? '');
+            if (!walletsMap[cKey].regDate) walletsMap[cKey].regDate = String(w.registrationDate ?? w.regDate ?? w.creationDate ?? '');
+            if (!walletsMap[cKey].status)  walletsMap[cKey].status  = String(w.status ?? w.walletStatus ?? '');
+          }
         }
       }
     }
 
     // ── تحليل الخطوط (lines) ──────────────────────────────────
-    const lines: WalletLinesResult['lines'] = [];
-    if (linesRes.status === 'fulfilled' && linesRes.value.status === 200) {
-      const ld = linesRes.value.data as Record<string, unknown> | null;
-      const result = ld?.result;
-      if (result && typeof result === 'object') {
-        const providers: Record<string, string[]> = {
-          vodafone: [], orange: [], etisalat: [], we: [],
-        };
-        for (const [key, details] of Object.entries(result as Record<string, unknown>)) {
-          const k = key.toLowerCase();
-          const carrier = k.includes('vodafone') ? 'vodafone'
-            : k.includes('orange') ? 'orange'
-            : k.includes('etisalat') ? 'etisalat'
-            : k.includes('we') || k.includes('telecom') ? 'we'
-            : null;
-          if (!carrier) continue;
-          const d = details as Record<string, unknown>;
-          const rawLines = d?.mobileLines ?? d?.lines ?? d?.numbers ?? [];
-          if (Array.isArray(rawLines)) {
-            for (const n of rawLines) {
-              if (n) providers[carrier].push(String(n));
+    const linesMap: Record<CK, { avail: 'loaded' | 'empty' | 'unavailable' | 'no_response' | 'conn_error' | 'invalid'; nums: string[]; serviceStatus?: string }> = {
+      vodafone: { avail: 'no_response', nums: [] },
+      orange:   { avail: 'no_response', nums: [] },
+      etisalat: { avail: 'no_response', nums: [] },
+      we:       { avail: 'no_response', nums: [] },
+    };
+
+    if (linesRes.status === 'rejected') {
+      for (const c of ALL_CARRIERS) linesMap[c].avail = 'conn_error';
+    } else {
+      const { status: lStatus, data: lData } = linesRes.value;
+      if (!lData || typeof lData !== 'object') {
+        for (const c of ALL_CARRIERS) linesMap[c].avail = 'invalid';
+      } else {
+        const ld = lData as Record<string, unknown>;
+        const result = ld.result as Record<string, unknown> | null;
+        if (lStatus !== 200 || !result || typeof result !== 'object') {
+          for (const c of ALL_CARRIERS) linesMap[c].avail = 'unavailable';
+        } else {
+          // البنية حسب السكريبت: result = { Vodafone: { count, mobileLines:[...] }, Orange: {...}, ... }
+          for (const [key, details] of Object.entries(result)) {
+            const cKey = carrierFromText(key);
+            if (!cKey) continue;
+            const d = details as Record<string, unknown>;
+            // محاولة استخراج الأرقام من كل المفاتيح الممكنة
+            const rawNums =
+              d?.mobileLines ?? d?.lineNumbers ?? d?.lines ?? d?.numbers ?? d?.msisdns ?? [];
+            const nums = Array.isArray(rawNums) ? rawNums.filter(Boolean).map(String) : [];
+            const count = Number(d?.count ?? d?.totalLines ?? nums.length ?? 0);
+            if (count === 0 && nums.length === 0) {
+              linesMap[cKey].avail = 'empty';
+            } else {
+              linesMap[cKey].avail = 'loaded';
+              linesMap[cKey].nums = nums;
+              linesMap[cKey].serviceStatus = String(d?.status ?? d?.serviceStatus ?? '');
             }
           }
-        }
-        for (const [carrier, nums] of Object.entries(providers)) {
-          lines.push({
-            carrier: carrier as WalletLinesResult['lines'][0]['carrier'],
-            carrierName: carrier === 'vodafone' ? 'Vodafone' : carrier === 'orange' ? 'Orange' : carrier === 'etisalat' ? 'Etisalat' : 'WE',
-            lineNumbers: nums,
-            lineCount: nums.length,
-            availability: 'available',
-          });
+          // الشركات غير الموجودة في الاستجابة → empty (ليس no_response)
+          for (const c of ALL_CARRIERS) {
+            if (linesMap[c].avail === 'no_response') linesMap[c].avail = 'empty';
+          }
         }
       }
     }
+
+    const wallets = ALL_CARRIERS.map((c) => ({
+      carrier: c,
+      carrierName: CARRIER_NAMES[c],
+      availability: walletsMap[c].avail as WalletLinesResult['wallets'][0]['availability'],
+      walletNumbers: walletsMap[c].nums,
+      walletCount: walletsMap[c].nums.length,
+      registeredName: walletsMap[c].name || undefined,
+      registrationDate: walletsMap[c].regDate || undefined,
+      walletStatus: walletsMap[c].status || undefined,
+    }));
+
+    const lines = ALL_CARRIERS.map((c) => ({
+      carrier: c,
+      carrierName: CARRIER_NAMES[c],
+      availability: linesMap[c].avail as WalletLinesResult['lines'][0]['availability'],
+      lineNumbers: linesMap[c].nums,
+      lineCount: linesMap[c].nums.length,
+      serviceStatus: linesMap[c].serviceStatus || undefined,
+    }));
+
+    // حساب الإجماليات
+    const walletsWithData = wallets.filter(w => w.availability === 'loaded').length;
+    const linesWithData = lines.filter(l => l.availability === 'loaded').length;
+    void walletsWithData; void linesWithData; // للمراقبة المحلية فقط
 
     return {
       success: true,

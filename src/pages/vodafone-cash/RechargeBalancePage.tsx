@@ -43,8 +43,9 @@ export default function RechargeBalancePage() {
   const isReceiverLengthValid = activeReceiver.length === 11;
   const isAmountValid = amount !== '' && Number(amount) >= 2;
   const isPinValid = pin.length >= 4;
-  const canSubmit = isReceiverValid && isReceiverLengthValid && isAmountValid && isPinValid
-    && !isSubmitting && isConnected;
+  // عند "شحن لنفسي" الرقم يأتي من seamless أثناء التنفيذ — لا نشترط detectedMsisdn مسبقاً
+  const receiverReady = rechargeForSelf ? isConnected : (isReceiverValid && isReceiverLengthValid);
+  const canSubmit = receiverReady && isAmountValid && isPinValid && !isSubmitting && isConnected;
 
   // ── فحص الشبكة ─────────────────────────────────────────────────
   const checkConnection = async () => {
@@ -128,7 +129,7 @@ export default function RechargeBalancePage() {
     }
 
     const res = await VodafoneCashService.initiateRecharge({
-      receiver_number: activeReceiver,
+      receiver_number: rechargeForSelf ? (seamless.msisdn || detectedMsisdn || activeReceiver) : activeReceiver,
       amount: Number(amount),
       pin,
       seamless_token: seamless.token,
