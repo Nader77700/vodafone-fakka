@@ -597,6 +597,137 @@ async function actionWalletsAndLines(payload: {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// Action: Send OTP for Full Numbers
+// ══════════════════════════════════════════════════════════════════
+
+const APP_VERSION_OTP = "86";
+
+async function actionSendOtp(payload: {
+  nationalId: string;
+  sessionKey: string;
+  deviceId: string;
+}) {
+  const { nationalId, sessionKey, deviceId } = payload;
+
+  const kv = await Deno.openKv();
+  const entry = await kv.get<string>(["wl_sessions", sessionKey]);
+  if (!entry.value) {
+    return errorResp("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.", "SESSION_EXPIRED", 401);
+  }
+  const token = entry.value;
+
+  const headers = { ...authenticatedHeaders(deviceId, token), appVersion: APP_VERSION_OTP };
+
+  let result;
+  try {
+    result = await fetchWithRetry(
+      `${BASE_URL}/querynumber/api/v1/FullLineNumbers/sendOTP`,
+      { method: "POST", headers, body: JSON.stringify({ nationalId }) },
+    );
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "CONNECTION_ERROR";
+    void logError({ action: "send_otp", errorCode: msg === "TIMEOUT" ? "TIMEOUT" : "CONNECTION_ERROR", message: msg, deviceId });
+    return errorResp(
+      msg === "TIMEOUT" ? "انتهت مهلة الاتصال." : "تعذر الاتصال بالخادم.",
+      msg === "TIMEOUT" ? "TIMEOUT" : "CONNECTION_ERROR",
+      msg === "TIMEOUT" ? 504 : 503,
+    );
+  }
+
+  if (!result.ok) {
+    const d = result.data as Record<string, unknown> | null;
+    const errMsg = (d?.status as Record<string, unknown>)?.errorMsg ?? "فشل إرسال رمز التحقق.";
+    void logError({ action: "send_otp", errorCode: "SEND_OTP_FAILED", httpStatus: result.status, message: String(errMsg), deviceId });
+    return errorResp(String(errMsg), "SEND_OTP_FAILED", 400);
+  }
+
+  const d = result.data as Record<string, unknown> | null;
+  const statusCode = (d?.status as Record<string, unknown>)?.code;
+  if (statusCode !== 200 && statusCode !== null && statusCode !== undefined) {
+    const errMsg = (d?.status as Record<string, unknown>)?.errorMsg ?? "فشل إرسال رمز التحقق.";
+    return errorResp(String(errMsg), "SEND_OTP_FAILED", 400);
+  }
+
+  return jsonResp({ ok: true, message: "تم إرسال رمز التحقق بنجاح." });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Action: Get Full Numbers (after OTP verification)
+// ══════════════════════════════════════════════════════════════════
+
+async function actionGetFullNumbers(payload: {
+  nationalId: string;
+  otp: string;
+  sessionKey: string;
+  deviceId: string;
+}) {
+  const { nationalId, otp, sessionKey, deviceId } = payload;
+
+  const kv = await Deno.openKv();
+  const entry = await kv.get<string>(["wl_sessions", sessionKey]);
+  if (!entry.value) {
+    return errorResp("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.", "SESSION_EXPIRED", 401);
+  }
+  const token = entry.value;
+
+  const headers = { ...authenticatedHeaders(deviceId, token), appVersion: APP_VERSION_OTP };
+
+  let result;
+  try {
+    result = await fetchWithRetry(
+      `${BASE_URL}/querynumber/api/v1/FullLineNumbers`,
+      { method: "POST", headers, body: JSON.stringify({ nationalId, otp }) },
+    );
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "CONNECTION_ERROR";
+    void logError({ action: "full_numbers", errorCode: msg === "TIMEOUT" ? "TIMEOUT" : "CONNECTION_ERROR", message: msg, deviceId });
+    return errorResp(
+      msg === "TIMEOUT" ? "انتهت مهلة الاتصال." : "تعذر الاتصال بالخادم.",
+      msg === "TIMEOUT" ? "TIMEOUT" : "CONNECTION_ERROR",
+      msg === "TIMEOUT" ? 504 : 503,
+    );
+  }
+
+  if (!result.ok) {
+    const d = result.data as Record<string, unknown> | null;
+    const errMsg = (d?.status as Record<string, unknown>)?.errorMsg ?? "رمز التحقق غير صحيح أو منتهي الصلاحية.";
+    void logError({ action: "full_numbers", errorCode: "OTP_INVALID", httpStatus: result.status, message: String(errMsg), deviceId });
+    return errorResp(String(errMsg), "OTP_INVALID", 400);
+  }
+
+  const d = result.data as Record<string, unknown> | null;
+  const statusCode = (d?.status as Record<string, unknown>)?.code;
+  if (statusCode !== 200 && statusCode !== null && statusCode !== undefined) {
+    const errMsg = (d?.status as Record<string, unknown>)?.errorMsg ?? "رمز التحقق غير صحيح.";
+    return errorResp(String(errMsg), "OTP_INVALID", 400);
+  }
+
+  // result البنية: { Vodafone: { count, mobileLines:[...] }, Orange: {...}, ... }
+  const rawResult = d?.result as Record<string, unknown> | null;
+  const providerNames = ["vodafone", "orange", "etisalat", "we"] as const;
+
+  const data: Record<string, { count: number; mobileLines: string[] }> = {};
+  for (const p of providerNames) {
+    const matchKey = rawResult
+      ? Object.keys(rawResult).find((k) => providerKey(k) === p)
+      : undefined;
+    if (!matchKey || !rawResult) {
+      data[p] = { count: 0, mobileLines: [] };
+      continue;
+    }
+    const pd = rawResult[matchKey] as Record<string, unknown>;
+    const rawLines = pd?.mobileLines ?? pd?.lineNumbers ?? pd?.lines ?? pd?.numbers ?? [];
+    const lines = Array.isArray(rawLines) ? rawLines.filter(Boolean).map(String) : [];
+    data[p] = {
+      count: Number(pd?.count ?? lines.length),
+      mobileLines: lines,
+    };
+  }
+
+  return jsonResp({ ok: true, data });
+}
+
+// ══════════════════════════════════════════════════════════════════
 // Main Handler
 // ══════════════════════════════════════════════════════════════════
 
@@ -649,6 +780,21 @@ serve(async (req: Request) => {
       case "lookup":
         return await actionWalletsAndLines({
           nationalId: String(body.nationalId ?? ""),
+          sessionKey: String(body.sessionKey ?? ""),
+          deviceId: String(body.deviceId ?? crypto.randomUUID().slice(0, 16)),
+        });
+
+      case "send_otp":
+        return await actionSendOtp({
+          nationalId: String(body.nationalId ?? ""),
+          sessionKey: String(body.sessionKey ?? ""),
+          deviceId: String(body.deviceId ?? crypto.randomUUID().slice(0, 16)),
+        });
+
+      case "full_numbers":
+        return await actionGetFullNumbers({
+          nationalId: String(body.nationalId ?? ""),
+          otp: String(body.otp ?? ""),
           sessionKey: String(body.sessionKey ?? ""),
           deviceId: String(body.deviceId ?? crypto.randomUUID().slice(0, 16)),
         });

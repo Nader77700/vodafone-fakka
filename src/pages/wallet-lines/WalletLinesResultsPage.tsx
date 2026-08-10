@@ -1,15 +1,21 @@
 /**
- * WalletLinesResultsPage — شاشة النتائج — PHASE 1
- * يعرض: المحافظ المسجلة + الخطوط المسجلة لـ 4 شركات.
- * فصل كامل بين: بيانات موجودة / لا توجد / خدمة غير متاحة / API لم يرجع / خطأ / Loading.
+ * WalletLinesResultsPage — PHASE 3
+ * - زر "إظهار الأرقام كاملة" → OTP Dialog → عرض أرقام كاملة تحت قسم الخطوط
+ * - زر تسجيل الخروج في الـ Header
+ * - الجلسة تُحفظ حتى تسجيل الخروج
  */
 
+import { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Wallet, Phone, CheckCircle2, XCircle, AlertTriangle, WifiOff, Loader2, MinusCircle, HelpCircle } from 'lucide-react';
+import {
+  ArrowRight, Wallet, Phone, CheckCircle2, XCircle, AlertTriangle,
+  WifiOff, Loader2, MinusCircle, HelpCircle, Eye, LogOut, KeyRound,
+} from 'lucide-react';
 import type { WalletLinesResult, WalletInfo, LineInfo, TelecomCarrier } from '@/lib/walletLinesInterfaces';
 import type { DataAvailability } from '@/lib/walletLinesErrors';
+import { walletLinesService } from '@/services/walletLinesService';
+import type { FullNumbersData } from '@/services/walletLinesService';
 
-// ── fallback فارغ عند غياب البيانات ──────────────────────────────
 const CARRIERS = ['vodafone', 'orange', 'etisalat', 'we'] as const;
 type CarrierKey = typeof CARRIERS[number];
 const CARRIER_NAMES: Record<CarrierKey, string> = {
@@ -21,24 +27,22 @@ const EMPTY_RESULT: WalletLinesResult = {
   fetchedAt: new Date().toISOString(),
 };
 
-// ── لوغو + لون لكل شركة ──────────────────────────────────────────
 const CARRIER_META: Record<TelecomCarrier, { name: string; color: string; emoji: string }> = {
-  vodafone: { name: 'Vodafone', color: '#E60000', emoji: '🔴' },
-  orange:   { name: 'Orange',   color: '#FF7900', emoji: '🟠' },
+  vodafone: { name: 'Vodafone',      color: '#E60000', emoji: '🔴' },
+  orange:   { name: 'Orange',        color: '#FF7900', emoji: '🟠' },
   etisalat: { name: 'e& (Etisalat)', color: '#00A651', emoji: '🟢' },
-  we:       { name: 'WE',       color: '#6D42C4', emoji: '🟣' },
+  we:       { name: 'WE',            color: '#6D42C4', emoji: '🟣' },
 };
 
-// ── بادج حالة البيانات ────────────────────────────────────────────
 function AvailabilityBadge({ avail }: { avail: DataAvailability }) {
   const map: Record<DataAvailability, { label: string; color: string; icon: React.ReactNode }> = {
-    loaded:      { label: 'مسجل',         color: '#22c55e', icon: <CheckCircle2 className="w-3 h-3" /> },
-    empty:       { label: 'لا توجد بيانات', color: '#6b7280', icon: <MinusCircle className="w-3 h-3" /> },
-    unavailable: { label: 'غير متاح',      color: '#f59e0b', icon: <AlertTriangle className="w-3 h-3" /> },
-    no_response: { label: 'لم يرد',        color: '#6b7280', icon: <HelpCircle className="w-3 h-3" /> },
-    conn_error:  { label: 'خطأ اتصال',     color: '#ef4444', icon: <WifiOff className="w-3 h-3" /> },
-    invalid:     { label: 'استجابة غير صالحة', color: '#ef4444', icon: <XCircle className="w-3 h-3" /> },
-    loading:     { label: 'جاري التحميل',  color: '#6366f1', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+    loaded:      { label: 'مسجل',               color: '#22c55e', icon: <CheckCircle2 className="w-3 h-3" /> },
+    empty:       { label: 'لا توجد بيانات',      color: '#6b7280', icon: <MinusCircle className="w-3 h-3" /> },
+    unavailable: { label: 'غير متاح',            color: '#f59e0b', icon: <AlertTriangle className="w-3 h-3" /> },
+    no_response: { label: 'لم يرد',              color: '#6b7280', icon: <HelpCircle className="w-3 h-3" /> },
+    conn_error:  { label: 'خطأ اتصال',           color: '#ef4444', icon: <WifiOff className="w-3 h-3" /> },
+    invalid:     { label: 'استجابة غير صالحة',   color: '#ef4444', icon: <XCircle className="w-3 h-3" /> },
+    loading:     { label: 'جاري التحميل',        color: '#6366f1', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
   };
   const m = map[avail] ?? map.empty;
   return (
@@ -49,7 +53,6 @@ function AvailabilityBadge({ avail }: { avail: DataAvailability }) {
   );
 }
 
-// ── كرت محفظة شركة واحدة ─────────────────────────────────────────
 function WalletCard({ w }: { w: WalletInfo }) {
   const meta = CARRIER_META[w.carrier];
   return (
@@ -61,42 +64,20 @@ function WalletCard({ w }: { w: WalletInfo }) {
         </div>
         <AvailabilityBadge avail={w.availability} />
       </div>
-
       {w.availability === 'loaded' && (
         <div className="space-y-1.5 text-xs text-white/60 pr-2">
-          {w.registeredName && (
-            <div className="flex items-center justify-between">
-              <span>الاسم المسجل</span>
-              <span className="text-white/85 font-semibold">{w.registeredName}</span>
-            </div>
-          )}
-          {w.walletCount !== undefined && (
-            <div className="flex items-center justify-between">
-              <span>عدد المحافظ</span>
-              <span className="text-white/85 font-bold">{w.walletCount}</span>
-            </div>
-          )}
+          {w.registeredName && <div className="flex items-center justify-between"><span>الاسم المسجل</span><span className="text-white/85 font-semibold">{w.registeredName}</span></div>}
+          {w.walletCount !== undefined && <div className="flex items-center justify-between"><span>عدد المحافظ</span><span className="text-white/85 font-bold">{w.walletCount}</span></div>}
           {w.walletNumbers?.map(n => (
             <div key={n} className="flex items-center justify-between">
               <span>رقم المحفظة</span>
               <span className="font-mono text-white/75" dir="ltr">{n}</span>
             </div>
           ))}
-          {w.registrationDate && (
-            <div className="flex items-center justify-between">
-              <span>تاريخ التسجيل</span>
-              <span className="text-white/75">{w.registrationDate}</span>
-            </div>
-          )}
-          {w.walletStatus && (
-            <div className="flex items-center justify-between">
-              <span>الحالة</span>
-              <span className="text-green-400 font-semibold">{w.walletStatus}</span>
-            </div>
-          )}
+          {w.registrationDate && <div className="flex items-center justify-between"><span>تاريخ التسجيل</span><span className="text-white/75">{w.registrationDate}</span></div>}
+          {w.walletStatus && <div className="flex items-center justify-between"><span>الحالة</span><span className="text-green-400 font-semibold">{w.walletStatus}</span></div>}
         </div>
       )}
-
       {w.availability !== 'loaded' && w.availability !== 'loading' && (
         <p className="text-[11px] text-white/35 pr-2">
           {w.availability === 'empty' && 'لا توجد محافظ مسجلة لهذه الشركة.'}
@@ -110,8 +91,7 @@ function WalletCard({ w }: { w: WalletInfo }) {
   );
 }
 
-// ── كرت خطوط شركة واحدة ──────────────────────────────────────────
-function LineCard({ l }: { l: LineInfo }) {
+function LineCard({ l, fullNums }: { l: LineInfo; fullNums?: string[] }) {
   const meta = CARRIER_META[l.carrier];
   return (
     <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
@@ -122,42 +102,146 @@ function LineCard({ l }: { l: LineInfo }) {
         </div>
         <AvailabilityBadge avail={l.availability} />
       </div>
-
       {l.availability === 'loaded' && (
         <div className="space-y-1.5 text-xs text-white/60 pr-2">
-          {l.lineCount !== undefined && (
-            <div className="flex items-center justify-between">
-              <span>عدد الخطوط</span>
-              <span className="text-white/85 font-bold">{l.lineCount}</span>
-            </div>
-          )}
+          {l.lineCount !== undefined && <div className="flex items-center justify-between"><span>عدد الخطوط</span><span className="text-white/85 font-bold">{l.lineCount}</span></div>}
+          {/* الأرقام المشفرة */}
           {l.lineNumbers?.map((n, i) => (
             <div key={n} className="flex items-center justify-between">
               <span>خط {i + 1}</span>
-              <span className="font-mono text-white/75" dir="ltr">{n}</span>
+              <span className="font-mono text-white/55" dir="ltr">{n}</span>
             </div>
           ))}
-          {l.serviceStatus && (
-            <div className="flex items-center justify-between">
-              <span>حالة الخدمة</span>
-              <span className="text-green-400 font-semibold">{l.serviceStatus}</span>
+          {l.serviceStatus && <div className="flex items-center justify-between"><span>حالة الخدمة</span><span className="text-green-400 font-semibold">{l.serviceStatus}</span></div>}
+          {/* الأرقام الكاملة بعد OTP */}
+          {fullNums && fullNums.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+              <p className="text-[10px] font-bold text-amber-400/80 mb-1">الأرقام الكاملة (بعد التحقق)</p>
+              {fullNums.map((n, i) => (
+                <div key={n} className="flex items-center justify-between">
+                  <span className="text-amber-400/60">خط {i + 1} كامل</span>
+                  <span className="font-mono font-bold text-amber-300" dir="ltr">{n}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
       )}
+      {l.availability === 'empty'       && <p className="text-[11px] text-white/35 pr-2">لا توجد خطوط مسجلة لهذه الشركة.</p>}
+      {l.availability === 'unavailable' && <p className="text-[11px] text-white/35 pr-2">خدمة هذه الشركة غير متاحة حاليًا.</p>}
+      {l.availability === 'no_response' && <p className="text-[11px] text-white/35 pr-2">لم ترجع هذه الشركة أي بيانات.</p>}
+      {l.availability === 'conn_error'  && <p className="text-[11px] text-white/35 pr-2">تعذّر الاتصال بهذه الشركة.</p>}
+    </div>
+  );
+}
 
-      {l.availability === 'empty' && (
-        <p className="text-[11px] text-white/35 pr-2">لا توجد خطوط مسجلة لهذه الشركة.</p>
-      )}
-      {l.availability === 'unavailable' && (
-        <p className="text-[11px] text-white/35 pr-2">خدمة هذه الشركة غير متاحة حاليًا.</p>
-      )}
-      {l.availability === 'no_response' && (
-        <p className="text-[11px] text-white/35 pr-2">لم ترجع هذه الشركة أي بيانات.</p>
-      )}
-      {l.availability === 'conn_error' && (
-        <p className="text-[11px] text-white/35 pr-2">تعذّر الاتصال بهذه الشركة.</p>
-      )}
+// ── OTP Dialog (6 خانات) ─────────────────────────────────────────
+function OtpDialog({
+  onSubmit,
+  onClose,
+  onResend,
+  loading,
+  error,
+}: {
+  onSubmit: (otp: string) => void;
+  onClose: () => void;
+  onResend: () => void;
+  loading: boolean;
+  error: string | null;
+}) {
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  function handleInput(i: number, val: string) {
+    const d = val.replace(/\D/g, '').slice(-1);
+    const next = [...digits];
+    next[i] = d;
+    setDigits(next);
+    if (d && i < 5) refs.current[i + 1]?.focus();
+  }
+
+  function handleKeyDown(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Backspace' && !digits[i] && i > 0) refs.current[i - 1]?.focus();
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (text.length === 6) {
+      setDigits(text.split(''));
+      refs.current[5]?.focus();
+    }
+  }
+
+  const otp = digits.join('');
+  const isComplete = otp.length === 6;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full max-w-sm rounded-3xl p-6 space-y-5" dir="rtl"
+        style={{ background: '#0f1520', border: '1px solid rgba(255,255,255,0.1)' }}>
+
+        {/* العنوان */}
+        <div className="text-center space-y-1">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/25 bg-amber-500/10 mb-3">
+            <KeyRound className="w-6 h-6 text-amber-400" />
+          </div>
+          <h3 className="text-base font-black text-white">التحقق لإظهار الأرقام كاملة</h3>
+          <p className="text-[11px] text-white/45">أدخل رمز التحقق المرسَل على هاتفك</p>
+        </div>
+
+        {/* خانات OTP */}
+        <div className="flex gap-2 justify-center" dir="ltr" onPaste={handlePaste}>
+          {digits.map((d, i) => (
+            <input
+              key={i}
+              ref={el => { refs.current[i] = el; }}
+              type="text" inputMode="numeric" maxLength={1}
+              value={d}
+              onChange={e => handleInput(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(i, e)}
+              disabled={loading}
+              className="w-11 h-14 text-center text-xl font-black rounded-xl border outline-none transition-all"
+              style={{
+                background: d ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)',
+                border: d ? '1.5px solid rgba(251,191,36,0.5)' : '1px solid rgba(255,255,255,0.12)',
+                color: '#fbbf24',
+                caretColor: '#fbbf24',
+              }}
+            />
+          ))}
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-2 p-3 rounded-xl border border-red-500/25 bg-red-500/8">
+            <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <p className="text-xs text-red-300">{error}</p>
+          </div>
+        )}
+
+        {/* أزرار */}
+        <div className="flex gap-2">
+          <button onClick={onClose} disabled={loading}
+            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-white/10 text-white/50 hover:bg-white/5 transition-all">
+            إلغاء
+          </button>
+          <button
+            onClick={() => isComplete && onSubmit(otp)}
+            disabled={!isComplete || loading}
+            className="flex-1 h-11 text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2"
+            style={{
+              background: isComplete && !loading ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,0.06)',
+              color: isComplete && !loading ? '#000' : 'rgba(255,255,255,0.25)',
+            }}>
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</> : 'تأكيد'}
+          </button>
+        </div>
+
+        <button onClick={onResend} disabled={loading}
+          className="w-full text-center text-[11px] text-indigo-400/60 hover:text-indigo-400 transition-colors">
+          لم يصلك الرمز؟ أعد الإرسال
+        </button>
+      </div>
     </div>
   );
 }
@@ -166,10 +250,48 @@ function LineCard({ l }: { l: LineInfo }) {
 export default function WalletLinesResultsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const result: WalletLinesResult = (location.state as { result?: WalletLinesResult })?.result ?? EMPTY_RESULT;
+  const result: WalletLinesResult =
+    (location.state as { result?: WalletLinesResult })?.result ?? EMPTY_RESULT;
 
   const walletsLoaded = result.wallets.filter(w => w.availability === 'loaded').length;
-  const linesLoaded = result.lines.filter(l => l.availability === 'loaded').length;
+  const linesLoaded   = result.lines.filter(l => l.availability === 'loaded').length;
+
+  // ── OTP + Full Numbers State ─────────────────────────────────
+  const [showOtpDialog, setShowOtpDialog]     = useState(false);
+  const [otpLoading, setOtpLoading]           = useState(false);
+  const [otpError, setOtpError]               = useState<string | null>(null);
+  const [sendingOtp, setSendingOtp]           = useState(false);
+  const [sendOtpError, setSendOtpError]       = useState<string | null>(null);
+  const [fullNumbers, setFullNumbers]         = useState<FullNumbersData | null>(null);
+
+  const nationalId = walletLinesService.getSavedNationalId();
+
+  async function handleShowFullNumbers() {
+    if (!nationalId) { setSendOtpError('الرقم القومي غير محفوظ. أعد الاستعلام.'); return; }
+    setSendingOtp(true);
+    setSendOtpError(null);
+    const r = await walletLinesService.sendFullNumbersOtp(nationalId);
+    setSendingOtp(false);
+    if (!r.success) { setSendOtpError(r.userMessage ?? 'فشل إرسال رمز التحقق.'); return; }
+    setOtpError(null);
+    setShowOtpDialog(true);
+  }
+
+  async function handleOtpSubmit(otp: string) {
+    if (!nationalId) return;
+    setOtpLoading(true);
+    setOtpError(null);
+    const r = await walletLinesService.getFullNumbers(nationalId, otp);
+    setOtpLoading(false);
+    if (!r.success) { setOtpError(r.userMessage ?? 'رمز التحقق غير صحيح.'); return; }
+    setFullNumbers(r.data!);
+    setShowOtpDialog(false);
+  }
+
+  function handleLogout() {
+    walletLinesService.logout();
+    navigate('/wallet-lines/login', { replace: true });
+  }
 
   return (
     <div className="min-h-screen pb-28" dir="rtl"
@@ -191,6 +313,12 @@ export default function WalletLinesResultsPage() {
             style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
             {new Date(result.fetchedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
           </span>
+          {/* زر تسجيل الخروج */}
+          <button onClick={handleLogout}
+            className="flex items-center gap-1.5 text-[11px] text-red-400/70 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 active:scale-95">
+            <LogOut className="w-3.5 h-3.5" />
+            <span>خروج</span>
+          </button>
         </div>
       </div>
 
@@ -210,6 +338,32 @@ export default function WalletLinesResultsPage() {
           </div>
         </div>
 
+        {/* ── زر إظهار الأرقام كاملة ── */}
+        <div className="space-y-2">
+          <button
+            onClick={fullNumbers ? undefined : handleShowFullNumbers}
+            disabled={sendingOtp || !!fullNumbers}
+            className="w-full h-12 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-black transition-all active:scale-98"
+            style={{
+              background: fullNumbers
+                ? 'rgba(251,191,36,0.15)'
+                : 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(217,119,6,0.15))',
+              border: '1px solid rgba(251,191,36,0.3)',
+              color: '#fbbf24',
+            }}>
+            {sendingOtp
+              ? <><Loader2 className="w-4 h-4 animate-spin" />جاري إرسال رمز التحقق...</>
+              : fullNumbers
+              ? <><CheckCircle2 className="w-4 h-4 text-amber-400" />تم — الأرقام الكاملة ظاهرة أدناه</>
+              : <><Eye className="w-4 h-4" />إظهار الأرقام كاملة (يتطلب OTP)</>}
+          </button>
+          {sendOtpError && (
+            <p className="text-[11px] text-red-400 flex items-center gap-1 justify-center">
+              <XCircle className="w-3 h-3" />{sendOtpError}
+            </p>
+          )}
+        </div>
+
         {/* ── قسم المحافظ ── */}
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -221,18 +375,30 @@ export default function WalletLinesResultsPage() {
           </div>
         </div>
 
-        {/* ── قسم الخطوط ── */}
+        {/* ── قسم الخطوط (مع الأرقام الكاملة إذا توفرت) ── */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Phone className="w-4 h-4 text-green-400" />
             <h2 className="text-sm font-black text-white">الخطوط المسجلة</h2>
+            {fullNumbers && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)' }}>
+                + أرقام كاملة
+              </span>
+            )}
           </div>
           <div className="space-y-2">
-            {result.lines.map(l => <LineCard key={l.carrier} l={l} />)}
+            {result.lines.map(l => (
+              <LineCard
+                key={l.carrier}
+                l={l}
+                fullNums={fullNumbers?.[l.carrier]?.mobileLines}
+              />
+            ))}
           </div>
         </div>
 
-        {/* دليل حالات البيانات */}
+        {/* دليل الحالات */}
         <div className="rounded-2xl p-4 border border-white/6 bg-white/2 space-y-2">
           <p className="text-[11px] font-bold text-white/40 mb-2">دليل الحالات</p>
           {([
@@ -249,6 +415,17 @@ export default function WalletLinesResultsPage() {
           ))}
         </div>
       </div>
+
+      {/* OTP Dialog */}
+      {showOtpDialog && (
+        <OtpDialog
+          onSubmit={handleOtpSubmit}
+          onClose={() => setShowOtpDialog(false)}
+          onResend={handleShowFullNumbers}
+          loading={otpLoading}
+          error={otpError}
+        />
+      )}
     </div>
   );
 }

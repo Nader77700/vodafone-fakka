@@ -4,15 +4,21 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.5.2',
-  versionCode:    481,
+  appVersion:     '3.5.3',
+  versionCode:    482,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_2_wallet_shortcut_in_dialog_guest_browse_mode',
-  bundleFile:     'VodafoneFakka-v3.5.2.apk',
-  bundleHash:     'apk_v3_5_2_code481',
-  apkHash:        'apk_v3_5_2_code481',
-  dbVersion:      'v3.5.2',
+  sourceHash:     'build_v3_5_3_otp_full_numbers_session_persistence',
+  bundleFile:     'VodafoneFakka-v3.5.3.apk',
+  bundleHash:     'apk_v3_5_3_code482',
+  apkHash:        'apk_v3_5_3_code482',
+  dbVersion:      'v3.5.3',
   releaseNotes: [
+    'v3.5.3: إضافة ميزة الأرقام الكاملة (OTP) — زر "إظهار الأرقام كاملة" في صفحة النتائج مع dialog تحقق بـ 6 خانات',
+    'v3.5.3: حفظ الجلسة في localStorage — تسجيل الدخول مرة واحدة والتطبيق يتذكر الجلسة تلقائياً',
+    'v3.5.3: استعادة الجلسة التلقائية — عند الدخول لخدمة الخطوط يتجاوز Login مباشرة إذا الجلسة محفوظة',
+    'v3.5.3: حفظ الرقم القومي — يُحمَّل تلقائياً في شاشة التحقق من جلسة سابقة',
+    'v3.5.3: زر تسجيل خروج في Header صفحتَي النتائج والرقم القومي',
+    'v3.5.3: Edge Function wallet-lines-proxy — إضافة actions: send_otp + full_numbers (appVersion=86)',
     'v3.5.2: نقل اختصار رصيد المحفظة داخل نافذة تأكيد الشحن — زر مضغوط في أسفل تفاصيل الكارت بدلاً من زر منفصل في الصفحة',
     'v3.5.2: إضافة نظام تصفح بدون اشتراك (Guest Browse Mode) — زر في شاشة التفعيل يُفتح/يُغلق من لوحة التحكم فوراً',
     'v3.5.2: حماية كاملة لجميع العمليات — الشحن ممنوع client-side وserver-side للمستخدمين بدون اشتراك نشط',

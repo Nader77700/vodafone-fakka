@@ -1,5 +1,5 @@
 /**
- * apiWalletLines.ts — Direct Device Relay Mode (v2)
+ * apiWalletLines.ts — Direct Device Relay Mode (v2) + Session Persistence (v3)
  *
  * ⚠️ لماذا Direct وليس Edge Function؟
  *  Supabase Edge Functions تعمل على سيرفرات أوروبية/أمريكية.
@@ -7,11 +7,16 @@
  *  الحل: التطبيق على الموبايل (داخل مصر) يتصل مباشرة بـ my.tra.gov.eg
  *  بدون أي وسيط — الـ IP يكون مصرياً فيمر بدون حجب.
  *
+ * Session Persistence (v3):
+ *  - تخزين token و deviceId و nationalId في localStorage (تبقى بعد إغلاق التطبيق)
+ *  - وظيفة isSessionActive() للتحقق من وجود جلسة صالحة
+ *  - clearWalletLinesSession() لحذف الجلسة عند تسجيل الخروج
+ *
  * قواعد الأمان:
  *  - SHA-256 يتم هنا على الجهاز (crypto.subtle) — لا plain password يُرسَل
- *  - loginToken مشفر في sessionStorage — لا يُسجَّل في console أبداً
+ *  - loginToken مشفر بـ base64 في localStorage — لا يُسجَّل في console أبداً
  *  - الرقم القومي لا يُسجَّل في console أبداً
- *  - deviceId يُولَّد مرة واحدة ويُحفظ في sessionStorage
+ *  - deviceId يُولَّد مرة واحدة ويُحفظ في localStorage
  */
 
 import type {
@@ -24,13 +29,13 @@ const BASE_URL = 'https://my.tra.gov.eg';
 const APP_VERSION = '197';
 const TIMEOUT_MS = 30_000;
 
-// ── Device ID ─────────────────────────────────────────────────────
+// ── Device ID (localStorage — يبقى بعد إغلاق التطبيق) ───────────
 function getOrCreateDeviceId(): string {
   const KEY = 'wl_device_id';
-  let id = sessionStorage.getItem(KEY);
+  let id = localStorage.getItem(KEY);
   if (!id) {
     id = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-    sessionStorage.setItem(KEY, id);
+    localStorage.setItem(KEY, id);
   }
   return id;
 }
@@ -81,18 +86,47 @@ async function fetchJson(
   }
 }
 
-// ── Session Token Storage (مشفر في sessionStorage) ────────────────
-const SESSION_KEY = 'wl_session_token';
+// ── Session Storage Keys ───────────────────────────────────────────
+const SESSION_KEY     = 'wl_session_token';
+const NATIONAL_ID_KEY = 'wl_national_id';
+const USERNAME_KEY    = 'wl_username';
 
+// مشفر بـ base64 في localStorage (يبقى بعد إغلاق التطبيق)
 function saveToken(token: string): void {
-  // تشفير بسيط بالـ base64 (لمنع الظهور العلني في DevTools)
-  sessionStorage.setItem(SESSION_KEY, btoa(unescape(encodeURIComponent(token))));
+  localStorage.setItem(SESSION_KEY, btoa(unescape(encodeURIComponent(token))));
 }
 
 function loadToken(): string | null {
-  const raw = sessionStorage.getItem(SESSION_KEY);
+  const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try { return decodeURIComponent(escape(atob(raw))); } catch { return null; }
+}
+
+/** حفظ الرقم القومي مشفراً في localStorage */
+export function saveNationalId(nationalId: string): void {
+  localStorage.setItem(NATIONAL_ID_KEY, btoa(nationalId));
+}
+
+/** تحميل الرقم القومي المحفوظ */
+export function loadNationalId(): string | null {
+  const raw = localStorage.getItem(NATIONAL_ID_KEY);
+  if (!raw) return null;
+  try { return atob(raw); } catch { return null; }
+}
+
+/** حفظ اسم المستخدم (رقم الهاتف) */
+export function saveUsername(username: string): void {
+  localStorage.setItem(USERNAME_KEY, username);
+}
+
+/** تحميل اسم المستخدم */
+export function loadUsername(): string | null {
+  return localStorage.getItem(USERNAME_KEY);
+}
+
+/** هل توجد جلسة محفوظة صالحة؟ */
+export function isSessionActive(): boolean {
+  return !!loadToken();
 }
 
 // ── رسائل الخطأ العربية ───────────────────────────────────────────
@@ -447,10 +481,120 @@ export async function apiLookup(
 }
 
 /**
+ * apiSendOtp — طلب OTP للحصول على الأرقام كاملة
+ * مباشر من الجهاز (IP مصري) — appVersion=86
+ */
+export async function apiSendOtp(
+  nationalId: string,
+): Promise<ServiceResult<void>> {
+  const deviceId = getOrCreateDeviceId();
+  const token = loadToken();
+  if (!token) {
+    return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+  }
+  const headers = {
+    ...authenticatedHeaders(deviceId, token),
+    appVersion: '86',
+  };
+  try {
+    const { status, data } = await fetchJson(
+      `${BASE_URL}/querynumber/api/v1/FullLineNumbers/sendOTP`,
+      { method: 'POST', headers, body: JSON.stringify({ nationalId }) },
+    );
+    if (status === 401 || status === 403) {
+      return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+    }
+    const d = data as Record<string, unknown> | null;
+    const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    if (status !== 200 || (statusObj?.code !== 200 && statusObj?.code !== null && statusObj?.code !== undefined)) {
+      const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'فشل إرسال رمز التحقق.');
+      return { success: false, errorCode: 'SEND_OTP_FAILED', userMessage: msg };
+    }
+    return { success: true };
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    return { success: false, errorCode: code, userMessage: mapError(code) };
+  }
+}
+
+export interface FullNumbersData {
+  vodafone: { count: number; mobileLines: string[] };
+  orange:   { count: number; mobileLines: string[] };
+  etisalat: { count: number; mobileLines: string[] };
+  we:       { count: number; mobileLines: string[] };
+}
+
+/**
+ * apiGetFullNumbers — جلب الأرقام الكاملة غير المشفرة بعد التحقق بـ OTP
+ */
+export async function apiGetFullNumbers(
+  nationalId: string,
+  otp: string,
+): Promise<ServiceResult<FullNumbersData>> {
+  const deviceId = getOrCreateDeviceId();
+  const token = loadToken();
+  if (!token) {
+    return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+  }
+  const headers = {
+    ...authenticatedHeaders(deviceId, token),
+    appVersion: '86',
+  };
+  try {
+    const { status, data } = await fetchJson(
+      `${BASE_URL}/querynumber/api/v1/FullLineNumbers`,
+      { method: 'POST', headers, body: JSON.stringify({ nationalId, otp }) },
+    );
+    if (status === 401 || status === 403) {
+      return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+    }
+    const d = data as Record<string, unknown> | null;
+    const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    if (status !== 200 || (statusObj?.code !== 200 && statusObj?.code !== null && statusObj?.code !== undefined)) {
+      const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'رمز التحقق غير صحيح أو منتهي الصلاحية.');
+      return { success: false, errorCode: 'OTP_INVALID', userMessage: msg };
+    }
+    // result البنية: { Vodafone: { count, mobileLines:[...] }, Orange: {...}, ... }
+    const rawResult = (d?.result ?? {}) as Record<string, unknown>;
+    const carriers = ['vodafone', 'orange', 'etisalat', 'we'] as const;
+
+    function pKey(text: string): typeof carriers[number] | null {
+      const t = text.toLowerCase();
+      if (t.includes('vodafone')) return 'vodafone';
+      if (t.includes('orange'))   return 'orange';
+      if (t.includes('etisalat') || t.includes('e&')) return 'etisalat';
+      if (t === 'we' || t.includes('telecom')) return 'we';
+      return null;
+    }
+
+    const result: FullNumbersData = {
+      vodafone: { count: 0, mobileLines: [] },
+      orange:   { count: 0, mobileLines: [] },
+      etisalat: { count: 0, mobileLines: [] },
+      we:       { count: 0, mobileLines: [] },
+    };
+    for (const [key, val] of Object.entries(rawResult)) {
+      const ck = pKey(key);
+      if (!ck) continue;
+      const pd = val as Record<string, unknown>;
+      const rawLines = pd?.mobileLines ?? pd?.lineNumbers ?? pd?.lines ?? pd?.numbers ?? [];
+      const lines = Array.isArray(rawLines) ? rawLines.filter(Boolean).map(String) : [];
+      result[ck] = { count: Number(pd?.count ?? lines.length), mobileLines: lines };
+    }
+    return { success: true, data: result };
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    return { success: false, errorCode: code, userMessage: mapError(code) };
+  }
+}
+
+/**
  * مسح الجلسة عند الخروج
  */
 export function clearWalletLinesSession(): void {
-  sessionStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem('wl_device_id');
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(NATIONAL_ID_KEY);
+  localStorage.removeItem(USERNAME_KEY);
+  localStorage.removeItem('wl_device_id');
 }
 
