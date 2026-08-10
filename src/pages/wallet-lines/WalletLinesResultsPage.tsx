@@ -141,12 +141,14 @@ function OtpDialog({
   onClose,
   onResend,
   loading,
+  sending,
   error,
 }: {
   onSubmit: (otp: string) => void;
   onClose: () => void;
   onResend: () => void;
   loading: boolean;
+  sending: boolean;
   error: string | null;
 }) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
@@ -184,10 +186,12 @@ function OtpDialog({
         {/* العنوان */}
         <div className="text-center space-y-1">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/25 bg-amber-500/10 mb-3">
-            <KeyRound className="w-6 h-6 text-amber-400" />
+            {sending ? <Loader2 className="w-6 h-6 text-amber-400 animate-spin" /> : <KeyRound className="w-6 h-6 text-amber-400" />}
           </div>
           <h3 className="text-base font-black text-white">التحقق لإظهار الأرقام كاملة</h3>
-          <p className="text-[11px] text-white/45">أدخل رمز التحقق المرسَل على هاتفك</p>
+          <p className="text-[11px] text-white/45">
+            {sending ? 'جاري إرسال رمز التحقق على هاتفك...' : 'أدخل رمز التحقق المرسَل على هاتفك'}
+          </p>
         </div>
 
         {/* خانات OTP */}
@@ -200,7 +204,7 @@ function OtpDialog({
               value={d}
               onChange={e => handleInput(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
-              disabled={loading}
+              disabled={loading || sending}
               className="w-11 h-14 text-center text-xl font-black rounded-xl border outline-none transition-all"
               style={{
                 background: d ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)',
@@ -221,23 +225,25 @@ function OtpDialog({
 
         {/* أزرار */}
         <div className="flex gap-2">
-          <button onClick={onClose} disabled={loading}
+          <button onClick={onClose} disabled={loading || sending}
             className="flex-1 h-11 text-sm font-semibold rounded-xl border border-white/10 text-white/50 hover:bg-white/5 transition-all">
             إلغاء
           </button>
           <button
-            onClick={() => isComplete && onSubmit(otp)}
-            disabled={!isComplete || loading}
+            onClick={() => isComplete && !sending && onSubmit(otp)}
+            disabled={!isComplete || loading || sending}
             className="flex-1 h-11 text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2"
             style={{
-              background: isComplete && !loading ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,0.06)',
-              color: isComplete && !loading ? '#000' : 'rgba(255,255,255,0.25)',
+              background: isComplete && !loading && !sending ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,0.06)',
+              color: isComplete && !loading && !sending ? '#000' : 'rgba(255,255,255,0.25)',
             }}>
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</> : 'تأكيد'}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</>
+             : sending ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الإرسال...</>
+             : 'تأكيد'}
           </button>
         </div>
 
-        <button onClick={onResend} disabled={loading}
+        <button onClick={onResend} disabled={loading || sending}
           className="w-full text-center text-[11px] text-indigo-400/60 hover:text-indigo-400 transition-colors">
           لم يصلك الرمز؟ أعد الإرسال
         </button>
@@ -268,13 +274,17 @@ export default function WalletLinesResultsPage() {
 
   async function handleShowFullNumbers() {
     if (!nationalId) { setSendOtpError('الرقم القومي غير محفوظ. أعد الاستعلام.'); return; }
-    setSendingOtp(true);
+    // افتح الـ Dialog فوراً وأرسل OTP في الخلفية
+    setOtpError(null);
     setSendOtpError(null);
+    setShowOtpDialog(true);
+    setSendingOtp(true);
     const r = await walletLinesService.sendFullNumbersOtp(nationalId);
     setSendingOtp(false);
-    if (!r.success) { setSendOtpError(r.userMessage ?? 'فشل إرسال رمز التحقق.'); return; }
-    setOtpError(null);
-    setShowOtpDialog(true);
+    if (!r.success) {
+      // نوري الخطأ داخل الـ dialog بدل إغلاقه
+      setOtpError(r.userMessage ?? 'فشل إرسال رمز التحقق. تأكد من الاتصال بالإنترنت.');
+    }
   }
 
   async function handleOtpSubmit(otp: string) {
@@ -420,9 +430,10 @@ export default function WalletLinesResultsPage() {
       {showOtpDialog && (
         <OtpDialog
           onSubmit={handleOtpSubmit}
-          onClose={() => setShowOtpDialog(false)}
-          onResend={handleShowFullNumbers}
+          onClose={() => { setShowOtpDialog(false); setSendingOtp(false); }}
+          onResend={() => { setOtpError(null); handleShowFullNumbers(); }}
           loading={otpLoading}
+          sending={sendingOtp}
           error={otpError}
         />
       )}
