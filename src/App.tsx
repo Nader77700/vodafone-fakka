@@ -51,7 +51,7 @@ const lazyImport = (fn: () => Promise<any>) => {
 
 // ── lazy load للصفحات الثقيلة — تُحمَّل بعد Splash فقط ──
 import LoginPage from './pages/LoginPage';
-const HomePage  = lazyImport(() => import('./pages/HomePage'));
+import HomePage from './pages/HomePage';
 const MainLayout = lazyImport(() => import('./components/layouts/MainLayout'));
 const SessionConflictScreen = lazyImport(() => import('./pages/SessionConflictScreen'));
 const DeviceBannedScreen    = lazyImport(() => import('./pages/DeviceBannedScreen'));
