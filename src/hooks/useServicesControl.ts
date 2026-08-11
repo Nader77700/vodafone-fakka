@@ -62,12 +62,15 @@ export function useServicesControl() {
   } {
     if (!config) return { allowed: true, reason: 'ok', message: null };
 
-    // تحقق من القسم الرئيسي أولاً
-    const mainSection = config['services_section'];
-    if (mainSection) {
-      if (!mainSection.visible) return { allowed: false, reason: 'hidden', message: null };
-      if (mainSection.status === 'disabled')    return { allowed: false, reason: 'disabled',    message: null };
-      if (mainSection.status === 'maintenance') return { allowed: false, reason: 'maintenance', message: mainSection.maintenance_message };
+    // تحقق من القسم الرئيسي — فقط حالات الصيانة/التعطيل/الإخفاء (لا نمنع بسبب الاشتراك)
+    // دخول قسم الخدمات مفتوح للجميع — المنع على مستوى تنفيذ العملية داخل كل خدمة
+    if (serviceId !== 'services_section') {
+      const mainSection = config['services_section'];
+      if (mainSection) {
+        if (!mainSection.visible) return { allowed: false, reason: 'hidden', message: null };
+        if (mainSection.status === 'disabled')    return { allowed: false, reason: 'disabled',    message: null };
+        if (mainSection.status === 'maintenance') return { allowed: false, reason: 'maintenance', message: mainSection.maintenance_message };
+      }
     }
 
     const svc = config[serviceId];
@@ -75,6 +78,11 @@ export function useServicesControl() {
     if (!svc.visible)                  return { allowed: false, reason: 'hidden',      message: null };
     if (svc.status === 'disabled')     return { allowed: false, reason: 'disabled',    message: null };
     if (svc.status === 'maintenance')  return { allowed: false, reason: 'maintenance', message: svc.maintenance_message };
+
+    // فحص services_section نفسه — الصيانة/التعطيل فقط، لا منع بسبب الاشتراك
+    if (serviceId === 'services_section') {
+      return { allowed: true, reason: 'ok', message: null };
+    }
 
     if (hasActiveSub) return { allowed: true, reason: 'ok', message: null };
 

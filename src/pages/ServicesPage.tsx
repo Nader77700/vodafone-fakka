@@ -8,7 +8,7 @@
 import { useNavigate } from 'react-router-dom';
 import {
   RotateCcw, Wallet, Radio, CreditCard, ScanLine, Tag,
-  ChevronLeft, Wrench, WifiOff, ArrowRight, Lock, Loader2,
+  ChevronLeft, Wrench, WifiOff, ArrowRight, Loader2,
 } from 'lucide-react';
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
 import type { ServiceConfig } from '@/lib/servicesConfig';
@@ -141,29 +141,18 @@ export default function ServicesPage() {
     );
   }
 
-  // تحقق من القسم الرئيسي (services_section) أولاً
-  const mainAccess = isAccessible('services_section', hasActiveSub, isPreview);
+  // تحقق من القسم الرئيسي (services_section) — الصيانة والتعطيل فقط، لا نمنع بسبب الاشتراك
+  // المستخدم غير المشترك يستطيع دخول قسم الخدمات والتصفح — المنع عند تنفيذ العملية
+  const mainAccess = isAccessible('services_section', true, isPreview);
   if (!cfgLoading && !mainAccess.allowed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6" dir="rtl">
-        {mainAccess.reason === 'no_subscription' ? (
-          <Lock className="w-10 h-10 text-amber-400" />
-        ) : (
-          <Wrench className="w-10 h-10 text-muted-foreground" />
-        )}
+        <Wrench className="w-10 h-10 text-muted-foreground" />
         <p className="text-white text-sm font-bold">
-          {mainAccess.reason === 'maintenance'    ? (mainAccess.message ?? 'صيانة مؤقتة — نعود قريباً') :
-           mainAccess.reason === 'disabled'       ? 'قسم الخدمات معطل حالياً'                          :
-           mainAccess.reason === 'no_subscription'? 'هذا القسم متاح للمشتركين فقط'                     :
+          {mainAccess.reason === 'maintenance' ? (mainAccess.message ?? 'صيانة مؤقتة — نعود قريباً') :
+           mainAccess.reason === 'disabled'    ? 'قسم الخدمات معطل حالياً'                          :
            'قسم الخدمات غير متاح'}
         </p>
-        {mainAccess.reason === 'no_subscription' && (
-          <button onClick={() => navigate('/activate')}
-            className="px-5 py-2.5 rounded-xl text-sm font-black text-black"
-            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
-            تفعيل الاشتراك
-          </button>
-        )}
         <button onClick={() => navigate('/home')} className="text-primary text-sm font-semibold flex items-center gap-1">
           <ArrowRight className="w-4 h-4" /> العودة للرئيسية
         </button>
@@ -218,15 +207,13 @@ export default function ServicesPage() {
       {/* ── قائمة الخدمات ── */}
       <div className="px-4 pt-4 space-y-3">
         {services.map(svc => {
-          // تحقق من حالة كل خدمة من DB
+          // تحقق من حالة كل خدمة من DB — فقط حالات الصيانة/التعطيل الحقيقية تُدمج
+          // no_subscription لا تُعيّن maintenance — المستخدم يضغط ويرى Dialog الاشتراك
           const access = isAccessible(svc.id, hasActiveSub, isPreview);
-          // دمج حالة DB مع حالة servicesConfig المحلية
           const mergedSvc: ServiceConfig = {
             ...svc,
-            status: !access.allowed
-              ? (access.reason === 'maintenance' ? 'maintenance'
-                 : access.reason === 'no_subscription' ? 'maintenance'
-                 : 'disabled')
+            status: !access.allowed && (access.reason === 'maintenance' || access.reason === 'disabled')
+              ? access.reason
               : svc.status,
             maintenanceMessage: access.message ?? svc.maintenanceMessage,
           };

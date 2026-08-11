@@ -6650,12 +6650,17 @@ export default function AdminDashboard() {
           {/* ════ التحكم في قسم خدماتي ════ */}
           {activeTab === 'services_control' && (
             <div className="space-y-5 page-enter">
-              <iframe
-                src="/admin/services-control"
-                className="w-full border-0 rounded-2xl"
-                style={{ height: 'calc(100vh - 120px)' }}
-                title="التحكم في خدماتي"
-              />
+              <div className="flex flex-col items-center justify-center gap-4 py-16 rounded-2xl border border-border/40 bg-muted/10">
+                <Globe className="w-10 h-10 text-primary/60" />
+                <div className="text-center">
+                  <p className="text-sm font-black text-foreground mb-1">التحكم في قسم خدماتي</p>
+                  <p className="text-xs text-muted-foreground">اضغط للانتقال إلى صفحة التحكم الكاملة</p>
+                </div>
+                <Button onClick={() => navigate('/admin/services-control')} className="gap-2">
+                  <Globe className="w-4 h-4" />
+                  فتح صفحة التحكم
+                </Button>
+              </div>
             </div>
           )}
 
