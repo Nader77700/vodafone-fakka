@@ -1,11 +1,13 @@
 /**
- * WalletLinesOtpPage — OTP UI — PHASE 2 (Real API)
- * 6 خانات OTP + Countdown + إعادة إرسال + Loading/Error/Success.
+ * WalletLinesOtpPage — OTP UI — حقل واحد يدعم الكتابة اليدوية والـ Paste
+ * - حقل واحد رقمي بدلاً من 6 خانات منفصلة لمنع مشكلة Focus
+ * - يدعم Paste للكود كاملاً تلقائياً
+ * - المستخدم يكتب أو يلصق الكود بنفسه — لا قراءة SMS تلقائية
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowRight, CheckCircle2, XCircle, Loader2, RefreshCw, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { walletLinesService } from '@/services/walletLinesService';
 
@@ -17,13 +19,13 @@ export default function WalletLinesOtpPage() {
   const location = useLocation();
   const phone: string = (location.state as { phone?: string })?.phone ?? '';
 
-  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(COUNTDOWN_SEC);
   const [canResend, setCanResend] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Countdown
   useEffect(() => {
@@ -32,36 +34,23 @@ export default function WalletLinesOtpPage() {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  const otp = digits.join('');
-  const isComplete = otp.length === OTP_LENGTH && digits.every(d => d !== '');
+  const isComplete = otp.length === OTP_LENGTH;
   const isDisabled = loading || success;
 
-  function handleDigit(idx: number, val: string) {
-    const clean = val.replace(/\D/g, '').slice(-1);
-    const next = [...digits];
-    next[idx] = clean;
-    setDigits(next);
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // أرقام فقط، بحد أقصى OTP_LENGTH
+    const val = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH);
+    setOtp(val);
     setErrorMsg(null);
-    if (clean && idx < OTP_LENGTH - 1) inputRefs.current[idx + 1]?.focus();
   }
 
-  function handleKeyDown(idx: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Backspace') {
-      if (!digits[idx] && idx > 0) {
-        const next = [...digits]; next[idx - 1] = '';
-        setDigits(next);
-        inputRefs.current[idx - 1]?.focus();
-      }
-    }
-  }
-
-  function handlePaste(e: React.ClipboardEvent) {
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
     const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
-    if (!text) return;
-    const next = Array(OTP_LENGTH).fill('');
-    text.split('').forEach((c, i) => { if (i < OTP_LENGTH) next[i] = c; });
-    setDigits(next);
-    inputRefs.current[Math.min(text.length, OTP_LENGTH - 1)]?.focus();
+    if (text) {
+      setOtp(text);
+      setErrorMsg(null);
+    }
   }
 
   async function handleVerify() {
@@ -72,23 +61,24 @@ export default function WalletLinesOtpPage() {
     setLoading(false);
     if (!result.success) {
       setErrorMsg(result.userMessage ?? 'رمز التحقق غير صحيح.');
-      setDigits(Array(OTP_LENGTH).fill(''));
-      inputRefs.current[0]?.focus();
+      setOtp('');
+      setTimeout(() => inputRef.current?.focus(), 50);
       return;
     }
     setSuccess(true);
-    // بعد OTP ناجح → الـ sessionKey محفوظ في sessionStorage من خطوة login
-    // ننتقل لشاشة الرقم القومي مباشرة
     setTimeout(() => navigate('/wallet-lines/national-id', { state: { token: result.data?.token ?? '' } }), 900);
   }
 
   function handleResend() {
     setCountdown(COUNTDOWN_SEC);
     setCanResend(false);
-    setDigits(Array(OTP_LENGTH).fill(''));
+    setOtp('');
     setErrorMsg(null);
-    inputRefs.current[0]?.focus();
+    setTimeout(() => inputRef.current?.focus(), 50);
   }
+
+  // عرض الكود بصريًا كـ dots/digits مع مسافات بين كل رقم
+  const displayOtp = otp.padEnd(OTP_LENGTH, '·').split('').join(' ');
 
   return (
     <div className="min-h-screen pb-28 flex flex-col" dir="rtl"
@@ -113,35 +103,56 @@ export default function WalletLinesOtpPage() {
 
         {/* إرشاد */}
         <div className="text-center space-y-1.5">
-          <p className="text-sm text-white/70 font-medium">
-            تم إرسال رمز التحقق إلى
-          </p>
+          <p className="text-sm text-white/70 font-medium">تم إرسال رمز التحقق إلى</p>
           <p className="text-base font-black text-white font-mono" dir="ltr">
             {phone || 'رقمك المسجل'}
           </p>
+          <p className="text-xs text-white/40">أدخل الرمز المكوّن من {OTP_LENGTH} أرقام — يمكنك لصقه مباشرة</p>
         </div>
 
-        {/* OTP inputs */}
-        <div className="flex items-center justify-center gap-3" onPaste={handlePaste} dir="ltr">
-          {digits.map((d, i) => (
+        {/* حقل OTP الموحّد */}
+        <div className="space-y-3">
+          {/* العرض البصري للأرقام */}
+          <div className="flex items-center justify-center gap-1" dir="ltr" aria-hidden="true">
+            {Array.from({ length: OTP_LENGTH }).map((_, i) => (
+              <div key={i}
+                className={`w-11 h-14 rounded-2xl flex items-center justify-center text-xl font-black transition-all duration-150
+                  ${otp[i]
+                    ? errorMsg
+                      ? 'border-2 border-red-400/60 bg-red-500/8 text-red-300'
+                      : 'border-2 border-indigo-400/70 bg-indigo-500/10 text-white'
+                    : i === otp.length
+                      ? 'border-2 border-indigo-400/40 bg-indigo-500/5 text-transparent'
+                      : 'border-2 border-white/10 bg-white/3 text-transparent'
+                  }`}>
+                {otp[i] || ''}
+              </div>
+            ))}
+          </div>
+
+          {/* الـ Input الحقيقي — مخفي بصريًا لكن accessible */}
+          <div className="relative">
+            <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
             <input
-              key={i}
-              ref={el => { inputRefs.current[i] = el; }}
+              ref={inputRef}
               type="text"
               inputMode="numeric"
-              maxLength={1}
-              value={d}
-              onChange={e => handleDigit(i, e.target.value)}
-              onKeyDown={e => handleKeyDown(i, e)}
+              autoComplete="one-time-code"
+              pattern="\d*"
+              maxLength={OTP_LENGTH}
+              value={otp}
+              onChange={handleChange}
+              onPaste={handlePaste}
               disabled={isDisabled}
-              className={`w-14 h-14 text-center text-2xl font-black rounded-2xl border-2 bg-white/5 text-white outline-none transition-all duration-200
-                focus:border-indigo-400 focus:bg-indigo-500/10
-                ${d ? 'border-indigo-400/60' : 'border-white/15'}
-                ${errorMsg ? 'border-red-400/60 bg-red-500/8' : ''}
+              placeholder="اكتب أو الصق الرمز هنا"
+              className={`w-full h-12 pr-9 pl-4 rounded-xl text-center text-base font-mono tracking-widest outline-none transition-all duration-200
+                bg-white/5 text-white placeholder:text-white/20
+                focus:ring-2 focus:ring-indigo-400/50 focus:bg-indigo-500/5
+                ${errorMsg ? 'border border-red-400/50' : 'border border-white/10'}
                 ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-              aria-label={`الرقم ${i + 1}`}
+              aria-label="رمز التحقق المكوّن من 6 أرقام"
             />
-          ))}
+          </div>
         </div>
 
         {/* Error */}
@@ -164,8 +175,10 @@ export default function WalletLinesOtpPage() {
         <Button onClick={handleVerify} disabled={isDisabled || !isComplete}
           className="w-full h-12 text-sm font-black rounded-xl"
           style={{ background: success ? 'rgba(34,197,94,0.85)' : undefined }}>
-          {loading ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> جاري التحقق...</span>
-            : success ? <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> تم</span>
+          {loading
+            ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> جاري التحقق...</span>
+            : success
+            ? <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> تم</span>
             : 'تحقق'}
         </Button>
 

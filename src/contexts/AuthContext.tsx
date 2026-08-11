@@ -1,5 +1,5 @@
 // سياق المصادقة — AuthContext
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/db/supabase';
 import { getProfile } from '@/lib/api';
@@ -214,14 +214,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const initialSessionLoaded = useRef(false);
+
   useEffect(() => {
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          loadProfile(session.user).finally(() => setLoading(false));
+          loadProfile(session.user).finally(() => {
+            setLoading(false);
+            initialSessionLoaded.current = true;
+          });
         } else {
           setLoading(false);
+          initialSessionLoaded.current = true;
         }
       })
       .catch((e) => {
@@ -229,11 +235,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setProfile(null);
         setLoading(false);
+        initialSessionLoaded.current = true;
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+
       if (session?.user) {
+        if (event === 'TOKEN_REFRESHED') {
+          // TOKEN_REFRESHED: الجلسة صالحة — لا نُعيد جلب البروفايل لأن ذلك يُعيد render
+          // كامل ويُفقد Focus على أي Input يكتب فيه المستخدم حالياً
+          return;
+        }
+        if (event === 'SIGNED_IN') {
+          // SIGNED_IN الأولي: يأتي بعد getSession مباشرة — getSession قد بدأ بالفعل loadProfile
+          // لا نستدعيه مرة ثانية إلا لو هذا login جديد حقيقي (بعد signOut)
+          if (!initialSessionLoaded.current) return; // لا تزال getSession تعمل — تجنّب التكرار
+          loadProfile(session.user);
+          return;
+        }
+        // USER_UPDATED أو أي حدث آخر → نحدّث البروفايل
         loadProfile(session.user);
       } else {
         setProfile(null);

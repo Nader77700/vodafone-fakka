@@ -1,5 +1,5 @@
 // صفحة تسجيل الدخول والتسجيل
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
 import { toast } from 'sonner';
@@ -55,6 +55,10 @@ export default function LoginPage() {
   const [referralCodeInput,  setReferralCodeInput]  = useState('');
   const [referralCodeState,  setReferralCodeState]  = useState<'idle'|'checking'|'valid'|'invalid'>('idle');
   const [referralOwnerName,  setReferralOwnerName]  = useState('');
+
+  // ── Debounce timers لمنع async onChange (يُفقد Focus) ──
+  const inviteDebounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const referralDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const inv = consumePendingInvite();
     if (inv) setPendingInvite(inv);
@@ -399,20 +403,24 @@ export default function LoginPage() {
                     className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
                     placeholder="أدخل كود دعوة التاجر إن وُجد"
                     value={inviteCodeInput}
-                    onChange={async e => {
+                    onChange={e => {
                       const val = e.target.value.trim();
                       setInviteCodeInput(val);
                       setInviteCodeState('idle');
                       setInviteMerchantName('');
+                      // debounce: لا async مباشرة في onChange حتى لا يفقد Focus
+                      if (inviteDebounceRef.current) clearTimeout(inviteDebounceRef.current);
                       if (val.length >= 8) {
                         setInviteCodeState('checking');
-                        const res = await validateInviteToken(val);
-                        if (res.valid) {
-                          setInviteCodeState('valid');
-                          setInviteMerchantName(res.merchant_name ?? '');
-                        } else {
-                          setInviteCodeState('invalid');
-                        }
+                        inviteDebounceRef.current = setTimeout(async () => {
+                          const res = await validateInviteToken(val);
+                          if (res.valid) {
+                            setInviteCodeState('valid');
+                            setInviteMerchantName(res.merchant_name ?? '');
+                          } else {
+                            setInviteCodeState('invalid');
+                          }
+                        }, 600);
                       }
                     }}
                   />
@@ -449,20 +457,24 @@ export default function LoginPage() {
                     className="bg-transparent border-0 focus-visible:ring-0 pr-9 text-right"
                     placeholder="أدخل كود الإحالة من صديق"
                     value={referralCodeInput}
-                    onChange={async e => {
+                    onChange={e => {
                       const val = e.target.value.toUpperCase().trim();
                       setReferralCodeInput(val);
                       setReferralCodeState('idle');
                       setReferralOwnerName('');
+                      // debounce: لا async مباشرة في onChange حتى لا يفقد Focus
+                      if (referralDebounceRef.current) clearTimeout(referralDebounceRef.current);
                       if (val.length >= 8) {
                         setReferralCodeState('checking');
-                        const res = await validateReferralCode(val);
-                        if (res.valid) {
-                          setReferralCodeState('valid');
-                          setReferralOwnerName(res.username ?? '');
-                        } else {
-                          setReferralCodeState('invalid');
-                        }
+                        referralDebounceRef.current = setTimeout(async () => {
+                          const res = await validateReferralCode(val);
+                          if (res.valid) {
+                            setReferralCodeState('valid');
+                            setReferralOwnerName(res.username ?? '');
+                          } else {
+                            setReferralCodeState('invalid');
+                          }
+                        }, 600);
                       }
                     }}
                   />
