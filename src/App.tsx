@@ -128,6 +128,8 @@ const RefLandingPage            = lazyImport(() => import('./pages/RefLandingPag
 const ServicesPage              = lazyImport(() => import('./pages/ServicesPage'));
 const WalletLinesPage           = lazyImport(() => import('./pages/wallet-lines/WalletLinesPage'));
 const WalletLinesLoginPage      = lazyImport(() => import('./pages/wallet-lines/WalletLinesLoginPage'));
+const VodafoneOffersPage        = lazyImport(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
+const AdminServicesControlPage  = lazyImport(() => import('./pages/admin/AdminServicesControlPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
 const WalletLinesNationalIdPage = lazyImport(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
@@ -588,6 +590,8 @@ function AppInner() {
           <Route path="wallet-lines/otp"            element={<PageErrorBoundary pageName="wl-otp"><S><WalletLinesOtpPage /></S></PageErrorBoundary>} />
           <Route path="wallet-lines/national-id"    element={<PageErrorBoundary pageName="wl-national-id"><S><WalletLinesNationalIdPage /></S></PageErrorBoundary>} />
           <Route path="wallet-lines/results"        element={<PageErrorBoundary pageName="wl-results"><S><WalletLinesResultsPage /></S></PageErrorBoundary>} />
+          {/* ── PHASE 2: Vodafone Offers ── */}
+          <Route path="vodafone-offers"             element={<PageErrorBoundary pageName="vodafone-offers"><S><VodafoneOffersPage /></S></PageErrorBoundary>} />
 
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
@@ -613,6 +617,7 @@ function AppInner() {
         <Route path="/admin/throttle-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-throttles"><S><AdminThrottleLogs /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/legacy-flex" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-legacy-flex"><S><AdminLegacyFlexPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/wallet-lines-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-wl-logs"><S><WalletLinesLogsPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/services-control"  element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-services-control"><S><AdminServicesControlPage /></S></PageErrorBoundary></RouteGuard>} />
 
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />

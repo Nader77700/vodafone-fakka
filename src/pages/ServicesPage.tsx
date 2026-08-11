@@ -17,7 +17,6 @@ import { useState, type ReactNode } from 'react';
 import { useServicesControl } from '@/hooks/useServicesControl';
 import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
-import { verifyAccess } from '@/lib/api';
 import SubscriptionRequiredDialog from '@/components/subscription/SubscriptionRequiredDialog';
 
 // ── أيقونة ديناميكية بحسب iconName ──────────────────────────────
@@ -175,24 +174,14 @@ export default function ServicesPage() {
   const services = getVisibleServices();
 
   async function handleServicePress(svc: ServiceConfig) {
-    // تحقق سريع من الواجهة
+    // تحقق سريع من حالة الخدمة (صيانة/تعطيل/اشتراك) — Frontend only للـ UX
     const access = isAccessible(svc.id, hasActiveSub, isPreview);
     if (!access.allowed) {
       if (access.reason === 'no_subscription') setLockedService(svc.id);
+      // صيانة/تعطيل: الكارد نفسه يعرض overlay — لا نفعل شيئاً
       return;
     }
-
-    // تحقق Server-Side إضافي قبل الانتقال (حماية من bypass)
-    const server = await verifyAccess(svc.id);
-    if (!server.allowed) {
-      if (server.reason === 'SUBSCRIPTION_REQUIRED') {
-        setLockedService(svc.id);
-        return;
-      }
-      if (server.reason === 'MAINTENANCE') return;
-      return;
-    }
-
+    // انتقال مباشر — الحماية النهائية Server-Side داخل كل خدمة
     navigate(svc.path);
   }
 

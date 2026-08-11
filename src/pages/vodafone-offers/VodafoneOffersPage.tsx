@@ -350,38 +350,38 @@ export default function VodafoneOffersPage() {
         className="sticky top-0 z-30 px-4 pt-safe-top"
         style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <div className="flex items-center gap-3 py-4">
+        <div className="flex items-center gap-3 py-3">
           <button onClick={() => navigate('/services')}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all"
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all shrink-0"
             aria-label="رجوع">
             <ArrowRight className="w-4 h-4 text-white" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-black text-white leading-tight">عروض واشتراكات فودافون</h1>
+            <h1 className="text-sm font-black text-white leading-tight truncate">عروض واشتراكات فودافون</h1>
             <p className="text-[10px] text-muted-foreground">أنا فودافون</p>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full"
+          <div className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full shrink-0"
             style={{ background: 'rgba(230,0,0,0.15)', color: '#ff6b6b', border: '1px solid rgba(230,0,0,0.3)' }}>
-            <Tag className="w-3 h-3" />عروض
+            <Tag className="w-3 h-3" /><span className="hidden xs:inline">عروض</span>
           </div>
         </div>
       </div>
 
-      <div className="px-4 pt-6 space-y-5">
+      <div className="px-4 pt-5 space-y-4 max-w-lg mx-auto w-full">
 
         {/* بطاقة تعريفية */}
-        <div className="relative rounded-[22px] overflow-hidden p-5"
+        <div className="relative rounded-[20px] overflow-hidden p-4"
           style={{ background: 'linear-gradient(135deg,rgba(230,0,0,0.18),rgba(8,13,20,0.9))', border: '1px solid rgba(230,0,0,0.2)' }}>
           <div className="absolute inset-0 opacity-30 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 20% 50%,rgba(230,0,0,0.3) 0%,transparent 60%)' }} />
-          <div className="relative z-10 flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+          <div className="relative z-10 flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'rgba(230,0,0,0.2)', border: '1px solid rgba(230,0,0,0.35)' }}>
-              <Tag className="w-5 h-5" style={{ color: '#ff6b6b' }} />
+              <Tag className="w-4 h-4" style={{ color: '#ff6b6b' }} />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-black text-white mb-1">عروض واشتراكات فودافون</h2>
-              <p className="text-[12px] text-white/55 leading-relaxed">
+              <h2 className="text-sm font-black text-white mb-0.5">عروض واشتراكات فودافون</h2>
+              <p className="text-[11px] text-white/55 leading-relaxed">
                 قسم مخصص لعرض وإدارة عروض واشتراكات أنا فودافون مباشرةً من التطبيق.
                 {!session?.is_valid && ' سجّل دخولك للوصول إلى اشتراكاتك.'}
               </p>
@@ -398,36 +398,36 @@ export default function VodafoneOffersPage() {
         ) : session?.is_valid ? (
           <>
             {/* ── بطاقة الجلسة ── */}
-            <div className="rounded-[22px] overflow-hidden"
+            <div className="rounded-[20px] overflow-hidden"
               style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
-              <div className="flex items-center gap-3 px-4 py-3"
+              <div className="flex items-center gap-2.5 px-4 py-2.5"
                 style={{ background: 'rgba(34,197,94,0.1)', borderBottom: '1px solid rgba(34,197,94,0.15)' }}>
-                <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#4ade80' }} />
-                <span className="text-sm font-black" style={{ color: '#4ade80' }}>تم تسجيل الدخول</span>
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: '#4ade80' }} />
+                <span className="text-xs font-black" style={{ color: '#4ade80' }}>تم تسجيل الدخول</span>
               </div>
-              <div className="p-4 space-y-3">
+              <div className="p-3.5 space-y-2.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <PhoneCall className="w-4 h-4 text-white/70" />
+                    <PhoneCall className="w-3.5 h-3.5 text-white/70" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] text-white/40 mb-0.5">رقم الهاتف المسجّل</p>
-                    <p className="text-sm font-black text-white font-mono tracking-wide">{formatPhone(session.phone)}</p>
+                    <p className="text-sm font-black text-white font-mono tracking-wide truncate">{formatPhone(session.phone)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <ShieldCheck className="w-4 h-4 text-white/70" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-white/70" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] text-white/40 mb-0.5">صلاحية الجلسة حتى</p>
-                    <p className="text-[12px] font-bold text-white/80">{formatExpiry(session.expires_at)}</p>
+                    <p className="text-[11px] font-bold text-white/80 break-words">{formatExpiry(session.expires_at)}</p>
                   </div>
                 </div>
               </div>
-              <div className="px-4 pb-4">
+              <div className="px-3.5 pb-3.5">
                 <button onClick={handleLogout} disabled={logoutLoading}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50"
                   style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
@@ -440,19 +440,19 @@ export default function VodafoneOffersPage() {
             {/* ── قسم الاشتراكات القادمة ── */}
             <div>
               {/* عنوان + تحديث */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-1 h-5 rounded-full" style={{ background: '#E60000' }} />
-                  <h3 className="text-sm font-black text-white">الاشتراكات القادمة</h3>
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-1 h-5 rounded-full shrink-0" style={{ background: '#E60000' }} />
+                  <h3 className="text-sm font-black text-white truncate">الاشتراكات القادمة</h3>
                   {!subsLoading && subscriptions.length > 0 && (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0"
                       style={{ background: 'rgba(230,0,0,0.15)', color: '#ff6b6b', border: '1px solid rgba(230,0,0,0.25)' }}>
                       {subscriptions.length}
                     </span>
                   )}
                 </div>
                 <button onClick={() => loadSubscriptions()} disabled={subsLoading || !!cancellingId}
-                  className="flex items-center gap-1.5 text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors disabled:opacity-40">
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors disabled:opacity-40 shrink-0">
                   <RefreshCw className={`w-3.5 h-3.5 ${subsLoading ? 'animate-spin' : ''}`} />
                   تحديث
                 </button>
@@ -571,21 +571,21 @@ export default function VodafoneOffersPage() {
 
         ) : (
           /* غير مسجّل الدخول */
-          <div className="rounded-[22px] overflow-hidden"
+          <div className="rounded-[20px] overflow-hidden"
             style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-            <div className="flex flex-col items-center gap-4 px-6 py-10">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            <div className="flex flex-col items-center gap-4 px-5 py-8">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
                 style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.25)' }}>
-                <LogIn className="w-7 h-7" style={{ color: '#ff6b6b' }} />
+                <LogIn className="w-6 h-6" style={{ color: '#ff6b6b' }} />
               </div>
               <div className="text-center">
-                <h3 className="text-base font-black text-white mb-1">سجّل دخولك</h3>
-                <p className="text-[12px] text-white/45 leading-relaxed max-w-[260px]">
+                <h3 className="text-sm font-black text-white mb-1">سجّل دخولك</h3>
+                <p className="text-[11px] text-white/45 leading-relaxed max-w-[240px] mx-auto">
                   سجّل دخولك بحساب أنا فودافون للوصول إلى اشتراكاتك وعروضك الشخصية.
                 </p>
               </div>
               <button onClick={openModal}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-white active:scale-[0.97] transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm text-white active:scale-[0.97] transition-all"
                 style={{ background: 'linear-gradient(135deg,#E60000,#b30000)', boxShadow: '0 4px 20px rgba(230,0,0,0.35)' }}>
                 <LogIn className="w-4 h-4" />
                 تسجيل الدخول

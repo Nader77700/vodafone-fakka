@@ -90,8 +90,13 @@ serve(async (req: Request) => {
 
     const sub = subRows?.[0];
     let hasActiveSub = false;
-    if (sub?.status === "active" && sub.expires_at) {
-      hasActiveSub = new Date(sub.expires_at).getTime() > Date.now();
+    if (sub?.status === "active") {
+      // اشتراك بدون expires_at = غير محدود المدة → نشط دائماً
+      if (!sub.expires_at) {
+        hasActiveSub = true;
+      } else {
+        hasActiveSub = new Date(sub.expires_at).getTime() > Date.now();
+      }
     }
 
     const accessMode = svc.access_mode as "all" | "subscribers_only" | "preview_available";

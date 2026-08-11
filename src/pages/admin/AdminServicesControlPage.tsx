@@ -361,13 +361,13 @@ export default function AdminServicesControlPage() {
         className="border-amber-500/20 mb-4"
       >
         <div className="flex items-center justify-between p-3 rounded-xl bg-white/4 border border-white/8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${previewEnabled ? 'bg-amber-400/15 text-amber-400' : 'bg-white/10 text-white/50'}`}>
               <Power className="w-4 h-4" />
             </div>
-            <div>
-              <p className="text-sm font-black text-white">زر معاينة التطبيق</p>
-              <p className="text-[10px] text-white/50">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white truncate">زر معاينة التطبيق</p>
+              <p className="text-[10px] text-white/50 truncate">
                 {previewEnabled ? 'يظهر في شاشة التفعيل' : 'مخفي عن المستخدمين'}
               </p>
             </div>
@@ -379,25 +379,25 @@ export default function AdminServicesControlPage() {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <div className="rounded-xl border border-white/8 bg-white/4 p-3 text-center">
-            <p className="text-lg font-black text-amber-400">{previewStats.active}</p>
-            <p className="text-[10px] text-white/50">مستخدم في المعاينة</p>
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-center">
+            <p className="text-base font-black text-amber-400">{previewStats.active}</p>
+            <p className="text-[9px] text-white/50 leading-tight">في المعاينة</p>
           </div>
-          <div className="rounded-xl border border-white/8 bg-white/4 p-3 text-center">
-            <p className="text-lg font-black text-emerald-400">{previewStats.converted}</p>
-            <p className="text-[10px] text-white/50">تم تحويلهم</p>
+          <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-center">
+            <p className="text-base font-black text-emerald-400">{previewStats.converted}</p>
+            <p className="text-[9px] text-white/50 leading-tight">تم تحويلهم</p>
           </div>
-          <div className="rounded-xl border border-white/8 bg-white/4 p-3 text-center">
-            <p className="text-lg font-black text-indigo-400">{previewStats.total}</p>
-            <p className="text-[10px] text-white/50">إجمالي المستخدمين</p>
+          <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-center">
+            <p className="text-base font-black text-indigo-400">{previewStats.total}</p>
+            <p className="text-[9px] text-white/50 leading-tight">إجمالي المستخدمين</p>
           </div>
         </div>
 
-        <p className="text-[10px] text-white/40 px-1 mt-3">
+        <p className="text-[10px] text-white/40 px-1 mt-3 leading-relaxed">
           • إيقاف Preview Mode لا يمنع المستخدمين الحاليين من التصفح، لكنه يمنع أي خدمة مدفوعة من العمل.
           <br />
-          • اختر "متاح للمعاينة" من صلاحية الوصول في أي قسم لإتاحته لمستخدمي المعاينة.
+          • اختر &quot;متاح للمعاينة&quot; من صلاحية الوصول في أي قسم لإتاحته لمستخدمي المعاينة.
         </p>
       </SectionCard>
 
@@ -410,14 +410,14 @@ export default function AdminServicesControlPage() {
         className="border-emerald-500/20 mb-4"
       >
         <div className="flex items-center justify-between p-3 rounded-xl bg-white/4 border border-white/8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${chargeEnabled ? 'bg-emerald-400/15 text-emerald-400' : 'bg-white/10 text-white/50'}`}>
               <Power className="w-4 h-4" />
             </div>
-            <div>
-              <p className="text-sm font-black text-white">زر الشحن</p>
-              <p className="text-[10px] text-white/50">
-                {chargeEnabled ? 'يظهر للمستخدمين في قسم عروض فودافون' : 'مخفي عن المستخدمين'}
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white truncate">زر الشحن</p>
+              <p className="text-[10px] text-white/50 truncate">
+                {chargeEnabled ? 'يظهر في قسم عروض فودافون' : 'مخفي عن المستخدمين'}
               </p>
             </div>
           </div>
@@ -428,7 +428,7 @@ export default function AdminServicesControlPage() {
           />
         </div>
 
-        <p className="text-[10px] text-white/40 px-1 mt-3">
+        <p className="text-[10px] text-white/40 px-1 mt-3 leading-relaxed">
           • عند الإيقاف يختفي زر الشحن من بطاقات الاشتراكات ويمنع أي طلب شحن جديد.
           <br />
           • يستغرق التغيير ثوانٍ حتى ينعكس على واجهة المستخدمين بدون إعادة بناء.

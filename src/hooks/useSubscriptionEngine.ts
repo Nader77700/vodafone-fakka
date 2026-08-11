@@ -123,7 +123,6 @@ export function useSubscriptionEngine(opts?: { intervalMs?: number }): Subscript
     subscription?.status === 'active' &&
     (!subscription?.expires_at || new Date(subscription.expires_at).getTime() > Date.now())
   );
-
   // انتهاء الحصة يُعدّ انتهاءً فورياً
   const exhaustedByUsage = !!(
     opsInfo?.isExhaustedByUsage ||
