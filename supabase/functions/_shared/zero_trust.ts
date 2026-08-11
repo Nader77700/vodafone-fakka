@@ -110,7 +110,7 @@ export async function zeroTrustCheck(req: Request) {
 
   const { data: prof } = await supabaseAdmin
     .from("profiles")
-    .select("role, is_active, device_id, vodafone_pin_locked_at")
+    .select("role, is_active, device_id, vodafone_pin_locked_at, access_mode")
     .eq("id", user.id)
     .single();
 
