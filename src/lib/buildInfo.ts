@@ -4,14 +4,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.6',
-  versionCode:    485,
+  appVersion:      '3.5.7',
+  versionCode:    486,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_6_services_admin_control_otp_timer',
-  bundleFile:     'VodafoneFakka-v3.5.6.apk',
-  bundleHash:     'apk_v3_5_6_code485',
-  apkHash:        'apk_v3_5_6_code485',
-  dbVersion:      'v3.5.6',
+  sourceHash:     'build_v3_5_7_1786478804',
+  bundleFile:     'VodafoneFakka-v3.5.7.apk',
+  bundleHash:     'apk_v3_5_7_code486',
+  apkHash:        'apk_v3_5_7_code486',
+  dbVersion:      'v3.5.7',
   releaseNotes: [
     'v3.5.6: لوحة تحكم جديدة في خدماتي — الأدمن يتحكم في إظهار/إخفاء/تعطيل/صيانة كل قسم فوراً بدون تحديث التطبيق',
     'v3.5.6: Edge Function services-control — GET عام + PATCH للأدمن فقط للتحكم في الخدمات من السيرفر',
