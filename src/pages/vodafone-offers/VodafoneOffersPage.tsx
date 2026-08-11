@@ -29,8 +29,11 @@ import {
   anaVodafoneLogout,
   getUpcomingSubscriptions,
   cancelVodafoneSubscription,
+  chargeVodafoneSubscription,
+  getVodafoneChargeEnabled,
   type AnaVodafoneSession,
   type VodafoneSubscription,
+  type ChargeBreakdown,
 } from '@/lib/api';
 
 // ── مساعدات ─────────────────────────────────────────────────────
@@ -60,16 +63,21 @@ function getStatusMeta(status: string) {
 
 // ── بطاقة اشتراك واحد ────────────────────────────────────────────
 function SubscriptionCard({
-  sub, onCancel, cancellingId,
+  sub, onCancel, onCharge, cancellingId, chargingId, chargeEnabled,
 }: {
   sub: VodafoneSubscription;
   onCancel: (sub: VodafoneSubscription) => void;
+  onCharge: (sub: VodafoneSubscription) => void;
   cancellingId: string | null;
+  chargingId: string | null;
+  chargeEnabled: boolean;
 }) {
   const isCancelling = cancellingId === sub.id;
+  const isCharging   = chargingId === sub.id;
   const st = getStatusMeta(sub.status);
   const displayName = sub.description || sub.type || 'باقة';
   const canCancel = !!sub.id && !!sub.enc_product_id;
+  const canCharge = canCancel && sub.price && chargeEnabled;
 
   return (
     <div
@@ -116,9 +124,24 @@ function SubscriptionCard({
         )}
       </div>
 
-      {/* زر الإلغاء */}
-      {canCancel && (
-        <div className="px-4 pb-3">
+      {/* الأزرار */}
+      <div className="px-4 pb-3 flex flex-col gap-2">
+        {canCharge && (
+          <button
+            onClick={() => onCharge(sub)}
+            disabled={isCharging || !!chargingId}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{
+              background: 'rgba(34,197,94,0.08)',
+              border: '1px solid rgba(34,197,94,0.2)',
+              color: '#4ade80',
+            }}
+          >
+            {isCharging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Banknote className="w-3.5 h-3.5" />}
+            {isCharging ? 'جاري الشحن...' : 'شحن'}
+          </button>
+        )}
+        {canCancel && (
           <button
             onClick={() => onCancel(sub)}
             disabled={isCancelling || !!cancellingId}
@@ -129,13 +152,11 @@ function SubscriptionCard({
               color: '#f87171',
             }}
           >
-            {isCancelling
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <XCircle className="w-3.5 h-3.5" />}
+            {isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
             {isCancelling ? 'جاري الإلغاء...' : 'إلغاء الاشتراك'}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -169,6 +190,15 @@ export default function VodafoneOffersPage() {
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
   const [cancelError, setCancelError]     = useState<string | null>(null);
 
+  // ── الشحن ──
+  const [chargeEnabled, setChargeEnabled] = useState(false);
+  const [chargeSub, setChargeSub]         = useState<VodafoneSubscription | null>(null);
+  const [chargeBreakdown, setChargeBreakdown] = useState<ChargeBreakdown | null>(null);
+  const [chargingId, setChargingId]     = useState<string | null>(null);
+  const [chargeSuccess, setChargeSuccess] = useState<string | null>(null);
+  const [chargeError, setChargeError]     = useState<string | null>(null);
+  const [chargeShowConfirm, setChargeShowConfirm] = useState(false);
+
   // ── جلب الجلسة ──
   async function loadSession(): Promise<AnaVodafoneSession | null> {
     setSessionLoading(true);
@@ -185,7 +215,13 @@ export default function VodafoneOffersPage() {
     setSubsCode(null);
     setCancelSuccess(null);
     setCancelError(null);
-    const result = await getUpcomingSubscriptions();
+    setChargeSuccess(null);
+    setChargeError(null);
+    const [result, enabled] = await Promise.all([
+      getUpcomingSubscriptions(),
+      getVodafoneChargeEnabled(),
+    ]);
+    setChargeEnabled(enabled);
     setSubsLoading(false);
     if (!result.success) {
       setSubsError(result.error ?? 'فشل جلب الاشتراكات');
@@ -248,6 +284,54 @@ export default function VodafoneOffersPage() {
       return;
     }
     setCancelSuccess('تم إلغاء الاشتراك بنجاح ✓');
+    await loadSubscriptions();
+  }
+
+  // ── ملاحظات الشحن ──
+  function openChargeModal(sub: VodafoneSubscription) {
+    if (!sub.price || !sub.enc_product_id || !sub.id) return;
+    const base = parseFloat(sub.price);
+    const tax  = parseFloat((base * 0.43).toFixed(2));
+    const total = parseFloat((base + tax).toFixed(2));
+    setChargeSub(sub);
+    setChargeBreakdown({ base_price: base, tax_rate: 0.43, tax_amount: tax, total });
+    setChargeError(null);
+    setChargeSuccess(null);
+    setChargeShowConfirm(true);
+  }
+
+  function closeChargeModal() {
+    if (chargingId) return; // منع الإغلاق أثناء الشحن
+    setChargeSub(null);
+    setChargeBreakdown(null);
+    setChargeShowConfirm(false);
+  }
+
+  async function handleChargeConfirm() {
+    if (!chargeSub?.id || !chargeSub?.enc_product_id || !chargeBreakdown) return;
+
+    // إنشاء Operation ID فريد للمهمة ومنع التكرار
+    const operationId = crypto.randomUUID();
+    setChargeShowConfirm(false);
+    setChargingId(chargeSub.id);
+    setChargeSuccess(null);
+    setChargeError(null);
+
+    const result = await chargeVodafoneSubscription(
+      chargeSub.id,
+      chargeSub.enc_product_id,
+      chargeSub.description || chargeSub.type || 'باقة',
+      chargeSub.price || '0',
+      operationId
+    );
+
+    setChargingId(null);
+    if (!result.success) {
+      setChargeError(result.error ?? 'فشل في عملية الشحن');
+      if (result.code === 'SESSION_EXPIRED') await loadSession();
+      return;
+    }
+    setChargeSuccess(result.message ?? 'تم الشحن بنجاح ✓');
     await loadSubscriptions();
   }
 
@@ -443,7 +527,10 @@ export default function VodafoneOffersPage() {
                       key={sub.id || sub.type}
                       sub={sub}
                       onCancel={setConfirmSub}
+                      onCharge={openChargeModal}
                       cancellingId={cancellingId}
+                      chargingId={chargingId}
+                      chargeEnabled={chargeEnabled}
                     />
                   ))}
 
@@ -566,6 +653,92 @@ export default function VodafoneOffersPage() {
             <p className="text-[10px] text-white/25 text-center">
               🔒 بياناتك محمية — لا تُرسل كلمة المرور أو Token للمتصفح
             </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog تأكيد الشحن */}
+      <Dialog open={chargeShowConfirm} onOpenChange={(o) => { if (!o) closeChargeModal(); }}>
+        <DialogContent
+          className="max-w-[calc(100%-2rem)] md:max-w-lg rounded-[24px] p-0 overflow-hidden"
+          dir="rtl"
+          style={{ background: '#0d1120', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <DialogHeader className="px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}>
+                <Banknote className="w-4 h-4" style={{ color: '#4ade80' }} />
+              </div>
+              <DialogTitle className="text-base font-black text-white">تأكيد الشحن</DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="px-5 py-5 space-y-4">
+            {/* بيانات الباقة */}
+            <div className="rounded-xl p-3.5 space-y-2"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-white/50">الباقة / العرض</span>
+                <span className="text-[12px] font-black text-white text-right truncate flex-1">
+                  {chargeSub?.description || chargeSub?.type || 'باقة'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-white/50">الخط</span>
+                <span className="text-[12px] font-black text-white/90 text-left" dir="ltr">
+                  {session?.phone ? '0' + session.phone : '—'}
+                </span>
+              </div>
+            </div>
+
+            {/* تفاصيل المبالغ */}
+            {chargeBreakdown && (
+              <div className="rounded-xl p-3.5 space-y-2"
+                style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-white/50">السعر الأساسي</span>
+                  <span className="text-[12px] font-black text-white">{chargeBreakdown.base_price.toFixed(2)} ج.م</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-white/50">الضريبة ({(chargeBreakdown.tax_rate * 100).toFixed(0)}%)</span>
+                  <span className="text-[12px] font-black text-white/70">{chargeBreakdown.tax_amount.toFixed(2)} ج.م</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 pt-1.5"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span className="text-[12px] font-bold text-white/80">الإجمالي النهائي</span>
+                  <span className="text-base font-black" style={{ color: '#4ade80' }}>{chargeBreakdown.total.toFixed(2)} ج.م</span>
+                </div>
+              </div>
+            )}
+
+            {/* رسائل نجاح/خطأ */}
+            {chargeError && (
+              <div className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
+                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#f87171' }} />
+                <p className="text-[12px] font-medium leading-relaxed" style={{ color: '#fca5a5' }}>{chargeError}</p>
+              </div>
+            )}
+            {chargeSuccess && (
+              <div className="flex items-center gap-2.5 rounded-xl px-3.5 py-3"
+                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#4ade80' }} />
+                <p className="text-[12px] font-bold" style={{ color: '#86efac' }}>{chargeSuccess}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <Button variant="ghost" onClick={closeChargeModal} disabled={!!chargingId}
+                className="flex-1 h-12 rounded-xl font-bold text-white/60 border border-white/10 hover:bg-white/5">
+                تراجع
+              </Button>
+              <button onClick={handleChargeConfirm} disabled={!!chargingId}
+                className="flex-1 h-12 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)', boxShadow: '0 4px 16px rgba(22,163,74,0.3)' }}>
+                {chargingId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
+                تأكيد الشحن
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -169,6 +169,66 @@ export async function cancelVodafoneSubscription(
   }
   return data ?? { success: false, error: 'استجابة غير متوقعة' };
 }
+
+// ── بيانات الشحن ────────────────────────────────────────────────────────────
+export interface ChargeBreakdown {
+  base_price: number;
+  tax_rate: number;
+  tax_amount: number;
+  total: number;
+}
+
+export interface ChargeSubscriptionResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+  message?: string;
+  operation_id?: string;
+  breakdown?: ChargeBreakdown;
+}
+
+/** الشحن — حساب المبلغ الإجمالي بالضريبة وتسجيل العملية — كلها Server-Side */
+export async function chargeVodafoneSubscription(
+  subscriptionId: string,
+  encProductId: string,
+  description: string,
+  price: string,
+  operationId: string
+): Promise<ChargeSubscriptionResult> {
+  const { data, error } = await supabase.functions.invoke<ChargeSubscriptionResult>(
+    'ana-vodafone-charge',
+    {
+      body: {
+        subscription_id: subscriptionId,
+        enc_product_id:  encProductId,
+        description,
+        price,
+        operation_id: operationId,
+      },
+      method: 'POST',
+    }
+  );
+  if (error) {
+    const msg = await error?.context?.text?.().catch(() => '') ?? error.message;
+    console.error('[chargeVodafoneSubscription] edge error:', msg);
+    return { success: false, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
+  }
+  return data ?? { success: false, error: 'استجابة غير متوقعة' };
+}
+
+/** التحقق من تشغيل شحن فودافون من قبل الأدمن */
+export async function getVodafoneChargeEnabled(): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('core_app_config')
+    .select('value')
+    .eq('key', 'vodafone_offers_charge_enabled')
+    .maybeSingle();
+  if (error || !data) {
+    console.error('[getVodafoneChargeEnabled] error:', error);
+    return false;
+  }
+  return data.value === 'true';
+}
 // ── getUserSubscription: يجلب الاشتراك ويحسب الحالة الفعلية دائماً ──────────
 // لا يعتمد على القيمة المخزنة في حقل status فقط:
 // - إذا كان status='active' لكن expires_at < الآن → ينتهي تلقائياً ويحدّث DB

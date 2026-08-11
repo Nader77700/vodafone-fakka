@@ -11,6 +11,7 @@ import {
   Eye, EyeOff, Wrench, Power, PowerOff, Users, Globe,
   RefreshCw, Loader2, CheckCircle, AlertTriangle, Info,
   ScanLine, RotateCcw, Wallet, CreditCard, ChevronDown,
+  Banknote,
 } from 'lucide-react';
 import type { PreviewServiceAccess } from '@/types/types';
 import { Button } from '@/components/ui/button';
@@ -224,6 +225,10 @@ export default function AdminServicesControlPage() {
   const [previewStats, setPreviewStats]   = useState({ active: 0, converted: 0, total: 0 });
   const [togglingPreview, setTogglingPreview] = useState(false);
 
+  // Vodafone Offers charge toggle
+  const [chargeEnabled, setChargeEnabled] = useState(false);
+  const [togglingCharge, setTogglingCharge] = useState(false);
+
   const loadPreview = useCallback(async () => {
     const { data: cfg } = await supabase
       .from('core_app_config')
@@ -247,14 +252,32 @@ export default function AdminServicesControlPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data, error }] = await Promise.all([
+    const [{ data, error }, { data: chargeCfg }] = await Promise.all([
       supabase.from('services_control').select('*').order('display_order', { ascending: true }),
-      loadPreview(),
+      supabase.from('core_app_config').select('value').eq('key', 'vodafone_offers_charge_enabled').maybeSingle(),
     ]);
+    await loadPreview();
+    setChargeEnabled(chargeCfg?.value === 'true');
     setLoading(false);
     if (error) { toast.error('فشل تحميل الإعدادات'); return; }
     setServices((data as ServiceControl[]) ?? []);
   }, [loadPreview]);
+
+  async function toggleVodafoneCharge(enabled: boolean) {
+    if (!isAdmin) { toast.error('غير مصرح'); return; }
+    setTogglingCharge(true);
+    const { error } = await supabase
+      .from('core_app_config')
+      .update({ value: enabled ? 'true' : 'false', updated_by: profile?.id ?? null })
+      .eq('key', 'vodafone_offers_charge_enabled');
+    setTogglingCharge(false);
+    if (error) {
+      toast.error(`فشل تحديث حالة الشحن: ${error.message}`);
+    } else {
+      setChargeEnabled(enabled);
+      toast.success(enabled ? 'تم تفعيل شحن فودافون' : 'تم إيقاف شحن فودافون', { duration: 2000 });
+    }
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -375,6 +398,40 @@ export default function AdminServicesControlPage() {
           • إيقاف Preview Mode لا يمنع المستخدمين الحاليين من التصفح، لكنه يمنع أي خدمة مدفوعة من العمل.
           <br />
           • اختر "متاح للمعاينة" من صلاحية الوصول في أي قسم لإتاحته لمستخدمي المعاينة.
+        </p>
+      </SectionCard>
+
+      {/* ═══════════════════════════════════════════════════════════
+          Vodafone Offers — Charge Toggle
+         ═══════════════════════════════════════════════════════════ */}
+      <SectionCard
+        title="شحن عروض واشتراكات فودافون"
+        icon={Banknote}
+        className="border-emerald-500/20 mb-4"
+      >
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/4 border border-white/8">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${chargeEnabled ? 'bg-emerald-400/15 text-emerald-400' : 'bg-white/10 text-white/50'}`}>
+              <Power className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-white">زر الشحن</p>
+              <p className="text-[10px] text-white/50">
+                {chargeEnabled ? 'يظهر للمستخدمين في قسم عروض فودافون' : 'مخفي عن المستخدمين'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={chargeEnabled}
+            disabled={togglingCharge || loading}
+            onCheckedChange={toggleVodafoneCharge}
+          />
+        </div>
+
+        <p className="text-[10px] text-white/40 px-1 mt-3">
+          • عند الإيقاف يختفي زر الشحن من بطاقات الاشتراكات ويمنع أي طلب شحن جديد.
+          <br />
+          • يستغرق التغيير ثوانٍ حتى ينعكس على واجهة المستخدمين بدون إعادة بناء.
         </p>
       </SectionCard>
 
