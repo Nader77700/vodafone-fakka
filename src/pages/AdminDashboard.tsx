@@ -1,5 +1,5 @@
 // لوحة الإدارة — SaaS Premium v9 (14-Phase Rebuild)
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
@@ -1026,7 +1026,7 @@ function UserDiagnosticsSection({ user }: { user: UserDetail }) {
 // ─────────────────────────────────────────────
 // المكوّن الرئيسي
 // ─────────────────────────────────────────────
-export default function AdminDashboard() {
+function AdminDashboard() {
   const { profile, signOut } = useAuth();
   const user = profile;
   const navigate = useNavigate();
@@ -6664,3 +6664,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+export default memo(AdminDashboard);

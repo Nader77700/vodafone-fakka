@@ -1,6 +1,6 @@
 // الصفحة الرئيسية — كروت الشحن + معلومات المستخدم
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
@@ -2056,7 +2056,7 @@ function GracePeriodBanner({ graceEndsAt, onRenew }: { graceEndsAt: string; onRe
 // ══════════════════════════════════════════════════════
 // الصفحة الرئيسية — Home Dashboard
 // ══════════════════════════════════════════════════════
-export default function HomePage() {
+function HomePage() {
   const { user, profile, refreshProfile } = useAuth();
   const { config } = useRuntimeConfig();
   const { isPreview } = usePreviewMode();
@@ -2697,7 +2697,7 @@ export default function HomePage() {
         <div className="px-4 pt-3">
           <div className="relative rounded-2xl overflow-hidden border border-primary/12"
             style={{ minHeight: 120 }}>
-            <img src={homeBannerUrl} alt="Banner" className="w-full h-full object-cover" />
+            <img src={homeBannerUrl} alt="Banner" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         </div>
       )}
@@ -2954,3 +2954,6 @@ export default function HomePage() {
     </div>
   );
 }
+
+export default memo(HomePage);
+
