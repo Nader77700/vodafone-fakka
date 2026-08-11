@@ -483,6 +483,7 @@ export async function apiLookup(
 /**
  * apiSendOtp — طلب OTP للحصول على الأرقام كاملة
  * مباشر من الجهاز (IP مصري) — appVersion=86
+ * Endpoint: /querynumber/api/v2/request/LineNumbers
  */
 export async function apiSendOtp(
   nationalId: string,
@@ -498,7 +499,7 @@ export async function apiSendOtp(
   };
   try {
     const { status, data } = await fetchJson(
-      `${BASE_URL}/querynumber/api/v1/FullLineNumbers/sendOTP`,
+      `${BASE_URL}/querynumber/api/v2/request/LineNumbers`,
       { method: 'POST', headers, body: JSON.stringify({ nationalId }) },
     );
     if (status === 401 || status === 403) {
@@ -526,6 +527,7 @@ export interface FullNumbersData {
 
 /**
  * apiGetFullNumbers — جلب الأرقام الكاملة غير المشفرة بعد التحقق بـ OTP
+ * Endpoint: /querynumber/api/v2/verify/LineNumbers
  */
 export async function apiGetFullNumbers(
   nationalId: string,
@@ -542,7 +544,7 @@ export async function apiGetFullNumbers(
   };
   try {
     const { status, data } = await fetchJson(
-      `${BASE_URL}/querynumber/api/v1/FullLineNumbers`,
+      `${BASE_URL}/querynumber/api/v2/verify/LineNumbers`,
       { method: 'POST', headers, body: JSON.stringify({ nationalId, otp }) },
     );
     if (status === 401 || status === 403) {
@@ -550,11 +552,17 @@ export async function apiGetFullNumbers(
     }
     const d = data as Record<string, unknown> | null;
     const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    if (status === 401) {
+      return { success: false, errorCode: 'OTP_INVALID', userMessage: 'رمز التحقق غير صحيح.' };
+    }
+    if (status === 403) {
+      return { success: false, errorCode: 'OTP_EXPIRED', userMessage: 'انتهت صلاحية رمز التحقق. اطلب رمزًا جديدًا.' };
+    }
     if (status !== 200 || (statusObj?.code !== 200 && statusObj?.code !== null && statusObj?.code !== undefined)) {
       const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'رمز التحقق غير صحيح أو منتهي الصلاحية.');
       return { success: false, errorCode: 'OTP_INVALID', userMessage: msg };
     }
-    // result البنية: { Vodafone: { count, mobileLines:[...] }, Orange: {...}, ... }
+    // result البنية: { vodafone: { count, mobileLines:[...] }, orange: {...}, ... }
     const rawResult = (d?.result ?? {}) as Record<string, unknown>;
     const carriers = ['vodafone', 'orange', 'etisalat', 'we'] as const;
 

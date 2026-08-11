@@ -621,7 +621,7 @@ async function actionSendOtp(payload: {
   let result;
   try {
     result = await fetchWithRetry(
-      `${BASE_URL}/querynumber/api/v1/FullLineNumbers/sendOTP`,
+      `${BASE_URL}/querynumber/api/v2/request/LineNumbers`,
       { method: "POST", headers, body: JSON.stringify({ nationalId }) },
     );
   } catch (err: unknown) {
@@ -675,7 +675,7 @@ async function actionGetFullNumbers(payload: {
   let result;
   try {
     result = await fetchWithRetry(
-      `${BASE_URL}/querynumber/api/v1/FullLineNumbers`,
+      `${BASE_URL}/querynumber/api/v2/verify/LineNumbers`,
       { method: "POST", headers, body: JSON.stringify({ nationalId, otp }) },
     );
   } catch (err: unknown) {
