@@ -24,6 +24,10 @@ import {
   saveNationalId,
   loadUsername,
   saveUsername,
+  saveLastResult,
+  loadLastResult,
+  saveOtpSentAt,
+  getOtpResendCooldown,
 } from '@/lib/apiWalletLines';
 
 export type { ServiceResult };
@@ -66,12 +70,22 @@ class RealWalletLinesService implements IWalletLinesService {
   ): Promise<ServiceResult<WalletLinesResult>> {
     // حفظ الرقم القومي للجلسة القادمة
     saveNationalId(nationalIdFull);
-    return apiLookup(nationalIdFull);
+    const result = await apiLookup(nationalIdFull);
+    // حفظ آخر نتيجة ناجحة لاستعادتها لو المستخدم رجع للقسم
+    if (result.success && result.data) {
+      saveLastResult(result.data);
+    }
+    return result;
   }
 
   /** طلب OTP للأرقام الكاملة */
   async sendFullNumbersOtp(nationalId: string): Promise<ServiceResult<void>> {
-    return apiSendOtp(nationalId);
+    const result = await apiSendOtp(nationalId);
+    if (result.success) {
+      // حفظ وقت الإرسال لضبط الـ cooldown
+      saveOtpSentAt();
+    }
+    return result;
   }
 
   /** جلب الأرقام الكاملة بعد التحقق بـ OTP */
@@ -100,6 +114,16 @@ class RealWalletLinesService implements IWalletLinesService {
   /** تحميل اسم المستخدم (رقم الهاتف) المحفوظ */
   getSavedUsername(): string | null {
     return loadUsername();
+  }
+
+  /** تحميل آخر نتيجة استعلام محفوظة */
+  getLastResult<T = unknown>(): T | null {
+    return loadLastResult<T>();
+  }
+
+  /** ثانية الـ cooldown المتبقية (0 = مسموح بالإرسال) */
+  getOtpCooldown(): number {
+    return getOtpResendCooldown(60);
   }
 }
 

@@ -1,15 +1,15 @@
 /**
- * WalletLinesResultsPage — PHASE 3
- * - زر "إظهار الأرقام كاملة" → OTP Dialog → عرض أرقام كاملة تحت قسم الخطوط
+ * WalletLinesResultsPage — PHASE 4
+ * - حفظ واستعادة النتائج من localStorage
+ * - OTP Dialog: input نصي واحد للصق + تايمر 60 ثانية + منع تكرار الإرسال
  * - زر تسجيل الخروج في الـ Header
- * - الجلسة تُحفظ حتى تسجيل الخروج
  */
 
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight, Wallet, Phone, CheckCircle2, XCircle, AlertTriangle,
-  WifiOff, Loader2, MinusCircle, HelpCircle, Eye, LogOut, KeyRound,
+  WifiOff, Loader2, MinusCircle, HelpCircle, Eye, LogOut, KeyRound, Clock,
 } from 'lucide-react';
 import type { WalletLinesResult, WalletInfo, LineInfo, TelecomCarrier } from '@/lib/walletLinesInterfaces';
 import type { DataAvailability } from '@/lib/walletLinesErrors';
@@ -135,7 +135,7 @@ function LineCard({ l, fullNums }: { l: LineInfo; fullNums?: string[] }) {
   );
 }
 
-// ── OTP Dialog (6 خانات) ─────────────────────────────────────────
+// ── OTP Dialog — input نصي واحد للصق + تايمر 60ث ──────────────────
 function OtpDialog({
   onSubmit,
   onClose,
@@ -143,6 +143,7 @@ function OtpDialog({
   loading,
   sending,
   error,
+  cooldown,
 }: {
   onSubmit: (otp: string) => void;
   onClose: () => void;
@@ -150,72 +151,91 @@ function OtpDialog({
   loading: boolean;
   sending: boolean;
   error: string | null;
+  cooldown: number;
 }) {
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const [value, setValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleInput(i: number, val: string) {
-    const d = val.replace(/\D/g, '').slice(-1);
-    const next = [...digits];
-    next[i] = d;
-    setDigits(next);
-    if (d && i < 5) refs.current[i + 1]?.focus();
+  // فتح الكيبورد فوراً عند ظهور الـ dialog
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 150);
+    return () => clearTimeout(t);
+  }, []);
+
+  // فلترة الإدخال: أرقام فقط، 6 خانات كحد أقصى
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setValue(digits);
   }
 
-  function handleKeyDown(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Backspace' && !digits[i] && i > 0) refs.current[i - 1]?.focus();
-  }
-
-  function handlePaste(e: React.ClipboardEvent) {
-    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (text.length === 6) {
-      setDigits(text.split(''));
-      refs.current[5]?.focus();
-    }
-  }
-
-  const otp = digits.join('');
-  const isComplete = otp.length === 6;
+  const isComplete = value.length === 6;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-sm rounded-3xl p-6 space-y-5" dir="rtl"
-        style={{ background: '#0f1520', border: '1px solid rgba(255,255,255,0.1)' }}>
-
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)' }}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl p-6 space-y-5"
+        dir="rtl"
+        style={{ background: '#0f1520', border: '1px solid rgba(255,255,255,0.1)' }}
+      >
         {/* العنوان */}
         <div className="text-center space-y-1">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/25 bg-amber-500/10 mb-3">
-            {sending ? <Loader2 className="w-6 h-6 text-amber-400 animate-spin" /> : <KeyRound className="w-6 h-6 text-amber-400" />}
+            {sending
+              ? <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+              : <KeyRound className="w-6 h-6 text-amber-400" />}
           </div>
           <h3 className="text-base font-black text-white">التحقق لإظهار الأرقام كاملة</h3>
           <p className="text-[11px] text-white/45">
-            {sending ? 'جاري إرسال رمز التحقق على هاتفك...' : 'أدخل رمز التحقق المرسَل على هاتفك'}
+            {sending
+              ? 'جاري إرسال رمز التحقق على هاتفك...'
+              : 'أدخل رمز التحقق المرسَل على هاتفك أو الصقه'}
           </p>
         </div>
 
-        {/* خانات OTP */}
-        <div className="flex gap-2 justify-center" dir="ltr" onPaste={handlePaste}>
-          {digits.map((d, i) => (
-            <input
-              key={i}
-              ref={el => { refs.current[i] = el; }}
-              type="text" inputMode="numeric" maxLength={1}
-              value={d}
-              onChange={e => handleInput(i, e.target.value)}
-              onKeyDown={e => handleKeyDown(i, e)}
-              disabled={loading || sending}
-              className="w-11 h-14 text-center text-xl font-black rounded-xl border outline-none transition-all"
-              style={{
-                background: d ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)',
-                border: d ? '1.5px solid rgba(251,191,36,0.5)' : '1px solid rgba(255,255,255,0.12)',
-                color: '#fbbf24',
-                caretColor: '#fbbf24',
-              }}
-            />
-          ))}
+        {/* ── خانة الإدخال — نص واحد يدعم اللصق الفوري ── */}
+        <div className="space-y-2">
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={value}
+            onChange={handleChange}
+            disabled={loading || sending}
+            placeholder="ادخل / الصق الرمز هنا"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className="w-full h-14 text-center text-2xl font-black rounded-xl border outline-none transition-all tracking-[0.35em] placeholder:text-sm placeholder:tracking-normal placeholder:font-normal"
+            style={{
+              background: value ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
+              border: value.length === 6
+                ? '1.5px solid rgba(251,191,36,0.55)'
+                : '1px solid rgba(255,255,255,0.14)',
+              color: '#fbbf24',
+              caretColor: '#fbbf24',
+            }}
+            dir="ltr"
+          />
+          {/* مؤشر التقدم — 6 نقاط */}
+          <div className="flex gap-1.5 justify-center">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full transition-all duration-200"
+                style={{
+                  background: i < value.length ? '#fbbf24' : 'rgba(255,255,255,0.12)',
+                  transform: i < value.length ? 'scale(1.2)' : 'scale(1)',
+                }}
+              />
+            ))}
+          </div>
         </div>
 
+        {/* رسالة الخطأ */}
         {error && (
           <div className="flex items-center gap-2 p-3 rounded-xl border border-red-500/25 bg-red-500/8">
             <XCircle className="w-4 h-4 text-red-400 shrink-0" />
@@ -223,30 +243,49 @@ function OtpDialog({
           </div>
         )}
 
-        {/* أزرار */}
+        {/* أزرار التأكيد / الإلغاء */}
         <div className="flex gap-2">
-          <button onClick={onClose} disabled={loading || sending}
-            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-white/10 text-white/50 hover:bg-white/5 transition-all">
+          <button
+            onClick={onClose}
+            disabled={loading || sending}
+            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-white/10 text-white/50 hover:bg-white/5 transition-all"
+          >
             إلغاء
           </button>
           <button
-            onClick={() => isComplete && !sending && onSubmit(otp)}
+            onClick={() => isComplete && !loading && !sending && onSubmit(value)}
             disabled={!isComplete || loading || sending}
             className="flex-1 h-11 text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2"
             style={{
-              background: isComplete && !loading && !sending ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,0.06)',
+              background: isComplete && !loading && !sending
+                ? 'linear-gradient(135deg,#f59e0b,#d97706)'
+                : 'rgba(255,255,255,0.06)',
               color: isComplete && !loading && !sending ? '#000' : 'rgba(255,255,255,0.25)',
-            }}>
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</>
-             : sending ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الإرسال...</>
-             : 'تأكيد'}
+            }}
+          >
+            {loading
+              ? <><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</>
+              : sending
+              ? <><Loader2 className="w-4 h-4 animate-spin" />جاري الإرسال...</>
+              : 'تأكيد'}
           </button>
         </div>
 
-        <button onClick={onResend} disabled={loading || sending}
-          className="w-full text-center text-[11px] text-indigo-400/60 hover:text-indigo-400 transition-colors">
-          لم يصلك الرمز؟ أعد الإرسال
-        </button>
+        {/* إعادة الإرسال مع التايمر */}
+        {cooldown > 0 ? (
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/35">
+            <Clock className="w-3 h-3" />
+            <span>إعادة الإرسال بعد {cooldown} ثانية</span>
+          </div>
+        ) : (
+          <button
+            onClick={onResend}
+            disabled={loading || sending}
+            className="w-full text-center text-[11px] text-indigo-400/60 hover:text-indigo-400 transition-colors"
+          >
+            لم يصلك الرمز؟ أعد الإرسال
+          </button>
+        )}
       </div>
     </div>
   );
@@ -256,25 +295,66 @@ function OtpDialog({
 export default function WalletLinesResultsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const result: WalletLinesResult =
-    (location.state as { result?: WalletLinesResult })?.result ?? EMPTY_RESULT;
+
+  // استعادة النتيجة من location.state أولاً، ثم من localStorage
+  const result: WalletLinesResult = (() => {
+    const fromState = (location.state as { result?: WalletLinesResult })?.result;
+    if (fromState) return fromState;
+    const saved = walletLinesService.getLastResult<WalletLinesResult>();
+    return saved ?? EMPTY_RESULT;
+  })();
 
   const walletsLoaded = result.wallets.filter(w => w.availability === 'loaded').length;
   const linesLoaded   = result.lines.filter(l => l.availability === 'loaded').length;
 
   // ── OTP + Full Numbers State ─────────────────────────────────
-  const [showOtpDialog, setShowOtpDialog]     = useState(false);
-  const [otpLoading, setOtpLoading]           = useState(false);
-  const [otpError, setOtpError]               = useState<string | null>(null);
-  const [sendingOtp, setSendingOtp]           = useState(false);
-  const [sendOtpError, setSendOtpError]       = useState<string | null>(null);
-  const [fullNumbers, setFullNumbers]         = useState<FullNumbersData | null>(null);
+  const [showOtpDialog, setShowOtpDialog] = useState(false);
+  const [otpLoading, setOtpLoading]       = useState(false);
+  const [otpError, setOtpError]           = useState<string | null>(null);
+  const [sendingOtp, setSendingOtp]       = useState(false);
+  const [sendOtpError, setSendOtpError]   = useState<string | null>(null);
+  const [fullNumbers, setFullNumbers]     = useState<FullNumbersData | null>(null);
+
+  // ── تايمر الـ cooldown (60 ثانية) ────────────────────────────
+  const [cooldown, setCooldown] = useState<number>(() => walletLinesService.getOtpCooldown());
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldownTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setCooldown(60);
+    timerRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // مزامنة التايمر مع الـ cooldown المحفوظ عند فتح الصفحة
+  useEffect(() => {
+    const remaining = walletLinesService.getOtpCooldown();
+    if (remaining > 0) {
+      setCooldown(remaining);
+      timerRef.current = setInterval(() => {
+        setCooldown(prev => {
+          if (prev <= 1) { clearInterval(timerRef.current!); timerRef.current = null; return 0; }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
   const nationalId = walletLinesService.getSavedNationalId();
 
+  // حماية من الإرسال المتعدد: لا إرسال لو cooldown > 0 أو جاري الإرسال
   async function handleShowFullNumbers() {
     if (!nationalId) { setSendOtpError('الرقم القومي غير محفوظ. أعد الاستعلام.'); return; }
-    // افتح الـ Dialog فوراً وأرسل OTP في الخلفية
+    if (cooldown > 0 || sendingOtp) return;
     setOtpError(null);
     setSendOtpError(null);
     setShowOtpDialog(true);
@@ -282,8 +362,9 @@ export default function WalletLinesResultsPage() {
     const r = await walletLinesService.sendFullNumbersOtp(nationalId);
     setSendingOtp(false);
     if (!r.success) {
-      // نوري الخطأ داخل الـ dialog بدل إغلاقه
       setOtpError(r.userMessage ?? 'فشل إرسال رمز التحقق. تأكد من الاتصال بالإنترنت.');
+    } else {
+      startCooldownTimer();
     }
   }
 
@@ -296,6 +377,20 @@ export default function WalletLinesResultsPage() {
     if (!r.success) { setOtpError(r.userMessage ?? 'رمز التحقق غير صحيح.'); return; }
     setFullNumbers(r.data!);
     setShowOtpDialog(false);
+  }
+
+  // إعادة الإرسال — فقط لو cooldown انتهى
+  async function handleResend() {
+    if (cooldown > 0 || sendingOtp || !nationalId) return;
+    setOtpError(null);
+    setSendingOtp(true);
+    const r = await walletLinesService.sendFullNumbersOtp(nationalId);
+    setSendingOtp(false);
+    if (!r.success) {
+      setOtpError(r.userMessage ?? 'فشل إعادة إرسال رمز التحقق.');
+    } else {
+      startCooldownTimer();
+    }
   }
 
   function handleLogout() {
@@ -431,7 +526,8 @@ export default function WalletLinesResultsPage() {
         <OtpDialog
           onSubmit={handleOtpSubmit}
           onClose={() => { setShowOtpDialog(false); setSendingOtp(false); }}
-          onResend={() => { setOtpError(null); handleShowFullNumbers(); }}
+          onResend={handleResend}
+          cooldown={cooldown}
           loading={otpLoading}
           sending={sendingOtp}
           error={otpError}

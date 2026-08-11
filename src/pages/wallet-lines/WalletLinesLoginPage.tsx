@@ -35,13 +35,21 @@ export default function WalletLinesLoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // ── Auto-restore: لو جلسة موجودة → تجاوز Login ────────────────
+  // ── Auto-restore: لو جلسة وآخر نتيجة محفوظة → تجاوز Login مباشرة للنتائج ──
   useEffect(() => {
-    if (walletLinesService.hasActiveSession()) {
-      const savedUsername = walletLinesService.getSavedUsername();
+    if (!walletLinesService.hasActiveSession()) return;
+    const lastResult = walletLinesService.getLastResult();
+    if (lastResult) {
+      // نتيجة محفوظة → اذهب للنتائج مباشرة
+      navigate('/wallet-lines/results', {
+        replace: true,
+        state: { result: lastResult },
+      });
+    } else {
+      // جلسة بدون نتيجة محفوظة → اذهب للرقم القومي
       navigate('/wallet-lines/national-id', {
         replace: true,
-        state: { token: '__restored__', restoredUsername: savedUsername },
+        state: { token: '__restored__' },
       });
     }
   }, [navigate]);

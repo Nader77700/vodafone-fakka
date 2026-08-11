@@ -103,7 +103,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control';
 
 interface TabMeta {
   id: AdminTab;
@@ -145,6 +145,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'security',           label: 'لوحة الأمان',     desc: 'سجلات الأمان وجدار الحماية',        icon: Shield },
   { id: 'red_packages',       label: 'باقات RED',        desc: 'إدارة باقات Vodafone RED ديناميكياً',   icon: Package },
   { id: 'promotions',         label: 'العروض والبانرات', desc: 'إنشاء وإدارة العروض والبانرات',          icon: Tag },
+  { id: 'services_control',  label: 'التحكم في خدماتي', desc: 'إخفاء وتعطيل وصيانة أقسام الخدمات',      icon: Globe },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -4916,8 +4917,7 @@ export default function AdminDashboard() {
           {/* ════════════════════════════════════════════════
               العروض والبانرات — PHASE 8-14 نظام العروض الذكي
               ════════════════════════════════════════════════ */}
-          {activeTab === 'promotions' && (
-            <div className="space-y-5 page-enter">
+          {activeTab === 'promotions' && (            <div className="space-y-5 page-enter">
               <SectionHeader icon={Tag} title="العروض والبانرات"
                 description="إنشاء وإدارة العروض التي تظهر في البانر الرئيسي — تحكم كامل في التكرار والإغلاق"
                 count={promotions.length}
@@ -6646,6 +6646,18 @@ export default function AdminDashboard() {
           })()}
         </DialogContent>
       </Dialog>
+
+          {/* ════ التحكم في قسم خدماتي ════ */}
+          {activeTab === 'services_control' && (
+            <div className="space-y-5 page-enter">
+              <iframe
+                src="/admin/services-control"
+                className="w-full border-0 rounded-2xl"
+                style={{ height: 'calc(100vh - 120px)' }}
+                title="التحكم في خدماتي"
+              />
+            </div>
+          )}
 
     </div>
   );

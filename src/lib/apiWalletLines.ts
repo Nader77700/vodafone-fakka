@@ -90,6 +90,8 @@ async function fetchJson(
 const SESSION_KEY     = 'wl_session_token';
 const NATIONAL_ID_KEY = 'wl_national_id';
 const USERNAME_KEY    = 'wl_username';
+const LAST_RESULT_KEY = 'wl_last_result';
+const OTP_SENT_AT_KEY = 'wl_otp_sent_at';   // timestamp آخر إرسال OTP
 
 // مشفر بـ base64 في localStorage (يبقى بعد إغلاق التطبيق)
 function saveToken(token: string): void {
@@ -493,9 +495,18 @@ export async function apiSendOtp(
   if (!token) {
     return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
   }
-  const headers = {
-    ...authenticatedHeaders(deviceId, token),
-    appVersion: '86',
+  // headers مع appVersion=86 خاص بـ FullLineNumbers
+  const headers: Record<string, string> = {
+    'User-Agent':      'okhttp/5.0.0-alpha.2',
+    'Accept-Encoding': 'gzip',
+    'clientType':      'android',
+    'deviceId':        deviceId,
+    'appVersion':      '86',
+    'Accept-language': 'ar',
+    'Content-Type':    'application/json; charset=UTF-8',
+    'Connection':      'Keep-Alive',
+    'Host':            'my.tra.gov.eg',
+    'Authorization':   `Bearer ${token}`,
   };
   try {
     const { status, data } = await fetchJson(
@@ -507,7 +518,9 @@ export async function apiSendOtp(
     }
     const d = data as Record<string, unknown> | null;
     const statusObj = (d?.status ?? {}) as Record<string, unknown>;
-    if (status !== 200 || (statusObj?.code !== 200 && statusObj?.code !== null && statusObj?.code !== undefined)) {
+    const code = statusObj?.code;
+    // نجاح: code === 200 أو null أو undefined
+    if (status !== 200 || (code !== 200 && code !== null && code !== undefined)) {
       const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'فشل إرسال رمز التحقق.');
       return { success: false, errorCode: 'SEND_OTP_FAILED', userMessage: msg };
     }
@@ -538,9 +551,18 @@ export async function apiGetFullNumbers(
   if (!token) {
     return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
   }
-  const headers = {
-    ...authenticatedHeaders(deviceId, token),
-    appVersion: '86',
+  // headers مع appVersion=86 خاص بـ FullLineNumbers
+  const headers: Record<string, string> = {
+    'User-Agent':      'okhttp/5.0.0-alpha.2',
+    'Accept-Encoding': 'gzip',
+    'clientType':      'android',
+    'deviceId':        deviceId,
+    'appVersion':      '86',
+    'Accept-language': 'ar',
+    'Content-Type':    'application/json; charset=UTF-8',
+    'Connection':      'Keep-Alive',
+    'Host':            'my.tra.gov.eg',
+    'Authorization':   `Bearer ${token}`,
   };
   try {
     const { status, data } = await fetchJson(
@@ -596,6 +618,35 @@ export async function apiGetFullNumbers(
   }
 }
 
+/** حفظ آخر نتيجة استعلام مشفرة */
+export function saveLastResult(result: unknown): void {
+  try {
+    localStorage.setItem(LAST_RESULT_KEY, btoa(unescape(encodeURIComponent(JSON.stringify(result)))));
+  } catch { /* تجاهل أخطاء الحفظ */ }
+}
+
+/** تحميل آخر نتيجة استعلام */
+export function loadLastResult<T = unknown>(): T | null {
+  try {
+    const raw = localStorage.getItem(LAST_RESULT_KEY);
+    if (!raw) return null;
+    return JSON.parse(decodeURIComponent(escape(atob(raw)))) as T;
+  } catch { return null; }
+}
+
+/** حفظ وقت آخر إرسال OTP */
+export function saveOtpSentAt(): void {
+  localStorage.setItem(OTP_SENT_AT_KEY, String(Date.now()));
+}
+
+/** الوقت المتبقي (ثانية) قبل السماح بإعادة الإرسال — 0 يعني مسموح */
+export function getOtpResendCooldown(cooldownSeconds = 60): number {
+  const raw = localStorage.getItem(OTP_SENT_AT_KEY);
+  if (!raw) return 0;
+  const elapsed = Math.floor((Date.now() - Number(raw)) / 1000);
+  return Math.max(0, cooldownSeconds - elapsed);
+}
+
 /**
  * مسح الجلسة عند الخروج
  */
@@ -604,5 +655,7 @@ export function clearWalletLinesSession(): void {
   localStorage.removeItem(NATIONAL_ID_KEY);
   localStorage.removeItem(USERNAME_KEY);
   localStorage.removeItem('wl_device_id');
+  localStorage.removeItem(LAST_RESULT_KEY);
+  localStorage.removeItem(OTP_SENT_AT_KEY);
 }
 

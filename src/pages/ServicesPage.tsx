@@ -1,18 +1,21 @@
 /**
- * ServicesPage — صفحة الخدمات الموحدة — PHASE 1
- * تجمع كل الخدمات الحالية + الخدمة الجديدة في مكان واحد.
- * لا تُعدِّل أي منطق أو API أو routing للخدمات الحالية.
+ * ServicesPage — صفحة الخدمات الموحدة — PHASE 2
+ * - يجلب إعدادات الخدمات من DB عبر useServicesControl
+ * - يتحقق من الاشتراك عبر useSubscriptionEngine
+ * - يمنع الدخول لو القسم في صيانة / معطل / يحتاج اشتراك
  */
 
 import { useNavigate } from 'react-router-dom';
 import {
   RotateCcw, Wallet, Radio, CreditCard, ScanLine,
-  ChevronLeft, Wrench, WifiOff, ArrowRight,
+  ChevronLeft, Wrench, WifiOff, ArrowRight, Lock, Loader2,
 } from 'lucide-react';
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
 import type { ServiceConfig } from '@/lib/servicesConfig';
 import { getVisibleServices } from '@/lib/servicesConfig';
 import type { ReactNode } from 'react';
+import { useServicesControl } from '@/hooks/useServicesControl';
+import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
 
 // ── أيقونة ديناميكية بحسب iconName ──────────────────────────────
 function ServiceIcon({ name, className }: { name: string; className?: string }) {
@@ -117,6 +120,9 @@ function ServiceCard({ svc, onPress }: { svc: ServiceConfig; onPress: () => void
 // ── الصفحة الرئيسية ────────────────────────────────────────────────
 export default function ServicesPage() {
   const navigate = useNavigate();
+  const { isAccessible, loading: cfgLoading } = useServicesControl();
+  const eng = useSubscriptionEngine();
+  const hasActiveSub = eng.isAdmin || eng.isActive;
 
   if (!FEATURE_FLAGS.servicesHubEnabled) {
     return (
@@ -130,9 +136,45 @@ export default function ServicesPage() {
     );
   }
 
+  // تحقق من القسم الرئيسي (services_section) أولاً
+  const mainAccess = isAccessible('services_section', hasActiveSub);
+  if (!cfgLoading && !mainAccess.allowed) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6" dir="rtl">
+        {mainAccess.reason === 'no_subscription' ? (
+          <Lock className="w-10 h-10 text-amber-400" />
+        ) : (
+          <Wrench className="w-10 h-10 text-muted-foreground" />
+        )}
+        <p className="text-white text-sm font-bold">
+          {mainAccess.reason === 'maintenance'    ? (mainAccess.message ?? 'صيانة مؤقتة — نعود قريباً') :
+           mainAccess.reason === 'disabled'       ? 'قسم الخدمات معطل حالياً'                          :
+           mainAccess.reason === 'no_subscription'? 'هذا القسم متاح للمشتركين فقط'                     :
+           'قسم الخدمات غير متاح'}
+        </p>
+        {mainAccess.reason === 'no_subscription' && (
+          <button onClick={() => navigate('/activate')}
+            className="px-5 py-2.5 rounded-xl text-sm font-black text-black"
+            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+            تفعيل الاشتراك
+          </button>
+        )}
+        <button onClick={() => navigate('/home')} className="text-primary text-sm font-semibold flex items-center gap-1">
+          <ArrowRight className="w-4 h-4" /> العودة للرئيسية
+        </button>
+      </div>
+    );
+  }
+
   const services = getVisibleServices();
 
   function handleServicePress(svc: ServiceConfig) {
+    // تحقق من الخدمة نفسها قبل الانتقال
+    const access = isAccessible(svc.id, hasActiveSub);
+    if (!access.allowed) {
+      if (access.reason === 'no_subscription') navigate('/activate');
+      return; // الكارت يعرض overlay بنفسه
+    }
     navigate(svc.path);
   }
 
@@ -155,18 +197,40 @@ export default function ServicesPage() {
             <h1 className="text-base font-black text-white leading-tight">الخدمات</h1>
             <p className="text-[10px] text-muted-foreground">جميع خدمات التطبيق</p>
           </div>
-          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
-            style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
-            {services.length} خدمات
-          </span>
+          {cfgLoading ? (
+            <Loader2 className="w-4 h-4 text-white/30 animate-spin" />
+          ) : (
+            <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+              style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
+              {services.length} خدمات
+            </span>
+          )}
         </div>
       </div>
 
       {/* ── قائمة الخدمات ── */}
       <div className="px-4 pt-4 space-y-3">
-        {services.map(svc => (
-          <ServiceCard key={svc.id} svc={svc} onPress={() => handleServicePress(svc)} />
-        ))}
+        {services.map(svc => {
+          // تحقق من حالة كل خدمة من DB
+          const access = isAccessible(svc.id, hasActiveSub);
+          // دمج حالة DB مع حالة servicesConfig المحلية
+          const mergedSvc: ServiceConfig = {
+            ...svc,
+            status: !access.allowed
+              ? (access.reason === 'maintenance' ? 'maintenance'
+                 : access.reason === 'no_subscription' ? 'maintenance'
+                 : 'disabled')
+              : svc.status,
+            maintenanceMessage: access.message ?? svc.maintenanceMessage,
+          };
+          return (
+            <ServiceCard
+              key={svc.id}
+              svc={mergedSvc}
+              onPress={() => handleServicePress(svc)}
+            />
+          );
+        })}
       </div>
     </div>
   );

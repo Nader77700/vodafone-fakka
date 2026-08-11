@@ -1,14 +1,73 @@
 /**
- * WalletLinesPage — صفحة خدمات الخطوط والمحافظ — PHASE 1
- * تعريف بالخدمة + خيار Login أو Register (بدون API).
+ * WalletLinesPage — صفحة خدمات الخطوط والمحافظ — PHASE 2
+ * - التحقق من الاشتراك + إعدادات السيرفر قبل الدخول
  */
 
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ScanLine, ShieldCheck, Zap, Users } from 'lucide-react';
+import {
+  ArrowRight, ScanLine, ShieldCheck, Zap, Users,
+  Lock, Wrench, Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useServicesControl } from '@/hooks/useServicesControl';
+import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
 
 export default function WalletLinesPage() {
   const navigate = useNavigate();
+  const { isAccessible, loading: cfgLoading } = useServicesControl();
+  const eng = useSubscriptionEngine();
+  const hasActiveSub = eng.isAdmin || eng.isActive;
+
+  // ── حجب الدخول لو مش مشترك أو الخدمة في صيانة ──────────────
+  if (!cfgLoading) {
+    const access = isAccessible('wallet-lines', hasActiveSub);
+    if (!access.allowed) {
+      return (
+        <div className="min-h-screen flex flex-col" dir="rtl"
+          style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
+          <div className="sticky top-0 z-30 px-4 pt-safe-top"
+            style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-3 py-4">
+              <button onClick={() => navigate('/services')}
+                className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5"
+                aria-label="رجوع">
+                <ArrowRight className="w-4 h-4 text-white" />
+              </button>
+              <h1 className="text-base font-black text-white">خدمات الخطوط والمحافظ</h1>
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
+            {access.reason === 'no_subscription'
+              ? <Lock className="w-12 h-12 text-amber-400" />
+              : <Wrench className="w-12 h-12 text-white/30" />}
+            <p className="text-white font-black text-lg">
+              {access.reason === 'maintenance'     ? (access.message ?? 'الخدمة في صيانة مؤقتة')    :
+               access.reason === 'disabled'        ? 'هذه الخدمة معطلة حالياً'                       :
+               access.reason === 'no_subscription' ? 'هذه الخدمة للمشتركين فقط'                     :
+               'الخدمة غير متاحة'}
+            </p>
+            <p className="text-sm text-white/40">
+              {access.reason === 'no_subscription'
+                ? 'فعّل اشتراكك للوصول إلى خدمة استعلام الخطوط والمحافظ'
+                : 'نعتذر عن الإزعاج، يرجى المحاولة لاحقاً'}
+            </p>
+            {access.reason === 'no_subscription' && (
+              <button
+                onClick={() => navigate('/activate')}
+                className="px-6 py-3 rounded-xl text-sm font-black text-black"
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+                تفعيل الاشتراك
+              </button>
+            )}
+            <button onClick={() => navigate('/services')}
+              className="text-indigo-400 text-sm font-semibold flex items-center gap-1">
+              <ArrowRight className="w-4 h-4" /> العودة للخدمات
+            </button>
+          </div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="min-h-screen pb-28 flex flex-col" dir="rtl"
@@ -29,10 +88,14 @@ export default function WalletLinesPage() {
             <h1 className="text-base font-black text-white">خدمات الخطوط والمحافظ</h1>
             <p className="text-[10px] text-muted-foreground">استعلام آمن بالرقم القومي</p>
           </div>
-          <span className="text-[9px] font-black px-2 py-1 rounded-full"
-            style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
-            BETA
-          </span>
+          {cfgLoading ? (
+            <Loader2 className="w-4 h-4 text-white/30 animate-spin" />
+          ) : (
+            <span className="text-[9px] font-black px-2 py-1 rounded-full"
+              style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
+              BETA
+            </span>
+          )}
         </div>
       </div>
 
