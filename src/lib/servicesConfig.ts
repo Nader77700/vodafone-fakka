@@ -102,6 +102,18 @@ export const SERVICES_CONFIG: ServiceConfig[] = [
     order: 5,
     visible: true,
   },
+  {
+    id: 'vodafone-offers',
+    path: '/vodafone-offers',
+    name: 'عروض واشتراكات فودافون',
+    description: 'عرض وإدارة عروض واشتراكات أنا فودافون مباشرةً من التطبيق.',
+    iconName: 'Tag',
+    accentColor: '#E60000',
+    badge: 'جديد',
+    status: 'active',
+    order: 6,
+    visible: true,
+  },
 ];
 
 /** يُرجع خدمة بـ ID محدد */

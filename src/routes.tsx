@@ -43,6 +43,7 @@ const WalletLinesRegisterPage   = lazy(() => import('./pages/wallet-lines/Wallet
 const WalletLinesOtpPage        = lazy(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
 const WalletLinesNationalIdPage = lazy(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
 const WalletLinesResultsPage    = lazy(() => import('./pages/wallet-lines/WalletLinesResultsPage'));
+const VodafoneOffersPage        = lazy(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
 
 // Fallback خفيف أثناء التحميل الكسول
 const PageLoader = () => (
@@ -105,6 +106,7 @@ export const routes: RouteConfig[] = [
       { name: 'WalletLinesOtp',          path: '/wallet-lines/otp',                element: <S><WalletLinesOtpPage /></S> },
       { name: 'WalletLinesNationalId',   path: '/wallet-lines/national-id',        element: <S><WalletLinesNationalIdPage /></S> },
       { name: 'WalletLinesResults',      path: '/wallet-lines/results',            element: <S><WalletLinesResultsPage /></S> },
+      { name: 'VodafoneOffers',           path: '/vodafone-offers',                  element: <S><VodafoneOffersPage /></S> },
 
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],

@@ -49,8 +49,64 @@ export async function verifyAccess(serviceId: string): Promise<VerifyAccessResul
 }
 
 // ==========================================
-// الاشتراك
+// أنا فودافون — عروض واشتراكات
 // ==========================================
+
+export interface AnaVodafoneLoginResult {
+  success: boolean;
+  error?: string;
+  phone?: string;
+  expires_at?: string;
+  display_name?: string;
+}
+
+export interface AnaVodafoneSession {
+  id: string;
+  user_id: string;
+  phone: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+  is_valid: boolean;
+}
+
+/** تسجيل الدخول بأنا فودافون — Token يُحفظ Server-Side فقط */
+export async function anaVodafoneLogin(
+  phone: string,
+  password: string
+): Promise<AnaVodafoneLoginResult> {
+  const { data, error } = await supabase.functions.invoke<AnaVodafoneLoginResult>(
+    'ana-vodafone-login',
+    { body: { phone, password }, method: 'POST' }
+  );
+  if (error) {
+    const msg = await error?.context?.text?.().catch(() => '') ?? error.message;
+    console.error('[anaVodafoneLogin] edge error:', msg);
+    return { success: false, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
+  }
+  return data ?? { success: false, error: 'استجابة غير متوقعة من الخادم' };
+}
+
+/** جلب حالة الجلسة الحالية من DB (بدون token) */
+export async function getAnaVodafoneSession(): Promise<AnaVodafoneSession | null> {
+  const { data, error } = await supabase
+    .from('ana_vodafone_session_view')
+    .select('*')
+    .maybeSingle();
+  if (error) {
+    console.error('[getAnaVodafoneSession]', error.message);
+    return null;
+  }
+  return data as AnaVodafoneSession | null;
+}
+
+/** تسجيل الخروج من جلسة أنا فودافون */
+export async function anaVodafoneLogout(): Promise<void> {
+  await supabase
+    .from('ana_vodafone_sessions')
+    .delete()
+    .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '');
+}
 // ── getUserSubscription: يجلب الاشتراك ويحسب الحالة الفعلية دائماً ──────────
 // لا يعتمد على القيمة المخزنة في حقل status فقط:
 // - إذا كان status='active' لكن expires_at < الآن → ينتهي تلقائياً ويحدّث DB

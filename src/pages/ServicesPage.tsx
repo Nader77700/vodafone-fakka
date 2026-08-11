@@ -7,7 +7,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import {
-  RotateCcw, Wallet, Radio, CreditCard, ScanLine,
+  RotateCcw, Wallet, Radio, CreditCard, ScanLine, Tag,
   ChevronLeft, Wrench, WifiOff, ArrowRight, Lock, Loader2,
 } from 'lucide-react';
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
@@ -28,6 +28,7 @@ function ServiceIcon({ name, className }: { name: string; className?: string }) 
     Radio:      <Radio className={className} />,
     CreditCard: <CreditCard className={className} />,
     ScanLine:   <ScanLine className={className} />,
+    Tag:        <Tag className={className} />,
   };
   return <>{icons[name] ?? <Wrench className={className} />}</>;
 }
