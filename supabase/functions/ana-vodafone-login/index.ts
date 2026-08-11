@@ -73,7 +73,7 @@ serve(async (req: Request) => {
     const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
     const hasActive =
       isAdmin ||
-      (sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date());
+      (sub && sub.status === "active" && (!sub.expires_at || new Date(sub.expires_at) > new Date()));
 
     if (!hasActive)
       return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);

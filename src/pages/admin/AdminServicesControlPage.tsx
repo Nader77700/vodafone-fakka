@@ -76,7 +76,7 @@ function ServiceCard({
 
   return (
     <div
-      className="rounded-2xl p-4 border space-y-4 transition-all"
+      className="rounded-2xl p-3 border space-y-3 transition-all"
       style={{
         background: isSection ? 'rgba(99,102,241,0.07)' : 'rgba(255,255,255,0.03)',
         borderColor: isSection ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.08)',

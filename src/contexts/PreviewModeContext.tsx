@@ -27,12 +27,13 @@ export function PreviewModeProvider({ children }: { children: React.ReactNode })
   const enterPreview = useCallback(async () => {
     const user = (await supabase.auth.getUser()).data.user;
     if (!user) return false;
-    const { error } = await supabase.rpc('enter_preview_mode', { p_user_id: user.id });
+    const { data, error } = await supabase.rpc('enter_preview_mode', { p_user_id: user.id });
     if (error) {
       // eslint-disable-next-line no-console
       console.error('enter_preview_mode failed:', error);
       return false;
     }
+    if (data === false) return false;
     await refreshProfile();
     return true;
   }, [refreshProfile]);

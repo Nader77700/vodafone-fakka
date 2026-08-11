@@ -157,13 +157,13 @@ export function SectionCard({ title, icon: Icon, children, className, actions }:
   return (
     <div className={cn('rounded-2xl border border-border bg-card overflow-hidden', className)}>
       {(title || Icon) && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-muted/30 border-b border-border">
+        <div className="flex items-center gap-2 px-3 md:px-4 py-2.5 bg-muted/30 border-b border-border">
           {Icon && <Icon className="w-4 h-4 text-primary shrink-0" />}
           <span className="font-bold text-sm flex-1">{title}</span>
           {actions && <div className="shrink-0">{actions}</div>}
         </div>
       )}
-      <div className="p-4">{children}</div>
+      <div className="p-3 md:p-4">{children}</div>
     </div>
   );
 }

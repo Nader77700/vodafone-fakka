@@ -332,7 +332,7 @@ export default function ActivationPage() {
                   if (ok) {
                     navigate('/home', { replace: true });
                   } else {
-                    toast.error('تعذّر الدخول إلى وضع المعاينة');
+                    toast.error('تعذّر الدخول إلى وضع المعاينة. حاول مرة أخرى أو تواصل مع الدعم.');
                   }
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all active:scale-[0.98]"

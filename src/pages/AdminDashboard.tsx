@@ -1469,6 +1469,12 @@ export default function AdminDashboard() {
   useEffect(() => { if (activeTab === 'codelogs')       loadCodeLogs(); },      [activeTab, loadCodeLogs]);
   useEffect(() => { if (activeTab === 'numbers' || activeTab === 'globalstats') loadPhoneAnalytics(); }, [activeTab, loadPhoneAnalytics]);
   useEffect(() => { if (activeTab === 'operations')     loadOps(); },           [activeTab, loadOps]);
+  // التحكم في خدماتي: فتح صفحة منفصلة مباشرة بدلاً من عرض زر وسط الشاشة
+  useEffect(() => {
+    if (activeTab === 'services_control') {
+      navigate('/admin/services-control', { replace: true });
+    }
+  }, [activeTab, navigate]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);
   const loadScheduled = useCallback(async () => {
     setScheduledLoading(true);
@@ -6647,20 +6653,11 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
-          {/* ════ التحكم في قسم خدماتي ════ */}
+          {/* ════ التحكم في قسم خدماتي — يُفتح مباشرة في صفحة منفصلة ════ */}
           {activeTab === 'services_control' && (
-            <div className="space-y-5 page-enter">
-              <div className="flex flex-col items-center justify-center gap-4 py-16 rounded-2xl border border-border/40 bg-muted/10">
-                <Globe className="w-10 h-10 text-primary/60" />
-                <div className="text-center">
-                  <p className="text-sm font-black text-foreground mb-1">التحكم في قسم خدماتي</p>
-                  <p className="text-xs text-muted-foreground">اضغط للانتقال إلى صفحة التحكم الكاملة</p>
-                </div>
-                <Button onClick={() => navigate('/admin/services-control')} className="gap-2">
-                  <Globe className="w-4 h-4" />
-                  فتح صفحة التحكم
-                </Button>
-              </div>
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <p className="text-sm">جاري فتح التحكم في الخدمات...</p>
             </div>
           )}
 
