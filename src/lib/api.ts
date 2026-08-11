@@ -107,6 +107,68 @@ export async function anaVodafoneLogout(): Promise<void> {
     .delete()
     .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '');
 }
+
+// ── بيانات الاشتراك — مطابقة لـ extract_subscription_info() ──
+export interface VodafoneSubscription {
+  id: string;
+  type: string;
+  status: string;
+  description: string | null;
+  price: string | null;
+  enc_product_id: string | null;
+}
+
+export interface GetSubscriptionsResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+  subscriptions?: VodafoneSubscription[];
+}
+
+export interface CancelSubscriptionResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+  message?: string;
+}
+
+/** جلب الاشتراكات القادمة — Token يُجلب Server-Side من DB */
+export async function getUpcomingSubscriptions(): Promise<GetSubscriptionsResult> {
+  const { data, error } = await supabase.functions.invoke<GetSubscriptionsResult>(
+    'ana-vodafone-subscriptions',
+    { body: { action: 'get_subscriptions' }, method: 'POST' }
+  );
+  if (error) {
+    const msg = await error?.context?.text?.().catch(() => '') ?? error.message;
+    console.error('[getUpcomingSubscriptions] edge error:', msg);
+    return { success: false, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
+  }
+  return data ?? { success: false, error: 'استجابة غير متوقعة' };
+}
+
+/** إلغاء اشتراك — الخادم يتحقق من الملكية قبل التنفيذ */
+export async function cancelVodafoneSubscription(
+  subscriptionId: string,
+  encProductId: string
+): Promise<CancelSubscriptionResult> {
+  const { data, error } = await supabase.functions.invoke<CancelSubscriptionResult>(
+    'ana-vodafone-subscriptions',
+    {
+      body: {
+        action:          'cancel_subscription',
+        subscription_id: subscriptionId,
+        enc_product_id:  encProductId,
+      },
+      method: 'POST',
+    }
+  );
+  if (error) {
+    const msg = await error?.context?.text?.().catch(() => '') ?? error.message;
+    console.error('[cancelVodafoneSubscription] edge error:', msg);
+    return { success: false, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
+  }
+  return data ?? { success: false, error: 'استجابة غير متوقعة' };
+}
 // ── getUserSubscription: يجلب الاشتراك ويحسب الحالة الفعلية دائماً ──────────
 // لا يعتمد على القيمة المخزنة في حقل status فقط:
 // - إذا كان status='active' لكن expires_at < الآن → ينتهي تلقائياً ويحدّث DB
