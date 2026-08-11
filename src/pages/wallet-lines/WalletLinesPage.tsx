@@ -11,16 +11,21 @@ import {
 import { Button } from '@/components/ui/button';
 import { useServicesControl } from '@/hooks/useServicesControl';
 import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { useState } from 'react';
+import SubscriptionRequiredDialog from '@/components/subscription/SubscriptionRequiredDialog';
 
 export default function WalletLinesPage() {
   const navigate = useNavigate();
   const { isAccessible, loading: cfgLoading } = useServicesControl();
   const eng = useSubscriptionEngine();
+  const { isPreview } = usePreviewMode();
   const hasActiveSub = eng.isAdmin || eng.isActive;
+  const [showSubDialog, setShowSubDialog] = useState(false);
 
   // ── حجب الدخول لو مش مشترك أو الخدمة في صيانة ──────────────
   if (!cfgLoading) {
-    const access = isAccessible('wallet-lines', hasActiveSub);
+    const access = isAccessible('wallet-lines', hasActiveSub, isPreview);
     if (!access.allowed) {
       return (
         <div className="min-h-screen flex flex-col" dir="rtl"
@@ -53,7 +58,7 @@ export default function WalletLinesPage() {
             </p>
             {access.reason === 'no_subscription' && (
               <button
-                onClick={() => navigate('/activate')}
+                onClick={() => setShowSubDialog(true)}
                 className="px-6 py-3 rounded-xl text-sm font-black text-black"
                 style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
                 تفعيل الاشتراك
@@ -63,6 +68,10 @@ export default function WalletLinesPage() {
               className="text-indigo-400 text-sm font-semibold flex items-center gap-1">
               <ArrowRight className="w-4 h-4" /> العودة للخدمات
             </button>
+            <SubscriptionRequiredDialog
+              open={showSubDialog}
+              onClose={() => setShowSubDialog(false)}
+            />
           </div>
         </div>
       );

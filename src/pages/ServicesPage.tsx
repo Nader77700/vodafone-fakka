@@ -13,9 +13,12 @@ import {
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
 import type { ServiceConfig } from '@/lib/servicesConfig';
 import { getVisibleServices } from '@/lib/servicesConfig';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useServicesControl } from '@/hooks/useServicesControl';
 import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { verifyAccess } from '@/lib/api';
+import SubscriptionRequiredDialog from '@/components/subscription/SubscriptionRequiredDialog';
 
 // ── أيقونة ديناميكية بحسب iconName ──────────────────────────────
 function ServiceIcon({ name, className }: { name: string; className?: string }) {
@@ -122,7 +125,9 @@ export default function ServicesPage() {
   const navigate = useNavigate();
   const { isAccessible, loading: cfgLoading } = useServicesControl();
   const eng = useSubscriptionEngine();
+  const { isPreview } = usePreviewMode();
   const hasActiveSub = eng.isAdmin || eng.isActive;
+  const [lockedService, setLockedService] = useState<string | null>(null);
 
   if (!FEATURE_FLAGS.servicesHubEnabled) {
     return (
@@ -137,7 +142,7 @@ export default function ServicesPage() {
   }
 
   // تحقق من القسم الرئيسي (services_section) أولاً
-  const mainAccess = isAccessible('services_section', hasActiveSub);
+  const mainAccess = isAccessible('services_section', hasActiveSub, isPreview);
   if (!cfgLoading && !mainAccess.allowed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6" dir="rtl">
@@ -168,13 +173,25 @@ export default function ServicesPage() {
 
   const services = getVisibleServices();
 
-  function handleServicePress(svc: ServiceConfig) {
-    // تحقق من الخدمة نفسها قبل الانتقال
-    const access = isAccessible(svc.id, hasActiveSub);
+  async function handleServicePress(svc: ServiceConfig) {
+    // تحقق سريع من الواجهة
+    const access = isAccessible(svc.id, hasActiveSub, isPreview);
     if (!access.allowed) {
-      if (access.reason === 'no_subscription') navigate('/activate');
-      return; // الكارت يعرض overlay بنفسه
+      if (access.reason === 'no_subscription') setLockedService(svc.id);
+      return;
     }
+
+    // تحقق Server-Side إضافي قبل الانتقال (حماية من bypass)
+    const server = await verifyAccess(svc.id);
+    if (!server.allowed) {
+      if (server.reason === 'SUBSCRIPTION_REQUIRED') {
+        setLockedService(svc.id);
+        return;
+      }
+      if (server.reason === 'MAINTENANCE') return;
+      return;
+    }
+
     navigate(svc.path);
   }
 
@@ -212,7 +229,7 @@ export default function ServicesPage() {
       <div className="px-4 pt-4 space-y-3">
         {services.map(svc => {
           // تحقق من حالة كل خدمة من DB
-          const access = isAccessible(svc.id, hasActiveSub);
+          const access = isAccessible(svc.id, hasActiveSub, isPreview);
           // دمج حالة DB مع حالة servicesConfig المحلية
           const mergedSvc: ServiceConfig = {
             ...svc,
@@ -232,6 +249,11 @@ export default function ServicesPage() {
           );
         })}
       </div>
+
+      <SubscriptionRequiredDialog
+        open={!!lockedService}
+        onClose={() => setLockedService(null)}
+      />
     </div>
   );
 }

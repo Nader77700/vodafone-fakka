@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import { useAssets } from '@/hooks/use-assets';
 import { supabase } from '@/db/supabase';
@@ -2056,6 +2057,7 @@ function GracePeriodBanner({ graceEndsAt, onRenew }: { graceEndsAt: string; onRe
 export default function HomePage() {
   const { user, profile, refreshProfile } = useAuth();
   const { config } = useRuntimeConfig();
+  const { isPreview } = usePreviewMode();
   const { isMerchantClient } = useMerchantClient();
   const { isSubActive, subscriptionBlockReason } = useMerchantClient();
   const navigate = useNavigate();
@@ -2151,8 +2153,8 @@ export default function HomePage() {
       if (isMounted) setSubscription(effectiveSub);
 
       if (!isMerchantClient && (!effectiveSub || effectiveSub.status !== 'active')) {
-        // Guest Browse Mode: إذا مُفعَّل من السيرفر → لا إعادة توجيه، يبقى على الصفحة
-        const guestBrowseAllowed = config.feature_flags.ff_allow_browse_no_sub;
+        // Preview Mode: إذا كان المستخدم في preview أو مُفعَّل من السيرفر → لا إعادة توجيه
+        const guestBrowseAllowed = isPreview || config.feature_flags.ff_preview_mode_enabled;
         // فحص فترة السماح
         if (effectiveSub?.in_grace_period && effectiveSub.grace_ends_at) {
           const graceExpired = new Date(effectiveSub.grace_ends_at) < new Date();
@@ -2496,6 +2498,15 @@ export default function HomePage() {
               <span className="text-[10px] text-foreground/60 font-medium">Founder & Developer</span>
             </div>
           )}
+
+          {/* Preview Mode Badge — يظهر بوضوح للمستخدمين في وضع المعاينة */}
+          {isPreview && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/10">
+              <Eye className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-bold text-amber-300 tracking-wide">وضع المعاينة</span>
+              <span className="text-[10px] text-amber-200/70">— بعض الخدمات محدودة</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2812,18 +2823,18 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* حالة الاشتراك للجميع */}
+      {/* حالة الاشتراك / المعاينة للجميع */}
       {!subActive && !isMerchantClient && (
         <div className="px-4 pt-3">
-          {config.feature_flags.ff_allow_browse_no_sub ? (
-            /* ── بانر Guest Browse Mode ── */
+          {isPreview ? (
+            /* ── بانر Preview Mode ── */
             <div className="flex items-start gap-3 p-3.5 rounded-xl border"
               style={{ background: 'rgba(251,191,36,0.07)', borderColor: 'rgba(251,191,36,0.25)' }}>
-              <Eye className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+              <Eye className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-sm font-bold text-yellow-300">وضع التصفح فقط</p>
+                <p className="text-sm font-bold text-amber-300">وضع المعاينة</p>
                 <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                  أنت تتصفح التطبيق بدون اشتراك — لا يمكن تنفيذ أي عمليات شحن.
+                  أنت تستعرض التطبيق بدون اشتراك. يمكنك رؤية الأقسام المسموح بها فقط.
                   فعّل اشتراكك للاستفادة الكاملة.
                 </p>
               </div>

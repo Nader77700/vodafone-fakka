@@ -12,6 +12,7 @@ import {
   RefreshCw, Loader2, CheckCircle, AlertTriangle, Info,
   ScanLine, RotateCcw, Wallet, CreditCard, ChevronDown,
 } from 'lucide-react';
+import type { PreviewServiceAccess } from '@/types/types';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,7 +31,7 @@ interface ServiceControl {
   name: string;
   visible: boolean;
   status: 'active' | 'maintenance' | 'disabled';
-  access_mode: 'subscribers_only' | 'all';
+  access_mode: PreviewServiceAccess;
   maintenance_message: string | null;
   display_order: number;
   updated_at: string | null;
@@ -161,8 +162,8 @@ function ServiceCard({
         >
           <SelectTrigger className="h-9 text-xs border-white/10 bg-white/5 text-white">
             <div className="flex items-center gap-2">
-              {svc.access_mode === 'subscribers_only'
-                ? <Users className="w-3 h-3 text-indigo-400" />
+              {svc.access_mode === 'subscribers_only' ? <Users className="w-3 h-3 text-indigo-400" />
+                : svc.access_mode === 'preview_available' ? <Eye className="w-3 h-3 text-amber-400" />
                 : <Globe className="w-3 h-3 text-emerald-400" />}
               <SelectValue />
             </div>
@@ -171,6 +172,11 @@ function ServiceCard({
             <SelectItem value="subscribers_only">
               <div className="flex items-center gap-2">
                 <Users className="w-3 h-3 text-indigo-400" /> مشتركون فقط (الافتراضي)
+              </div>
+            </SelectItem>
+            <SelectItem value="preview_available">
+              <div className="flex items-center gap-2">
+                <Eye className="w-3 h-3 text-amber-400" /> متاح للمعاينة
               </div>
             </SelectItem>
             <SelectItem value="all">
@@ -182,12 +188,20 @@ function ServiceCard({
         </Select>
       </div>
 
-      {/* تحذير: مفتوح للجميع */}
+      {/* تحذير: مفتوح للجميع أو للمعاينة */}
       {svc.access_mode === 'all' && (
         <div className="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/8">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
           <p className="text-[10px] text-amber-300/80 leading-relaxed">
             هذا القسم مفتوح للجميع بدون اشتراك. تأكد قبل الحفظ.
+          </p>
+        </div>
+      )}
+      {svc.access_mode === 'preview_available' && (
+        <div className="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/8">
+          <Eye className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-amber-300/80 leading-relaxed">
+            هذا القسم يظهر للمستخدمين في وضع المعاينة فقط عند تفعيل Preview Mode.
           </p>
         </div>
       )}
@@ -205,18 +219,60 @@ export default function AdminServicesControlPage() {
   const [saving, setSaving]       = useState(false);
   const [savingId, setSavingId]   = useState<string | null>(null);
 
+  // Preview Mode state
+  const [previewEnabled, setPreviewEnabled] = useState(false);
+  const [previewStats, setPreviewStats]   = useState({ active: 0, converted: 0, total: 0 });
+  const [togglingPreview, setTogglingPreview] = useState(false);
+
+  const loadPreview = useCallback(async () => {
+    const { data: cfg } = await supabase
+      .from('core_app_config')
+      .select('value')
+      .eq('key', 'ff_preview_mode_enabled')
+      .maybeSingle();
+    setPreviewEnabled(cfg?.value === 'true');
+
+    const [{ count: active }, { count: converted }, { count: total }] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('access_mode', 'preview'),
+      supabase.from('preview_mode_logs').select('id', { count: 'exact', head: true }).not('converted_at', 'is', null),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    ]);
+
+    setPreviewStats({
+      active: active ?? 0,
+      converted: converted ?? 0,
+      total: total ?? 0,
+    });
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('services_control')
-      .select('*')
-      .order('display_order', { ascending: true });
+    const [{ data, error }] = await Promise.all([
+      supabase.from('services_control').select('*').order('display_order', { ascending: true }),
+      loadPreview(),
+    ]);
     setLoading(false);
     if (error) { toast.error('فشل تحميل الإعدادات'); return; }
     setServices((data as ServiceControl[]) ?? []);
-  }, []);
+  }, [loadPreview]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function togglePreviewMode(enabled: boolean) {
+    if (!isAdmin) { toast.error('غير مصرح'); return; }
+    setTogglingPreview(true);
+    const { error } = await supabase
+      .from('core_app_config')
+      .update({ value: enabled ? 'true' : 'false', updated_by: profile?.id ?? null })
+      .eq('key', 'ff_preview_mode_enabled');
+    setTogglingPreview(false);
+    if (error) {
+      toast.error(`فشل تحديث Preview Mode: ${error.message}`);
+    } else {
+      setPreviewEnabled(enabled);
+      toast.success(enabled ? 'تم تفعيل Preview Mode' : 'تم إيقاف Preview Mode', { duration: 2000 });
+    }
+  }
 
   async function handleUpdate(id: string, patch: Partial<ServiceControl>) {
     if (!isAdmin) { toast.error('غير مصرح'); return; }
@@ -272,6 +328,55 @@ export default function AdminServicesControlPage() {
           والتعطيل يحجب بالكامل.
         </p>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          Preview Mode Control
+         ═══════════════════════════════════════════════════════════ */}
+      <SectionCard
+        title="التحكم في وضع المعاينة (Preview Mode)"
+        icon={Eye}
+        className="border-amber-500/20 mb-4"
+      >
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/4 border border-white/8">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${previewEnabled ? 'bg-amber-400/15 text-amber-400' : 'bg-white/10 text-white/50'}`}>
+              <Power className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-white">زر معاينة التطبيق</p>
+              <p className="text-[10px] text-white/50">
+                {previewEnabled ? 'يظهر في شاشة التفعيل' : 'مخفي عن المستخدمين'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={previewEnabled}
+            disabled={togglingPreview || loading}
+            onCheckedChange={togglePreviewMode}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <div className="rounded-xl border border-white/8 bg-white/4 p-3 text-center">
+            <p className="text-lg font-black text-amber-400">{previewStats.active}</p>
+            <p className="text-[10px] text-white/50">مستخدم في المعاينة</p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-white/4 p-3 text-center">
+            <p className="text-lg font-black text-emerald-400">{previewStats.converted}</p>
+            <p className="text-[10px] text-white/50">تم تحويلهم</p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-white/4 p-3 text-center">
+            <p className="text-lg font-black text-indigo-400">{previewStats.total}</p>
+            <p className="text-[10px] text-white/50">إجمالي المستخدمين</p>
+          </div>
+        </div>
+
+        <p className="text-[10px] text-white/40 px-1 mt-3">
+          • إيقاف Preview Mode لا يمنع المستخدمين الحاليين من التصفح، لكنه يمنع أي خدمة مدفوعة من العمل.
+          <br />
+          • اختر "متاح للمعاينة" من صلاحية الوصول في أي قسم لإتاحته لمستخدمي المعاينة.
+        </p>
+      </SectionCard>
 
       {/* زر إعادة التحميل */}
       <div className="flex justify-end mb-3">

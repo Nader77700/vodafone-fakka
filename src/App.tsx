@@ -17,6 +17,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { RuntimeConfigProvider, useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
+import { PreviewModeProvider } from '@/contexts/PreviewModeContext';
 import { WifiOff } from 'lucide-react';
 import { RouteGuard } from '@/components/common/RouteGuard';
 import { insertOperation } from '@/lib/api';
@@ -817,11 +818,13 @@ const App: React.FC = () => {
     <Router>
       <RuntimeConfigProvider>
         <AuthProvider>
-          <MerchantProvider>
-            <MerchantClientProvider>
-              <AppWithGuard />
-            </MerchantClientProvider>
-          </MerchantProvider>
+          <PreviewModeProvider>
+            <MerchantProvider>
+              <MerchantClientProvider>
+                <AppWithGuard />
+              </MerchantClientProvider>
+            </MerchantProvider>
+          </PreviewModeProvider>
         </AuthProvider>
       </RuntimeConfigProvider>
     </Router>

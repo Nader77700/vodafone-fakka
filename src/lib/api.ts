@@ -26,6 +26,29 @@ const PAGE_SIZE = 20;
 export { getProfile, updateProfile, registerDeviceFingerprint } from '../services/profile.service';
 
 // ==========================================
+// Preview Mode — التحقق من الصلاحيات Server-Side
+// ==========================================
+export interface VerifyAccessResult {
+  allowed: boolean;
+  reason: string;
+  message: string;
+}
+
+export async function verifyAccess(serviceId: string): Promise<VerifyAccessResult> {
+  const { data, error } = await supabase.functions.invoke<VerifyAccessResult>('verify-access', {
+    body: { service_id: serviceId },
+    method: 'POST',
+  });
+  if (error) {
+    const errorMsg = await error?.context?.text?.() ?? error.message;
+    // eslint-disable-next-line no-console
+    console.error('verify-access error:', errorMsg);
+    return { allowed: false, reason: 'SERVER_ERROR', message: 'فشل التحقق من الصلاحيات.' };
+  }
+  return data ?? { allowed: false, reason: 'SERVER_ERROR', message: 'فشل التحقق من الصلاحيات.' };
+}
+
+// ==========================================
 // الاشتراك
 // ==========================================
 // ── getUserSubscription: يجلب الاشتراك ويحسب الحالة الفعلية دائماً ──────────
@@ -158,8 +181,19 @@ export async function activateLicenseKey(
     return { success: false, error: 'حدث خطأ في الاتصال — يُرجى المحاولة مجدداً', errorCode: 'SERVER_ERROR' };
   }
   const result = typeof data === 'string' ? JSON.parse(data) : data;
+  const success = !!result?.success;
+
+  // عند التفعيل الناجح: خروج المستخدم من Preview Mode إلى Subscribed
+  if (success) {
+    try {
+      await supabase.rpc('convert_preview_to_subscribed', { p_user_id: userId });
+    } catch {
+      // نتجاهل الخطأ لأن التفعيل نجح بالفعل
+    }
+  }
+
   return {
-    success:         !!result?.success,
+    success,
     error:           result?.error,
     errorCode:       result?.errorCode,
     isTrial:         !!result?.isTrial,

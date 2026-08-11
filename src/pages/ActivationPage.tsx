@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import {
   activateLicenseKey, getUserSubscription, calcTimeRemaining, getTrialUsageForUser,
   confirmGiftClaim,
@@ -99,6 +100,7 @@ export default function ActivationPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, refreshProfile } = useAuth();
+  const { enterPreview } = usePreviewMode();
   const flags = useFeatureFlags();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -320,11 +322,19 @@ export default function ActivationPage() {
             </Button>
             <WhatsAppButton label="تواصل للحصول على كود التفعيل" href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`أرغب في الحصول على اشتراك Vodafone Fakka Premium.\nاسم المستخدم: ${profile?.username ?? 'غير محدد'}\nرقم الهاتف: ${profile?.phone ?? 'غير محدد'}\nبرجاء إرسال تفاصيل التفعيل.`)}`} />
 
-            {/* ── زر التصفح بدون اشتراك — يظهر فقط إذا مُفعَّل من لوحة التحكم ── */}
-            {flags.ff_allow_browse_no_sub && (
+            {/* ── زر معاينة التطبيق — يظهر فقط إذا مُفعَّل Preview Mode من لوحة التحكم ── */}
+            {flags.ff_preview_mode_enabled && (
               <button
                 type="button"
-                onClick={() => navigate('/home', { replace: true, state: { guestBrowse: true } })}
+                onClick={async () => {
+                  if (!user) return;
+                  const ok = await enterPreview();
+                  if (ok) {
+                    navigate('/home', { replace: true });
+                  } else {
+                    toast.error('تعذّر الدخول إلى وضع المعاينة');
+                  }
+                }}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all active:scale-[0.98]"
                 style={{
                   background: 'rgba(255,255,255,0.04)',
@@ -333,7 +343,7 @@ export default function ActivationPage() {
               >
                 <Eye className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="text-sm text-muted-foreground font-medium">
-                  تصفح التطبيق بدون اشتراك
+                  معاينة التطبيق
                 </span>
               </button>
             )}

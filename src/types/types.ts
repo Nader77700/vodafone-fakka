@@ -173,6 +173,9 @@ export type NotificationPriority = 'normal' | 'important' | 'urgent';
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 export type CodeAction = 'created' | 'viewed' | 'attempt' | 'activated' | 'failed' | 'expired' | 'disabled';
 
+export type AccessMode = 'subscribed' | 'preview';
+export type PreviewServiceAccess = 'all' | 'subscribers_only' | 'preview_available';
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -193,6 +196,8 @@ export interface Profile {
   // Vodafone PIN lock — يُعبَّأ عند خطأ 1118 من Vodafone
   vodafone_pin_locked_at: string | null;
   vodafone_lock_reason:   string | null;
+  // Preview Mode — وضع المعاينة
+  access_mode: AccessMode;
   created_at: string;
   updated_at: string;
 }

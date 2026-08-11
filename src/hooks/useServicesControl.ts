@@ -13,7 +13,7 @@ export interface ServiceControlItem {
   id: string;
   visible: boolean;
   status: 'active' | 'maintenance' | 'disabled';
-  access_mode: 'subscribers_only' | 'all';
+  access_mode: 'subscribers_only' | 'all' | 'preview_available';
   maintenance_message: string | null;
 }
 
@@ -51,7 +51,11 @@ export function useServicesControl() {
   useEffect(() => { load(); }, [load]);
 
   /** هل القسم مفتوح ومرئي لمستخدم معين؟ */
-  function isAccessible(serviceId: string, hasActiveSub: boolean): {
+  function isAccessible(
+    serviceId: string,
+    hasActiveSub: boolean,
+    isPreview = false,
+  ): {
     allowed: boolean;
     reason: 'ok' | 'hidden' | 'maintenance' | 'disabled' | 'no_subscription';
     message: string | null;
@@ -71,10 +75,22 @@ export function useServicesControl() {
     if (!svc.visible)                  return { allowed: false, reason: 'hidden',      message: null };
     if (svc.status === 'disabled')     return { allowed: false, reason: 'disabled',    message: null };
     if (svc.status === 'maintenance')  return { allowed: false, reason: 'maintenance', message: svc.maintenance_message };
-    if (svc.access_mode === 'subscribers_only' && !hasActiveSub) {
+
+    if (hasActiveSub) return { allowed: true, reason: 'ok', message: null };
+
+    if (svc.access_mode === 'subscribers_only') {
       return { allowed: false, reason: 'no_subscription', message: null };
     }
-    return { allowed: true, reason: 'ok', message: null };
+
+    if (svc.access_mode === 'preview_available' && isPreview) {
+      return { allowed: true, reason: 'ok', message: null };
+    }
+
+    if (svc.access_mode === 'all') {
+      return { allowed: true, reason: 'ok', message: null };
+    }
+
+    return { allowed: false, reason: 'no_subscription', message: null };
   }
 
   return { config, loading, isAccessible, reload: load };

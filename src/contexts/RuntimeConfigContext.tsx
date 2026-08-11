@@ -19,6 +19,7 @@ export interface FeatureFlags {
   ff_maintenance_mode:         boolean;
   ff_card_feedback_enabled:    boolean;
   ff_allow_browse_no_sub:      boolean; // تصفح بدون اشتراك (Guest Mode)
+  ff_preview_mode_enabled:     boolean; // Preview Mode — وضع المعاينة
 }
 
 export interface VersionConfig {
@@ -78,6 +79,7 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     ff_maintenance_mode:       false,
     ff_card_feedback_enabled:  true,
     ff_allow_browse_no_sub:    false, // مُعطَّل افتراضياً — يُفعَّل من لوحة التحكم
+    ff_preview_mode_enabled:   false, // Preview Mode معطّل افتراضياً
   },
   version: {
     version_min_supported:    94,
