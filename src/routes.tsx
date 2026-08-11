@@ -43,7 +43,12 @@ const WalletLinesRegisterPage   = lazy(() => import('./pages/wallet-lines/Wallet
 const WalletLinesOtpPage        = lazy(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
 const WalletLinesNationalIdPage = lazy(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
 const WalletLinesResultsPage    = lazy(() => import('./pages/wallet-lines/WalletLinesResultsPage'));
-const VodafoneOffersPage        = lazy(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
+const VodafoneOffersPage           = lazy(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
+const FlexOffersPage               = lazy(() => import('./pages/vodafone-offers/FlexOffersPage'));
+const InternetOffersPage           = lazy(() => import('./pages/vodafone-offers/InternetOffersPage'));
+const OtherOffersPage              = lazy(() => import('./pages/vodafone-offers/OtherOffersPage'));
+const UpcomingSubscriptionsPage    = lazy(() => import('./pages/vodafone-offers/UpcomingSubscriptionsPage'));
+const BalanceRechargeShortcutPage  = lazy(() => import('./pages/vodafone-offers/BalanceRechargeShortcutPage'));
 
 // Fallback خفيف أثناء التحميل الكسول
 const PageLoader = () => (
@@ -107,6 +112,11 @@ export const routes: RouteConfig[] = [
       { name: 'WalletLinesNationalId',   path: '/wallet-lines/national-id',        element: <S><WalletLinesNationalIdPage /></S> },
       { name: 'WalletLinesResults',      path: '/wallet-lines/results',            element: <S><WalletLinesResultsPage /></S> },
       { name: 'VodafoneOffers',           path: '/vodafone-offers',                  element: <S><VodafoneOffersPage /></S> },
+      { name: 'VodafoneOffersFlex',       path: '/vodafone-offers/flex',             element: <S><FlexOffersPage /></S> },
+      { name: 'VodafoneOffersInternet',   path: '/vodafone-offers/internet',         element: <S><InternetOffersPage /></S> },
+      { name: 'VodafoneOffersOther',      path: '/vodafone-offers/other',            element: <S><OtherOffersPage /></S> },
+      { name: 'VodafoneOffersSubscriptions', path: '/vodafone-offers/subscriptions', element: <S><UpcomingSubscriptionsPage /></S> },
+      { name: 'VodafoneOffersRecharge',   path: '/vodafone-offers/recharge',         element: <S><BalanceRechargeShortcutPage /></S> },
 
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],
