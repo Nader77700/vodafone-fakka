@@ -209,14 +209,15 @@ export default function VodafoneOffersPage() {
   }
 
   // ── جلب الاشتراكات ──
-  const loadSubscriptions = useCallback(async () => {
+  const loadSubscriptions = useCallback(async (clearMessages = true) => {
     setSubsLoading(true);
     setSubsError(null);
     setSubsCode(null);
-    setCancelSuccess(null);
-    setCancelError(null);
-    setChargeSuccess(null);
-    setChargeError(null);
+    // مسح رسائل الإلغاء عند كل تحديث؛ رسائل الشحن تُمسح فقط عند طلب صريح
+    if (clearMessages) {
+      setCancelSuccess(null);
+      setCancelError(null);
+    }
     const [result, enabled] = await Promise.all([
       getUpcomingSubscriptions(),
       getVodafoneChargeEnabled(),
@@ -284,7 +285,7 @@ export default function VodafoneOffersPage() {
       return;
     }
     setCancelSuccess('تم إلغاء الاشتراك بنجاح ✓');
-    await loadSubscriptions();
+    await loadSubscriptions(false); // لا تمسح رسالة النجاح الآن
   }
 
   // ── ملاحظات الشحن ──
@@ -309,21 +310,19 @@ export default function VodafoneOffersPage() {
 
   async function handleChargeConfirm() {
     if (!chargeSub?.id || !chargeSub?.enc_product_id || !chargeBreakdown) return;
-
-    // إنشاء Operation ID فريد للمهمة ومنع التكرار
+    // منع التكرار: ضبط chargingId قبل إغلاق الـ Dialog
+    const subId = chargeSub.id;
+    const encId = chargeSub.enc_product_id;
+    const desc  = chargeSub.description || chargeSub.type || 'باقة';
+    const price = chargeSub.price || '0';
     const operationId = crypto.randomUUID();
+
+    setChargingId(subId); // ← أولًا (يمنع أي نقر مكرر على الفور)
     setChargeShowConfirm(false);
-    setChargingId(chargeSub.id);
     setChargeSuccess(null);
     setChargeError(null);
 
-    const result = await chargeVodafoneSubscription(
-      chargeSub.id,
-      chargeSub.enc_product_id,
-      chargeSub.description || chargeSub.type || 'باقة',
-      chargeSub.price || '0',
-      operationId
-    );
+    const result = await chargeVodafoneSubscription(subId, encId, desc, price, operationId);
 
     setChargingId(null);
     if (!result.success) {
@@ -331,8 +330,8 @@ export default function VodafoneOffersPage() {
       if (result.code === 'SESSION_EXPIRED') await loadSession();
       return;
     }
-    setChargeSuccess(result.message ?? 'تم الشحن بنجاح ✓');
-    await loadSubscriptions();
+    setChargeSuccess(result.message ?? 'تم احتساب مبلغ الشحن بنجاح ✓');
+    await loadSubscriptions(false); // لا تمسح رسالة النجاح الآن
   }
 
   const totalPrice = subscriptions
@@ -452,7 +451,7 @@ export default function VodafoneOffersPage() {
                     </span>
                   )}
                 </div>
-                <button onClick={loadSubscriptions} disabled={subsLoading || !!cancellingId}
+                <button onClick={() => loadSubscriptions()} disabled={subsLoading || !!cancellingId}
                   className="flex items-center gap-1.5 text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors disabled:opacity-40">
                   <RefreshCw className={`w-3.5 h-3.5 ${subsLoading ? 'animate-spin' : ''}`} />
                   تحديث
@@ -477,6 +476,24 @@ export default function VodafoneOffersPage() {
                 </div>
               )}
 
+              {/* رسالة نجاح الشحن */}
+              {chargeSuccess && (
+                <div className="flex items-center gap-2.5 rounded-xl px-3.5 py-3 mb-3"
+                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                  <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#4ade80' }} />
+                  <p className="text-[12px] font-bold" style={{ color: '#86efac' }}>{chargeSuccess}</p>
+                </div>
+              )}
+
+              {/* رسالة خطأ الشحن */}
+              {chargeError && (
+                <div className="flex items-start gap-2.5 rounded-xl px-3.5 py-3 mb-3"
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#f87171' }} />
+                  <p className="text-[12px] font-medium" style={{ color: '#fca5a5' }}>{chargeError}</p>
+                </div>
+              )}
+
               {subsLoading ? (
                 <div className="flex flex-col items-center justify-center py-14 gap-3 rounded-[18px]"
                   style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -498,7 +515,7 @@ export default function VodafoneOffersPage() {
                     <p className="text-[12px] text-white/45 leading-relaxed max-w-[260px]">{subsError}</p>
                   </div>
                   <button
-                    onClick={subsCode === 'SESSION_EXPIRED' ? openModal : loadSubscriptions}
+                    onClick={subsCode === 'SESSION_EXPIRED' ? openModal : () => loadSubscriptions()}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-black text-white active:scale-[0.97] transition-all"
                     style={{ background: 'linear-gradient(135deg,#E60000,#b30000)' }}>
                     {subsCode === 'SESSION_EXPIRED'
@@ -686,7 +703,7 @@ export default function VodafoneOffersPage() {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] text-white/50">الخط</span>
                 <span className="text-[12px] font-black text-white/90 text-left" dir="ltr">
-                  {session?.phone ? '0' + session.phone : '—'}
+                  {session?.phone ? formatPhone(session.phone) : '—'}
                 </span>
               </div>
             </div>
@@ -708,22 +725,6 @@ export default function VodafoneOffersPage() {
                   <span className="text-[12px] font-bold text-white/80">الإجمالي النهائي</span>
                   <span className="text-base font-black" style={{ color: '#4ade80' }}>{chargeBreakdown.total.toFixed(2)} ج.م</span>
                 </div>
-              </div>
-            )}
-
-            {/* رسائل نجاح/خطأ */}
-            {chargeError && (
-              <div className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
-                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#f87171' }} />
-                <p className="text-[12px] font-medium leading-relaxed" style={{ color: '#fca5a5' }}>{chargeError}</p>
-              </div>
-            )}
-            {chargeSuccess && (
-              <div className="flex items-center gap-2.5 rounded-xl px-3.5 py-3"
-                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
-                <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#4ade80' }} />
-                <p className="text-[12px] font-bold" style={{ color: '#86efac' }}>{chargeSuccess}</p>
               </div>
             )}
 
