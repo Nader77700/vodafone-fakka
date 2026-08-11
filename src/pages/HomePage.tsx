@@ -160,6 +160,8 @@ function HomeNetworksCard() {
             src="https://miaoda-site-img.s3cdn.medo.dev/images/KLing_8b380f76-5fd3-40a0-a550-2936d7aed23d.jpg"
             alt="عروض باقي الشبكات"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            loading="lazy"
+            decoding="async"
           />
         </div>
         {/* Overlays */}
