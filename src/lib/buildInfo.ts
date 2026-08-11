@@ -4,13 +4,13 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:     '3.5.4',
-  versionCode:    483,
+  appVersion:      '3.5.5',
+  versionCode:    484,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_4_otp_full_numbers_session_persistence',
-  bundleFile:     'VodafoneFakka-v3.5.4.apk',
-  bundleHash:     'apk_v3_5_4_code483',
-  apkHash:        'apk_v3_5_4_code483',
+  sourceHash:     'build_v3_5_5_otp_full_numbers_session_persistence',
+  bundleFile:     'VodafoneFakka-v3.5.5.apk',
+  bundleHash:     'apk_v3_5_5_code484',
+  apkHash:        'apk_v3_5_5_code484',
   dbVersion:      'v3.5.4',
   releaseNotes: [
     'v3.5.4: إضافة ميزة الأرقام الكاملة (OTP) — زر "إظهار الأرقام كاملة" في صفحة النتائج مع dialog تحقق بـ 6 خانات',
