@@ -128,8 +128,13 @@ const RefLandingPage            = lazyImport(() => import('./pages/RefLandingPag
 const ServicesPage              = lazyImport(() => import('./pages/ServicesPage'));
 const WalletLinesPage           = lazyImport(() => import('./pages/wallet-lines/WalletLinesPage'));
 const WalletLinesLoginPage      = lazyImport(() => import('./pages/wallet-lines/WalletLinesLoginPage'));
-const VodafoneOffersPage        = lazyImport(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
-const AdminServicesControlPage  = lazyImport(() => import('./pages/admin/AdminServicesControlPage'));
+const VodafoneOffersPage           = lazyImport(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
+const FlexOffersPage               = lazyImport(() => import('./pages/vodafone-offers/FlexOffersPage'));
+const InternetOffersPage           = lazyImport(() => import('./pages/vodafone-offers/InternetOffersPage'));
+const OtherOffersPage              = lazyImport(() => import('./pages/vodafone-offers/OtherOffersPage'));
+const UpcomingSubscriptionsPage    = lazyImport(() => import('./pages/vodafone-offers/UpcomingSubscriptionsPage'));
+const BalanceRechargeShortcutPage  = lazyImport(() => import('./pages/vodafone-offers/BalanceRechargeShortcutPage'));
+const AdminServicesControlPage     = lazyImport(() => import('./pages/admin/AdminServicesControlPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
 const WalletLinesNationalIdPage = lazyImport(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
@@ -592,6 +597,11 @@ function AppInner() {
           <Route path="wallet-lines/results"        element={<PageErrorBoundary pageName="wl-results"><S><WalletLinesResultsPage /></S></PageErrorBoundary>} />
           {/* ── PHASE 2: Vodafone Offers ── */}
           <Route path="vodafone-offers"             element={<PageErrorBoundary pageName="vodafone-offers"><S><VodafoneOffersPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-offers/flex"          element={<PageErrorBoundary pageName="vodafone-offers-flex"><S><FlexOffersPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-offers/internet"      element={<PageErrorBoundary pageName="vodafone-offers-internet"><S><InternetOffersPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-offers/other"         element={<PageErrorBoundary pageName="vodafone-offers-other"><S><OtherOffersPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-offers/subscriptions" element={<PageErrorBoundary pageName="vodafone-offers-subscriptions"><S><UpcomingSubscriptionsPage /></S></PageErrorBoundary>} />
+          <Route path="vodafone-offers/recharge"      element={<PageErrorBoundary pageName="vodafone-offers-recharge"><S><BalanceRechargeShortcutPage /></S></PageErrorBoundary>} />
 
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
