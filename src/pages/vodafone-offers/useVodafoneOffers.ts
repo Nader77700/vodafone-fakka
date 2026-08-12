@@ -4,6 +4,9 @@ import { getVodafoneOffers, subscribeVodafoneOffer, type VodafoneOfferInfo } fro
 
 function mapOffer(category: OfferCategory, info: VodafoneOfferInfo): VodafoneOffer {
   const priceStr = info.price === null || info.price === undefined ? '' : String(info.price);
+  const code = info.redemption_code ? info.redemption_code : undefined;
+  const tags: string[] = [];
+  if (code) tags.push(`كود: ${code}`);
   return {
     id: info.id,
     offerId: info.id,
@@ -11,7 +14,8 @@ function mapOffer(category: OfferCategory, info: VodafoneOfferInfo): VodafoneOff
     description: info.description,
     price: priceStr,
     category,
-    tags: [],
+    code,
+    tags,
   };
 }
 

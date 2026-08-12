@@ -4,15 +4,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.7',
-  versionCode:    486,
+  appVersion:      '3.5.8',
+  versionCode:    487,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_7_1786478804',
-  bundleFile:     'VodafoneFakka-v3.5.7.apk',
-  bundleHash:     'apk_v3_5_7_code486',
-  apkHash:        'apk_v3_5_7_code486',
-  dbVersion:      'v3.5.7',
+  sourceHash:     'build_v3_5_8_1786547470',
+  bundleFile:     'VodafoneFakka-v3.5.8.apk',
+  bundleHash:     'apk_v3_5_8_code487',
+  apkHash:        'apk_v3_5_8_code487',
+  dbVersion:      'v3.5.8',
   releaseNotes: [
+    'v3.5.8: إصلاح جذري لمشكلة عدم إرسال OTP لإظهار الأرقام الكاملة — مطابقة كاملة للـ headers والـ endpoint في السكريبت المرجعي',
+    'v3.5.8: إضافة تدفق "تغيير كلمة السر" المستقل داخل My NTRA (Phone → OTP → New Password → Success) مع محاولات محدودة وقفل مؤقت',
+    'v3.5.8: تحسين عرض قسم خدمات الخطوط والمحافظ وإصلاحات في واجهة Vodafone Offers',
     'v3.5.6: لوحة تحكم جديدة في خدماتي — الأدمن يتحكم في إظهار/إخفاء/تعطيل/صيانة كل قسم فوراً بدون تحديث التطبيق',
     'v3.5.6: Edge Function services-control — GET عام + PATCH للأدمن فقط للتحكم في الخدمات من السيرفر',
     'v3.5.6: useServicesControl hook — cache 5 دقائق مع fallback للإعدادات المحلية عند الخطأ',

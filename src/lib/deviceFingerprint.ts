@@ -77,7 +77,8 @@ export function computeHardwareHash(): string {
     }
     return h.toString(16).padStart(8, '0');
   } catch {
-    return 'hw-fallback';
+    // Fallback: لا تستخدم قيمة ثابتة مشتركة بين الأجهزة — يولد UUID فريد للجهاز
+    return generateUUID();
   }
 }
 
@@ -109,7 +110,8 @@ export function getDeviceFingerprint(): string {
 export function getHardwareHash(): string {
   try {
     const cached = localStorage.getItem(HW_KEY);
-    if (cached && cached.length >= 6) return cached;
+    // إذا كان المخزّن قيمة قديمة ثابتة أو فارغة، نتجاهله وننتج قيمة فريدة
+    if (cached && cached.length >= 6 && cached !== 'hw-fallback') return cached;
     const hw = computeHardwareHash();
     localStorage.setItem(HW_KEY, hw);
     return hw;

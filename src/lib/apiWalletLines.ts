@@ -26,7 +26,11 @@ import type {
 } from '@/lib/walletLinesInterfaces';
 
 const BASE_URL = 'https://my.tra.gov.eg';
-const APP_VERSION = '197';
+const APP_VERSION = '86';
+const USER_AGENT = 'okhttp/5.0.0-alpha.2';
+// السكريبت المرجعي للأرقام الكاملة (my_ntra_tool_otp.py) يستخدم UA مختلف لـ OTP
+const FULL_NUMBERS_USER_AGENT = 'okhttp/5.3.2';
+const FUTURE_FIREBASE_TOKEN = 'c1m9CX6aTauToKNTgZOJiE:APA91bGAu43OyKTqv_GrD4xQBl_e_U0JTZDG4r3bS54H2EOK4PsKl87qNgvYB6x8UhAHGSHnVWnQa5YDFg7bL4Z8DN9IKd1KUnv8g62opKOGxzv8RLyYI_0';
 const TIMEOUT_MS = 30_000;
 
 // ── Device ID (localStorage — غير حساس ويبقى بعد إغلاق التطبيق) ───────────
@@ -51,7 +55,7 @@ async function sha256(text: string): Promise<string> {
 // ── Headers مطابقة للسكريبت المرجعي ──────────────────────────────
 function buildHeaders(deviceId: string, language = 'ar'): Record<string, string> {
   return {
-    'User-Agent': 'okhttp/5.3.2',
+    'User-Agent': USER_AGENT,
     'Accept-Encoding': 'gzip',
     'clientType': 'android',
     'deviceId': deviceId,
@@ -91,6 +95,11 @@ const FULL_NAME_KEY   = 'wl_full_name';
 const EMAIL_KEY       = 'wl_email';
 const LAST_RESULT_KEY = 'wl_last_result';
 const OTP_SENT_AT_KEY = 'wl_otp_sent_at';   // timestamp آخر إرسال OTP
+
+// ── Change Password Flow state ────────────────────────────────────
+const CP_PHONE_KEY       = 'wl_cp_phone';
+const CP_ATTEMPTS_KEY    = 'wl_cp_attempts';
+const CP_LOCKOUT_KEY     = 'wl_cp_lockout_until';
 const DEVICE_ID_KEY   = 'wl_device_id';
 
 // بيانات حساسة تُحفظ في الذاكرة فقط — لا تُخزَّن في LocalStorage
@@ -205,9 +214,9 @@ export async function apiLogin(
   const deviceId = getOrCreateDeviceId();
   try {
     const hashedPw = await sha256(password);
-    const headers = buildHeaders(deviceId, 'en');
-    headers['token_provider_type'] = 'FIREBASE';
-    headers['future_firebase_token'] = '0';
+    const headers = buildHeaders(deviceId, 'ar');
+    headers['appVersion'] = '87';
+    headers['future_firebase_token'] = FUTURE_FIREBASE_TOKEN;
 
     const { status, data } = await fetchJson(
       `${BASE_URL}/usermanagement/api/v1/auth/user/login`,
@@ -324,6 +333,62 @@ export async function apiVerifyOtp(
     }
 
     return { success: true };
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    return { success: false, errorCode: code, userMessage: mapError(code) };
+  }
+}
+
+/**
+ * التحقق من الرقم القومي — مطابق للسكريبت المرجعي
+ * Endpoint: /complainmanagement/api/v1/complaint/national/id/validation
+ * يُرجع: code=200 نجاح، code=34012 عدم تطابق، وأي كود آخر خطأ.
+ */
+export async function apiVerifyNationalId(
+  nationalId: string,
+): Promise<ServiceResult<void>> {
+  const deviceId = getOrCreateDeviceId();
+  const token = loadToken();
+
+  if (!token) {
+    return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+  }
+
+  const headers: Record<string, string> = {
+    ...authenticatedHeaders(deviceId, token),
+    'Connection': 'Keep-Alive',
+    'Host': 'my.tra.gov.eg',
+  };
+
+  try {
+    const { status, data } = await fetchJson(
+      `${BASE_URL}/complainmanagement/api/v1/complaint/national/id/validation`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ nationalId }),
+      },
+    );
+
+    if (status === 401 || status === 403) {
+      return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
+    }
+
+    const d = data as Record<string, unknown> | null;
+    const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    const code = statusObj?.code;
+
+    if (status === 200 && code === 200) {
+      return { success: true };
+    }
+
+    if (code === 34012) {
+      const msg = String(statusObj?.errorMsg ?? 'الرقم القومي غير مطابق مع الحساب.');
+      return { success: false, errorCode: 'NATIONAL_ID_MISMATCH', userMessage: msg };
+    }
+
+    const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'فشل التحقق من الرقم القومي.');
+    return { success: false, errorCode: 'NATIONAL_ID_INVALID', userMessage: msg };
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
     return { success: false, errorCode: code, userMessage: mapError(code) };
@@ -515,38 +580,43 @@ export async function apiSendOtp(
   if (!token) {
     return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
   }
-  // headers مع appVersion=86 خاص بـ FullLineNumbers
+  // Headers مطابقة تمامًا للسكريبت المرجعي (my_ntra_tool_otp.py → _otp_headers)
   const headers: Record<string, string> = {
-    'User-Agent':      'okhttp/5.0.0-alpha.2',
+    'User-Agent':      FULL_NUMBERS_USER_AGENT,
     'Accept-Encoding': 'gzip',
     'clientType':      'android',
     'deviceId':        deviceId,
     'appVersion':      '86',
     'Accept-language': 'ar',
     'Content-Type':    'application/json; charset=UTF-8',
-    'Connection':      'Keep-Alive',
-    'Host':            'my.tra.gov.eg',
     'Authorization':   `Bearer ${token}`,
   };
+  const endpoint = `${BASE_URL}/querynumber/api/v2/request/LineNumbers`;
+  // تسجيل للمطور فقط — بدون رقم قومي/Token/OTP
+  console.log('[FullNumbers] Sending OTP request', endpoint);
   try {
     const { status, data } = await fetchJson(
-      `${BASE_URL}/querynumber/api/v2/request/LineNumbers`,
+      endpoint,
       { method: 'POST', headers, body: JSON.stringify({ nationalId }) },
     );
     if (status === 401 || status === 403) {
+      console.log('[FullNumbers] OTP response', { status, errorCode: 'SESSION_EXPIRED' });
       return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
     }
     const d = data as Record<string, unknown> | null;
     const statusObj = (d?.status ?? {}) as Record<string, unknown>;
     const code = statusObj?.code;
     // نجاح: code === 200 أو null أو undefined
-    if (status !== 200 || (code !== 200 && code !== null && code !== undefined)) {
+    const ok = status === 200 && (code === 200 || code === null || code === undefined);
+    console.log('[FullNumbers] OTP response', { status, serverCode: code, ok });
+    if (!ok) {
       const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'فشل إرسال رمز التحقق.');
       return { success: false, errorCode: 'SEND_OTP_FAILED', userMessage: msg };
     }
     return { success: true };
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    console.log('[FullNumbers] OTP request failed', { errorCode: code });
     return { success: false, errorCode: code, userMessage: mapError(code) };
   }
 }
@@ -571,36 +641,41 @@ export async function apiGetFullNumbers(
   if (!token) {
     return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
   }
-  // headers مع appVersion=86 خاص بـ FullLineNumbers
+  // Headers مطابقة تمامًا للسكريبت المرجعي (my_ntra_tool_otp.py → _otp_headers)
   const headers: Record<string, string> = {
-    'User-Agent':      'okhttp/5.0.0-alpha.2',
+    'User-Agent':      FULL_NUMBERS_USER_AGENT,
     'Accept-Encoding': 'gzip',
     'clientType':      'android',
     'deviceId':        deviceId,
     'appVersion':      '86',
     'Accept-language': 'ar',
     'Content-Type':    'application/json; charset=UTF-8',
-    'Connection':      'Keep-Alive',
-    'Host':            'my.tra.gov.eg',
     'Authorization':   `Bearer ${token}`,
   };
+  const endpoint = `${BASE_URL}/querynumber/api/v2/verify/LineNumbers`;
+  // تسجيل للمطور فقط — بدون رقم قومي/Token/OTP
+  console.log('[FullNumbers] Verifying OTP', endpoint);
   try {
     const { status, data } = await fetchJson(
-      `${BASE_URL}/querynumber/api/v2/verify/LineNumbers`,
+      endpoint,
       { method: 'POST', headers, body: JSON.stringify({ nationalId, otp }) },
     );
-    if (status === 401 || status === 403) {
-      return { success: false, errorCode: 'SESSION_EXPIRED', userMessage: mapError('SESSION_EXPIRED') };
-    }
     const d = data as Record<string, unknown> | null;
     const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    const serverCode = statusObj?.code;
+
+    // مطابقة السكريبت المرجعي: 401 = OTP خطأ، 403 = OTP منتهي
     if (status === 401) {
+      console.log('[FullNumbers] Verify response', { status, serverCode, errorCode: 'OTP_INVALID' });
       return { success: false, errorCode: 'OTP_INVALID', userMessage: 'رمز التحقق غير صحيح.' };
     }
     if (status === 403) {
+      console.log('[FullNumbers] Verify response', { status, serverCode, errorCode: 'OTP_EXPIRED' });
       return { success: false, errorCode: 'OTP_EXPIRED', userMessage: 'انتهت صلاحية رمز التحقق. اطلب رمزًا جديدًا.' };
     }
-    if (status !== 200 || (statusObj?.code !== 200 && statusObj?.code !== null && statusObj?.code !== undefined)) {
+    const ok = status === 200 && (serverCode === 200 || serverCode === null || serverCode === undefined);
+    console.log('[FullNumbers] Verify response', { status, serverCode, ok });
+    if (!ok) {
       const msg = String(statusObj?.errorMsg ?? statusObj?.message ?? 'رمز التحقق غير صحيح أو منتهي الصلاحية.');
       return { success: false, errorCode: 'OTP_INVALID', userMessage: msg };
     }
@@ -678,6 +753,245 @@ export function clearWalletLinesSession(): void {
   localStorage.removeItem(EMAIL_KEY);
   localStorage.removeItem(LAST_RESULT_KEY);
   localStorage.removeItem(OTP_SENT_AT_KEY);
+  clearPasswordResetState();
   // نحتفظ بـ device_id لأنه غير حساس ومطلوب للاستعلامات القادمة
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Change Password Flow — Helpers
+// ══════════════════════════════════════════════════════════════════
+
+/** استخراج مدة الحظر (ثوانٍ) من رسالة الخادم */
+function parseLockoutSeconds(message: string): number {
+  if (!message) return 300;
+  // البحث عن رقم + وحدة زمنية
+  const m = message.match(/(\d+)\s*(?:دقيقة|دقائق|minute|minutes|ثانية|ثواني|second|seconds)/i);
+  if (!m) return 300;
+  const value = parseInt(m[1], 10);
+  const isSeconds = /ثانية|ثواني|second|seconds/i.test(m[0]);
+  return isSeconds ? value : value * 60;
+}
+
+function formatLockoutMessage(seconds: number): string {
+  if (seconds <= 0) return 'يمكنك المحاولة الآن.';
+  const minutes = Math.ceil(seconds / 60);
+  return `تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار ${minutes} دقيقة قبل المحاولة مرة أخرى.`;
+}
+
+export function savePasswordResetPhone(phone: string): void {
+  localStorage.setItem(CP_PHONE_KEY, phone);
+}
+
+export function loadPasswordResetPhone(): string | null {
+  return localStorage.getItem(CP_PHONE_KEY);
+}
+
+export function savePasswordResetAttempts(attempts: number): void {
+  localStorage.setItem(CP_ATTEMPTS_KEY, String(attempts));
+}
+
+export function loadPasswordResetAttempts(): number {
+  const raw = localStorage.getItem(CP_ATTEMPTS_KEY);
+  const n = raw ? Number(raw) : 0;
+  return Number.isNaN(n) ? 0 : n;
+}
+
+export function savePasswordResetLockoutUntil(until: number | null): void {
+  if (until === null) localStorage.removeItem(CP_LOCKOUT_KEY);
+  else localStorage.setItem(CP_LOCKOUT_KEY, String(until));
+}
+
+export function loadPasswordResetLockoutUntil(): number | null {
+  const raw = localStorage.getItem(CP_LOCKOUT_KEY);
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isNaN(n) ? null : n;
+}
+
+export function isPasswordResetLockedOut(): boolean {
+  const until = loadPasswordResetLockoutUntil();
+  if (!until) return false;
+  return Date.now() < until;
+}
+
+export function getPasswordResetLockoutRemaining(): number {
+  const until = loadPasswordResetLockoutUntil();
+  if (!until) return 0;
+  return Math.max(0, Math.ceil((until - Date.now()) / 1000));
+}
+
+export function clearPasswordResetState(): void {
+  localStorage.removeItem(CP_PHONE_KEY);
+  localStorage.removeItem(CP_ATTEMPTS_KEY);
+  localStorage.removeItem(CP_LOCKOUT_KEY);
+}
+
+/**
+ * 1. طلب OTP لتغيير كلمة السر
+ * GET /usermanagement/api/v1/user/reset/password/{phone}
+ */
+export async function apiRequestPasswordResetOtp(
+  phone: string,
+): Promise<ServiceResult<void>> {
+  const deviceId = getOrCreateDeviceId();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'clientType': 'android',
+    'Accept-language': 'ar',
+    'deviceId': deviceId,
+    'appVersion': APP_VERSION,
+    'Host': 'my.tra.gov.eg',
+    'Connection': 'Keep-Alive',
+    'Accept-Encoding': 'gzip',
+    'User-Agent': USER_AGENT,
+  };
+
+  try {
+    const { status, data } = await fetchJson(
+      `${BASE_URL}/usermanagement/api/v1/user/reset/password/${encodeURIComponent(phone)}`,
+      { method: 'GET', headers },
+    );
+
+    if (status !== 200) {
+      return { success: false, errorCode: 'OTP_SEND_FAILED', userMessage: 'فشل إرسال رمز التحقق. يرجى المحاولة لاحقًا.' };
+    }
+
+    const d = data as Record<string, unknown> | null;
+    const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    const code = statusObj?.code;
+
+    if (code === 200) {
+      return { success: true };
+    }
+
+    if (code === 24511) {
+      const msg = String(statusObj?.errorMsg ?? '');
+      const seconds = parseLockoutSeconds(msg);
+      savePasswordResetLockoutUntil(Date.now() + seconds * 1000);
+      return { success: false, errorCode: 'OTP_LOCKED_OUT', userMessage: `${msg || formatLockoutMessage(seconds)}` };
+    }
+
+    const msg = String(statusObj?.errorMsg ?? 'فشل إرسال رمز التحقق.');
+    return { success: false, errorCode: 'OTP_SEND_FAILED', userMessage: msg };
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    return { success: false, errorCode: code, userMessage: mapError(code) };
+  }
+}
+
+/**
+ * 2. التحقق من OTP لتغيير كلمة السر
+ * POST /usermanagement/api/v1/user/reset/password/verification
+ * Body: { otp, username }
+ */
+export async function apiVerifyPasswordResetOtp(
+  phone: string,
+  otp: string,
+): Promise<ServiceResult<{ verificationKey: string }>> {
+  const deviceId = getOrCreateDeviceId();
+  const headers: Record<string, string> = {
+    'clientType': 'android',
+    'Accept-language': 'ar',
+    'deviceId': deviceId,
+    'appVersion': APP_VERSION,
+    'Content-Type': 'application/json; charset=UTF-8',
+    'Host': 'my.tra.gov.eg',
+    'Connection': 'Keep-Alive',
+    'Accept-Encoding': 'gzip',
+    'User-Agent': USER_AGENT,
+  };
+
+  try {
+    const { status, data } = await fetchJson(
+      `${BASE_URL}/usermanagement/api/v1/user/reset/password/verification`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ otp, username: phone }),
+      },
+    );
+
+    if (status !== 200) {
+      return { success: false, errorCode: 'OTP_INVALID', userMessage: 'فشل التحقق من رمز التحقق. يرجى المحاولة مرة أخرى.' };
+    }
+
+    const d = data as Record<string, unknown> | null;
+    const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    const code = statusObj?.code;
+
+    if (code === 200) {
+      const result = (d?.result ?? {}) as Record<string, unknown>;
+      const key = result?.verificationKey;
+      if (typeof key !== 'string' || !key) {
+        return { success: false, errorCode: 'OTP_INVALID', userMessage: 'فشل استلام مفتاح التحقق. يرجى المحاولة لاحقًا.' };
+      }
+      return { success: true, data: { verificationKey: key } };
+    }
+
+    if (code === 24511) {
+      const msg = String(statusObj?.errorMsg ?? '');
+      const seconds = parseLockoutSeconds(msg);
+      savePasswordResetLockoutUntil(Date.now() + seconds * 1000);
+      return { success: false, errorCode: 'OTP_LOCKED_OUT', userMessage: `${msg || formatLockoutMessage(seconds)}` };
+    }
+
+    const msg = String(statusObj?.errorMsg ?? 'رمز التحقق غير صحيح.');
+    return { success: false, errorCode: 'OTP_INVALID', userMessage: msg };
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    return { success: false, errorCode: code, userMessage: mapError(code) };
+  }
+}
+
+/**
+ * 3. تغيير كلمة السر
+ * PUT /usermanagement/api/v1/user/reset/password/confirmation
+ * Body: { password: sha256, username, verificationKey }
+ */
+export async function apiResetPassword(
+  phone: string,
+  password: string,
+  verificationKey: string,
+): Promise<ServiceResult<void>> {
+  const deviceId = getOrCreateDeviceId();
+  const headers: Record<string, string> = {
+    'clientType': 'android',
+    'Accept-language': 'ar',
+    'deviceId': deviceId,
+    'appVersion': APP_VERSION,
+    'Content-Type': 'application/json; charset=UTF-8',
+    'Host': 'my.tra.gov.eg',
+    'Connection': 'Keep-Alive',
+    'Accept-Encoding': 'gzip',
+    'User-Agent': USER_AGENT,
+  };
+
+  try {
+    const hashedPassword = await sha256(password);
+    const { status, data } = await fetchJson(
+      `${BASE_URL}/usermanagement/api/v1/user/reset/password/confirmation`,
+      {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ password: hashedPassword, username: phone, verificationKey }),
+      },
+    );
+
+    if (status !== 200) {
+      return { success: false, errorCode: 'RESET_FAILED', userMessage: 'فشل تغيير كلمة السر. يرجى المحاولة لاحقًا.' };
+    }
+
+    const d = data as Record<string, unknown> | null;
+    const statusObj = (d?.status ?? {}) as Record<string, unknown>;
+    if (statusObj?.code === 200) {
+      return { success: true };
+    }
+
+    const msg = String(statusObj?.errorMsg ?? 'فشل تغيير كلمة السر.');
+    return { success: false, errorCode: 'RESET_FAILED', userMessage: msg };
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNEXPECTED_ERROR';
+    return { success: false, errorCode: code, userMessage: mapError(code) };
+  }
 }
 

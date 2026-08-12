@@ -7,6 +7,7 @@ export interface VodafoneOffer {
   description: string;
   price: string;
   category: OfferCategory;
+  code?: string;
   tags?: string[];
 }
 

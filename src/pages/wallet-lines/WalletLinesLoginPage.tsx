@@ -142,7 +142,7 @@ export default function WalletLinesLoginPage() {
               value={phone} onChange={e => { setPhone(e.target.value); if (phoneErr) setPhoneErr(null); setErrorMsg(null); }}
               onBlur={() => setPhoneErr(validatePhone(phone))}
               disabled={isDisabled} maxLength={11}
-              className="pr-9 text-left placeholder:text-right font-mono" dir="ltr"
+              className="pr-9 text-left placeholder:text-left font-mono" dir="ltr"
               aria-invalid={!!phoneErr}
             />
           </div>
@@ -176,6 +176,18 @@ export default function WalletLinesLoginPage() {
             : success ? <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />تم الدخول</span>
             : 'تسجيل الدخول إلى My NTRA'}
         </Button>
+
+        {/* Forgot password */}
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => navigate('/wallet-lines/change-password')}
+            disabled={isDisabled}
+            className="text-xs text-amber-400/80 hover:text-amber-400 font-semibold transition-colors"
+          >
+            نسيت كلمة السر؟ / تغيير كلمة السر
+          </button>
+        </div>
 
         <div className="rounded-2xl p-4 border border-white/6 bg-white/3 space-y-3">
           <p className="text-center text-xs text-white/60 leading-relaxed">

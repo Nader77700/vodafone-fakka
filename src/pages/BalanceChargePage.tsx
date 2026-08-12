@@ -2,7 +2,7 @@
 // نظام مستقل تماماً — لا يؤثر على أي نظام موجود
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { generateUUID } from "@/lib/uuid";
 import { useAuth } from '@/contexts/AuthContext';
 import { securityManager } from '@/lib/security';
@@ -1507,6 +1507,7 @@ function BalanceExecuteDialog({
 // ══════════════════════════════════════════════════════════
 export default function BalanceChargePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const isMerchantClient = !!(profile?.merchant_id && profile.role === 'user');
@@ -1524,6 +1525,8 @@ export default function BalanceChargePage() {
   const [executeOpen, setExecuteOpen]   = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
+
+  const presetFromOffers = useRef(false);
 
   const refreshSessions = useCallback(() => {
     const s = getBalanceSession();
@@ -1557,7 +1560,7 @@ export default function BalanceChargePage() {
   const fakkaCount = useMemo(() => products.filter(p => p.category === 'fakka' && (isAdmin || p.is_visible)).length, [products, isAdmin]);
   const maredCount = useMemo(() => products.filter(p => p.category === 'mared' && (isAdmin || p.is_visible)).length, [products, isAdmin]);
 
-  const handleSelectProduct = (p: BalanceProduct) => {
+  const handleSelectProduct = useCallback((p: BalanceProduct) => {
     if (!session) { setLoginOpen(true); return; }
     // منع الشحن إذا كان Context لم ينتهِ التحميل بعد
     if (isMerchantClient && merchantLoading) {
@@ -1577,7 +1580,23 @@ export default function BalanceChargePage() {
       // الـ Edge Function ترفض العملية إذا لم يكن الاشتراك نشطاً بغض النظر
     }
     setSelectedProduct(p); setExecuteOpen(true);
-  };
+  }, [session, isMerchantClient, merchantLoading, isSubActive, subscriptionBlockReason, isAdmin]);
+
+  // ── اختيار مبدئي للمبلغ عند الاستدعاء من قسم عروض فودافون ──
+  useEffect(() => {
+    if (presetFromOffers.current || productsLoading || products.length === 0) return;
+    const price = (location.state as { productPrice?: number | string } | undefined)?.productPrice;
+    if (!price) return;
+    const priceNum = typeof price === 'number' ? price : parseFloat(price);
+    if (Number.isNaN(priceNum)) return;
+    const match = products.find(
+      (p) => (isAdmin || (p.is_visible && p.is_enabled)) && p.price === priceNum
+    );
+    if (match) {
+      presetFromOffers.current = true;
+      handleSelectProduct(match);
+    }
+  }, [productsLoading, products, location.state, isAdmin, handleSelectProduct]);
 
   const handleLoginSuccess = (s: BalanceSession) => {
     setSession(s);

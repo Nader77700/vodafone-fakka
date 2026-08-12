@@ -60,18 +60,13 @@ export default function WalletLinesNationalIdPage() {
     setLoading(false);
 
     if (!result.success) {
-      // لو انتهت الجلسة → أرجع للـ Login
-      if (result.errorCode === 'SESSION_EXPIRED') {
-        walletLinesService.logout();
-        navigate('/wallet-lines/login', { replace: true });
-        return;
-      }
-      setErrorMsg(result.userMessage ?? 'حدث خطأ غير متوقع.');
+      // أي خطأ (بما فيه انتهاء الجلسة) يُعرض داخل نفس الشاشة بدون إعادة توجيه
+      setErrorMsg(result.userMessage ?? 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
       return;
     }
 
     setSuccess(true);
-    setTimeout(() => navigate('/wallet-lines/results', { state: { result: result.data } }), 700);
+    setTimeout(() => navigate('/wallet-lines/results', { state: { result: result.data } }), 900);
   }
 
   function handleLogout() {
@@ -128,7 +123,10 @@ export default function WalletLinesNationalIdPage() {
             style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05))' }}>
             <IdCard className="w-8 h-8 text-indigo-400" />
           </div>
-          <p className="text-sm text-white/70">أدخل رقمك القومي المكوّن من 14 رقمًا</p>
+          <p className="text-sm text-white/80 font-semibold">أدخل رقمك القومي المكوّن من 14 رقمًا</p>
+          <p className="text-[11px] text-white/50 leading-relaxed px-2">
+            للتأكد من ارتباط الرقم القومي بحسابك على My NTRA قبل إظهار بيانات الخطوط والمحافظ الكاملة.
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -168,14 +166,15 @@ export default function WalletLinesNationalIdPage() {
         {success && (
           <div className="flex items-center gap-2.5 p-3 rounded-xl border border-green-500/25 bg-green-500/8">
             <CheckCircle2 className="w-4 h-4 text-green-400" />
-            <p className="text-xs text-green-300 font-semibold">جاري تحميل النتائج...</p>
+            <p className="text-xs text-green-300 font-semibold">تم التحقق من الرقم القومي بنجاح</p>
           </div>
         )}
 
         <Button type="submit" disabled={isDisabled || filled !== 14}
           className="w-full h-12 text-sm font-black rounded-xl"
           style={{ background: success ? 'rgba(34,197,94,0.85)' : undefined }}>
-          {loading ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</span>
+          {loading
+            ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق من الرقم القومي...</span>
             : success ? <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />تم</span>
             : 'تحقق وعرض النتائج'}
         </Button>

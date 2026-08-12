@@ -84,11 +84,11 @@ export default function WalletLinesRegisterPage() {
 
   const Field = ({
     id, label, icon: Icon, type = 'text', value, field, placeholder, inputMode, maxLength,
-    rightEl, dir: fieldDir,
+    rightEl, dir: fieldDir, className,
   }: {
     id: string; label: string; icon: React.ElementType; type?: string; value: string;
     field: keyof typeof form; placeholder: string; inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
-    maxLength?: number; rightEl?: React.ReactNode; dir?: string;
+    maxLength?: number; rightEl?: React.ReactNode; dir?: string; className?: string;
   }) => (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-sm font-semibold text-white/80">{label}</Label>
@@ -105,7 +105,7 @@ export default function WalletLinesRegisterPage() {
             setErrs(e => ({ ...e, [field]: fn }));
           }}
           disabled={isDisabled}
-          className={`pr-9 ${rightEl ? 'pl-10' : ''}`}
+          className={`pr-9 ${rightEl ? 'pl-10' : ''} ${className ?? ''}`}
           dir={fieldDir}
           aria-invalid={!!errs[field]}
         />
@@ -170,7 +170,7 @@ export default function WalletLinesRegisterPage() {
         )}
 
         <Field id="wl-name" label="الاسم بالكامل" icon={User} value={form.fullName} field="fullName" placeholder="الاسم الثلاثي" />
-        <Field id="wl-phone" label="رقم الهاتف" icon={Phone} type="tel" inputMode="numeric" value={form.phone} field="phone" placeholder="01XXXXXXXXX" maxLength={11} dir="ltr" />
+        <Field id="wl-phone" label="رقم الهاتف" icon={Phone} type="tel" inputMode="numeric" value={form.phone} field="phone" placeholder="01XXXXXXXXX" maxLength={11} dir="ltr" className="text-left" />
         <Field id="wl-email" label="البريد الإلكتروني" icon={Mail} type="email" value={form.email} field="email" placeholder="example@email.com" dir="ltr" />
 
         {/* كلمة المرور */}

@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Loader2, Tag, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { Loader2, Tag, Zap, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { VodafoneOffer } from './types';
 
@@ -10,7 +9,6 @@ interface OfferCardProps {
 }
 
 export default function OfferCard({ offer, onSubscribe, loadingId }: OfferCardProps) {
-  const [expanded, setExpanded] = useState(false);
   const isLoading = loadingId === offer.id;
 
   return (
@@ -27,20 +25,25 @@ export default function OfferCard({ offer, onSubscribe, loadingId }: OfferCardPr
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.25)' }}
         >
-          <Zap className="w-4 h-4" style={{ color: '#ff6b6b' }} />
+          <Zap className="w-4 h-4 text-red-400" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[13px] font-black text-white truncate">{offer.name}</h3>
-          <p className="text-[10px] text-white/45 truncate">{offer.offerId}</p>
-        </div>
-        <div className="text-left shrink-0">
-          <p className="text-sm font-black text-white">{offer.price}</p>
-          <p className="text-[9px] text-white/40">جنيه</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {offer.price && (
+              <span className="text-[11px] font-bold text-white/60">
+                {offer.price} جنيه
+              </span>
+            )}
+            {offer.code && (
+              <span className="text-[10px] font-bold text-white/40 font-mospace">{offer.code}</span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2.5">
         <p className="text-[12px] text-white/70 leading-relaxed">{offer.description}</p>
 
         {offer.tags && offer.tags.length > 0 && (
@@ -57,34 +60,17 @@ export default function OfferCard({ offer, onSubscribe, loadingId }: OfferCardPr
             ))}
           </div>
         )}
-
-        {expanded && (
-          <div className="pt-2 text-[11px] text-white/50 leading-relaxed">
-            <p>
-              تفاصيل إضافية عن العرض ستظهر هنا بعد ربط البيانات الفعلية في المرحلة التالية.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Actions */}
-      <div className="px-4 pb-3.5 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded(!expanded)}
-          className="h-9 px-3 rounded-xl text-[11px] font-bold text-white/60 border border-white/10 hover:bg-white/5"
-        >
-          {expanded ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
-          {expanded ? 'أقل' : 'المزيد'}
-        </Button>
+      <div className="px-4 pb-3.5">
         <Button
           size="sm"
           onClick={() => onSubscribe(offer)}
           disabled={isLoading}
-          className="flex-1 h-9 rounded-xl text-[12px] font-black bg-primary hover:bg-primary/90 text-white"
+          className="w-full h-10 rounded-xl text-[13px] font-black bg-primary hover:bg-primary/90 text-white"
         >
-          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1.5" /> : null}
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin ml-1.5" /> : <Banknote className="w-4 h-4 ml-1.5" />}
           {isLoading ? 'جاري التجهيز...' : 'اشتراك'}
         </Button>
       </div>

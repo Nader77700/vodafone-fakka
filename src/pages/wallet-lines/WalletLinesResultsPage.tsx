@@ -10,7 +10,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight, Wallet, Phone, CheckCircle2, XCircle, AlertTriangle,
   WifiOff, Loader2, MinusCircle, HelpCircle, Eye, LogOut, KeyRound, Clock,
-  User, Mail,
+  User, Mail, Lock,
 } from 'lucide-react';
 import type { WalletLinesResult, WalletInfo, LineInfo, TelecomCarrier } from '@/lib/walletLinesInterfaces';
 import type { DataAvailability } from '@/lib/walletLinesErrors';
@@ -145,6 +145,7 @@ const OtpDialog = memo(function OtpDialog({
   sending,
   error,
   cooldown,
+  phone,
 }: {
   onSubmit: (otp: string) => void;
   onClose: () => void;
@@ -153,6 +154,7 @@ const OtpDialog = memo(function OtpDialog({
   sending: boolean;
   error: string | null;
   cooldown: number;
+  phone: string;
 }) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -189,11 +191,20 @@ const OtpDialog = memo(function OtpDialog({
               : <KeyRound className="w-6 h-6 text-amber-400" />}
           </div>
           <h3 className="text-base font-black text-white">التحقق لإظهار الأرقام كاملة</h3>
+          <p className="text-xs text-white/70 leading-relaxed px-2">
+            للتأكد من هويتك قبل إظهار الأرقام الكاملة، أدخل رمز التحقق المرسَل على هاتفك.
+          </p>
           <p className="text-[11px] text-white/45">
             {sending
               ? 'جاري إرسال رمز التحقق على هاتفك...'
-              : 'أدخل رمز التحقق المرسَل على هاتفك أو الصقه'}
+              : 'أدخل الرمز أو الصقه إذا وصلك في رسالة.'}
           </p>
+          {phone && (
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 mt-2">
+              <Phone className="w-3.5 h-3.5 text-indigo-400" />
+              <p className="text-sm font-mono text-white/90" dir="ltr">{phone}</p>
+            </div>
+          )}
         </div>
 
         {/* ── خانة الإدخال — نص واحد يدعم اللصق الفوري ── */}
@@ -461,31 +472,46 @@ export default function WalletLinesResultsPage() {
           </div>
         </div>
 
-        {/* ── زر إظهار الأرقام كاملة ── */}
-        <div className="space-y-2">
+        {/* ── كارت إظهار الأرقام كاملة (يتطلب OTP) ── */}
+        <div className="rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+          <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border border-amber-500/20 bg-amber-500/10">
+            {fullNumbers ? <CheckCircle2 className="w-5 h-5 text-amber-400" /> : <Lock className="w-5 h-5 text-amber-400" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-black text-white">{fullNumbers ? 'تم التحقق بنجاح' : 'إظهار الأرقام كاملة'}</h3>
+            <p className="text-[10px] text-white/50 leading-relaxed">
+              {fullNumbers
+                ? 'تم إظهار الأرقام الكاملة لكل الشركات أدناه.'
+                : 'للتأكد من هويتك قبل إظهار الأرقام الكاملة، يتطلب تحقق OTP.'}
+            </p>
+          </div>
           <button
             onClick={fullNumbers ? undefined : handleShowFullNumbers}
             disabled={sendingOtp || !!fullNumbers}
-            className="w-full h-12 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-black transition-all active:scale-98"
+            className="shrink-0 h-9 px-4 rounded-xl text-xs font-bold transition-all active:scale-95"
             style={{
               background: fullNumbers
-                ? 'rgba(251,191,36,0.15)'
-                : 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(217,119,6,0.15))',
-              border: '1px solid rgba(251,191,36,0.3)',
+                ? 'rgba(251,191,36,0.12)'
+                : 'rgba(251,191,36,0.18)',
+              border: '1px solid rgba(251,191,36,0.35)',
               color: '#fbbf24',
-            }}>
-            {sendingOtp
-              ? <><Loader2 className="w-4 h-4 animate-spin" />جاري إرسال رمز التحقق...</>
-              : fullNumbers
-              ? <><CheckCircle2 className="w-4 h-4 text-amber-400" />تم — الأرقام الكاملة ظاهرة أدناه</>
-              : <><Eye className="w-4 h-4" />إظهار الأرقام كاملة (يتطلب OTP)</>}
+              opacity: fullNumbers ? 0.7 : 1,
+            }}
+          >
+            {sendingOtp ? (
+              <span className="flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" />جاري الإرسال...</span>
+            ) : fullNumbers ? (
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" />تم</span>
+            ) : (
+              <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" />تحقق</span>
+            )}
           </button>
-          {sendOtpError && (
-            <p className="text-[11px] text-red-400 flex items-center gap-1 justify-center">
-              <XCircle className="w-3 h-3" />{sendOtpError}
-            </p>
-          )}
         </div>
+        {sendOtpError && (
+          <p className="text-[11px] text-red-400 flex items-center gap-1 justify-center -mt-1">
+            <XCircle className="w-3 h-3" />{sendOtpError}
+          </p>
+        )}
 
         {/* ── قسم المحافظ ── */}
         <div>
@@ -549,6 +575,7 @@ export default function WalletLinesResultsPage() {
           loading={otpLoading}
           sending={sendingOtp}
           error={otpError}
+          phone={walletLinesService.getMaskedPhone() ?? ''}
         />
       )}
     </div>

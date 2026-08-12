@@ -1,12 +1,23 @@
 /**
  * VodafoneOffersPage — الصفحة الرئيسية لقسم عروض واشتراكات فودافون
- * PHASE 1: 5 اختصارات تفتح صفحات داخلية بدون Redirect أو Sidebar عالق
+ * التصميم القديم: بطاقة تعريفية + بطاقة تسجيل الدخول، ثم اشتراكات وعروض بعد الدخول
  */
 
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight, Zap, Wifi, MoreHorizontal, CalendarDays, Wallet, Tag,
+  CheckCircle2, PhoneCall, LogOut, Loader2,
 } from 'lucide-react';
+import VodafoneLoginGate from './VodafoneLoginGate';
+import UpcomingSubscriptionsSection from './UpcomingSubscriptionsSection';
+import { useAnaVodafoneSession } from './useAnaVodafoneSession';
+import { useVodafoneNetworkStatus } from './useVodafoneNetworkStatus';
+import type { VodafoneSubscription } from '@/lib/api';
+
+function formatPhone(phone: string): string {
+  return phone.replace(/(\d{4})(\d{3})(\d{4})/, '$1 $2 $3');
+}
 
 const menuItems = [
   {
@@ -33,22 +44,6 @@ const menuItems = [
     to: '/vodafone-offers/other',
     color: '#a78bfa',
   },
-  {
-    id: 'subscriptions',
-    label: 'الاشتراكات القادمة',
-    desc: 'إدارة اشتراكاتك القادمة',
-    icon: CalendarDays,
-    to: '/vodafone-offers/subscriptions',
-    color: '#fbbf24',
-  },
-  {
-    id: 'recharge',
-    label: 'شحن الرصيد',
-    desc: 'شحن الرصيد عبر نظام الشحن الأساسي',
-    icon: Wallet,
-    to: '/vodafone-offers/recharge',
-    color: '#4ade80',
-  },
 ];
 
 function MenuCard({ item }: { item: typeof menuItems[0] }) {
@@ -62,12 +57,9 @@ function MenuCard({ item }: { item: typeof menuItems[0] }) {
       style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
     >
       <div
-        className="absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none"
-        style={{ opacity: 0, background: `radial-gradient(circle at 80% 20%, ${item.color}18 0%, transparent 60%)` }}
+        className="absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none group-hover:opacity-100"
+        style={{ background: `radial-gradient(circle at 80% 20%, ${item.color}18 0%, transparent 60%)` }}
       />
-      <style>{`
-        .group:hover ~ div, .group:hover > div:first-child { opacity: 1; }
-      `}</style>
       <div className="relative z-10 flex items-center gap-4">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
@@ -85,8 +77,98 @@ function MenuCard({ item }: { item: typeof menuItems[0] }) {
   );
 }
 
+function SessionCard({
+  phone,
+  logout,
+  logoutLoading,
+}: {
+  phone: string;
+  logout: () => void;
+  logoutLoading: boolean;
+}) {
+  return (
+    <div
+      className="rounded-[20px] overflow-hidden"
+      style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}
+    >
+      <div
+        className="flex items-center gap-2.5 px-4 py-2.5"
+        style={{ background: 'rgba(34,197,94,0.1)', borderBottom: '1px solid rgba(34,197,94,0.15)' }}
+      >
+        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-green-400" />
+        <span className="text-xs font-black text-green-400">تم تسجيل الدخول</span>
+      </div>
+      <div className="p-3.5">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <PhoneCall className="w-3.5 h-3.5 text-white/70" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] text-white/40 mb-0.5">رقم الهاتف المسجّل</p>
+            <p className="text-sm font-black text-white font-mono tracking-wide truncate">{formatPhone(phone)}</p>
+          </div>
+          <button
+            onClick={logout}
+            disabled={logoutLoading}
+            className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
+          >
+            {logoutLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+            <span>خروج</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RechargeShortcutCard({ ready, onClick }: { ready: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={!ready}
+      className="group relative w-full rounded-[20px] p-4 text-right transition-all active:scale-[0.98] disabled:opacity-50 overflow-hidden"
+      style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.18)' }}
+    >
+      <div className="flex items-center gap-4">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)' }}
+        >
+          <Wallet className="w-5 h-5 text-green-400" />
+        </div>
+        <div className="flex-1 min-w-0 text-right">
+          <h3 className="text-sm font-black text-white mb-0.5 truncate">شحن الرصيد</h3>
+          <p className="text-[11px] text-white/45 truncate">
+            {ready ? 'فتح نظام الشحن الأساسي' : 'غير متاح — تأكد من اتصال الشبكة'}
+          </p>
+        </div>
+        <ArrowRight className="w-4 h-4 text-white/30 rotate-180 group-hover:text-white/70 transition-colors shrink-0" />
+      </div>
+    </button>
+  );
+}
+
 export default function VodafoneOffersPage() {
   const navigate = useNavigate();
+  const {
+    session, loading: sessionLoading, logoutLoading, logout,
+  } = useAnaVodafoneSession();
+  const { ready: rechargeReady } = useVodafoneNetworkStatus();
+
+  useEffect(() => {
+    if (!sessionLoading && session?.is_valid) {
+      // لا شيء إضافي — الـ UpcomingSubscriptionsSection تجلب البيانات تلقائياً
+    }
+  }, [sessionLoading, session]);
+
+  function handleRecharge(sub: VodafoneSubscription) {
+    if (!sub.price) return;
+    navigate('/balance-charge', { state: { productPrice: sub.price } });
+  }
 
   return (
     <div
@@ -116,7 +198,7 @@ export default function VodafoneOffersPage() {
             style={{ background: 'rgba(230,0,0,0.15)', color: '#ff6b6b', border: '1px solid rgba(230,0,0,0.3)' }}
           >
             <Tag className="w-3 h-3" />
-            <span className="hidden xs:inline">عروض</span>
+            <span>عروض</span>
           </div>
         </div>
       </div>
@@ -136,23 +218,59 @@ export default function VodafoneOffersPage() {
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'rgba(230,0,0,0.2)', border: '1px solid rgba(230,0,0,0.35)' }}
             >
-              <Tag className="w-4 h-4" style={{ color: '#ff6b6b' }} />
+              <Tag className="w-4 h-4 text-red-400" />
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-black text-white mb-0.5">عروض واشتراكات فودافون</h2>
               <p className="text-[11px] text-white/55 leading-relaxed">
-                اختر القسم الذي تريد تصفّحه. جميع الأقسام تعمل داخل التطبيق.
+                سجّل دخولك لعرض اشتراكاتك والعروض الشخصية المتاحة على رقمك.
               </p>
             </div>
           </div>
         </div>
 
-        {/* قائمة الاختصارات */}
-        <div className="space-y-3">
-          {menuItems.map((item) => (
-            <MenuCard key={item.id} item={item} />
-          ))}
-        </div>
+        {/* بوابة الدخول + المحتوى بعده */}
+        <VodafoneLoginGate>
+          <div className="space-y-4">
+            {session?.is_valid && session.phone && (
+              <SessionCard
+                phone={session.phone}
+                logout={logout}
+                logoutLoading={logoutLoading}
+              />
+            )}
+
+            <UpcomingSubscriptionsSection
+              rechargeReady={rechargeReady}
+              onRecharge={handleRecharge}
+            />
+
+            {/* أقسام العروض */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-5 rounded-full shrink-0" style={{ background: '#E60000' }} />
+                <h3 className="text-sm font-black text-white">العروض المتاحة</h3>
+              </div>
+              <div className="space-y-3">
+                {menuItems.map((item) => (
+                  <MenuCard key={item.id} item={item} />
+                ))}
+              </div>
+            </div>
+
+            {/* اختصار شحن الرصيد */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-5 rounded-full shrink-0" style={{ background: '#4ade80' }} />
+                <h3 className="text-sm font-black text-white">شحن الرصيد</h3>
+              </div>
+              <RechargeShortcutCard
+                ready={rechargeReady}
+                onClick={() => navigate('/balance-charge')}
+              />
+            </div>
+          </div>
+        </VodafoneLoginGate>
       </div>
     </div>
   );

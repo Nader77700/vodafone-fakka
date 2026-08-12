@@ -16,8 +16,12 @@ import {
   apiRegister,
   apiVerifyOtp,
   apiLookup,
+  apiVerifyNationalId,
   apiSendOtp,
   apiGetFullNumbers,
+  apiRequestPasswordResetOtp,
+  apiVerifyPasswordResetOtp,
+  apiResetPassword,
   clearWalletLinesSession,
   isSessionActive,
   loadNationalId,
@@ -32,6 +36,14 @@ import {
   loadLastResult,
   saveOtpSentAt,
   getOtpResendCooldown,
+  savePasswordResetPhone,
+  loadPasswordResetPhone,
+  savePasswordResetAttempts,
+  loadPasswordResetAttempts,
+  savePasswordResetLockoutUntil,
+  isPasswordResetLockedOut,
+  getPasswordResetLockoutRemaining,
+  clearPasswordResetState,
 } from '@/lib/apiWalletLines';
 
 export type { ServiceResult };
@@ -78,10 +90,20 @@ class RealWalletLinesService implements IWalletLinesService {
 
   async lookupByNationalId(
     nationalIdFull: string,
-    _token: string,
+    _token?: string,
   ): Promise<ServiceResult<WalletLinesResult>> {
     // حفظ الرقم القومي للجلسة القادمة
     saveNationalId(nationalIdFull);
+    // 1. التحقق من الرقم القومي أولاً باستخدام loginToken
+    const verifyResult = await apiVerifyNationalId(nationalIdFull);
+    if (!verifyResult.success) {
+      return {
+        success: false,
+        errorCode: verifyResult.errorCode,
+        userMessage: verifyResult.userMessage,
+      };
+    }
+    // 2. جلب بيانات المحافظ والخطوط بعد نجاح التحقق
     const result = await apiLookup(nationalIdFull);
     // حفظ آخر نتيجة ناجحة لاستعادتها لو المستخدم رجع للقسم
     if (result.success && result.data) {
@@ -146,6 +168,111 @@ class RealWalletLinesService implements IWalletLinesService {
   /** ثانية الـ cooldown المتبقية (0 = مسموح بالإرسال) */
   getOtpCooldown(): number {
     return getOtpResendCooldown(60);
+  }
+
+  // ── Change Password Flow ─────────────────────────────────────────
+
+  /** الحد الأقصى لمحاولات OTP */
+  readonly MAX_PASSWORD_RESET_ATTEMPTS = 3;
+
+  /** التحقق من حظر تغيير كلمة السر */
+  isPasswordResetLockedOut(): boolean {
+    return isPasswordResetLockedOut();
+  }
+
+  /** الثواني المتبقية في الحظر */
+  getPasswordResetLockoutRemaining(): number {
+    return getPasswordResetLockoutRemaining();
+  }
+
+  /** طلب OTP لتغيير كلمة السر */
+  async requestPasswordResetOtp(phone: string): Promise<ServiceResult<void>> {
+    if (this.isPasswordResetLockedOut()) {
+      return {
+        success: false,
+        errorCode: 'OTP_LOCKED_OUT',
+        userMessage: `تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار ${Math.ceil(this.getPasswordResetLockoutRemaining() / 60)} دقيقة.`,
+      };
+    }
+    savePasswordResetPhone(phone);
+    const result = await apiRequestPasswordResetOtp(phone);
+    if (result.success) {
+      savePasswordResetAttempts(0);
+    }
+    return result;
+  }
+
+  /** التحقق من OTP وتخزين مفتاح التحقق */
+  async verifyPasswordResetOtp(
+    phone: string,
+    otp: string,
+  ): Promise<ServiceResult<{ verificationKey: string }>> {
+    if (this.isPasswordResetLockedOut()) {
+      return {
+        success: false,
+        errorCode: 'OTP_LOCKED_OUT',
+        userMessage: `تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار ${Math.ceil(this.getPasswordResetLockoutRemaining() / 60)} دقيقة.`,
+      };
+    }
+    const result = await apiVerifyPasswordResetOtp(phone, otp);
+    if (result.success) {
+      savePasswordResetAttempts(0);
+      savePasswordResetLockoutUntil(null);
+      return result;
+    }
+
+    // خطأ في OTP → زيادة المحاولات وتطبيق الحظر بعد 3 محاولات
+    if (result.errorCode === 'OTP_INVALID') {
+      const attempts = loadPasswordResetAttempts() + 1;
+      savePasswordResetAttempts(attempts);
+      if (attempts >= this.MAX_PASSWORD_RESET_ATTEMPTS) {
+        savePasswordResetLockoutUntil(Date.now() + 300_000); // 5 دقائق
+        return {
+          success: false,
+          errorCode: 'OTP_LOCKED_OUT',
+          userMessage: `تم تجاوز الحد الأقصى (${this.MAX_PASSWORD_RESET_ATTEMPTS}) محاولات. يرجى الانتظار 5 دقائق.`,
+        };
+      }
+      return {
+        success: false,
+        errorCode: 'OTP_INVALID',
+        userMessage: `${result.userMessage} (المحاولات المتبقية: ${this.MAX_PASSWORD_RESET_ATTEMPTS - attempts})`,
+      };
+    }
+
+    return result;
+  }
+
+  /** تغيير كلمة السر */
+  async resetPassword(
+    phone: string,
+    password: string,
+    confirmPassword: string,
+    verificationKey: string,
+  ): Promise<ServiceResult<void>> {
+    if (password.length < 6) {
+      return { success: false, errorCode: 'PASSWORD_TOO_SHORT', userMessage: 'كلمة السر يجب أن تكون 6 أحرف/أرقام على الأقل.' };
+    }
+    if (password !== confirmPassword) {
+      return { success: false, errorCode: 'PASSWORD_MISMATCH', userMessage: 'كلمتا السر غير متطابقتين.' };
+    }
+    const result = await apiResetPassword(phone, password, verificationKey);
+    if (result.success) {
+      clearPasswordResetState();
+    }
+    return result;
+  }
+
+  /** رقم الهاتف المقنّع (مثلاً: 010****3680) */
+  getMaskedPhone(): string | null {
+    const phone = loadUsername();
+    if (!phone || phone.length < 7) return null;
+    return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
+  }
+
+  /** رقم الهاتف المستخدم في تغيير كلمة السر */
+  getPasswordResetPhone(): string | null {
+    return loadPasswordResetPhone();
   }
 }
 

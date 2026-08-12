@@ -43,6 +43,7 @@ const WalletLinesRegisterPage   = lazy(() => import('./pages/wallet-lines/Wallet
 const WalletLinesOtpPage        = lazy(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
 const WalletLinesNationalIdPage = lazy(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
 const WalletLinesResultsPage    = lazy(() => import('./pages/wallet-lines/WalletLinesResultsPage'));
+const WalletLinesChangePasswordPage = lazy(() => import('./pages/wallet-lines/WalletLinesChangePasswordPage'));
 const VodafoneOffersPage           = lazy(() => import('./pages/vodafone-offers/VodafoneOffersPage'));
 const FlexOffersPage               = lazy(() => import('./pages/vodafone-offers/FlexOffersPage'));
 const InternetOffersPage           = lazy(() => import('./pages/vodafone-offers/InternetOffersPage'));
@@ -111,6 +112,7 @@ export const routes: RouteConfig[] = [
       { name: 'WalletLinesOtp',          path: '/wallet-lines/otp',                element: <S><WalletLinesOtpPage /></S> },
       { name: 'WalletLinesNationalId',   path: '/wallet-lines/national-id',        element: <S><WalletLinesNationalIdPage /></S> },
       { name: 'WalletLinesResults',      path: '/wallet-lines/results',            element: <S><WalletLinesResultsPage /></S> },
+      { name: 'WalletLinesChangePassword', path: '/wallet-lines/change-password',  element: <S><WalletLinesChangePasswordPage /></S> },
       { name: 'VodafoneOffers',           path: '/vodafone-offers',                  element: <S><VodafoneOffersPage /></S> },
       { name: 'VodafoneOffersFlex',       path: '/vodafone-offers/flex',             element: <S><FlexOffersPage /></S> },
       { name: 'VodafoneOffersInternet',   path: '/vodafone-offers/internet',         element: <S><InternetOffersPage /></S> },
