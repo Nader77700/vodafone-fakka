@@ -1,95 +1,48 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { VodafoneOffer, OfferCategory } from './types';
+import { getVodafoneOffers, subscribeVodafoneOffer, type VodafoneOfferInfo } from '@/lib/api';
 
-const MOCK_OFFERS: VodafoneOffer[] = [
-  {
-    id: 'flex-1',
-    offerId: 'FLX001',
-    name: 'فليكس 150',
-    description: '150 وحدة فليكس صالحة لمدة 30 يوم',
-    price: '75',
-    category: 'flex',
-    tags: ['شهري', 'مكالمات + إنترنت'],
-  },
-  {
-    id: 'flex-2',
-    offerId: 'FLX002',
-    name: 'فليكس 200',
-    description: '200 وحدة فليكس صالحة لمدة 30 يوم',
-    price: '95',
-    category: 'flex',
-    tags: ['شهري', 'مكالمات + إنترنت'],
-  },
-  {
-    id: 'flex-3',
-    offerId: 'FLX003',
-    name: 'فليكس 75',
-    description: '75 وحدة فليكس صالحة لمدة 30 يوم',
-    price: '45',
-    category: 'flex',
-    tags: ['شهري', 'مكالمات + إنترنت'],
-  },
-  {
-    id: 'internet-1',
-    offerId: 'INT001',
-    name: 'إنترنت 5 GB',
-    description: '5 جيجابايت إنترنت صالحة لمدة 30 يوم',
-    price: '50',
-    category: 'internet',
-    tags: ['شهري', 'إنترنت'],
-  },
-  {
-    id: 'internet-2',
-    offerId: 'INT002',
-    name: 'إنترنت 10 GB',
-    description: '10 جيجابايت إنترنت صالحة لمدة 30 يوم',
-    price: '90',
-    category: 'internet',
-    tags: ['شهري', 'إنترنت'],
-  },
-  {
-    id: 'internet-3',
-    offerId: 'INT003',
-    name: 'إنترنت 20 GB',
-    description: '20 جيجابايت إنترنت صالحة لمدة 30 يوم',
-    price: '150',
-    category: 'internet',
-    tags: ['شهري', 'إنترنت'],
-  },
-  {
-    id: 'other-1',
-    offerId: 'OTH001',
-    name: 'دقائق لكل الشبكات',
-    description: '500 دقيقة لكل الشبكات صالحة لمدة 30 يوم',
-    price: '60',
-    category: 'other',
-    tags: ['شهري', 'مكالمات'],
-  },
-  {
-    id: 'other-2',
-    offerId: 'OTH002',
-    name: 'رسائل لكل الشبكات',
-    description: '1000 رسالة لكل الشبكات صالحة لمدة 30 يوم',
-    price: '25',
-    category: 'other',
-    tags: ['شهري', 'رسائل'],
-  },
-];
+function mapOffer(category: OfferCategory, info: VodafoneOfferInfo): VodafoneOffer {
+  const priceStr = info.price === null || info.price === undefined ? '' : String(info.price);
+  return {
+    id: info.id,
+    offerId: info.id,
+    name: info.name,
+    description: info.description,
+    price: priceStr,
+    category,
+    tags: [],
+  };
+}
+
+function pickCategory(result: { flex_offers?: VodafoneOfferInfo[]; internet_offers?: VodafoneOfferInfo[]; other_offers?: VodafoneOfferInfo[] }, category: OfferCategory) {
+  if (category === 'flex') return result.flex_offers ?? [];
+  if (category === 'internet') return result.internet_offers ?? [];
+  return result.other_offers ?? [];
+}
 
 export function useVodafoneOffers(category: OfferCategory) {
   const [offers, setOffers] = useState<VodafoneOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setCode(null);
     try {
-      // PHASE 1: بيانات تجريبية — سيتم الاستبدال بجلب من الـ Edge Function في PHASE 2
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setOffers(MOCK_OFFERS.filter((o) => o.category === category));
+      const result = await getVodafoneOffers();
+      if (!result.success) {
+        setError(result.error ?? 'فشل تحميل العروض');
+        setCode(result.code ?? null);
+        setOffers([]);
+      } else {
+        setOffers(pickCategory(result, category).map((o) => mapOffer(category, o)));
+      }
     } catch {
       setError('فشل تحميل العروض');
+      setOffers([]);
     } finally {
       setLoading(false);
     }
@@ -99,10 +52,9 @@ export function useVodafoneOffers(category: OfferCategory) {
     load();
   }, [load]);
 
-  return { offers, loading, error, reload: load };
+  return { offers, loading, error, code, reload: load };
 }
 
-// ACTION HOOK: جاهز للربط الفعلي في PHASE 2
 export function useSubscribeOffer() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -113,11 +65,14 @@ export function useSubscribeOffer() {
     setError(null);
     setSuccess(null);
     try {
-      // PHASE 2: استدعاء الـ Edge Function الفعلي
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      setSuccess(`تم تجهيز الاشتراك في ${offer.name} — سيتم التفعيل في المرحلة التالية`);
+      const result = await subscribeVodafoneOffer(offer.offerId);
+      if (!result.success) {
+        setError(result.error ?? 'فشل الاشتراك في العرض');
+      } else {
+        setSuccess(result.message ?? `تم الاشتراك في ${offer.name} بنجاح`);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل تجهيز الاشتراك');
+      setError(err instanceof Error ? err.message : 'فشل الاشتراك في العرض');
     } finally {
       setLoadingId(null);
     }

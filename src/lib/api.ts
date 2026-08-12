@@ -216,6 +216,58 @@ export async function chargeVodafoneSubscription(
   return data ?? { success: false, error: 'استجابة غير متوقعة' };
 }
 
+// ── بيانات العرض — مطابقة لـ extract_offer_info() ──
+export interface VodafoneOfferInfo {
+  id: string;
+  name: string;
+  description: string;
+  price: number | string | null;
+  redemption_code: string | null;
+}
+
+export interface GetOffersResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+  flex_offers?: VodafoneOfferInfo[];
+  internet_offers?: VodafoneOfferInfo[];
+  other_offers?: VodafoneOfferInfo[];
+}
+
+export interface SubscribeOfferResult {
+  success: boolean;
+  error?: string;
+  message?: string;
+}
+
+/** جلب العروض وإرجاعها مصنفة — Flex / Internet / Other — Token من Server-Side */
+export async function getVodafoneOffers(): Promise<GetOffersResult> {
+  const { data, error } = await supabase.functions.invoke<GetOffersResult>(
+    'ana-vodafone-offers',
+    { body: { action: 'get_offers' }, method: 'POST' }
+  );
+  if (error) {
+    const msg = await error?.context?.text?.().catch(() => '') ?? error.message;
+    console.error('[getVodafoneOffers] edge error:', msg);
+    return { success: false, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
+  }
+  return data ?? { success: false, error: 'استجابة غير متوقعة' };
+}
+
+/** الاشتراك في عرض باستخدام offer ID الحقيقي — Server-Side */
+export async function subscribeVodafoneOffer(offerId: string): Promise<SubscribeOfferResult> {
+  const { data, error } = await supabase.functions.invoke<SubscribeOfferResult>(
+    'ana-vodafone-offers',
+    { body: { action: 'subscribe_offer', offer_id: offerId }, method: 'POST' }
+  );
+  if (error) {
+    const msg = await error?.context?.text?.().catch(() => '') ?? error.message;
+    console.error('[subscribeVodafoneOffer] edge error:', msg);
+    return { success: false, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
+  }
+  return data ?? { success: false, error: 'استجابة غير متوقعة' };
+}
+
 /** التحقق من تشغيل شحن فودافون من قبل الأدمن */
 export async function getVodafoneChargeEnabled(): Promise<boolean> {
   const { data, error } = await supabase

@@ -1,6 +1,7 @@
 import { Loader2, PackageX, AlertCircle, CheckCircle2 } from 'lucide-react';
 import VodafoneOffersShell from './VodafoneOffersShell';
 import OfferCard from './OfferCard';
+import VodafoneLoginGate from './VodafoneLoginGate';
 import { useVodafoneOffers, useSubscribeOffer } from './useVodafoneOffers';
 
 export default function FlexOffersPage() {
@@ -9,6 +10,7 @@ export default function FlexOffersPage() {
 
   return (
     <VodafoneOffersShell title="عروض فليكس" subtitle="باقات فليكس المتاحة من فودافون">
+      <VodafoneLoginGate onLogin={reload}>
       <div className="space-y-4">
         {/* رسائل الحالة */}
         {actionError && (
@@ -64,6 +66,7 @@ export default function FlexOffersPage() {
           </div>
         )}
       </div>
+      </VodafoneLoginGate>
     </VodafoneOffersShell>
   );
 }

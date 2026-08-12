@@ -1,6 +1,7 @@
 import { Loader2, PackageX, AlertCircle, CheckCircle2 } from 'lucide-react';
 import VodafoneOffersShell from './VodafoneOffersShell';
 import OfferCard from './OfferCard';
+import VodafoneLoginGate from './VodafoneLoginGate';
 import { useVodafoneOffers, useSubscribeOffer } from './useVodafoneOffers';
 
 export default function InternetOffersPage() {
@@ -9,7 +10,8 @@ export default function InternetOffersPage() {
 
   return (
     <VodafoneOffersShell title="عروض الإنترنت" subtitle="باقات الإنترنت المتاحة من فودافون">
-      <div className="space-y-4">
+      <VodafoneLoginGate onLogin={reload}>
+        <div className="space-y-4">
         {actionError && (
           <div className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
@@ -63,6 +65,7 @@ export default function InternetOffersPage() {
           </div>
         )}
       </div>
+      </VodafoneLoginGate>
     </VodafoneOffersShell>
   );
 }
