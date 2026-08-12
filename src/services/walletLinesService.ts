@@ -24,6 +24,10 @@ import {
   saveNationalId,
   loadUsername,
   saveUsername,
+  loadFullName,
+  saveFullName,
+  loadEmail,
+  saveEmail,
   saveLastResult,
   loadLastResult,
   saveOtpSentAt,
@@ -44,12 +48,20 @@ class RealWalletLinesService implements IWalletLinesService {
     const result = await apiLogin(req.phone, req.password);
     if (result.success) {
       saveUsername(req.phone);
+      if (result.data?.name) saveFullName(result.data.name);
+      if (result.data?.email) saveEmail(result.data.email);
     }
     return result;
   }
 
   async register(req: RegisterRequest): Promise<ServiceResult<void>> {
-    return apiRegister(req.phone, req.fullName, req.email, req.password);
+    const result = await apiRegister(req.phone, req.fullName, req.email, req.password);
+    if (result.success) {
+      saveUsername(req.phone);
+      saveFullName(req.fullName);
+      saveEmail(req.email);
+    }
+    return result;
   }
 
   async verifyOtp(req: OtpRequest): Promise<ServiceResult<AuthToken>> {
@@ -114,6 +126,16 @@ class RealWalletLinesService implements IWalletLinesService {
   /** تحميل اسم المستخدم (رقم الهاتف) المحفوظ */
   getSavedUsername(): string | null {
     return loadUsername();
+  }
+
+  /** تحميل الاسم الكامل المحفوظ */
+  getSavedFullName(): string | null {
+    return loadFullName();
+  }
+
+  /** تحميل البريد الإلكتروني المحفوظ */
+  getSavedEmail(): string | null {
+    return loadEmail();
   }
 
   /** تحميل آخر نتيجة استعلام محفوظة */

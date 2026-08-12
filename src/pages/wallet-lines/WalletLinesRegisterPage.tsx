@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, User, Phone, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle, Loader2, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -127,19 +127,34 @@ export default function WalletLinesRegisterPage() {
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
         style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-3 py-4">
-          <button onClick={() => navigate('/wallet-lines')}
+          <button onClick={() => navigate('/wallet-lines/login')}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95"
             disabled={isDisabled}>
             <ArrowRight className="w-4 h-4 text-white" />
           </button>
           <div>
-            <h1 className="text-base font-black text-white">إنشاء حساب</h1>
-            <p className="text-[10px] text-muted-foreground">خدمات الخطوط والمحافظ</p>
+            <h1 className="text-base font-black text-white">إنشاء حساب My NTRA</h1>
+            <p className="text-[10px] text-muted-foreground">حساب رسمي على منصة الجهاز القومي</p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 px-4 pt-5 flex flex-col gap-4" noValidate>
+      <form onSubmit={handleSubmit} className="flex-1 px-4 pt-5 flex flex-col gap-5" noValidate>
+
+        {/* توضيح حساب My NTRA الرسمي */}
+        <div className="rounded-2xl p-3.5 border border-green-500/20 bg-green-500/6">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-[11px] text-white/65 leading-relaxed">
+                الحساب الذي يتم إنشاؤه هنا هو حساب <span className="font-bold text-white/85">My NTRA الرسمي</span>، وليس حسابًا خاصًا بالتطبيق.
+              </p>
+              <p className="text-[10px] text-white/40 leading-relaxed">
+                أدخل بياناتك لإنشاء حسابك على My NTRA والوصول إلى خدمة الاستعلام عن الخطوط والمحافظ.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {errorMsg && (
           <div className="flex items-start gap-2.5 p-3 rounded-xl border border-red-500/25 bg-red-500/8">

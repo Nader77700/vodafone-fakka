@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Phone, Lock, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Phone, Lock, Eye, EyeOff, CheckCircle2, XCircle, Loader2, Info, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -106,7 +106,17 @@ export default function WalletLinesLoginPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 px-4 pt-6 flex flex-col gap-5" noValidate>
+      <form onSubmit={handleSubmit} className="flex-1 px-4 pt-5 flex flex-col gap-5" noValidate>
+
+        {/* توضيح My NTRA */}
+        <div className="rounded-2xl p-3.5 border border-indigo-500/20 bg-indigo-500/6">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-white/65 leading-relaxed">
+              سجّل الدخول باستخدام حسابك الرسمي على My NTRA للوصول إلى بيانات الخطوط والمحافظ المسجلة باسمك.
+            </p>
+          </div>
+        </div>
 
         {errorMsg && (
           <div className="flex items-start gap-2.5 p-3 rounded-xl border border-red-500/25 bg-red-500/8">
@@ -164,16 +174,24 @@ export default function WalletLinesLoginPage() {
           style={{ background: success ? 'rgba(34,197,94,0.85)' : undefined }}>
           {loading ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</span>
             : success ? <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />تم الدخول</span>
-            : 'تسجيل الدخول'}
+            : 'تسجيل الدخول إلى My NTRA'}
         </Button>
 
-        <p className="text-center text-xs text-white/40">
-          ليس لديك حساب؟{' '}
-          <button type="button" onClick={() => navigate('/wallet-lines/register')} disabled={isDisabled}
-            className="text-indigo-400 font-semibold hover:underline">
-            إنشاء حساب جديد
+        <div className="rounded-2xl p-4 border border-white/6 bg-white/3 space-y-3">
+          <p className="text-center text-xs text-white/60 leading-relaxed">
+            ليس لديك حساب على My NTRA؟<br />
+            يمكنك إنشاء حساب جديد من هنا.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/wallet-lines/register')}
+            disabled={isDisabled}
+            className="w-full h-11 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] border"
+            style={{ background: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.25)', color: '#86efac' }}>
+            <Users className="w-4 h-4" />
+            إنشاء حساب My NTRA جديد
           </button>
-        </p>
+        </div>
 
         <div className="flex items-center justify-center gap-2 text-[10px] text-white/20 mt-2">
           <span className="text-indigo-400/60 font-bold">تسجيل الدخول</span>

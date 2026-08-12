@@ -5,11 +5,12 @@
  * - زر تسجيل الخروج في الـ Header
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight, Wallet, Phone, CheckCircle2, XCircle, AlertTriangle,
   WifiOff, Loader2, MinusCircle, HelpCircle, Eye, LogOut, KeyRound, Clock,
+  User, Mail,
 } from 'lucide-react';
 import type { WalletLinesResult, WalletInfo, LineInfo, TelecomCarrier } from '@/lib/walletLinesInterfaces';
 import type { DataAvailability } from '@/lib/walletLinesErrors';
@@ -34,7 +35,7 @@ const CARRIER_META: Record<TelecomCarrier, { name: string; color: string; emoji:
   we:       { name: 'WE',            color: '#6D42C4', emoji: '🟣' },
 };
 
-function AvailabilityBadge({ avail }: { avail: DataAvailability }) {
+const AvailabilityBadge = memo(function AvailabilityBadge({ avail }: { avail: DataAvailability }) {
   const map: Record<DataAvailability, { label: string; color: string; icon: React.ReactNode }> = {
     loaded:      { label: 'مسجل',               color: '#22c55e', icon: <CheckCircle2 className="w-3 h-3" /> },
     empty:       { label: 'لا توجد بيانات',      color: '#6b7280', icon: <MinusCircle className="w-3 h-3" /> },
@@ -51,9 +52,9 @@ function AvailabilityBadge({ avail }: { avail: DataAvailability }) {
       {m.icon}{m.label}
     </span>
   );
-}
+});
 
-function WalletCard({ w }: { w: WalletInfo }) {
+const WalletCard = memo(function WalletCard({ w }: { w: WalletInfo }) {
   const meta = CARRIER_META[w.carrier];
   return (
     <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
@@ -89,9 +90,9 @@ function WalletCard({ w }: { w: WalletInfo }) {
       )}
     </div>
   );
-}
+});
 
-function LineCard({ l, fullNums }: { l: LineInfo; fullNums?: string[] }) {
+const LineCard = memo(function LineCard({ l, fullNums }: { l: LineInfo; fullNums?: string[] }) {
   const meta = CARRIER_META[l.carrier];
   return (
     <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
@@ -133,10 +134,10 @@ function LineCard({ l, fullNums }: { l: LineInfo; fullNums?: string[] }) {
       {l.availability === 'conn_error'  && <p className="text-[11px] text-white/35 pr-2">تعذّر الاتصال بهذه الشركة.</p>}
     </div>
   );
-}
+});
 
 // ── OTP Dialog — input نصي واحد للصق + تايمر 60ث ──────────────────
-function OtpDialog({
+const OtpDialog = memo(function OtpDialog({
   onSubmit,
   onClose,
   onResend,
@@ -289,7 +290,7 @@ function OtpDialog({
       </div>
     </div>
   );
-}
+});
 
 // ── الصفحة الرئيسية ────────────────────────────────────────────────
 export default function WalletLinesResultsPage() {
@@ -304,8 +305,10 @@ export default function WalletLinesResultsPage() {
     return saved ?? EMPTY_RESULT;
   })();
 
-  const walletsLoaded = result.wallets.filter(w => w.availability === 'loaded').length;
-  const linesLoaded   = result.lines.filter(l => l.availability === 'loaded').length;
+  const totalWallets  = result.wallets.reduce((sum, w) => sum + (w.walletCount ?? 0), 0);
+  const totalLines    = result.lines.reduce((sum, l) => sum + (l.lineCount ?? 0), 0);
+  const userFullName  = walletLinesService.getSavedFullName() ?? '—';
+  const userEmail     = walletLinesService.getSavedEmail() ?? '—';
 
   // ── OTP + Full Numbers State ─────────────────────────────────
   const [showOtpDialog, setShowOtpDialog] = useState(false);
@@ -411,8 +414,8 @@ export default function WalletLinesResultsPage() {
             <ArrowRight className="w-4 h-4 text-white" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-black text-white">النتائج</h1>
-            <p className="text-[10px] text-muted-foreground">بيانات الخطوط والمحافظ</p>
+            <h1 className="text-base font-black text-white">بيانات الخطوط والمحافظ على My NTRA</h1>
+            <p className="text-[10px] text-muted-foreground">نتائج الاستعلام</p>
           </div>
           <span className="text-[10px] font-bold px-2 py-1 rounded-full"
             style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
@@ -429,17 +432,32 @@ export default function WalletLinesResultsPage() {
 
       <div className="px-4 pt-4 space-y-6">
 
+        {/* بيانات حساب My NTRA */}
+        <div className="rounded-2xl p-4 border border-amber-500/20 bg-amber-500/6 space-y-2">
+          <p className="text-[10px] font-bold text-amber-300/70 uppercase tracking-wide">حساب My NTRA</p>
+          <div className="flex items-center gap-2.5 text-sm">
+            <User className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-white/55 text-[11px]">الاسم</span>
+            <span className="flex-1 text-white font-bold truncate text-left">{userFullName}</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-sm">
+            <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-white/55 text-[11px]">البريد</span>
+            <span className="flex-1 text-white font-bold truncate text-left" dir="ltr">{userEmail}</span>
+          </div>
+        </div>
+
         {/* ملخص سريع */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-3 border border-indigo-500/20 bg-indigo-500/6 text-center">
             <Wallet className="w-5 h-5 text-indigo-400 mx-auto mb-1" />
-            <p className="text-lg font-black text-white">{walletsLoaded}</p>
-            <p className="text-[10px] text-white/45">محافظ مسجلة</p>
+            <p className="text-lg font-black text-white">{totalWallets}</p>
+            <p className="text-[10px] text-white/45">محفظة مسجلة</p>
           </div>
           <div className="rounded-2xl p-3 border border-green-500/20 bg-green-500/6 text-center">
             <Phone className="w-5 h-5 text-green-400 mx-auto mb-1" />
-            <p className="text-lg font-black text-white">{linesLoaded}</p>
-            <p className="text-[10px] text-white/45">شركات بخطوط</p>
+            <p className="text-lg font-black text-white">{totalLines}</p>
+            <p className="text-[10px] text-white/45">خط مسجل</p>
           </div>
         </div>
 

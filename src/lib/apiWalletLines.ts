@@ -29,13 +29,12 @@ const BASE_URL = 'https://my.tra.gov.eg';
 const APP_VERSION = '197';
 const TIMEOUT_MS = 30_000;
 
-// ── Device ID (localStorage — يبقى بعد إغلاق التطبيق) ───────────
+// ── Device ID (localStorage — غير حساس ويبقى بعد إغلاق التطبيق) ───────────
 function getOrCreateDeviceId(): string {
-  const KEY = 'wl_device_id';
-  let id = localStorage.getItem(KEY);
+  let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
     id = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-    localStorage.setItem(KEY, id);
+    localStorage.setItem(DEVICE_ID_KEY, id);
   }
   return id;
 }
@@ -87,33 +86,34 @@ async function fetchJson(
 }
 
 // ── Session Storage Keys ───────────────────────────────────────────
-const SESSION_KEY     = 'wl_session_token';
-const NATIONAL_ID_KEY = 'wl_national_id';
 const USERNAME_KEY    = 'wl_username';
+const FULL_NAME_KEY   = 'wl_full_name';
+const EMAIL_KEY       = 'wl_email';
 const LAST_RESULT_KEY = 'wl_last_result';
 const OTP_SENT_AT_KEY = 'wl_otp_sent_at';   // timestamp آخر إرسال OTP
+const DEVICE_ID_KEY   = 'wl_device_id';
 
-// مشفر بـ base64 في localStorage (يبقى بعد إغلاق التطبيق)
+// بيانات حساسة تُحفظ في الذاكرة فقط — لا تُخزَّن في LocalStorage
+let currentToken: string | null = null;
+let currentNationalId: string | null = null;
+
+// token حساس — يُحفظ في الذاكرة فقط
 function saveToken(token: string): void {
-  localStorage.setItem(SESSION_KEY, btoa(unescape(encodeURIComponent(token))));
+  currentToken = token;
 }
 
 function loadToken(): string | null {
-  const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) return null;
-  try { return decodeURIComponent(escape(atob(raw))); } catch { return null; }
+  return currentToken;
 }
 
-/** حفظ الرقم القومي مشفراً في localStorage */
+/** حفظ الرقم القومي في الذاكرة فقط */
 export function saveNationalId(nationalId: string): void {
-  localStorage.setItem(NATIONAL_ID_KEY, btoa(nationalId));
+  currentNationalId = nationalId;
 }
 
 /** تحميل الرقم القومي المحفوظ */
 export function loadNationalId(): string | null {
-  const raw = localStorage.getItem(NATIONAL_ID_KEY);
-  if (!raw) return null;
-  try { return atob(raw); } catch { return null; }
+  return currentNationalId;
 }
 
 /** حفظ اسم المستخدم (رقم الهاتف) */
@@ -124,6 +124,26 @@ export function saveUsername(username: string): void {
 /** تحميل اسم المستخدم */
 export function loadUsername(): string | null {
   return localStorage.getItem(USERNAME_KEY);
+}
+
+/** حفظ الاسم الكامل للمستخدم */
+export function saveFullName(name: string): void {
+  localStorage.setItem(FULL_NAME_KEY, name);
+}
+
+/** تحميل الاسم الكامل المحفوظ */
+export function loadFullName(): string | null {
+  return localStorage.getItem(FULL_NAME_KEY);
+}
+
+/** حفظ البريد الإلكتروني للمستخدم */
+export function saveEmail(email: string): void {
+  localStorage.setItem(EMAIL_KEY, email);
+}
+
+/** تحميل البريد الإلكتروني المحفوظ */
+export function loadEmail(): string | null {
+  return localStorage.getItem(EMAIL_KEY);
 }
 
 /** هل توجد جلسة محفوظة صالحة؟ */
@@ -651,11 +671,13 @@ export function getOtpResendCooldown(cooldownSeconds = 60): number {
  * مسح الجلسة عند الخروج
  */
 export function clearWalletLinesSession(): void {
-  localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(NATIONAL_ID_KEY);
+  currentToken = null;
+  currentNationalId = null;
   localStorage.removeItem(USERNAME_KEY);
-  localStorage.removeItem('wl_device_id');
+  localStorage.removeItem(FULL_NAME_KEY);
+  localStorage.removeItem(EMAIL_KEY);
   localStorage.removeItem(LAST_RESULT_KEY);
   localStorage.removeItem(OTP_SENT_AT_KEY);
+  // نحتفظ بـ device_id لأنه غير حساس ومطلوب للاستعلامات القادمة
 }
 

@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, IdCard, ShieldCheck, XCircle, CheckCircle2, Loader2, LogOut } from 'lucide-react';
+import { ArrowRight, IdCard, ShieldCheck, XCircle, CheckCircle2, Loader2, LogOut, User, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,10 @@ export default function WalletLinesNationalIdPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const isDisabled = loading || success;
+
+  // بيانات الحساب القادمة من My NTRA
+  const userFullName = walletLinesService.getSavedFullName() ?? '—';
+  const userEmail = walletLinesService.getSavedEmail() ?? '—';
 
   // ── تحميل الرقم القومي المحفوظ تلقائياً ──────────────────────
   useEffect(() => {
@@ -102,7 +106,22 @@ export default function WalletLinesNationalIdPage() {
         </div>
       </div>
 
-      <form onSubmit={handleVerify} className="flex-1 px-4 pt-8 flex flex-col gap-5" noValidate>
+      <form onSubmit={handleVerify} className="flex-1 px-4 pt-6 flex flex-col gap-5" noValidate>
+
+        {/* بيانات حساب My NTRA */}
+        <div className="rounded-2xl p-4 border border-indigo-500/20 bg-indigo-500/6 space-y-2">
+          <p className="text-[10px] font-bold text-indigo-300/70 uppercase tracking-wide">حساب My NTRA</p>
+          <div className="flex items-center gap-2.5 text-sm">
+            <User className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span className="text-white/55 text-[11px]">الاسم</span>
+            <span className="flex-1 text-white font-bold truncate text-left">{userFullName}</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-sm">
+            <Mail className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span className="text-white/55 text-[11px]">البريد</span>
+            <span className="flex-1 text-white font-bold truncate text-left" dir="ltr">{userEmail}</span>
+          </div>
+        </div>
 
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto border border-indigo-500/25"

@@ -66,7 +66,8 @@ export default function WalletLinesOtpPage() {
       return;
     }
     setSuccess(true);
-    setTimeout(() => navigate('/wallet-lines/national-id', { state: { token: result.data?.token ?? '' } }), 900);
+    // بعد تأكيد OTP لإنشاء الحساب، يعود المستخدم لتسجيل الدخول
+    setTimeout(() => navigate('/wallet-lines/login', { replace: true }), 900);
   }
 
   function handleResend() {

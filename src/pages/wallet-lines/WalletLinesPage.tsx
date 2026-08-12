@@ -5,27 +5,20 @@
 
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowRight, ScanLine, ShieldCheck, Zap, Users,
+  ArrowRight, ScanLine, ShieldCheck, Zap, Users, Info,
   Lock, Wrench, Loader2,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useServicesControl } from '@/hooks/useServicesControl';
-import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
-import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { useState } from 'react';
-import SubscriptionRequiredDialog from '@/components/subscription/SubscriptionRequiredDialog';
 
 export default function WalletLinesPage() {
   const navigate = useNavigate();
   const { isAccessible, loading: cfgLoading } = useServicesControl();
-  const eng = useSubscriptionEngine();
-  const { isPreview } = usePreviewMode();
-  const hasActiveSub = eng.isAdmin || eng.isActive;
-  const [showSubDialog, setShowSubDialog] = useState(false);
 
-  // ── حجب الدخول لو مش مشترك أو الخدمة في صيانة ──────────────
+  // ── حجب الدخول لو الخدمة معطلة أو في صيانة فقط ─────────────
+  // لا يُمنع الدخول بسبب الاشتراك؛ القسم خدمة مجانية لجميع المستخدمين
   if (!cfgLoading) {
-    const access = isAccessible('wallet-lines', hasActiveSub, isPreview);
+    const access = isAccessible('wallet-lines', true, true);
     if (!access.allowed) {
       return (
         <div className="min-h-screen flex flex-col" dir="rtl"
@@ -48,30 +41,15 @@ export default function WalletLinesPage() {
             <p className="text-white font-black text-lg">
               {access.reason === 'maintenance'     ? (access.message ?? 'الخدمة في صيانة مؤقتة')    :
                access.reason === 'disabled'        ? 'هذه الخدمة معطلة حالياً'                       :
-               access.reason === 'no_subscription' ? 'هذه الخدمة للمشتركين فقط'                     :
                'الخدمة غير متاحة'}
             </p>
             <p className="text-sm text-white/40">
-              {access.reason === 'no_subscription'
-                ? 'فعّل اشتراكك للوصول إلى خدمة استعلام الخطوط والمحافظ'
-                : 'نعتذر عن الإزعاج، يرجى المحاولة لاحقاً'}
+              نعتذر عن الإزعاج، يرجى المحاولة لاحقاً
             </p>
-            {access.reason === 'no_subscription' && (
-              <button
-                onClick={() => setShowSubDialog(true)}
-                className="px-6 py-3 rounded-xl text-sm font-black text-black"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
-                تفعيل الاشتراك
-              </button>
-            )}
             <button onClick={() => navigate('/services')}
               className="text-indigo-400 text-sm font-semibold flex items-center gap-1">
               <ArrowRight className="w-4 h-4" /> العودة للخدمات
             </button>
-            <SubscriptionRequiredDialog
-              open={showSubDialog}
-              onClose={() => setShowSubDialog(false)}
-            />
           </div>
         </div>
       );
@@ -95,7 +73,7 @@ export default function WalletLinesPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black text-white">خدمات الخطوط والمحافظ</h1>
-            <p className="text-[10px] text-muted-foreground">استعلام آمن بالرقم القومي</p>
+            <p className="text-[10px] text-muted-foreground">استعلام آمن عبر My NTRA</p>
           </div>
           {cfgLoading ? (
             <Loader2 className="w-4 h-4 text-white/30 animate-spin" />
@@ -110,6 +88,28 @@ export default function WalletLinesPage() {
 
       <div className="flex-1 px-4 pt-6 flex flex-col gap-5">
 
+        {/* ── بطاقة التوضيح الرسمي — My NTRA ── */}
+        <div className="relative rounded-[24px] overflow-hidden border border-amber-500/20 p-4"
+          style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(8,13,20,0.95) 100%)' }}>
+          {/* top accent */}
+          <div className="absolute top-0 left-0 right-0 h-0.5"
+            style={{ background: 'linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b)' }} />
+
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-amber-500/25"
+              style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.08))' }}>
+              <Info className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-black text-white mb-1">خدمة رسمية من My NTRA</h2>
+              <p className="text-[11px] text-white/55 leading-relaxed">
+                الاستعلام عن بيانات الخطوط والمحافظ المسجلة باسمك يتم مباشرةً عبر My NTRA
+                التابع للجهاز القومي لتنظيم الاتصالات في مصر. تسجيل الدخول يستخدم حسابك الرسمي على My NTRA.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* ── Card تعريفي ── */}
         <div className="relative rounded-[24px] overflow-hidden border border-indigo-500/20 p-5"
           style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(8,13,20,0.95) 100%)' }}>
@@ -123,9 +123,9 @@ export default function WalletLinesPage() {
               <ScanLine className="w-7 h-7 text-indigo-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-black text-white mb-1">ما هذه الخدمة؟</h2>
+              <h2 className="text-base font-black text-white mb-1">ما يمكنك معرفته؟</h2>
               <p className="text-xs text-white/55 leading-relaxed">
-                تتيح لك الاستعلام عن جميع المحافظ الإلكترونية والخطوط المسجلة برقمك القومي لدى شركات
+                اكتشف المحافظ الإلكترونية والخطوط المسجلة برقمك القومي لدى شركات
                 (Vodafone — Orange — Etisalat — WE) في ثوانٍ معدودة.
               </p>
             </div>
