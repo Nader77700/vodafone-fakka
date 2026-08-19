@@ -76,7 +76,8 @@ const AdminDashboard         = lazyImport(() => import('./pages/AdminDashboard')
 const AdminUserDetail        = lazyImport(() => import('./pages/admin/AdminUserDetail'));
 const AdminUserActions       = lazyImport(() => import('./pages/admin/AdminUserActions'));
 const AdminUserSubscription  = lazyImport(() => import('./pages/admin/AdminUserSubscription'));
-const AdminUserOperations    = lazyImport(() => import('./pages/admin/AdminUserOperations'));
+const AdminUserOperations      = lazyImport(() => import('./pages/admin/AdminUserOperations'));
+const AdminUserNotifications   = lazyImport(() => import('./pages/admin/AdminUserNotificationsPage'));
 const AdminOperationsPage    = lazyImport(() => import('./pages/admin/AdminOperationsPage'));
 const AdminVodafoneCashCenter = lazyImport(() => import('./pages/admin/AdminVodafoneCashCenter'));
 
@@ -613,6 +614,7 @@ function AppInner() {
         <Route path="/admin/users/:id/actions" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-actions"><S><AdminUserActions /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/users/:id/subscription" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-sub"><S><AdminUserSubscription /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/users/:id/operations" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-ops"><S><AdminUserOperations /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/users/:id/notifications" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-user-notifs"><S><AdminUserNotifications /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/operations" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-ops"><S><AdminOperationsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/vodafone-cash-center" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-vcc"><S><AdminVodafoneCashCenter /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/versions" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-versions"><S><AdminVersionCenter /></S></PageErrorBoundary></RouteGuard>} />

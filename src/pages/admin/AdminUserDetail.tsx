@@ -1,4 +1,5 @@
 // صفحة تفاصيل المستخدم الكاملة — /admin/users/:id
+// المرحلة 3: إعادة هيكلة شاملة — تسلسل منطقي + إحصائيات منفصلة + قوائم مقتطعة
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -8,6 +9,7 @@ import {
   Trash2, UserX, Zap, CalendarDays, AlertCircle,
   BarChart2, Package, Hash, Wallet, Timer, Calendar,
   Tag, KeyRound, Eye, EyeOff, Send, Lock, Ban, LogOut,
+  TrendingUp, ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +22,10 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell, { SectionCard, InfoRow, StatusBadge } from '@/components/admin/AdminShell';
-import { getUserDetail, type UserDetail, deleteNotification, deleteAllUserNotifications, sendNotification } from '@/lib/api';
+import {
+  getUserDetail, type UserDetail,
+  deleteNotification, deleteAllUserNotifications, sendNotification,
+} from '@/lib/api';
 import { supabase } from '@/db/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -314,8 +319,9 @@ function calcDays(expiresAt?: string | null) {
   return Math.floor((new Date(expiresAt).getTime() - Date.now()) / 86400000);
 }
 
-function MiniStat({ icon: Icon, label, value, color = 'text-primary' }: {
-  icon: React.ElementType; label: string; value: string | number; color?: string;
+// ── بطاقة إحصاء صغيرة ──────────────────────────────────────────────────────
+function MiniStat({ icon: Icon, label, value, color = 'text-primary', sub }: {
+  icon: React.ElementType; label: string; value: string | number; color?: string; sub?: string;
 }) {
   return (
     <div className="rounded-xl border border-border bg-muted/20 p-3 flex items-center gap-3">
@@ -325,23 +331,39 @@ function MiniStat({ icon: Icon, label, value, color = 'text-primary' }: {
       <div className="min-w-0">
         <p className={cn('text-base font-black tabular-nums leading-none', color)}>{value}</p>
         <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+        {sub && <p className="text-[10px] text-muted-foreground/60">{sub}</p>}
       </div>
     </div>
+  );
+}
+
+// ── زر "عرض الكل" ──────────────────────────────────────────────────────────
+function ViewAllBtn({ count, label, onClick }: { count: number; label: string; onClick: () => void }) {
+  if (count <= 5) return null;
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full h-8 gap-1 text-xs mt-2 border-primary/20 text-primary hover:bg-primary/5"
+      onClick={onClick}
+    >
+      <ChevronRight className="w-3.5 h-3.5" />
+      عرض الكل ({count})  — {label}
+    </Button>
   );
 }
 
 export default function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [detail, setDetail] = useState<UserDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [deletingNotif, setDeletingNotif] = useState<string | null>(null);
+  const [detail, setDetail]           = useState<UserDetail | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [copied, setCopied]           = useState<string | null>(null);
+  const [deletingNotif, setDeletingNotif]       = useState<string | null>(null);
   const [deletingAllNotifs, setDeletingAllNotifs] = useState(false);
-  const [deletingSimilar, setDeletingSimilar] = useState<string | null>(null);
-  const [detailOp, setDetailOp] = useState<Operation | null>(null);
+  const [deletingSimilar, setDeletingSimilar]   = useState<string | null>(null);
+  const [detailOp, setDetailOp]       = useState<Operation | null>(null);
   const [opSheetOpen, setOpSheetOpen] = useState(false);
-  // تغيير كلمة المرور
   const [changePwOpen, setChangePwOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -363,7 +385,7 @@ export default function AdminUserDetail() {
   const handleDeleteNotif = async (notifId: string) => {
     setDeletingNotif(notifId);
     const { error } = await deleteNotification(notifId);
-    if (error) { toast.error('فشل حذف الإشعار'); }
+    if (error) toast.error('فشل حذف الإشعار');
     else { toast.success('تم حذف الإشعار'); load(); }
     setDeletingNotif(null);
   };
@@ -377,84 +399,76 @@ export default function AdminUserDetail() {
     load();
   };
 
-  const handleBanDevice = async (dev: any) => {
+  const handleBanDevice = async (dev: UserDetail['devices'][number]) => {
     if (!detail) return;
-    if (!window.confirm(`هل أنت متأكد من حظر الجهاز (${dev.device_model || 'Unknown'}) نهائياً؟\nلن يتمكن هذا الجهاز من فتح أي حساب في التطبيق.`)) return;
+    if (!window.confirm(`هل أنت متأكد من حظر الجهاز (${dev.device_model || 'Unknown'}) نهائياً؟`)) return;
     try {
       const { data, error } = await supabase.functions.invoke('admin-user-actions', {
         body: {
           action: 'ban_device',
-          device_fp: dev.device_fp,
-          device_id: dev.device_id,
+          device_fp: dev.device_fp, device_id: dev.device_id,
           hardware_hash: dev.hardware_hash,
           ban_reason: 'تم حظره بواسطة الأدمن',
-          device_model: dev.device_model,
-          platform: dev.platform,
+          device_model: dev.device_model, platform: dev.platform,
           associated_user_ids: [detail.profile.id],
-          associated_usernames: [detail.profile.username]
-        }
+          associated_usernames: [detail.profile.username],
+        },
       });
       if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+      if ((data as Record<string, unknown>)?.error) throw new Error((data as Record<string, string>).error);
       toast.success('تم حظر الجهاز بنجاح');
-    } catch (e: any) {
-      toast.error(e.message || 'فشل حظر الجهاز');
-    }
+    } catch (e: unknown) { toast.error((e as Error).message || 'فشل حظر الجهاز'); }
   };
 
-  const handleForceLogout = async (dev: any) => {
+  const handleForceLogout = async (dev: UserDetail['devices'][number]) => {
     if (!detail) return;
     if (!window.confirm(`هل أنت متأكد من تسجيل الخروج الإجباري لهذا الجهاز (${dev.device_model || 'Unknown'})؟`)) return;
     try {
       const { data, error } = await supabase.rpc('admin_device_action', {
-        p_registry_id: dev.id,
-        p_action: 'force_logout'
+        p_registry_id: dev.id, p_action: 'force_logout',
       });
       if (error) throw error;
-      toast.success(data?.message || 'تم إرسال أمر تسجيل الخروج للجهاز');
-      load(); // تحديث
-    } catch (e: any) {
-      toast.error('حدث خطأ: ' + e.message);
-    }
+      toast.success((data as Record<string, string>)?.message || 'تم إرسال أمر تسجيل الخروج');
+      load();
+    } catch (e: unknown) { toast.error('حدث خطأ: ' + (e as Error).message); }
   };
 
-  const handleBanFromAccount = async (dev: any) => {
+  const handleBanFromAccount = async (dev: UserDetail['devices'][number]) => {
     if (!detail) return;
-    if (!window.confirm(`هل أنت متأكد من حظر هذا الجهاز من هذا الحساب فقط (${dev.device_model || 'Unknown'})؟`)) return;
+    if (!window.confirm(`هل أنت متأكد من ${dev.is_banned_from_account ? 'فك حظر' : 'حظر'} هذا الجهاز من الحساب (${dev.device_model || 'Unknown'})؟`)) return;
     try {
       const { data, error } = await supabase.rpc('admin_device_action', {
         p_registry_id: dev.id,
-        p_action: dev.is_banned_from_account ? 'unban_account' : 'ban_account'
+        p_action: dev.is_banned_from_account ? 'unban_account' : 'ban_account',
       });
       if (error) throw error;
-      toast.success(data?.message || 'تم تحديث حالة حظر الجهاز للحساب');
-      load(); // تحديث
-    } catch (e: any) {
-      toast.error('حدث خطأ: ' + e.message);
-    }
+      toast.success((data as Record<string, string>)?.message || 'تم تحديث حالة حظر الجهاز');
+      load();
+    } catch (e: unknown) { toast.error('حدث خطأ: ' + (e as Error).message); }
   };
 
   const handleDeleteSimilar = async (similarId: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الحساب المشابه؟')) return;
     setDeletingSimilar(similarId);
-    // حذف من auth + profiles عبر service role
     const { data: delData, error: delErr } = await supabase.functions.invoke('admin-user-actions', {
       body: { action: 'delete_account', userId: similarId },
     });
     const realErrMsg = delErr
       ? (await delErr?.context?.text?.().catch(() => null)
-          .then((t: string | null) => { try { return JSON.parse(t ?? '').error; } catch { return t; } }))
-          ?? delErr.message
+          .then((t: string | null) => { try { return JSON.parse(t ?? '').error; } catch { return t; } })) ?? delErr.message
       : (delData as { error?: string } | null)?.error ?? null;
-    if (delErr || realErrMsg) { toast.error(`فشل حذف الحساب: ${realErrMsg ?? 'خطأ غير معروف'}`); }
+    if (delErr || realErrMsg) toast.error(`فشل حذف الحساب: ${realErrMsg ?? 'خطأ غير معروف'}`);
     else { toast.success('تم حذف الحساب المشابه'); load(); }
     setDeletingSimilar(null);
   };
 
+  // ── Skeleton ─────────────────────────────────────────────────────────────
   if (loading) return (
     <AdminShell title="تفاصيل المستخدم"
       breadcrumbs={[{ label: 'لوحة الإدارة', href: '/admin' }, { label: 'المستخدمون', href: '/admin' }, { label: '...' }]}>
-      <div className="space-y-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-36 w-full rounded-2xl bg-muted" />)}</div>
+      <div className="space-y-4">
+        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl bg-muted" />)}
+      </div>
     </AdminShell>
   );
 
@@ -469,20 +483,34 @@ export default function AdminUserDetail() {
     </AdminShell>
   );
 
-  const { profile, subscription, license_code, ops_count, ops_limit, total_cards, total_amount, activity, recent_ops, devices, similar_accounts, notifications } = detail;
-  const days = calcDays(subscription?.expires_at);
-  const isBanned = !profile.is_active;
-  const subStatus = isBanned ? 'banned'
-    : subscription?.status === 'active' ? 'active'
+  const {
+    profile, subscription, license_code, ops_limit,
+    ops_count,
+    lifetime_total, lifetime_success, lifetime_failed, lifetime_amount, lifetime_last_op,
+    activity, recent_ops, devices, similar_accounts, notifications,
+    total_notifications_count, total_ops_count,
+  } = detail;
+
+  const days      = calcDays(subscription?.expires_at);
+  const isBanned  = !profile.is_active;
+  const subStatus = isBanned       ? 'banned'
+    : subscription?.status === 'active'    ? 'active'
     : subscription?.status === 'suspended' ? 'suspended'
     : 'inactive';
 
-  // أحدث جهاز مسجّل
   const primaryDevice = devices[0];
-  const deviceModel = primaryDevice?.device_model || 'Android';
-  const deviceOS = primaryDevice?.platform || '';
-  const appVer = primaryDevice?.app_version ?? '—';
-  const versionCode = primaryDevice?.version_code ?? '—';
+  const appVer        = primaryDevice?.app_version ?? '—';
+  const versionCode   = primaryDevice?.version_code ?? '—';
+
+  // حساب الحالة الفعلية للاشتراك (expired إذا انتهى وقته حتى لو status=active)
+  const isSubReallyActive =
+    subscription?.status === 'active' &&
+    subscription?.expires_at &&
+    new Date(subscription.expires_at) > new Date();
+
+  const opsRemaining = ops_limit == null
+    ? null
+    : Math.max(0, ops_limit - (subscription?.ops_count ?? 0));
 
   return (
     <AdminShell
@@ -506,7 +534,7 @@ export default function AdminUserDetail() {
     >
       <div className="space-y-5 pb-8">
 
-        {/* ── بيانات الحساب ── */}
+        {/* ══ 1. بيانات الحساب ════════════════════════════════════════════ */}
         <SectionCard title="بيانات الحساب" icon={User}>
           <div className="flex items-start gap-4 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-xl font-black text-primary">
@@ -522,40 +550,175 @@ export default function AdminUserDetail() {
             </div>
           </div>
           <div className="rounded-xl border border-border overflow-hidden divide-y divide-border/50">
-            <InfoRow label="User ID" value={profile.id} copyable />
-            <InfoRow label="اسم المستخدم" value={profile.username} copyable />
-            <InfoRow label="الاسم الكامل" value={profile.full_name} />
-            <InfoRow label="البريد الإلكتروني" value={profile.email} copyable />
-            <InfoRow label="رقم الهاتف" value={profile.phone} copyable />
-            <InfoRow label="الدور" value={profile.role === 'super_admin' ? 'مسؤول رئيسي' : profile.role === 'admin' ? 'مسؤول' : 'مستخدم'} />
-            <InfoRow label="تاريخ التسجيل" value={fmt(profile.created_at)} />
-            <InfoRow label="آخر تسجيل دخول" value={fmt((profile as typeof profile & { auth_last_sign_in?: string }).auth_last_sign_in)} />
+            <InfoRow label="User ID"               value={profile.id}        copyable />
+            <InfoRow label="اسم المستخدم"          value={profile.username}  copyable />
+            <InfoRow label="الاسم الكامل"          value={profile.full_name} />
+            <InfoRow label="البريد الإلكتروني"     value={profile.email}     copyable />
+            <InfoRow label="رقم الهاتف"            value={profile.phone}     copyable />
+            <InfoRow label="الدور"                 value={
+              profile.role === 'super_admin' ? 'مسؤول رئيسي' :
+              profile.role === 'admin'        ? 'مسؤول' : 'مستخدم'
+            } />
+            <InfoRow label="تاريخ التسجيل"        value={fmt(profile.created_at)} />
+            <InfoRow label="آخر تسجيل دخول"       value={fmt((profile as typeof profile & { auth_last_sign_in?: string }).auth_last_sign_in)} />
           </div>
           <div className="mt-3 flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => copy(profile.id, 'ID')}>
               {copied === 'ID' ? <CheckCircle className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />} نسخ ID
             </Button>
-            {profile.email && <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => copy(profile.email!, 'البريد')}>
-              <Copy className="w-3 h-3" /> نسخ البريد
-            </Button>}
-            <Button
-              size="sm"
-              variant="outline"
+            {profile.email && (
+              <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => copy(profile.email!, 'البريد')}>
+                <Copy className="w-3 h-3" /> نسخ البريد
+              </Button>
+            )}
+            <Button size="sm" variant="outline"
               className="h-8 gap-1 text-xs border-primary/30 text-primary hover:bg-primary/8"
-              onClick={() => setChangePwOpen(true)}
-            >
+              onClick={() => setChangePwOpen(true)}>
               <KeyRound className="w-3 h-3" /> تغيير كلمة المرور
             </Button>
           </div>
         </SectionCard>
 
-        {/* ── معلومات الجهاز والإصدار ── */}
-        <SectionCard title="الجهاز وإصدار التطبيق" icon={Smartphone}>
+        {/* ══ 2. إحصائيات مدى الحياة (Lifetime) ═════════════════════════ */}
+        <SectionCard title="إجمالي النشاط مدى الحياة" icon={TrendingUp}>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            يشمل جميع الاشتراكات القديمة والحالية — لا يتأثر بتغيير الاشتراك
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MiniStat icon={Activity}    label="إجمالي العمليات"   value={lifetime_total}   color="text-primary" />
+            <MiniStat icon={CheckCircle} label="ناجحة ✅"          value={lifetime_success} color="text-success" />
+            <MiniStat icon={XCircle}     label="فاشلة ❌"          value={lifetime_failed}  color="text-destructive" />
+            <MiniStat icon={Wallet}      label="إجمالي الإيرادات"  value={`${lifetime_amount.toFixed(0)} ج`} color="text-warning" />
+          </div>
+          {lifetime_last_op && (
+            <p className="text-[11px] text-muted-foreground mt-2">
+              آخر عملية: <span className="font-semibold text-foreground">{fmt(lifetime_last_op)}</span>
+            </p>
+          )}
+        </SectionCard>
+
+        {/* ══ 3. بيانات الاشتراك الحالي ══════════════════════════════════ */}
+        <SectionCard title="الاشتراك الحالي" icon={CreditCard}>
+          {subscription ? (
+            <>
+              {/* شارة الحالة الفعلية */}
+              <div className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-xl border mb-3 text-xs font-semibold',
+                isSubReallyActive
+                  ? 'bg-success/10 border-success/30 text-success'
+                  : 'bg-destructive/10 border-destructive/30 text-destructive'
+              )}>
+                {isSubReallyActive
+                  ? <><CheckCircle className="w-3.5 h-3.5 shrink-0" /> الاشتراك نشط فعلياً</>
+                  : <><XCircle    className="w-3.5 h-3.5 shrink-0" />
+                    {subscription.status === 'suspended' ? 'الاشتراك معلق' : 'الاشتراك منتهي أو غير فعال'}
+                  </>
+                }
+                {!isSubReallyActive && subscription.status === 'active' && subscription.expires_at && new Date(subscription.expires_at) <= new Date() && (
+                  <span className="mr-auto text-[10px] opacity-70">(status=active في DB لكن وقته انتهى)</span>
+                )}
+              </div>
+              <div className="rounded-xl border border-border overflow-hidden divide-y divide-border/50">
+                <InfoRow label="حالة الاشتراك (DB)"  value={subscription.status} />
+                <InfoRow label="نوع الكود"            value={subscription.code_type ?? '—'} />
+                <InfoRow label="كود التفعيل"          value={license_code} copyable />
+                <InfoRow label="تاريخ البداية"        value={fmt(subscription.activated_at || subscription.created_at)} />
+                <InfoRow label="تاريخ الانتهاء"       value={fmt(subscription.expires_at)} />
+                <InfoRow label="الأيام المتبقية"      value={
+                  days === null ? '—' :
+                  days > 0 ? `${days} يوم` : 'منتهي الصلاحية'
+                } />
+              </div>
+
+              {/* ── إحصائيات الاشتراك الحالي (معزولة) ─────────────────── */}
+              <p className="text-[11px] font-semibold text-muted-foreground mt-4 mb-2 uppercase tracking-wide">
+                إحصائيات هذا الاشتراك فقط
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <MiniStat icon={Activity}  label="مستخدمة"    value={ops_count}           color="text-primary" />
+                <MiniStat icon={Zap}       label="الحد الأقصى" value={ops_limit ?? '∞'}    color="text-warning" />
+                <MiniStat icon={Clock}     label="متبقية"      value={opsRemaining ?? '∞'} color="text-success" />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-3 py-6 text-muted-foreground">
+              <XCircle className="w-5 h-5 shrink-0" />
+              <p className="text-sm">لا يوجد اشتراك لهذا المستخدم</p>
+            </div>
+          )}
+          <div className="mt-3">
+            <Button size="sm" variant="outline"
+              onClick={() => navigate(`/admin/users/${id}/subscription`)}
+              className="h-8 gap-1 text-xs">
+              <CalendarDays className="w-3 h-3" /> إدارة الاشتراك الكامل
+            </Button>
+          </div>
+        </SectionCard>
+
+        {/* ══ 4. آخر 5 عمليات ════════════════════════════════════════════ */}
+        <SectionCard title={`آخر العمليات (${total_ops_count} إجمالاً)`} icon={Clock}>
+          {recent_ops.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">لا توجد عمليات بعد</p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {recent_ops.map(op => {
+                  const opRaw = op as Operation & { operation_source?: string };
+                  const srcIsBalance =
+                    opRaw.operation_source === 'ana_vodafone_balance' ||
+                    (op as unknown as { card_data?: Record<string, unknown> }).card_data?.source === 'ana_vodafone_balance';
+                  return (
+                    <div key={op.id} className="p-3 rounded-xl bg-muted/20 border border-border/40">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {op.status === 'success'
+                            ? <CheckCircle className="w-3.5 h-3.5 text-success shrink-0" />
+                            : <XCircle    className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{op.phone_number}</p>
+                            <p className="text-[10px] text-muted-foreground">{op.card_type} · {op.amount} ج</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <p className="text-[10px] text-muted-foreground hidden md:block">{fmt(op.performed_at)}</p>
+                          <button
+                            onClick={() => { setDetailOp(op as unknown as Operation); setOpSheetOpen(true); }}
+                            className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-lg font-semibold hover:bg-primary/20 transition-colors">
+                            تفاصيل
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className={cn(
+                          'text-[10px] font-bold px-1.5 py-0.5 rounded-full border',
+                          srcIsBalance
+                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                            : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                        )}>
+                          {srcIsBalance ? '🔴 رصيد أنا فودافون' : '💳 Vodafone Cash'}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground md:hidden">{fmt(op.performed_at)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <ViewAllBtn
+                count={total_ops_count}
+                label="العمليات"
+                onClick={() => navigate(`/admin/users/${id}/operations`)}
+              />
+            </>
+          )}
+        </SectionCard>
+
+        {/* ══ 5. معلومات الجهاز ══════════════════════════════════════════ */}
+        <SectionCard title={`الأجهزة المسجلة (${devices.length})`} icon={Smartphone}>
           {devices.length === 0 ? (
             <p className="text-sm text-muted-foreground py-3 text-center">لم يتم تسجيل جهاز بعد</p>
           ) : (
             <div className="space-y-3">
-              {devices.map((dev) => (
+              {devices.map(dev => (
                 <div key={dev.id} className={cn(
                   'rounded-xl border p-3 space-y-2',
                   dev.is_active ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/10 opacity-60'
@@ -564,15 +727,13 @@ export default function AdminUserDetail() {
                     <div className="flex items-center gap-2">
                       <Smartphone className="w-4 h-4 text-primary shrink-0" />
                       <span className="text-xs font-semibold">{dev.device_model || 'Android'}</span>
-                      {dev.is_active ? (
-                        <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط الآن</span>
-                      ) : (
-                        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">غير نشط</span>
-                      )}
+                      {dev.is_active
+                        ? <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط الآن</span>
+                        : <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">غير نشط</span>}
                     </div>
                     <span className="text-[10px] text-muted-foreground">{fmt(dev.last_seen_at)}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <div className="rounded-lg bg-muted/30 p-2">
                       <p className="text-[10px] text-muted-foreground">نظام التشغيل</p>
                       <p className="text-xs font-medium">{dev.platform || '—'}</p>
@@ -583,95 +744,47 @@ export default function AdminUserDetail() {
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2 border-t border-border/50 flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 min-w-[100px] h-8 text-[10px] gap-1 hover:bg-muted"
-                      onClick={() => handleForceLogout(dev)}
-                    >
+                    <Button variant="outline" size="sm"
+                      className="flex-1 min-w-[90px] h-8 text-[10px] gap-1"
+                      onClick={() => handleForceLogout(dev)}>
                       <LogOut className="w-3 h-3" /> خروج إجباري
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn("flex-1 min-w-[100px] h-8 text-[10px] gap-1", dev.is_banned_from_account ? "text-success hover:bg-success/10" : "text-destructive hover:bg-destructive/10")}
-                      onClick={() => handleBanFromAccount(dev)}
-                    >
-                      {dev.is_banned_from_account ? <CheckCircle className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
-                      {dev.is_banned_from_account ? 'فك حظر (حساب)' : 'حظر من الحساب'}
+                    <Button variant="outline" size="sm"
+                      className={cn(
+                        'flex-1 min-w-[90px] h-8 text-[10px] gap-1',
+                        dev.is_banned_from_account
+                          ? 'text-success hover:bg-success/10'
+                          : 'text-destructive hover:bg-destructive/10'
+                      )}
+                      onClick={() => handleBanFromAccount(dev)}>
+                      {dev.is_banned_from_account
+                        ? <><CheckCircle className="w-3 h-3" /> فك حظر (حساب)</>
+                        : <><Shield className="w-3 h-3" /> حظر من الحساب</>}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 min-w-[100px] h-8 text-[10px] gap-1 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleBanDevice(dev)}
-                    >
-                      <Ban className="w-3 h-3" /> حظر نهائي (للتطبيق)
+                    <Button variant="outline" size="sm"
+                      className="flex-1 min-w-[90px] h-8 text-[10px] gap-1 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleBanDevice(dev)}>
+                      <Ban className="w-3 h-3" /> حظر نهائي (التطبيق)
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          {/* ملخص سريع */}
           {primaryDevice && (
-            <div className="mt-3 p-3 rounded-xl bg-muted/20 border border-border">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Package className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">آخر إصدار مثبّت:</span>
-                <span className="text-xs font-bold text-primary">v{appVer} (code {versionCode})</span>
-                <span className="text-xs text-muted-foreground">—</span>
-                <Wifi className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{deviceModel}</span>
-                {deviceOS && <><span className="text-xs text-muted-foreground">·</span><span className="text-xs text-muted-foreground">{deviceOS}</span></>}
-              </div>
+            <div className="mt-3 p-3 rounded-xl bg-muted/20 border border-border flex items-center gap-2 flex-wrap">
+              <Package className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">آخر إصدار:</span>
+              <span className="text-xs font-bold text-primary">v{appVer} (code {versionCode})</span>
+              <Wifi className="w-3.5 h-3.5 text-muted-foreground ms-1" />
+              <span className="text-xs text-muted-foreground">{primaryDevice.device_model}</span>
             </div>
           )}
         </SectionCard>
 
-        {/* ── إحصائيات سريعة ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MiniStat icon={Clock}       label="كل العمليات"       value={ops_count}             color="text-primary" />
-          <MiniStat icon={CheckCircle} label="ناجحة ✅"           value={total_cards}           color="text-success" />
-          <MiniStat icon={BarChart2}   label="إجمالي الإيرادات"  value={`${total_amount} ج`}   color="text-warning" />
-          <MiniStat icon={Phone}       label="أرقام مستخدمة"     value={detail.phone_numbers.length} color="text-primary" />
-        </div>
-
-        {/* ── بيانات الاشتراك ── */}
-        <SectionCard title="بيانات الاشتراك" icon={CreditCard}>
-          {subscription ? (
-            <div className="rounded-xl border border-border overflow-hidden divide-y divide-border/50">
-              <InfoRow label="حالة الاشتراك" value={subscription.status === 'active' ? 'نشط ✓' : subscription.status === 'suspended' ? 'معلق' : 'منتهي'} />
-              <InfoRow label="كود التفعيل" value={license_code} copyable />
-              <InfoRow label="تاريخ البداية" value={fmt(subscription.activated_at || subscription.created_at)} />
-              <InfoRow label="تاريخ الانتهاء" value={fmt(subscription.expires_at)} />
-              <InfoRow label="الأيام المتبقية" value={days === null ? '—' : days > 0 ? `${days} يوم` : 'منتهي'} />
-              <InfoRow label="كروت مشحونة (ناجحة)" value={String(total_cards)} />
-              <InfoRow label="كل العمليات (ناجحة + فاشلة)" value={String(ops_count)} />
-              <InfoRow label="حد الاشتراك" value={ops_limit == null ? 'غير محدود ♾️' : String(ops_limit)} />
-              <InfoRow label="العمليات المتبقية" value={
-                ops_limit == null
-                  ? 'غير محدود ♾️'
-                  : String(Math.max(0, ops_limit - (subscription.ops_count ?? 0)))
-              } />
-              <InfoRow label="آخر عملية" value={fmt(detail.last_operation?.performed_at)} />
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 py-6 text-muted-foreground">
-              <XCircle className="w-5 h-5 shrink-0" />
-              <p className="text-sm">لا يوجد اشتراك نشط لهذا المستخدم</p>
-            </div>
-          )}
-          <div className="mt-3">
-            <Button size="sm" variant="outline" onClick={() => navigate(`/admin/users/${id}/subscription`)} className="h-8 gap-1 text-xs">
-              <CalendarDays className="w-3 h-3" /> إدارة الاشتراك الكامل
-            </Button>
-          </div>
-        </SectionCard>
-
-        {/* ── الإشعارات ── */}
-        <SectionCard title={`الإشعارات (${notifications.length})`} icon={Bell}>
-          {notifications.length === 0 ? (
+        {/* ══ 6. الإشعارات (أحدث 5 + viewAll) ════════════════════════════ */}
+        <SectionCard title={`الإشعارات (${total_notifications_count} إجمالاً)`} icon={Bell}>
+          {notifications.length === 0 && total_notifications_count === 0 ? (
             <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
               <BellOff className="w-8 h-8 opacity-40" />
               <p className="text-sm">لا توجد إشعارات</p>
@@ -683,7 +796,7 @@ export default function AdminUserDetail() {
                   className="h-7 gap-1 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
                   onClick={handleDeleteAllNotifs} disabled={deletingAllNotifs}>
                   <Trash2 className="w-3 h-3" />
-                  {deletingAllNotifs ? 'جاري الحذف...' : 'حذف الكل'}
+                  {deletingAllNotifs ? 'جارٍ الحذف...' : 'حذف الكل'}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -706,30 +819,52 @@ export default function AdminUserDetail() {
                   </div>
                 ))}
               </div>
+              <ViewAllBtn
+                count={total_notifications_count}
+                label="الإشعارات"
+                onClick={() => navigate(`/admin/users/${id}/notifications`)}
+              />
             </>
           )}
         </SectionCard>
 
-        {/* ── حسابات مشابهة (نفس رقم الهاتف) ── */}
+        {/* ══ 7. النشاط الأخير ════════════════════════════════════════════ */}
+        {activity.length > 0 && (
+          <SectionCard title="النشاط الأخير" icon={Activity}>
+            <div className="space-y-2">
+              {activity.slice(0, 10).map(a => (
+                <div key={a.id} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-muted/20 border border-border/40">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">{a.title || a.event_type}</p>
+                    {a.description && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{a.description}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-1">{fmt(a.created_at)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ══ 8. حسابات بنفس الرقم ════════════════════════════════════════ */}
         {similar_accounts.length > 0 && (
           <SectionCard title={`حسابات بنفس الرقم (${similar_accounts.length})`} icon={UserX}>
             <p className="text-xs text-muted-foreground mb-3">
-              هذه الحسابات تستخدم نفس رقم الهاتف <span className="font-semibold text-foreground">{profile.phone}</span>
+              هذه الحسابات تستخدم نفس رقم الهاتف{' '}
+              <span className="font-semibold text-foreground">{profile.phone}</span>
             </p>
             <div className="space-y-2">
               {similar_accounts.map(sim => (
-                <div key={sim.id} className="flex items-center gap-2 p-2.5 rounded-xl border border-destructive/20 bg-destructive/5">
+                <div key={sim.id}
+                  className="flex items-center gap-2 p-2.5 rounded-xl border border-destructive/20 bg-destructive/5">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold">@{sim.username || '—'}</p>
                     <p className="text-[10px] text-muted-foreground">{sim.email}</p>
                     <p className="text-[10px] text-muted-foreground">تسجيل: {fmt(sim.created_at)}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button size="sm" variant="outline"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => navigate(`/admin/users/${sim.id}`)}>
-                      عرض
-                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={() => navigate(`/admin/users/${sim.id}`)}>عرض</Button>
                     <Button size="sm" variant="ghost"
                       className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
                       onClick={() => handleDeleteSimilar(sim.id)}
@@ -743,120 +878,47 @@ export default function AdminUserDetail() {
           </SectionCard>
         )}
 
-        {/* ── آخر العمليات ── */}
-        <SectionCard title="آخر العمليات" icon={Clock}>
-          {recent_ops.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">لا توجد عمليات بعد</p>
-          ) : (
-            <div className="space-y-2">
-              {recent_ops.slice(0, 6).map(op => {
-                const opRaw = op as Operation & { operation_source?: string; duration_ms?: number; correlation_id?: string };
-                const srcIsBalance =
-                  opRaw.operation_source === 'ana_vodafone_balance' ||
-                  (op as unknown as { card_data?: Record<string, unknown> }).card_data?.source === 'ana_vodafone_balance';
-                const srcLabel = srcIsBalance ? 'رصيد أنا فودافون'
-                  : opRaw.operation_source === 'vodafone_cash' ? 'Vodafone Cash'
-                  : op.category ?? 'Vodafone Cash';
-                return (
-                  <div key={op.id} className="p-3 rounded-xl bg-muted/20 border border-border/40 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {op.status === 'success'
-                          ? <CheckCircle className="w-3.5 h-3.5 text-success shrink-0" />
-                          : <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />}
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium">{op.phone_number}</p>
-                          <p className="text-[10px] text-muted-foreground">{op.card_type} · {op.amount} ج</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <p className="text-[10px] text-muted-foreground">{fmt(op.performed_at)}</p>
-                        <button
-                          onClick={() => { setDetailOp(op as unknown as Operation); setOpSheetOpen(true); }}
-                          className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-lg font-semibold hover:bg-primary/20 transition-colors">
-                          تفاصيل
-                        </button>
-                      </div>
-                    </div>
-                    {/* بادج المصدر + الفئة */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${
-                        srcIsBalance
-                          ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                          : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                      }`}>
-                        {srcIsBalance ? '🔴' : '💳'} {srcLabel}
-                      </span>
-                      {op.status === 'failed' && op.error_message && (
-                        <span className="text-[10px] text-destructive bg-destructive/5 border border-destructive/20 px-1.5 py-0.5 rounded-full truncate max-w-[180px]">
-                          {op.error_message.split('\n')[0]}
-                        </span>
-                      )}
-                      {op.status === 'success' && (
-                        <span className="text-[10px] text-success bg-success/5 border border-success/20 px-1.5 py-0.5 rounded-full">
-                          ✓ تمّ بنجاح
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="pt-1">
-                <button
-                  onClick={() => navigate(`/admin/users/${id}/operations`)}
-                  className="w-full text-xs text-primary bg-primary/5 border border-primary/20 py-2.5 rounded-xl font-semibold hover:bg-primary/10 transition-colors">
-                  عرض جميع العمليات →
-                </button>
-              </div>
-            </div>
-          )}
+        {/* ══ 9. إجراءات الإدارة ══════════════════════════════════════════ */}
+        <SectionCard title="إجراءات الإدارة السريعة" icon={Shield}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs"
+              onClick={() => navigate(`/admin/users/${id}/actions`)}>
+              <Shield className="w-3.5 h-3.5" /> إجراءات متقدمة
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs"
+              onClick={() => navigate(`/admin/users/${id}/subscription`)}>
+              <CreditCard className="w-3.5 h-3.5" /> إدارة الاشتراك
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs"
+              onClick={() => navigate(`/admin/users/${id}/operations`)}>
+              <Activity className="w-3.5 h-3.5" /> كل العمليات
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs"
+              onClick={() => navigate(`/admin/users/${id}/notifications`)}>
+              <Bell className="w-3.5 h-3.5" /> كل الإشعارات
+            </Button>
+            <Button variant="outline" size="sm"
+              className="h-9 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/8"
+              onClick={() => setChangePwOpen(true)}>
+              <KeyRound className="w-3.5 h-3.5" /> تغيير كلمة المرور
+            </Button>
+          </div>
         </SectionCard>
 
-        {/* ── سجل الأحداث ── */}
-        <SectionCard title="سجل الأحداث" icon={Activity}>
-          {activity.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">لا يوجد سجل نشاط</p>
-          ) : (
-            <div className="space-y-2">
-              {activity.slice(0, 10).map(a => (
-                <div key={a.id} className="flex items-start gap-2 p-2.5 rounded-xl bg-muted/20 border border-border/40">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold">{a.title || a.event_type}</p>
-                    {a.description && <p className="text-[10px] text-muted-foreground mt-0.5">{a.description}</p>}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground shrink-0">{fmt(a.created_at)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+      </div>{/* end space-y-5 */}
 
-        {/* ── تنقل سريع ── */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'إجراءات', icon: Shield,     href: `/admin/users/${id}/actions` },
-            { label: 'الاشتراك', icon: CreditCard, href: `/admin/users/${id}/subscription` },
-            { label: 'العمليات', icon: Zap,        href: `/admin/users/${id}/operations` },
-          ].map(item => (
-            <button key={item.label} onClick={() => navigate(item.href)}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-border bg-card hover:bg-muted/40 hover:border-primary/30 transition-colors">
-              <item.icon className="w-5 h-5 text-primary" />
-              <span className="text-xs font-semibold">{item.label}</span>
-            </button>
-          ))}
-        </div>
-
-      </div>
-      <OpDetailsSheet op={detailOp} open={opSheetOpen} onClose={() => setOpSheetOpen(false)} />
-
-      {/* ── تغيير كلمة المرور ── */}
+      {/* Dialogs */}
       <ChangePasswordDialog
         open={changePwOpen}
         onClose={() => setChangePwOpen(false)}
         userId={profile.id}
-        username={profile.username ?? null}
-        userPhone={profile.phone ?? null}
+        username={profile.username}
+        userPhone={profile.phone}
+      />
+      <OpDetailsSheet
+        op={detailOp}
+        open={opSheetOpen}
+        onClose={() => setOpSheetOpen(false)}
       />
     </AdminShell>
   );

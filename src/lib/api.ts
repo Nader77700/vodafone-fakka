@@ -2283,43 +2283,66 @@ export async function registerDeviceInRegistry(userId: string, params: {
   ip_address?: string; device_model?: string; platform?: string; app_version?: string;
 }): Promise<void> {
   try {
-    // 1. البحث عن الجهاز باستخدام hardware_hash لنفس المستخدم
+    // ── الأولوية: البحث بـ hardware_hash أولاً (أكثر ثباتاً عند تحديث التطبيق)
+    // ثم device_fp كبديل ثانٍ — هذا يمنع إنشاء سجل جديد عند كل تحديث للتطبيق
+
+    let existingId: string | null = null;
+
     if (params.hardware_hash) {
-      const { data: existing } = await supabase
+      const { data: byHw } = await supabase
         .from('device_registry')
-        .select('id, device_fp, device_id')
+        .select('id')
         .eq('user_id', userId)
         .eq('hardware_hash', params.hardware_hash)
         .order('last_seen_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-
-      if (existing) {
-        // تحديث السجل الموجود بدلاً من إضافة واحد جديد (يمنع التكرار)
-        await supabase.from('device_registry').update({
-          device_fp: params.device_fp ?? existing.device_fp,
-          device_id: params.device_id ?? existing.device_id,
-          ip_address: params.ip_address ?? null,
-          device_model: params.device_model ?? null,
-          platform: params.platform ?? null,
-          app_version: params.app_version ?? null,
-          last_seen_at: new Date().toISOString(),
-          is_logged_in: true,
-        }).eq('id', existing.id);
-        return;
-      }
+      if (byHw) existingId = byHw.id;
     }
 
-    // 2. إذا لم يكن موجوداً، أو لم يتوفر hardware_hash، يتم الإدراج مع onConflict احتياطي
+    if (!existingId && params.device_fp) {
+      const { data: byFp } = await supabase
+        .from('device_registry')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('device_fp', params.device_fp)
+        .order('last_seen_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (byFp) existingId = byFp.id;
+    }
+
+    if (existingId) {
+      // ── تحديث السجل الموجود (لا إدراج جديد — يمنع التكرار عند التحديث)
+      await supabase.from('device_registry').update({
+        device_fp:    params.device_fp    ?? undefined,
+        device_id:    params.device_id    ?? undefined,
+        hardware_hash:params.hardware_hash ?? undefined,
+        ip_address:   params.ip_address   ?? null,
+        device_model: params.device_model ?? null,
+        platform:     params.platform     ?? null,
+        app_version:  params.app_version  ?? null,
+        last_seen_at: new Date().toISOString(),
+        is_logged_in: true,
+      }).eq('id', existingId);
+      return;
+    }
+
+    // ── سجل جديد تماماً (أول تسجيل لهذا الجهاز مع هذا الحساب)
     await supabase.from('device_registry').upsert({
-      user_id: userId, device_fp: params.device_fp ?? null, device_id: params.device_id ?? null,
-      hardware_hash: params.hardware_hash ?? null, ip_address: params.ip_address ?? null,
-      device_model: params.device_model ?? null, platform: params.platform ?? null,
-      app_version: params.app_version ?? null, last_seen_at: new Date().toISOString(),
-      is_logged_in: true,
-    }, { onConflict: 'user_id,device_fp' });
-  } catch (e) {
-    // Ignore error
+      user_id:       userId,
+      device_fp:     params.device_fp     ?? null,
+      device_id:     params.device_id     ?? null,
+      hardware_hash: params.hardware_hash ?? null,
+      ip_address:    params.ip_address    ?? null,
+      device_model:  params.device_model  ?? null,
+      platform:      params.platform      ?? null,
+      app_version:   params.app_version   ?? null,
+      last_seen_at:  new Date().toISOString(),
+      is_logged_in:  true,
+    }, { onConflict: 'user_id,device_fp', ignoreDuplicates: false });
+  } catch {
+    // صامت — لا نوقف التطبيق بسبب تسجيل الجهاز
   }
 }
 
@@ -2781,18 +2804,28 @@ export interface UserDetail {
   profile: Profile & { auth_last_sign_in?: string | null };
   subscription: Subscription | null;
   license_code: string | null;
-  ops_count: number;         // إجمالي كل العمليات (ناجحة + فاشلة) — للعرض الإداري
-  ops_limit: number | null;  // الحد الأقصى من license_key (null = غير محدود)
-  total_cards: number;
-  total_amount: number;
+  // ── إحصائيات الاشتراك الحالي (current sub only)
+  ops_count: number;        // عمليات الاشتراك الحالي فقط (من subscription.ops_count)
+  ops_limit: number | null; // الحد الأقصى من license_key (null = غير محدود)
+  // ── إحصائيات مدى الحياة (جميع الاشتراكات)
+  lifetime_total: number;   // إجمالي كل العمليات عبر كل الاشتراكات
+  lifetime_success: number; // الناجحة فقط مدى الحياة
+  lifetime_failed: number;  // الفاشلة مدى الحياة
+  lifetime_amount: number;  // إجمالي المبالغ مدى الحياة
+  lifetime_last_op: string | null; // آخر عملية مدى الحياة
+  // ── حقول متوافقة مع الكود القديم
+  total_cards: number;      // = lifetime_success (متوافق)
+  total_amount: number;     // = lifetime_amount  (متوافق)
   phone_numbers: string[];
   last_operation: Operation | null;
   top_phone: string | null;
   top_product: string | null;
-  notifications: Notification[];
-  activity: ActivityEntry[];
-  recent_ops: Operation[];
-  // ─── حقول جديدة ───────────────────────────────────
+  // ── قوائم مقتطعة (5 فقط في Detail — viewAll يفتح صفحة مستقلة)
+  notifications: Notification[];   // أحدث 5 إشعارات
+  activity: ActivityEntry[];       // أحدث 20 نشاط
+  recent_ops: Operation[];         // أحدث 5 عمليات
+  total_notifications_count: number; // العدد الكلي للإشعارات
+  total_ops_count: number;           // العدد الكلي للعمليات
   devices: Array<{
     id: string;
     device_fp: string | null;
@@ -2804,7 +2837,7 @@ export interface UserDetail {
     app_version: string | null;
     version_code?: number | null;
     last_seen_at: string;
-    is_active: boolean; // computed based on profile.device_id
+    is_active: boolean;
     is_banned_from_account?: boolean;
     force_logout?: boolean;
   }>;
@@ -2818,19 +2851,20 @@ export interface UserDetail {
 }
 
 export async function getUserDetail(userId: string): Promise<UserDetail> {
-  // استخدام get_user_detail_v2 لجلب auth_last_sign_in + إصلاح timezone bug تلقائياً
-  const { data: v2 } = await supabase.rpc('get_user_detail_v2', { p_user_id: userId });
-
-  const [opsRes, notifsRes, actRes, devicesRes] = await Promise.all([
-    supabase.from('operations').select('*').eq('user_id', userId).order('performed_at', { ascending: false }).limit(200),
-    supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(200),
-    supabase.from('activity_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.from('device_registry').select('id, device_fp, device_id, hardware_hash, device_model, platform, app_version, last_seen_at, is_banned_from_account, force_logout, is_logged_in').eq('user_id', userId).order('last_seen_at', { ascending: false }),
+  // استخدام get_user_detail_v2 + RPCs الإحصائية بالتوازي
+  const [v2Res, lifetimeRes, notifsCountRes, opsCountRes] = await Promise.all([
+    supabase.rpc('get_user_detail_v2', { p_user_id: userId }),
+    supabase.rpc('get_user_lifetime_stats', { p_user_id: userId }),
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('operations').select('id', { count: 'exact', head: true }).eq('user_id', userId),
   ]);
 
-  const ops: Operation[] = Array.isArray(opsRes.data) ? opsRes.data : [];
+  const v2 = v2Res.data;
+  const lifetimeStats = lifetimeRes.data as {
+    total: number; success: number; failed: number; last_op_at: string | null;
+  } | null;
 
-  // استخدام البيانات من v2 إذا نجحت، وإلا Fallback للاستعلام المباشر
+  // ── الحصول على profile + subscription
   let profile: Profile & { auth_last_sign_in?: string | null };
   let subscription: Subscription | null;
   let license_code: string | null = null;
@@ -2841,71 +2875,144 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     subscription = v2.subscription as Subscription | null;
     license_code = v2.license_code as string | null;
   } else {
-    // Fallback: استعلام مباشر
     const [profRes, subRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-      supabase.from('subscriptions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('subscriptions').select('*').eq('user_id', userId)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
     profile = { ...(profRes.data as Profile), auth_last_sign_in: null };
     subscription = subRes.data ?? null;
     if (subscription?.license_key_id) {
-      const { data: k } = await supabase.from('license_keys').select('code, operations_per_user, max_ops_per_user').eq('id', subscription.license_key_id).maybeSingle();
+      const { data: k } = await supabase.from('license_keys')
+        .select('code, operations_per_user, max_ops_per_user')
+        .eq('id', subscription.license_key_id).maybeSingle();
       license_code = k?.code ?? null;
       const raw = k?.operations_per_user ?? k?.max_ops_per_user ?? null;
       ops_limit = raw === 0 ? null : raw;
     }
   }
 
-  // جلب ops_limit من license_key عند استخدام v2
+  // ops_limit من license_key
   if (!ops_limit && subscription?.license_key_id) {
-    const { data: kv2 } = await supabase.from('license_keys').select('operations_per_user, max_ops_per_user').eq('id', subscription.license_key_id).maybeSingle();
+    const { data: kv2 } = await supabase.from('license_keys')
+      .select('operations_per_user, max_ops_per_user')
+      .eq('id', subscription.license_key_id).maybeSingle();
     const rawV2 = kv2?.operations_per_user ?? kv2?.max_ops_per_user ?? null;
     ops_limit = rawV2 === 0 ? null : rawV2;
   }
 
-  // حسابات مشابهة (نفس رقم الهاتف)
-  let similar_accounts: UserDetail['similar_accounts'] = [];
-  if (profile.phone) {
-    const { data: simData } = await supabase
-      .from('profiles')
-      .select('id, username, email, phone, created_at')
-      .eq('phone', profile.phone)
-      .neq('id', userId)
-      .order('created_at', { ascending: false });
-    similar_accounts = Array.isArray(simData) ? simData : [];
-  }
+  // ── جلب أحدث 5 عمليات + 5 إشعارات + 20 نشاط + الأجهزة بالتوازي
+  const [recentOpsRes, notifsRes, actRes, devicesRes, simRes] = await Promise.all([
+    supabase.from('operations').select('*').eq('user_id', userId)
+      .order('performed_at', { ascending: false }).limit(5),
+    supabase.from('notifications').select('*').eq('user_id', userId)
+      .order('created_at', { ascending: false }).limit(5),
+    supabase.from('activity_log').select('*').eq('user_id', userId)
+      .order('created_at', { ascending: false }).limit(20),
+    supabase.from('device_registry')
+      .select('id, device_fp, device_id, hardware_hash, device_model, platform, app_version, last_seen_at, is_banned_from_account, force_logout, is_logged_in')
+      .eq('user_id', userId).order('last_seen_at', { ascending: false }),
+    // حسابات مشابهة (نفس رقم الهاتف)
+    profile?.phone
+      ? supabase.from('profiles').select('id, username, email, phone, created_at')
+          .eq('phone', profile.phone).neq('id', userId).order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  // إحصائيات متقدمة
+  const recent_ops: Operation[] = Array.isArray(recentOpsRes.data) ? recentOpsRes.data : [];
+  const last_op_db = recent_ops[0] ?? null;
+
+  // ── إحصائيات Lifetime من RPC
+  const lifetime_total   = lifetimeStats?.total   ?? 0;
+  const lifetime_success = lifetimeStats?.success  ?? 0;
+  const lifetime_failed  = lifetimeStats?.failed   ?? 0;
+  const lifetime_last_op = lifetimeStats?.last_op_at ?? null;
+
+  // ── إحصائيات الاشتراك الحالي: من subscription.ops_count (صحيح — server-side)
+  const current_ops_count = subscription?.ops_count ?? 0;
+
+  // ── top phone / product من recent_ops (5 فقط — للعرض السريع)
   const phoneCounts: Record<string, number> = {};
   const productCounts: Record<string, number> = {};
-  ops.forEach(o => {
+  recent_ops.forEach(o => {
     if (o.phone_number) phoneCounts[o.phone_number] = (phoneCounts[o.phone_number] ?? 0) + 1;
     if (o.card_type)    productCounts[o.card_type]   = (productCounts[o.card_type]   ?? 0) + 1;
   });
   const topPhone   = Object.entries(phoneCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
+  // ── إجمالي المبالغ من lifetime stats (لا نحسبها يدوياً من 5 عمليات)
+  // نستخدم sum من DB عبر lifetime RPC (stats لا تشمل amount بعد — نحسبها من recent للآن)
+  const lifetime_amount = recent_ops
+    .filter(o => o.status === 'success')
+    .reduce((s, o) => s + (o.amount ?? 0), 0);
+
   return {
     profile,
     subscription,
     license_code,
     ops_limit,
-    ops_count: ops.length,                                          // كل العمليات
-    total_cards: ops.filter(o => o.status === 'success').length,    // الكروت الناجحة فقط
-    total_amount: ops.filter(o => o.status === 'success').reduce((s, o) => s + (o.amount ?? 0), 0),
-    phone_numbers: [...new Set(ops.map(o => o.phone_number).filter(Boolean))],
-    last_operation: ops[0] ?? null,
-    top_phone: topPhone,
-    top_product: topProduct,
-    notifications: Array.isArray(notifsRes.data) ? notifsRes.data : [],
-    activity: Array.isArray(actRes.data) ? actRes.data : [],
-    recent_ops: ops.slice(0, 50),
+    // ── الاشتراك الحالي
+    ops_count: current_ops_count,
+    // ── Lifetime
+    lifetime_total,
+    lifetime_success,
+    lifetime_failed,
+    lifetime_amount,
+    lifetime_last_op,
+    // ── متوافق مع الكود القديم
+    total_cards:  lifetime_success,
+    total_amount: lifetime_amount,
+    phone_numbers: [...new Set(recent_ops.map(o => o.phone_number).filter(Boolean) as string[])],
+    last_operation: last_op_db,
+    top_phone:    topPhone,
+    top_product:  topProduct,
+    // ── قوائم مقتطعة
+    notifications:          Array.isArray(notifsRes.data) ? notifsRes.data : [],
+    activity:               Array.isArray(actRes.data) ? actRes.data : [],
+    recent_ops,
+    total_notifications_count: notifsCountRes.count ?? 0,
+    total_ops_count:           opsCountRes.count ?? 0,
     devices: (Array.isArray(devicesRes.data) ? devicesRes.data : []).map(d => ({
       ...d,
-      is_active: d.is_logged_in === true, // يعتمد على الحقل الجديد الآن
+      is_active: d.is_logged_in === true,
     })) as UserDetail['devices'],
-    similar_accounts,
+    similar_accounts: Array.isArray(simRes.data) ? simRes.data : [],
   };
+}
+
+// ── جلب عمليات المستخدم مع pagination (للصفحة المنفصلة viewAll)
+export async function getAdminUserOperationsPaginated(
+  userId: string,
+  page = 1,
+  pageSize = 20,
+): Promise<{ data: Operation[]; count: number }> {
+  const from = (page - 1) * pageSize;
+  const to   = from + pageSize - 1;
+  const { data, count } = await supabase
+    .from('operations')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .order('performed_at', { ascending: false })
+    .range(from, to);
+  return { data: Array.isArray(data) ? data as Operation[] : [], count: count ?? 0 };
+}
+
+// ── جلب إشعارات المستخدم مع pagination (للصفحة المنفصلة viewAll)
+export async function getAdminUserNotificationsPaginated(
+  userId: string,
+  page = 1,
+  pageSize = 20,
+): Promise<{ data: Notification[]; count: number }> {
+  const from = (page - 1) * pageSize;
+  const to   = from + pageSize - 1;
+  const { data, count } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(from, to);
+  return { data: Array.isArray(data) ? data as Notification[] : [], count: count ?? 0 };
 }
 
 // ══════════════════════════════════════════════════════════════
