@@ -2981,6 +2981,25 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
   };
 }
 
+// ── جلب إحصائيات عدة اشتراكات دفعة واحدة (لعرضها في سجل الاشتراكات)
+// يُعيد Map من subscription_id → { total, success, failed }
+export async function getSubscriptionStatsMap(
+  subscriptionIds: string[],
+): Promise<Record<string, { total: number; success: number; failed: number }>> {
+  if (!subscriptionIds.length) return {};
+  const results = await Promise.all(
+    subscriptionIds.map(sid =>
+      supabase
+        .rpc('get_subscription_stats', { p_subscription_id: sid })
+        .then(({ data }) => ({
+          id: sid,
+          stats: (data as { total: number; success: number; failed: number } | null) ?? { total: 0, success: 0, failed: 0 },
+        })),
+    ),
+  );
+  return Object.fromEntries(results.map(r => [r.id, r.stats]));
+}
+
 // ── جلب عمليات المستخدم مع pagination (للصفحة المنفصلة viewAll)
 export async function getAdminUserOperationsPaginated(
   userId: string,

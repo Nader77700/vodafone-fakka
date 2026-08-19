@@ -29,6 +29,7 @@ import {
   getArchivedSubscriptions, getAllUserSubscriptions,
   renewSubscriptionPro, extendSubscriptionPro,
   activateLicenseKey,
+  getSubscriptionStatsMap,
 } from '@/lib/api';
 import type { Subscription } from '@/types/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -269,6 +270,7 @@ export default function AdminUserSubscription() {
   const [ops,      setOps]      = useState<SubscriptionOperation[]>([]);
   const [archived, setArchived] = useState<Subscription[]>([]);
   const [allSubs,  setAllSubs]  = useState<Subscription[]>([]);
+  const [subStatsMap, setSubStatsMap] = useState<Record<string, { total: number; success: number; failed: number }>>({});
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [renewDays,  setRenewDays]  = useState('30');
@@ -302,6 +304,12 @@ export default function AdminUserSubscription() {
       ]);
       setDetail(d); setHistory(h); setOps(o); setArchived(arch); setAllSubs(all);
       if (d.subscription?.expires_at) setExtendDate(d.subscription.expires_at.slice(0, 10));
+      // جلب إحصائيات العمليات لكل اشتراك في سجل التاريخ
+      const subIds = all.map(s => s.id).filter(Boolean);
+      if (subIds.length) {
+        const statsMap = await getSubscriptionStatsMap(subIds);
+        setSubStatsMap(statsMap);
+      }
     } catch { toast.error('فشل تحميل بيانات الاشتراك'); }
     finally { setLoading(false); }
   }, [id]);
@@ -661,34 +669,51 @@ export default function AdminUserSubscription() {
             <p className="text-sm text-muted-foreground py-4 text-center">لا يوجد سجل اشتراكات</p>
           ) : (
             <div className="space-y-2">
-              {history.slice(0, 5).map((h, i) => (
-                <div key={h.id} className={`p-3 rounded-xl border transition-colors ${i === 0 ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/10'}`}>
-                  <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      {h.code && <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{h.code}</span>}
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[h.status] ?? STATUS_STYLES.expired}`}>
-                        {STATUS_LABEL[h.status] ?? h.status}
-                      </span>
-                      {i === 0 && <span className="text-[10px] font-bold text-primary">الحالي</span>}
-                      {h.operation_type && (
-                        <span className={`text-[10px] font-medium ${OP_LABEL[h.operation_type]?.color ?? 'text-muted-foreground'}`}>
-                          [{OP_LABEL[h.operation_type]?.label ?? h.operation_type}]
+              {history.slice(0, 5).map((h, i) => {
+                // مطابقة سجل التاريخ بالاشتراك الفعلي عبر الكود للحصول على subscription_id
+                const matchedSub = allSubs.find(s =>
+                  (s as Subscription & { code_used?: string }).code_used === h.code ||
+                  s.license_key_id === h.license_key_id
+                );
+                const stats = matchedSub ? subStatsMap[matchedSub.id] : undefined;
+                return (
+                  <div key={h.id} className={`p-3 rounded-xl border transition-colors ${i === 0 ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/10'}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        {h.code && <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{h.code}</span>}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[h.status] ?? STATUS_STYLES.expired}`}>
+                          {STATUS_LABEL[h.status] ?? h.status}
                         </span>
-                      )}
+                        {i === 0 && <span className="text-[10px] font-bold text-primary">الحالي</span>}
+                        {h.operation_type && (
+                          <span className={`text-[10px] font-medium ${OP_LABEL[h.operation_type]?.color ?? 'text-muted-foreground'}`}>
+                            [{OP_LABEL[h.operation_type]?.label ?? h.operation_type}]
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{fmt(h.created_at)}</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{fmt(h.created_at)}</span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      <div><p className="text-[10px] text-muted-foreground">البداية</p><p className="text-xs font-medium">{fmt(h.activated_at)}</p></div>
+                      <div><p className="text-[10px] text-muted-foreground">النهاية</p><p className="text-xs font-medium">{fmt(h.expires_at)}</p></div>
+                      <div><p className="text-[10px] text-muted-foreground">المدة</p><p className="text-xs font-medium">{h.duration_days} يوم</p></div>
+                      {h.end_reason && <div><p className="text-[10px] text-muted-foreground">السبب</p><p className="text-xs font-medium">{h.end_reason}</p></div>}
+                      {h.suspend_reason && <div><p className="text-[10px] text-muted-foreground">سبب التعليق</p><p className="text-xs font-medium text-warning">{h.suspend_reason}</p></div>}
+                      {h.cancel_reason && <div><p className="text-[10px] text-muted-foreground">سبب الإلغاء</p><p className="text-xs font-medium text-destructive">{h.cancel_reason}</p></div>}
+                      {h.performed_by_name && <div><p className="text-[10px] text-muted-foreground">نفّذ بواسطة</p><p className="text-xs font-medium">{h.performed_by_name}</p></div>}
+                    </div>
+                    {/* ── إحصائيات العمليات لهذا الاشتراك ── */}
+                    {stats !== undefined && (
+                      <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-3 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground">العمليات:</span>
+                        <span className="text-[10px] font-bold text-foreground">{stats.total} إجمالي</span>
+                        <span className="text-[10px] font-semibold text-success">✅ {stats.success}</span>
+                        <span className="text-[10px] font-semibold text-destructive">❌ {stats.failed}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <div><p className="text-[10px] text-muted-foreground">البداية</p><p className="text-xs font-medium">{fmt(h.activated_at)}</p></div>
-                    <div><p className="text-[10px] text-muted-foreground">النهاية</p><p className="text-xs font-medium">{fmt(h.expires_at)}</p></div>
-                    <div><p className="text-[10px] text-muted-foreground">المدة</p><p className="text-xs font-medium">{h.duration_days} يوم</p></div>
-                    {h.end_reason && <div><p className="text-[10px] text-muted-foreground">السبب</p><p className="text-xs font-medium">{h.end_reason}</p></div>}
-                    {h.suspend_reason && <div><p className="text-[10px] text-muted-foreground">سبب التعليق</p><p className="text-xs font-medium text-warning">{h.suspend_reason}</p></div>}
-                    {h.cancel_reason && <div><p className="text-[10px] text-muted-foreground">سبب الإلغاء</p><p className="text-xs font-medium text-destructive">{h.cancel_reason}</p></div>}
-                    {h.performed_by_name && <div><p className="text-[10px] text-muted-foreground">نفّذ بواسطة</p><p className="text-xs font-medium">{h.performed_by_name}</p></div>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </SectionCard>
@@ -787,6 +812,15 @@ export default function AdminUserSubscription() {
                           )}
                         </div>
                       </div>
+                      {/* إحصائيات العمليات لهذا الاشتراك */}
+                      {subStatsMap[s.id] && (
+                        <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-3 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground">العمليات:</span>
+                          <span className="text-[10px] font-bold">{subStatsMap[s.id].total} إجمالي</span>
+                          <span className="text-[10px] text-success font-semibold">✅ {subStatsMap[s.id].success}</span>
+                          <span className="text-[10px] text-destructive font-semibold">❌ {subStatsMap[s.id].failed}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

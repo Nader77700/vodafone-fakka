@@ -324,14 +324,14 @@ function MiniStat({ icon: Icon, label, value, color = 'text-primary', sub }: {
   icon: React.ElementType; label: string; value: string | number; color?: string; sub?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/20 p-3 flex items-center gap-3">
-      <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', color.replace('text-', 'bg-') + '/10')}>
-        <Icon className={cn('w-4 h-4', color)} />
+    <div className="rounded-lg border border-border bg-muted/20 p-2 flex items-center gap-2">
+      <div className={cn('w-7 h-7 rounded-md flex items-center justify-center shrink-0', color.replace('text-', 'bg-') + '/10')}>
+        <Icon className={cn('w-3.5 h-3.5', color)} />
       </div>
-      <div className="min-w-0">
-        <p className={cn('text-base font-black tabular-nums leading-none', color)}>{value}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
-        {sub && <p className="text-[10px] text-muted-foreground/60">{sub}</p>}
+      <div className="min-w-0 flex-1">
+        <p className={cn('text-sm font-black tabular-nums leading-none truncate', color)}>{value}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
+        {sub && <p className="text-[10px] text-muted-foreground/60 leading-tight">{sub}</p>}
       </div>
     </div>
   );
@@ -584,7 +584,7 @@ export default function AdminUserDetail() {
           <p className="text-[11px] text-muted-foreground mb-3">
             يشمل جميع الاشتراكات القديمة والحالية — لا يتأثر بتغيير الاشتراك
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <MiniStat icon={Activity}    label="إجمالي العمليات"   value={lifetime_total}   color="text-primary" />
             <MiniStat icon={CheckCircle} label="ناجحة ✅"          value={lifetime_success} color="text-success" />
             <MiniStat icon={XCircle}     label="فاشلة ❌"          value={lifetime_failed}  color="text-destructive" />
@@ -634,7 +634,7 @@ export default function AdminUserDetail() {
               <p className="text-[11px] font-semibold text-muted-foreground mt-4 mb-2 uppercase tracking-wide">
                 إحصائيات هذا الاشتراك فقط
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <MiniStat icon={Activity}  label="مستخدمة"    value={ops_count}           color="text-primary" />
                 <MiniStat icon={Zap}       label="الحد الأقصى" value={ops_limit ?? '∞'}    color="text-warning" />
                 <MiniStat icon={Clock}     label="متبقية"      value={opsRemaining ?? '∞'} color="text-success" />
