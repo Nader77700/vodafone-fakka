@@ -175,18 +175,18 @@ export default function MoneyTransferPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo selection:bg-[#E60000]/30 selection:text-white" dir="rtl">
+    <div className="min-h-screen bg-background pb-24 font-cairo selection:bg-[#E60000]/30 selection:text-white" dir="rtl">
       {/* Top Nav */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between px-4 h-16">
-          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
+          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors">
             <ArrowLeft className="w-6 h-6 rotate-180" />
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">تحويل الأموال</h1>
             <p className="text-[10px] text-[#E60000] font-medium">Vodafone Cash</p>
           </div>
-          <button onClick={() => navigate('/vodafone-cash-center/history/transfer')} className="p-2 -ml-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors text-white/70">
+          <button onClick={() => navigate('/vodafone-cash-center/history/transfer')} className="p-2 -ml-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors text-white/70">
             <Clock className="w-5 h-5" />
           </button>
         </div>
@@ -194,7 +194,7 @@ export default function MoneyTransferPage() {
 
       <div className="px-4 pt-6 space-y-6">
         {/* System Status Panel */}
-        <div className="bg-[#111] border border-white/10 rounded-2xl p-4 relative overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#E60000]" />
@@ -251,12 +251,12 @@ export default function MoneyTransferPage() {
         {execStatus === 'idle' ? (
           <>
             {/* Form Container */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl relative overflow-hidden">
               <div className="space-y-5 relative z-10">
                 {/* Receiver Field */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-white/80">رقم المستفيد</label>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                     <div className="pl-3 pr-2 text-white/40">
                       <Phone className="w-5 h-5" />
                     </div>
@@ -283,7 +283,7 @@ export default function MoneyTransferPage() {
                 {/* Amount Field */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-white/80">المبلغ</label>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                     <div className="pl-3 pr-2 text-white/40">
                       <span className="text-sm font-bold">EGP</span>
                     </div>
@@ -307,7 +307,7 @@ export default function MoneyTransferPage() {
 
                 {/* Password Field */}
                 <div className="space-y-2 mt-4">
-                  <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5">
+                  <div className="bg-muted rounded-2xl p-4 border border-border">
                     <PinInputBlock pin={pin} setPin={setPin} submitting={isSubmitting} />
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export default function MoneyTransferPage() {
               className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
                 ${canSubmit 
                   ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]' 
-                  : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}
+                  : 'bg-white/5 text-white/30 cursor-not-allowed border border-border'}`}
             >
               <Send className="w-5 h-5" />
               تحويل الآن
@@ -330,7 +330,7 @@ export default function MoneyTransferPage() {
         ) : (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* Status Card */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-6 text-center shadow-xl">
+            <div className="bg-card border border-border rounded-2xl p-6 text-center shadow-xl">
               <div className="flex justify-center mb-4">
                 {execStatus === 'checking' || execStatus === 'executing' ? (
                   <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
@@ -372,14 +372,14 @@ export default function MoneyTransferPage() {
 
             {/* Execution Logs */}
             {execLogs.length > 0 && (
-              <div className="bg-[#111] border border-white/5 rounded-2xl p-4">
+              <div className="bg-card border border-border rounded-2xl p-4">
                 <h4 className="text-xs font-bold text-white/60 mb-3 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5" />
                   سجل التنفيذ (من السيرفر)
                 </h4>
                 <div className="space-y-2">
                   {execLogs.map((log, i) => (
-                    <div key={i} className="flex gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-white/5">
+                    <div key={i} className="flex gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-border">
                       <div className="w-12 shrink-0 text-white/30 font-mono text-[10px] mt-0.5" dir="ltr">
                         {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second:'2-digit' })}
                       </div>

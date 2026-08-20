@@ -70,7 +70,7 @@ function TxCard({ tx, index }: { tx: Transaction; index: number }) {
   const isOut      = Number(amount) < 0;
 
   return (
-    <div className="bg-[#111] border border-white/8 rounded-2xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
       {/* رأس البطاقة */}
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0
@@ -257,12 +257,12 @@ export default function TransactionHistoryPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo">
+    <div className="min-h-screen bg-background pb-24 font-cairo">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between px-4 h-16">
           <button onClick={() => navigate('/vodafone-cash-center/wallet-balance')}
-            className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
+            className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex-1 text-center">
@@ -286,7 +286,7 @@ export default function TransactionHistoryPage() {
               <span className="text-sm font-bold truncate">{networkName}</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
-              className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-40">
+              className="p-1.5 rounded-full hover:bg-accent transition-colors disabled:opacity-40">
               <RefreshCw className={`w-4 h-4 text-white/60 ${isCheckingConn ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -299,7 +299,7 @@ export default function TransactionHistoryPage() {
         {(status === 'idle' || status === 'checking' || status === 'loading') && (
           <>
             {/* اختيار الفترة */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <Filter className="w-4 h-4 text-[#E60000]" />
                 <h3 className="text-sm font-bold text-white/80">اختر الفترة الزمنية</h3>
@@ -310,7 +310,7 @@ export default function TransactionHistoryPage() {
                     className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-all duration-200
                       ${period === p.value
                         ? 'bg-[#E60000] text-white shadow-[0_0_15px_rgba(230,0,0,0.3)]'
-                        : 'bg-[#1A1A1A] text-white/60 border border-white/8 hover:border-white/20'}`}>
+                        : 'bg-muted text-muted-foreground border border-border hover:border-primary/40'}`}>
                     {p.label}
                   </button>
                 ))}
@@ -325,13 +325,13 @@ export default function TransactionHistoryPage() {
                       type="text" placeholder="تاريخ البداية (DD-MM-YYYY)"
                       value={customStart} onChange={(e) => setCustomStart(e.target.value)}
                       dir="ltr"
-                      className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-[#E60000] focus:outline-none font-mono"
+                      className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-[#E60000] focus:outline-none font-mono"
                     />
                     <input
                       type="text" placeholder="تاريخ النهاية (DD-MM-YYYY)"
                       value={customEnd} onChange={(e) => setCustomEnd(e.target.value)}
                       dir="ltr"
-                      className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-[#E60000] focus:outline-none font-mono"
+                      className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-[#E60000] focus:outline-none font-mono"
                     />
                   </div>
                 </div>
@@ -339,10 +339,10 @@ export default function TransactionHistoryPage() {
             </div>
 
             {/* PIN */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#E60000]/5 rounded-full blur-3xl" />
               <p className="text-xs text-white/50 relative z-10">PIN محفظة Vodafone Cash — لن يُحفظ أو يُسجَّل.</p>
-              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5 relative z-10">
+              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-border relative z-10">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={status !== 'idle'} />
               </div>
             </div>
@@ -352,7 +352,7 @@ export default function TransactionHistoryPage() {
               className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
                 ${canSubmit && status === 'idle'
                   ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-                  : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}>
+                  : 'bg-white/5 text-white/30 cursor-not-allowed border border-border'}`}>
               {status === 'checking' || status === 'loading'
                 ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري التحميل...</>
                 : <><History className="w-5 h-5" /> تحميل السجل</>}
@@ -376,7 +376,7 @@ export default function TransactionHistoryPage() {
                   <p className="text-[10px] text-white/40 mt-0.5">{periodLabel}</p>
                 </div>
                 <button onClick={handleReset}
-                  className="text-xs font-bold text-white/50 bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0">
+                  className="text-xs font-bold text-white/50 bg-white/5 px-3 py-1.5 rounded-lg hover:bg-accent transition-colors shrink-0">
                   بحث جديد
                 </button>
               </div>
@@ -394,7 +394,7 @@ export default function TransactionHistoryPage() {
                 <p className="text-white/40 font-bold">لا توجد عمليات في هذه الفترة</p>
                 <p className="text-xs text-white/25">جرب فترة زمنية أوسع</p>
                 <button onClick={handleReset}
-                  className="mt-4 px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white/60 hover:bg-white/10 transition-colors">
+                  className="mt-4 px-6 py-2.5 rounded-xl bg-white/5 border border-border text-sm font-bold text-white/60 hover:bg-accent transition-colors">
                   بحث جديد
                 </button>
               </div>

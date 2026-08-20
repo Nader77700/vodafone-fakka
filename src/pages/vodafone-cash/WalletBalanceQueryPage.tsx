@@ -138,12 +138,12 @@ export default function WalletBalanceQueryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo">
+    <div className="min-h-screen bg-background pb-24 font-cairo">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between px-4 h-16">
           <button onClick={() => navigate('/vodafone-cash-center/wallet-balance')}
-            className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
+            className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex-1 text-center">
@@ -166,7 +166,7 @@ export default function WalletBalanceQueryPage() {
               <span className="text-xs font-bold text-white/80">حالة الاتصال</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
-              className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-40">
+              className="p-1.5 rounded-full hover:bg-accent transition-colors disabled:opacity-40">
               <RefreshCw className={`w-4 h-4 text-white/60 ${isCheckingConn ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -198,12 +198,12 @@ export default function WalletBalanceQueryPage() {
             </div>
             <div className="space-y-3">
               {walletMsisdn && (
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                <div className="flex items-center justify-between py-2 border-b border-border">
                   <span className="text-xs text-white/50">رقم المحفظة</span>
                   <span className="text-sm font-bold font-mono" dir="ltr">{walletMsisdn}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between py-2 border-b border-white/5">
+              <div className="flex items-center justify-between py-2 border-b border-border">
                 <span className="text-xs text-white/50">الرصيد الحالي</span>
                 <span className="text-2xl font-black text-green-400">{balance} <span className="text-base font-bold">جنيه</span></span>
               </div>
@@ -218,7 +218,7 @@ export default function WalletBalanceQueryPage() {
               )}
             </div>
             <button onClick={handleReset}
-              className="mt-5 w-full py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white/80 hover:bg-white/10 transition-colors">
+              className="mt-5 w-full py-3 rounded-xl bg-white/5 border border-border text-sm font-bold text-white/80 hover:bg-accent transition-colors">
               استعلام جديد
             </button>
           </div>
@@ -243,11 +243,11 @@ export default function WalletBalanceQueryPage() {
 
         {/* فورم الـ PIN */}
         {(queryStatus === 'idle' || queryStatus === 'checking' || queryStatus === 'querying') && (
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-5 relative overflow-hidden">
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#E60000]/5 rounded-full blur-3xl" />
             <div className="relative z-10 space-y-5">
               <p className="text-sm text-white/60">أدخل PIN محفظتك Vodafone Cash للاستعلام عن الرصيد. لن يُحفظ أو يُسجَّل.</p>
-              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5">
+              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-border">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={queryStatus !== 'idle'} />
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function WalletBalanceQueryPage() {
             className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
               ${canSubmit && queryStatus === 'idle'
                 ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-                : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}>
+                : 'bg-white/5 text-white/30 cursor-not-allowed border border-border'}`}>
             {queryStatus === 'checking' || queryStatus === 'querying'
               ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري الاستعلام...</>
               : <><Wallet className="w-5 h-5" /> استعلام عن الرصيد</>}

@@ -26,11 +26,11 @@ export default function AdminVodafoneCashCenter() {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 font-cairo">
+    <div className="min-h-screen bg-background pb-24 font-cairo">
       {/* ── Header ── */}
-      <div className="bg-[#111] border-b border-white/10 sticky top-0 z-50">
+      <div className="bg-card border-b border-border sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-16">
-          <button onClick={() => navigate('/admin')} className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
+          <button onClick={() => navigate('/admin')} className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex-1 text-center">
@@ -40,7 +40,7 @@ export default function AdminVodafoneCashCenter() {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="flex px-4 gap-4 overflow-x-auto no-scrollbar border-b border-white/5">
+        <div className="flex px-4 gap-4 overflow-x-auto no-scrollbar border-b border-border">
           <button
             onClick={() => setActiveTab('transfers')}
             className={`whitespace-nowrap py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'transfers' ? 'border-[#E60000] text-[#E60000]' : 'border-transparent text-white/50 hover:text-white/80'}`}
@@ -75,19 +75,19 @@ export default function AdminVodafoneCashCenter() {
         {/* Placeholder Content Based on Tab */}
         {activeTab === 'stats' && (
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#111] p-4 rounded-xl border border-white/10">
+            <div className="bg-card p-4 rounded-xl border border-border">
               <p className="text-white/50 text-xs font-bold mb-1">إجمالي التحويلات</p>
               <p className="text-xl font-bold">0</p>
             </div>
-            <div className="bg-[#111] p-4 rounded-xl border border-white/10">
+            <div className="bg-card p-4 rounded-xl border border-border">
               <p className="text-white/50 text-xs font-bold mb-1">إجمالي الشحنات</p>
               <p className="text-xl font-bold">0</p>
             </div>
-            <div className="bg-[#111] p-4 rounded-xl border border-white/10">
+            <div className="bg-card p-4 rounded-xl border border-border">
               <p className="text-white/50 text-xs font-bold mb-1">عمليات ناجحة</p>
               <p className="text-xl font-bold text-green-500">0</p>
             </div>
-            <div className="bg-[#111] p-4 rounded-xl border border-white/10">
+            <div className="bg-card p-4 rounded-xl border border-border">
               <p className="text-white/50 text-xs font-bold mb-1">عمليات فاشلة</p>
               <p className="text-xl font-bold text-red-500">0</p>
             </div>
@@ -102,10 +102,10 @@ export default function AdminVodafoneCashCenter() {
                 <input
                   type="text"
                   placeholder="بحث برقم الهاتف..."
-                  className="w-full bg-[#111] border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[#E60000] transition-colors placeholder:text-white/30"
+                  className="w-full bg-card border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[#E60000] transition-colors placeholder:text-white/30"
                 />
               </div>
-              <button onClick={fetchTransfers} className="bg-[#111] border border-white/10 p-2.5 rounded-xl text-white/70 hover:text-white hover:border-white/30 transition-colors">
+              <button onClick={fetchTransfers} className="bg-card border border-border p-2.5 rounded-xl text-white/70 hover:text-white hover:border-white/30 transition-colors">
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
@@ -116,7 +116,7 @@ export default function AdminVodafoneCashCenter() {
                   <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-[#E60000]" /></div>
                 ) : transfers.length > 0 ? (
                   transfers.map(tr => (
-                    <div key={tr.id} className="bg-[#111] p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <div key={tr.id} className="bg-card p-4 rounded-xl border border-border flex justify-between items-center">
                       <div>
                         <div className="font-bold text-[#E60000]">{tr.amount} ج.م</div>
                         <div className="text-sm text-white/70">{tr.receiver_number}</div>

@@ -487,7 +487,7 @@ function NativeDebugPanel() {
       {/* ── Web hint ── */}
       {!isNative && (
         <div className="px-4 pb-3 text-center">
-          <p className="text-[10px] font-mono" style={{ color: '#ffffff25' }}>
+          <p className="text-[10px] font-mono" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
             ⓘ القيم الحقيقية من TelephonyManager تظهر فقط داخل APK الأصلي
           </p>
         </div>
@@ -649,7 +649,7 @@ function OperationDetailsDialog({
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
         className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[400px] p-0 border-0 max-h-[88dvh] overflow-y-auto"
-        style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
+        className="bg-card border border-primary/25" style={{ borderRadius: 20 }}
         dir="rtl"
       >
         <div className="h-1 w-full rounded-t-[20px]"
@@ -1202,7 +1202,7 @@ function ExecuteModal({
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[460px] p-0 border-0 max-h-[92dvh] overflow-y-auto gap-0"
-          style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
+          className="bg-card border border-primary/25" style={{ borderRadius: 20 }}
           dir="rtl"
         >
           {product && !receipt && (
@@ -1498,7 +1498,7 @@ function ExecuteModal({
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                               <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
                             <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
@@ -1512,7 +1512,7 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>Step {s.step}</span>
                             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
@@ -1523,7 +1523,7 @@ function ExecuteModal({
                           <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                                 <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
                               <div className="p-2 space-y-0.5 text-[9px] font-mono">
@@ -1767,7 +1767,7 @@ function ExecuteModal({
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                               <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
                             <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
@@ -1781,7 +1781,7 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>Step {s.step}</span>
                             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
@@ -1792,7 +1792,7 @@ function ExecuteModal({
                           <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                                 <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
                               <div className="p-2 space-y-0.5 text-[9px] font-mono">
@@ -1952,7 +1952,7 @@ function ExecuteModal({
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                               <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
                             <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
@@ -1966,7 +1966,7 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>Step {s.step}</span>
                             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
@@ -1977,7 +1977,7 @@ function ExecuteModal({
                           <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                                 <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
                               <div className="p-2 space-y-0.5 text-[9px] font-mono">
@@ -2545,9 +2545,9 @@ function HomePage() {
         <div
           className="relative rounded-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg,#0a0000 0%,#1a0000 50%,#0d0d0d 100%)',
+            background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 50%, hsl(var(--card)) 100%)',
             border: '1.5px solid rgba(230,0,0,0.25)',
-            boxShadow: '0 4px 32px rgba(230,0,0,0.12), 0 1px 0 rgba(255,255,255,0.04) inset',
+            boxShadow: '0 4px 32px rgba(230,0,0,0.10)',
           }}
         >
           {/* top glow line */}
@@ -2923,7 +2923,7 @@ function HomePage() {
       <Dialog open={disabledProductOpen} onOpenChange={setDisabledProductOpen}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[88vw] md:max-w-sm p-0 border-0"
-          style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
+          className="bg-card border border-primary/25" style={{ borderRadius: 20 }}
           dir="rtl"
         >
           <div className="h-1 w-full rounded-t-[20px]"

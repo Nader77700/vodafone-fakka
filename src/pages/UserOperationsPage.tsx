@@ -82,7 +82,7 @@ function OpDetailSheet({ op, open, onClose }: { op: Operation | null; open: bool
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
       <SheetContent side="bottom"
         className="max-h-[88dvh] overflow-y-auto max-w-[calc(100%-2rem)] md:max-w-lg mx-auto rounded-t-2xl"
-        style={{ background: '#120000', border: '1px solid rgba(230,0,0,0.2)' }}>
+        className="bg-card border border-border">
         <SheetHeader className="pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.15)' }}>
           <SheetTitle className="text-sm text-white">
             <span>{isSuccess ? '✅' : '❌'}</span> تفاصيل العملية
@@ -216,10 +216,10 @@ export default function UserOperationsPage() {
   const hasFilters = search || statusFilter !== 'all' || sourceFilter !== 'all' || dateFilter !== 'all' || amountFilter !== null;
 
   return (
-    <div className="min-h-screen pb-8" style={{ background: '#080000' }} dir="rtl">
+    <div className="min-h-screen pb-8" className="bg-background" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b"
-        style={{ background: 'rgba(8,0,0,0.95)', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
+        style={{ backdropFilter: "blur(8px)" }} className="bg-background/90 border-b border-border">
         <button onClick={() => navigate(-1)}
           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>

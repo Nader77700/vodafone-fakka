@@ -184,7 +184,7 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
 
   return (
     <div 
-      className="group relative bg-[#0D0D0D] border border-white/10 rounded-[20px] p-3 flex flex-col gap-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-primary/50 hover:shadow-[0_8px_30px_rgba(230,0,0,0.15)] active:scale-95"
+      className="group relative bg-card border border-border rounded-[20px] p-3 flex flex-col gap-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-primary/50 hover:shadow-[0_8px_30px_rgba(230,0,0,0.15)] active:scale-95"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -383,7 +383,7 @@ function ActivationDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isActivating && onClose()}>
       <DialogContent 
-        className="w-[90vw] max-w-sm rounded-[32px] p-0 border border-white/10 bg-[#0F0F0F]/95 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden gap-0" 
+        className="w-[90vw] max-w-sm rounded-[32px] p-0 border border-white/10 bg-card/95 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden gap-0" 
         dir="rtl"
         onInteractOutside={(e) => {
           if (isActivating) e.preventDefault();

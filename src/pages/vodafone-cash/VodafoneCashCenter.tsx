@@ -39,13 +39,13 @@ export default function VodafoneCashCenter() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo selection:bg-[#E60000]/30 selection:text-white">
+    <div className="min-h-screen bg-background pb-24 font-cairo selection:bg-[#E60000]/30 selection:text-white">
       {/* ── Top Nav ── */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between px-4 h-16">
           <button
             onClick={() => navigate('/')}
-            className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors"
+            className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
@@ -100,13 +100,13 @@ export default function VodafoneCashCenter() {
               </p>
 
               {/* Action Button */}
-              <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-white/90 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20 group-hover:border-white/30 group-hover:text-white">
+              <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-border text-[11px] font-bold text-white/90 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20 group-hover:border-primary/50 group-hover:text-white">
                 الدخول <ArrowLeft className="w-3 h-3 ml-1 rotate-180" />
               </div>
             </div>
             
             {/* Border Glow */}
-            <div className="absolute inset-0 rounded-[28px] border border-white/10 transition-colors duration-500 group-hover:border-[#E60000]/50 pointer-events-none" />
+            <div className="absolute inset-0 rounded-[28px] border border-border transition-colors duration-500 group-hover:border-[#E60000]/50 pointer-events-none" />
           </div>
         ))}
       </div>

@@ -19,7 +19,7 @@ export default function DeviceBannedScreen({ reason, bannedAt }: Props) {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-black flex flex-col items-center justify-center px-6 text-white"
+      className="min-h-screen bg-background flex flex-col items-center justify-center px-6"
     >
       {/* أيقونة الحظر */}
       <div className="w-24 h-24 rounded-full bg-destructive/10 border-2 border-destructive/30 flex items-center justify-center mb-6">

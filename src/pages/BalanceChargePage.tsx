@@ -119,7 +119,7 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
       <DialogContent
         className="max-w-[calc(100%-2rem)] md:max-w-sm rounded-2xl p-0 overflow-hidden border-0"
-        style={{ background: '#111', border: '1px solid rgba(230,0,0,0.25)' }}
+        className="bg-card border border-primary/25"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/5">
@@ -177,7 +177,7 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
                 أدخل الرقم السري لمحفظتك لعرض رصيدك فوراً
               </p>
               {/* PIN */}
-              <div className="bg-[#1A1A1A] rounded-2xl p-3 border border-white/5">
+              <div className="bg-muted rounded-2xl p-3 border border-border">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={status === 'loading'} />
               </div>
               <p className="text-[10px] text-amber-400/70 flex items-start gap-1.5">
@@ -409,7 +409,7 @@ function AccountsPanel({
       <SheetContent
         side="right"
         className="w-[85vw] max-w-[340px] p-0 border-0 flex flex-col"
-        style={{ background: '#0a0000', borderLeft: `1px solid rgba(230,0,0,0.2)` }}
+        className="bg-card border-l border-primary/20"
       >
         {/* هيدر اللوحة */}
         <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
@@ -781,7 +781,7 @@ function BalanceLoginDialog({
               <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.muted }} />
               <input
                 className="w-full h-11 rounded-xl pr-9 pl-3 text-sm font-medium outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                className="bg-muted border border-border text-foreground"
                 placeholder="01XXXXXXXXX" type="tel" inputMode="numeric" maxLength={11}
                 value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                 disabled={loading} dir="ltr"
@@ -795,7 +795,7 @@ function BalanceLoginDialog({
               <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.muted }} />
               <input
                 className="w-full h-11 rounded-xl pr-9 pl-10 text-sm font-medium outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                className="bg-muted border border-border text-foreground"
                 placeholder="••••••••" type={showPass ? 'text' : 'password'}
                 value={password} onChange={e => setPassword(e.target.value)}
                 disabled={loading}

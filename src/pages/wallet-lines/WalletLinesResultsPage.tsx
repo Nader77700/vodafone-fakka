@@ -181,7 +181,7 @@ const OtpDialog = memo(function OtpDialog({
       <div
         className="w-full max-w-sm rounded-3xl p-6 space-y-5"
         dir="rtl"
-        style={{ background: '#0f1520', border: '1px solid rgba(255,255,255,0.1)' }}
+        className="bg-card border border-border"
       >
         {/* العنوان */}
         <div className="text-center space-y-1">
