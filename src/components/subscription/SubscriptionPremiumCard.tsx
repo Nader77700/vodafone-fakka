@@ -38,7 +38,7 @@ function PremiumBar({ pct, color }: { pct: number; color: string }) {
   const [w, setW] = useState(0);
   useEffect(() => { const t = setTimeout(() => setW(pct), 120); return () => clearTimeout(t); }, [pct]);
   return (
-    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted))' }}>
       <div
         className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{
@@ -101,11 +101,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden select-none"
+      className="relative rounded-2xl overflow-hidden select-none bg-card dark:bg-[linear-gradient(135deg,#0a0000_0%,#1a0000_40%,#0d0d0d_100%)]"
       style={{
-        background: 'linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%)',
         border: `1.5px solid ${statusColor}35`,
-        boxShadow: `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
+        boxShadow: `0 4px 32px ${statusColor}18`,
       }}
     >
       {/* Glow top line */}
@@ -168,7 +167,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               },
             ].map(({ icon: Icon, label, value, color }) => (
               <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${color}18`, color }}>
                   <Icon className="w-3.5 h-3.5" />
@@ -184,7 +183,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
         {/* ── قسم العمليات ── */}
         {!isAdmin && (
-          <div className="space-y-2.5 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="space-y-2.5 pt-1 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" style={{ color: '#F7C948' }} />
@@ -222,7 +221,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         {/* ── Subscription Number ── */}
         {subscription && (
           <div className="flex items-center justify-between pt-1 border-t"
-            style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            style={{ borderColor: 'hsl(var(--border))' }}>
             <span className="text-[9px] text-muted-foreground uppercase tracking-widest">رقم الاشتراك</span>
             <span className="text-[11px] font-mono font-bold tabular-nums" style={{ color: '#94a3b8' }}>
               {subscription.serial_number ?? subscription.id.slice(0, 8).toUpperCase()}

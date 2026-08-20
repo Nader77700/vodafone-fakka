@@ -124,6 +124,14 @@ html, body, #root {
     --gradient-background: linear-gradient(160deg, #fdf8f7 0%, #f5f0ef 100%);
     --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.06) 0%, rgba(180,0,0,0.03) 100%);
 
+    /* ألوان debug panel — الوضع الفاتح */
+    --debug-bg:            hsl(0 6% 94%);
+    --debug-border:        hsl(0 8% 85%);
+    --debug-text-dim:      hsl(0 4% 50%);
+    --debug-header-bg:     hsl(0 6% 91%);
+    --debug-card-bg:       hsl(0 0% 100%);
+    --debug-card-border:   hsl(0 8% 88%);
+
     /* ظلال الوضع الفاتح */
     --glow-primary:  0 2px 16px rgba(230, 0, 0, 0.22);
     --glow-secondary:0 2px 16px rgba(255, 60, 60, 0.18);
@@ -211,6 +219,14 @@ html, body, #root {
     --gradient-card:       linear-gradient(145deg, #180808 0%, #0D0303 100%);
     --gradient-background: radial-gradient(ellipse at top, #1a0505 0%, #0D0000 65%);
     --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.14) 0%, rgba(180,0,0,0.08) 50%, rgba(100,0,0,0.05) 100%);
+
+    /* ألوان debug panel — الوضع الغامق */
+    --debug-bg:            hsl(0 8% 9%);
+    --debug-border:        rgba(255,255,255,0.08);
+    --debug-text-dim:      rgba(255,255,255,0.40);
+    --debug-header-bg:     hsl(220 30% 8%);
+    --debug-card-bg:       hsl(220 30% 10%);
+    --debug-card-border:   rgba(255,255,255,0.07);
 
     --glass-bg:     rgba(255, 255, 255, 0.030);
     --glass-border: rgba(255, 255, 255, 0.08);

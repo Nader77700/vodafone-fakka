@@ -83,13 +83,13 @@ function HomeServicesCard() {
         className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95"
         aria-label="فتح قسم الخدمات"
       >
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a1a] via-[#0d1020] to-[#0a0d1a]" />
+      {/* Gradient Background — theme-aware */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10 dark:from-[#1a0a1a] dark:via-[#0d1020] dark:to-[#0a0d1a]" />
         {/* Animated glow */}
         <div className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700"
           style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.25) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.18) 0%, transparent 55%)' }} />
-        {/* Border */}
-        <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-indigo-500/30 transition-colors duration-500" />
+        {/* Border — theme-aware */}
+        <div className="absolute inset-0 border border-border/50 rounded-[28px] pointer-events-none group-hover:border-primary/30 transition-colors duration-500" />
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
           style={{ background: 'linear-gradient(90deg, #6366f1 0%, #E60000 50%, #F7C948 100%)' }} />
@@ -99,22 +99,22 @@ function HomeServicesCard() {
           {/* Header row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/15 shadow-inner"
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-primary/20 shadow-inner bg-primary/10"
                 style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(230,0,0,0.2))' }}>
-                <Sparkles className="w-5 h-5 text-white" />
+                <Sparkles className="w-5 h-5 text-primary-foreground dark:text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white drop-shadow-md leading-tight">الخدمات</h3>
-                <p className="text-[10px] text-white/40 font-medium">جميع خدمات التطبيق في مكان واحد</p>
+                <h3 className="text-lg font-black leading-tight text-foreground dark:text-white drop-shadow-md">الخدمات</h3>
+                <p className="text-[10px] font-medium text-muted-foreground">جميع خدمات التطبيق في مكان واحد</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg backdrop-blur-md"
-                style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
+              <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg"
+                style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
                 4+
               </span>
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-indigo-500/60 transition-colors border border-white/10 group-hover:border-indigo-400/50">
-                <ChevronLeft className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-primary/20">
+                <ChevronLeft className="w-4 h-4 text-foreground dark:text-white" />
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ function HomeServicesCard() {
             ].map(s => (
               <span key={s.label}
                 className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` }}>
+                style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}40` }}>
                 {s.label}
               </span>
             ))}
@@ -240,14 +240,14 @@ function DebugValueCard({
         <span className="text-[10px] font-bold uppercase tracking-widest"
           style={{ color: colors.dot }}>{label}</span>
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded"
-          style={{ background: '#ffffff08', color: '#ffffff40' }}>{source}</span>
+          style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>{source}</span>
       </div>
       {/* Raw value — أكبر حجم وأوضح */}
       <p className="text-sm font-bold font-mono leading-tight break-all"
         style={{ color: colors.val }}>{rawValue}</p>
       {/* Sub value (e.g. MCC+MNC code) */}
       {subValue && (
-        <p className="text-[11px] font-mono" style={{ color: '#ffffff55' }}>{subValue}</p>
+        <p className="text-[11px] font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>{subValue}</p>
       )}
     </div>
   );
@@ -257,7 +257,7 @@ function DebugValueCard({
 function Row({ k, v, c }: { k: string; v: string; c?: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="shrink-0" style={{ color: '#ffffff30' }}>{k}:</span>
+      <span className="shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>{k}:</span>
       <span className="text-right break-all" style={{ color: c ?? '#94a3b8' }}>{v}</span>
     </div>
   );
@@ -430,11 +430,11 @@ function NativeDebugPanel() {
       )}
 
       {/* ── Divider ── */}
-      {info && <div style={{ height: '1px', background: '#ffffff08', margin: '0 16px' }} />}
+      {info && <div style={{ height: '1px', background: 'hsl(var(--border))', margin: '0 16px' }} />}
 
       {/* ── Extra Info rows ── */}
       {info && (
-        <div className="px-4 py-3 grid grid-cols-1 gap-0 divide-y divide-white/[0.04]">
+        <div className="px-4 py-3 grid grid-cols-1 gap-0 divide-y divide-border">
           {[
             { k: 'Phone Permission',    v: info.hasPhonePermission ? 'GRANTED ✓' : 'DENIED ✗',           ok: info.hasPhonePermission },
             { k: 'Active Data SIM',     v: info.isVodafoneMobile  ? 'Vodafone EG ✓' : `${info.activeDataSimOperatorName}`, ok: info.isVodafoneMobile },
@@ -470,7 +470,7 @@ function NativeDebugPanel() {
                 style={{ color: canExec ? '#4ade80' : '#fbbf24' }}>
                 canExecuteNative = {canExec ? 'true' : 'false'}
               </p>
-              <p className="text-[11px] mt-0.5" style={{ color: '#ffffff55' }}>
+              <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 {canExec
                   ? 'Active Data SIM = Vodafone ✓  +  بيانات جوال ✓'
                   : [
@@ -1422,7 +1422,7 @@ function ExecuteModal({
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
-                    <div className="divide-y divide-white/[0.04]">
+                    <div className="divide-y divide-border">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
@@ -1520,7 +1520,7 @@ function ExecuteModal({
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                               <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
@@ -1691,7 +1691,7 @@ function ExecuteModal({
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
-                    <div className="divide-y divide-white/[0.04]">
+                    <div className="divide-y divide-border">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
@@ -1789,7 +1789,7 @@ function ExecuteModal({
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                               <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
@@ -1876,7 +1876,7 @@ function ExecuteModal({
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
-                    <div className="divide-y divide-white/[0.04]">
+                    <div className="divide-y divide-border">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
@@ -1974,7 +1974,7 @@ function ExecuteModal({
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                               <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
@@ -2468,10 +2468,12 @@ function HomePage() {
             />
           </div>
               <div className="space-y-0.5">
-                <h1 className="text-xl font-black tracking-tight text-balance" style={{
-                  background: 'linear-gradient(90deg,#00E5FF,#F7C948)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                }}>
+                <h1 className="text-xl font-black tracking-tight text-balance"
+                  style={{
+                    background: 'linear-gradient(90deg,#E60000,#F7C948)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))',
+                  }}>
                   Vodafone Fakka Premium
                 </h1>
                 <p className="text-[11px] text-muted-foreground font-medium tracking-wide">
