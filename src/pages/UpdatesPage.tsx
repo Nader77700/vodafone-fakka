@@ -245,7 +245,7 @@ export default function UpdatesPage() {
         {/* 🆕 بطاقة: تحديث APK متاح — يحتاج تنزيل */}
         {showUpdate && activeVersion && (
           <div className="rounded-2xl p-4 space-y-3 border border-yellow-500/30"
-            style={{ background: 'linear-gradient(135deg, #1a110015, #1a0d0015)' }}>
+            style={{ background: 'hsl(var(--muted)/30)' }}>
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-yellow-500 shrink-0" />
               <div className="flex-1 min-w-0">

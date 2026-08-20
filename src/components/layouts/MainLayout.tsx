@@ -2,10 +2,12 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import {
   Home, Radio, Heart, Clock, Bell, Settings, Download,
-  Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2, Gift
+  Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2, Gift,
+  Sun, Moon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -39,7 +41,7 @@ function NavLogo() {
   return (
     <div className="flex items-center gap-2.5">
       <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0 border border-primary/30"
-        style={{ background: '#0d0000' }}>
+        style={{ background: 'hsl(var(--card))' }}>
         <img
           src={OFFICIAL_LOGO}
           alt="VFP"
@@ -60,6 +62,7 @@ function NavLogo() {
 
 export default function MainLayout() {
   const { profile, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { hasUpdate } = useUpdateChecker();
@@ -163,6 +166,17 @@ export default function MainLayout() {
               </p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-sidebar-accent mb-1"
+            onClick={toggleTheme}
+          >
+            {theme === 'dark'
+              ? <Sun className="w-4 h-4 ml-2 text-warning" />
+              : <Moon className="w-4 h-4 ml-2 text-info" />}
+            {theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الغامق'}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -282,6 +296,16 @@ export default function MainLayout() {
                     )}
                   </nav>
                   <div className="p-4 border-t border-sidebar-border">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-sidebar-accent mb-1"
+                      onClick={toggleTheme}
+                    >
+                      {theme === 'dark'
+                        ? <Sun className="w-5 h-5 ml-2 text-warning" />
+                        : <Moon className="w-5 h-5 ml-2 text-info" />}
+                      {theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الغامق'}
+                    </Button>
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"

@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { RuntimeConfigProvider, useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { PreviewModeProvider } from '@/contexts/PreviewModeContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { WifiOff } from 'lucide-react';
 import { RouteGuard } from '@/components/common/RouteGuard';
 import { insertOperation } from '@/lib/api';
@@ -832,19 +833,21 @@ function DevToolsWarningOverlay() {
 const App: React.FC = () => {
   useContentProtection();
   return (
-    <Router>
-      <RuntimeConfigProvider>
-        <AuthProvider>
-          <PreviewModeProvider>
-            <MerchantProvider>
-              <MerchantClientProvider>
-                <AppWithGuard />
-              </MerchantClientProvider>
-            </MerchantProvider>
-          </PreviewModeProvider>
-        </AuthProvider>
-      </RuntimeConfigProvider>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <RuntimeConfigProvider>
+          <AuthProvider>
+            <PreviewModeProvider>
+              <MerchantProvider>
+                <MerchantClientProvider>
+                  <AppWithGuard />
+                </MerchantClientProvider>
+              </MerchantProvider>
+            </PreviewModeProvider>
+          </AuthProvider>
+        </RuntimeConfigProvider>
+      </Router>
+    </ThemeProvider>
   );
 };
 

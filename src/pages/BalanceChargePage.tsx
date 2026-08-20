@@ -758,7 +758,7 @@ function BalanceLoginDialog({
     <Dialog open={open} onOpenChange={v => { if (!v && !loading) onClose(); }}>
       <DialogContent
         className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[420px] p-0 border-0 gap-0 max-h-[90dvh] overflow-y-auto"
-        style={{ background: '#0d0000', border: `1px solid ${C.redBorder}`, borderRadius: 20 }}
+        style={{ background: 'hsl(var(--card))', border: `1px solid ${C.redBorder}`, borderRadius: 20 }}
         dir="rtl"
       >
         <div className="p-5 pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
@@ -1326,7 +1326,7 @@ function BalanceExecuteDialog({
       <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[440px] p-0 border-0 gap-0 max-h-[90dvh] overflow-y-auto"
-          style={{ background: '#0d0000', border: `1px solid ${C.redBorder}`, borderRadius: 20 }}
+          style={{ background: 'hsl(var(--card))', border: `1px solid ${C.redBorder}`, borderRadius: 20 }}
           dir="rtl"
         >
           {/* هيدر */}

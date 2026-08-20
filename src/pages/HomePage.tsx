@@ -339,11 +339,11 @@ function NativeDebugPanel() {
 
   return (
     <div className="mx-4 rounded-2xl overflow-hidden border"
-      style={{ borderColor: '#ffffff12', background: '#080d14' }}>
+      style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'linear-gradient(90deg,#0d1523 0%,#0f1a2e 100%)', borderBottom: '1px solid #ffffff0d' }}>
+        style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-2 h-2 rounded-full shrink-0 animate-pulse"
             style={{ backgroundColor: canExec ? '#22c55e' : loading ? '#60a5fa' : '#f59e0b' }} />
@@ -1215,7 +1215,7 @@ function ExecuteModal({
               <div className="flex items-center gap-3 px-5 py-4 border-b"
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
-                  style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
+                  style={{ borderColor: 'rgba(230,0,0,0.3)', background: 'hsl(var(--card))' }}>
                   <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover bg-black" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1417,8 +1417,8 @@ function ExecuteModal({
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
-                  <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
-                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
+                  <div className="rounded-xl overflow-hidden border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
@@ -1686,8 +1686,8 @@ function ExecuteModal({
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
-                  <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
-                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
+                  <div className="rounded-xl overflow-hidden border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
@@ -1871,8 +1871,8 @@ function ExecuteModal({
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
-                  <div className="rounded-xl overflow-hidden border mt-4" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
-                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
+                  <div className="rounded-xl overflow-hidden border mt-4" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>

@@ -83,7 +83,7 @@ export default function WalletLinesOtpPage() {
 
   return (
     <div className="min-h-screen pb-28 flex flex-col" dir="rtl"
-      style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
+      style={{ background: 'var(--gradient-background)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"

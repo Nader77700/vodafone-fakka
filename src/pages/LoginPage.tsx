@@ -269,7 +269,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4 border border-primary/30"
-            style={{ background: '#0d0000', boxShadow: '0 0 24px rgba(230,0,0,0.2)' }}>
+            style={{ background: 'hsl(var(--card))', boxShadow: '0 0 24px rgba(230,0,0,0.2)' }}>
             <img src={OFFICIAL_LOGO} alt="Vodafone Fakka Premium"
               className="w-full h-full object-contain p-1.5"
               onError={(e) => {

@@ -187,13 +187,13 @@ export default function ActivationPage() {
     // شاشة تحميل Premium بدلاً من الشاشة السوداء
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
-        style={{ background: 'radial-gradient(ellipse 90% 70% at 50% 35%, #200000 0%, #0d0000 50%, #000000 100%)' }}>
+        style={{ background: 'var(--gradient-background)' }}>
         <div className="flex flex-col items-center gap-5">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 rounded-full border-2 animate-ping"
               style={{ borderColor: 'rgba(230,0,0,0.2)', animationDuration: '1.5s' }} />
             <div className="w-16 h-16 rounded-2xl overflow-hidden border border-primary/30"
-              style={{ background: '#0d0000' }}>
+              style={{ background: 'hsl(var(--card))' }}>
               <img src="https://miaoda-conversation-file.s3cdn.medo.dev/user-bkii4kb9ihvk/app-cxsd6dl9ycch/20260623/file_00000000191471f49ddde7c1651efc02.png"
                 alt="VFP" className="w-full h-full object-contain p-1" />
             </div>
