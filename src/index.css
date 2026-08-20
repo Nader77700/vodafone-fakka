@@ -82,7 +82,8 @@ html, body, #root {
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 6% 94%;
-    --muted-foreground: 0 4% 42%;
+    /* الوضع الفاتح — نصوص حادة وواضحة */
+    --muted-foreground: 0 5% 28%;  /* أغمق بكثير = WCAG AA */
 
     --accent: 0 70% 60%;
     --accent-foreground: 0 0% 100%;

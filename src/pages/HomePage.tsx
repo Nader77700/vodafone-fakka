@@ -83,13 +83,13 @@ function HomeServicesCard() {
         className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95"
         aria-label="فتح قسم الخدمات"
       >
-      {/* Gradient Background — theme-aware */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10 dark:from-[#1a0a1a] dark:via-[#0d1020] dark:to-[#0a0d1a]" />
+        {/* Gradient Background — light: إندigo/أحمر جريء، dark: داكن */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 via-primary/8 to-accent/15 dark:from-[#1a0a1a] dark:via-[#0d1020] dark:to-[#0a0d1a]" />
         {/* Animated glow */}
-        <div className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700"
-          style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.25) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.18) 0%, transparent 55%)' }} />
-        {/* Border — theme-aware */}
-        <div className="absolute inset-0 border border-border/50 rounded-[28px] pointer-events-none group-hover:border-primary/30 transition-colors duration-500" />
+        <div className="absolute inset-0 opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+          style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.30) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.22) 0%, transparent 55%)' }} />
+        {/* Border — واضح في الوضع الفاتح */}
+        <div className="absolute inset-0 border-2 border-indigo-500/30 dark:border-white/10 rounded-[28px] pointer-events-none group-hover:border-primary/50 dark:group-hover:border-indigo-500/30 transition-colors duration-500" />
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
           style={{ background: 'linear-gradient(90deg, #6366f1 0%, #E60000 50%, #F7C948 100%)' }} />
@@ -2794,10 +2794,10 @@ function HomePage() {
       <div className="px-4 pt-3 space-y-4">
         {/* مجموعة كروت الفكة */}
         {displayedFakka.length > 0 && (
-          <div>
+          <div className="rounded-2xl border border-primary/20 bg-card/60 p-3 shadow-sm">
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-sm font-bold text-foreground">🎯 كروت الفكة</span>
-              <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
                 {displayedFakka.length}
               </span>
             </div>
@@ -2811,10 +2811,10 @@ function HomePage() {
 
         {/* مجموعة كروت المارد */}
         {displayedMared.length > 0 && (
-          <div>
+          <div className="rounded-2xl border border-amber-500/25 bg-card/60 p-3 shadow-sm">
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-sm font-bold text-foreground">🔥 كروت المارد</span>
-              <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
                 {displayedMared.length}
               </span>
             </div>

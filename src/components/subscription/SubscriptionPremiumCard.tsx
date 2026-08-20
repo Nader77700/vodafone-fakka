@@ -67,9 +67,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
   const progress   = isAdmin ? 0
     : fmtProgress(subscription?.activated_at ?? null, subscription?.expires_at ?? null);
 
-  // ألوان الحالة
+  // ألوان الحالة — المسؤول يأخذ الذهبي دائماً
   const statusColor =
-    isAdmin         ? '#00E5FF'
+    isAdmin         ? '#F7C948'
     : !subActive    ? '#ef4444'
     : timeLeft.status === 'critical' || timeLeft.status === 'expiring' ? '#F7C948'
     : '#22c55e';
@@ -140,13 +140,16 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
         {/* ── Info Grid: Admin → رسالة احترافية | User → تاريخ التفعيل + الانتهاء فقط ── */}
         {isAdmin ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-[#00E5FF1a] transition-colors"
-            style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.18)' }}
+          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
+            style={{
+              background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(230,150,0,0.08))',
+              border: '1.5px solid rgba(247,201,72,0.40)',
+            }}
             onClick={() => navigate('/admin')}
             title="الذهاب إلى لوحة التحكم"
           >
-            <Crown className="w-5 h-5 shrink-0" style={{ color: '#00E5FF' }} />
-            <p className="text-xs font-bold leading-snug" style={{ color: '#00E5FF' }}>
+            <Crown className="w-5 h-5 shrink-0" style={{ color: '#F7C948', filter: 'drop-shadow(0 0 6px #F7C94880)' }} />
+            <p className="text-xs font-black leading-snug" style={{ color: '#D4A017' }}>
               هذا الحساب يتمتع بصلاحيات مسؤول النظام واستخدام غير محدود ♾️
             </p>
           </div>
