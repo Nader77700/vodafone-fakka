@@ -101,10 +101,11 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden select-none bg-card dark:bg-[linear-gradient(135deg,#0a0000_0%,#1a0000_40%,#0d0d0d_100%)]"
+      className="relative rounded-2xl overflow-hidden select-none"
       style={{
-        border: `1.5px solid ${statusColor}35`,
-        boxShadow: `0 4px 32px ${statusColor}18`,
+        background: 'var(--sub-card-bg)',
+        border: 'var(--sub-card-border)',
+        boxShadow: 'var(--sub-card-shadow)',
       }}
     >
       {/* Glow top line */}
@@ -190,7 +191,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" style={{ color: '#F7C948' }} />
-                <span className="text-[11px] font-bold text-foreground/80">العمليات</span>
+                <span className="text-[11px] font-bold text-foreground">العمليات</span>
               </div>
               {!subActive ? (
                 <span className="text-sm font-black" style={{ color: '#ef4444' }}>لا توجد عمليات متاحة</span>
@@ -225,8 +226,8 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         {subscription && (
           <div className="flex items-center justify-between pt-1 border-t"
             style={{ borderColor: 'hsl(var(--border))' }}>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-widest">رقم الاشتراك</span>
-            <span className="text-[11px] font-mono font-bold tabular-nums" style={{ color: '#94a3b8' }}>
+            <span className="text-[9px] text-foreground/50 uppercase tracking-widest">رقم الاشتراك</span>
+            <span className="text-[11px] font-mono font-bold tabular-nums" className="text-foreground/70 font-mono text-[11px] font-bold tabular-nums">
               {subscription.serial_number ?? subscription.id.slice(0, 8).toUpperCase()}
             </span>
           </div>

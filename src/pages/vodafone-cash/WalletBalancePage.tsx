@@ -161,7 +161,7 @@ export default function WalletBalancePage() {
                 {svc.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white">{svc.title}</h3>
+                <h3 className="text-base font-bold text-foreground">{svc.title}</h3>
                 <p className="text-xs text-white/50 mt-0.5">{svc.desc}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-white/30 shrink-0 rotate-180" />

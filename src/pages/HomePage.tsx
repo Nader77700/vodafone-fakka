@@ -84,23 +84,23 @@ function HomeServicesCard() {
         aria-label="فتح قسم الخدمات"
       >
         {/* Gradient Background — light: إندigo/أحمر جريء، dark: داكن */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 via-primary/8 to-accent/15 dark:from-[#1a0a1a] dark:via-[#0d1020] dark:to-[#0a0d1a]" />
+        <div className="absolute inset-0 bg-card dark:bg-[linear-gradient(135deg,#1a0a1a_0%,#0d0010_50%,#0a0d1a_100%)]" />
         {/* Animated glow */}
         <div className="absolute inset-0 opacity-80 group-hover:opacity-100 transition-opacity duration-700"
-          style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.30) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.22) 0%, transparent 55%)' }} />
+          style={{ background: 'radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.15) 0%, transparent 55%)' }} />
         {/* Border — واضح في الوضع الفاتح */}
-        <div className="absolute inset-0 border-2 border-indigo-500/30 dark:border-white/10 rounded-[28px] pointer-events-none group-hover:border-primary/50 dark:group-hover:border-indigo-500/30 transition-colors duration-500" />
+        <div className="absolute inset-0 border-[1.5px] border-border dark:border-white/10 rounded-[28px] pointer-events-none group-hover:border-primary/40 transition-colors duration-500" />
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
-          style={{ background: 'linear-gradient(90deg, #6366f1 0%, #E60000 50%, #F7C948 100%)' }} />
+          style={{ background: 'linear-gradient(90deg, transparent 0%, #E60000 50%, transparent 100%)' }} />
 
         {/* Content */}
         <div className="relative z-10 p-5 flex flex-col gap-3">
           {/* Header row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-primary/20 shadow-inner bg-primary/10"
-                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(230,0,0,0.2))' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-primary/30 shadow-inner"
+                style={{ background: 'rgba(230,0,0,0.12)' }}>
                 <Sparkles className="w-5 h-5 text-primary-foreground dark:text-white" />
               </div>
               <div>
@@ -110,7 +110,7 @@ function HomeServicesCard() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg"
-                style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                style={{ background: 'rgba(230,0,0,0.10)', color: 'hsl(var(--primary))', border: '1px solid rgba(230,0,0,0.25)' }}>
                 4+
               </span>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-primary/20">
@@ -166,7 +166,7 @@ function HomeNetworksCard() {
         </div>
         {/* Overlays */}
         <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
           style={{ background: 'radial-gradient(circle at center, #F7C94860 0%, transparent 70%)' }} />
         <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-white/20 transition-colors" />
@@ -186,7 +186,7 @@ function HomeNetworksCard() {
             </span>
           </div>
           <div className="flex items-end justify-between gap-4 mt-1">
-            <p className="text-xs text-white/60 font-medium leading-relaxed max-w-[80%]">
+            <p className="text-xs text-white/70 dark:text-white/60 font-medium leading-relaxed max-w-[80%]">
               عروض حصرية لجميع الشبكات (فودافون، أورانج، اتصالات، وي).
             </p>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors border border-white/10 group-hover:border-primary">
@@ -623,7 +623,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
               <ChevronLeft className="w-3 h-3" style={{ color: '#00E5FF' }} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-white/70">🗓 {validity}</span>
+              <span className="text-[10px] font-medium text-foreground/60 dark:text-white/70">🗓 {validity}</span>
               <span className="text-[11px] font-black"
                 style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.55)' }}>
                 تنفيذ الآن
@@ -1340,7 +1340,7 @@ function ExecuteModal({
                               { label: 'الشبكة الفعالة', value: networkInfo.activeNetwork, ok: networkInfo.isMobileDataActive && networkInfo.isVodafoneMobile },
                             ].map(r => (
                               <div key={r.label} className="flex items-center justify-between pt-1">
-                                <span style={{ color: 'rgba(255,255,255,0.35)' }}>{r.label}</span>
+                                <span className="text-muted-foreground">{r.label}</span>
                                 <span className="font-bold font-mono" style={{ color: r.ok ? '#4ade80' : '#f87171' }}>{r.value}</span>
                               </div>
                             ))}
@@ -1352,8 +1352,8 @@ function ExecuteModal({
                   if (bridgeActive === null) return (
                     <div className="flex items-center gap-2.5 p-3 rounded-xl border"
                       style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }} />
-                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>جارٍ فحص الجسر المحلي…</p>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" className="text-muted-foreground" />
+                      <p className="text-xs" className="text-muted-foreground">جارٍ فحص الجسر المحلي…</p>
                     </div>
                   );
                   if (bridgeActive === true) return (
@@ -1572,10 +1572,10 @@ function ExecuteModal({
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-white">رقم الهاتف المستفيد</Label>
                   <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                    className="border-border bg-muted">
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" className="text-muted-foreground" />
                     <Input type="tel" inputMode="numeric" maxLength={11}
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
+                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-foreground placeholder:text-muted-foreground/40"
                       placeholder="01xxxxxxxxx" value={phone}
                       onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} dir="ltr"
                       disabled={submitting} />
@@ -1584,12 +1584,12 @@ function ExecuteModal({
 
                 {/* ── حقل الرقم السري ── */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-white">الرقم السري للمحفظة</Label>
+                  <Label className="text-sm font-medium text-foreground">الرقم السري للمحفظة</Label>
                   <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                    className="border-border bg-muted">
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" className="text-muted-foreground" />
                     <Input type="password" inputMode="numeric"
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
+                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-foreground placeholder:text-muted-foreground/40"
                       placeholder="أدخل الرقم السري" value={pin}
                       onChange={e => setPin(e.target.value)} disabled={submitting} />
                   </div>
@@ -1608,7 +1608,7 @@ function ExecuteModal({
                           }
                         }} 
                       />
-                      <span className="text-xs text-white/70">حفظ الرقم السري لتسهيل العمليات القادمة</span>
+                      <span className="text-xs text-muted-foreground">حفظ الرقم السري لتسهيل العمليات القادمة</span>
                     </label>
                     <p className="text-[11px] pr-1 flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
                       <span>⚠️</span>
@@ -1649,7 +1649,7 @@ function ExecuteModal({
                       {/* الحل */}
                       {hasSolution && (
                         <div className="pt-2.5 border-t space-y-1.5" style={{ borderColor: locked ? 'rgba(251,146,60,0.2)' : 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>الحل</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider" className="text-muted-foreground">الحل</p>
                           {hallLines.map((line, i) => (
                             <div key={i} className="flex items-start gap-1.5">
                               <span className="text-[9px] shrink-0 mt-1" style={{ color: titleColor }}>▸</span>
@@ -1671,7 +1671,7 @@ function ExecuteModal({
                       {/* نصائح الشبكة */}
                       {shouldShowNetworkTips(lastErrorType) && (
                         <div className="pt-2 border-t" style={{ borderColor: 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[10px] font-black uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>تحقق أيضاً</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider mb-1.5" className="text-muted-foreground">تحقق أيضاً</p>
                           {['أوقف الـ WiFi وشغّل بيانات الهاتف (4G)', 'تأكد أن الشريحة النشطة هي Vodafone', 'أعد تشغيل بيانات الهاتف ثم حاول مجدداً'].map((tip, i) => (
                             <div key={i} className="flex items-start gap-1.5">
                               <span className="text-[9px] shrink-0 mt-1 text-red-400">▸</span>
@@ -2710,15 +2710,17 @@ function HomePage() {
       <div className="px-4 pt-3">
         <div className="grid grid-cols-2 gap-2">
           {[
-            { icon: '⚡', label: 'شحن سريع',            desc: 'تنفيذ فوري مباشر',         color: '#00E5FF' },
-            { icon: '📊', label: 'إحصائيات فورية',       desc: 'تقارير العمليات',          color: '#F7C948' },
-            { icon: '🔒', label: 'نظام اشتراكات آمن',   desc: 'حماية كاملة',              color: '#00C896' },
-            { icon: '🎁', label: 'أكواد تفعيل ذكية',    desc: 'تجديد بضغطة واحدة',       color: '#a78bfa' },
-          ].map(({ icon, label, desc, color }) => (
-            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-gradient-to-br from-indigo-500/8 via-card to-primary/5 shadow-sm">
+            { icon: '⚡', label: 'شحن سريع',            desc: 'تنفيذ فوري مباشر' },
+            { icon: '📊', label: 'إحصائيات فورية',       desc: 'تقارير العمليات' },
+            { icon: '🔒', label: 'نظام اشتراكات آمن',   desc: 'حماية كاملة' },
+            { icon: '🎁', label: 'أكواد تفعيل ذكية',    desc: 'تجديد بضغطة واحدة' },
+          ].map(({ icon, label, desc }) => (
+            <div key={label}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border"
+              style={{ boxShadow: 'var(--shadow-card)' }}>
               <span className="text-lg shrink-0">{icon}</span>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-balance truncate" style={{ color }}>{label}</p>
+                <p className="text-[11px] font-black text-foreground truncate">{label}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{desc}</p>
               </div>
             </div>
