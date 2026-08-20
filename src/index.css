@@ -132,6 +132,16 @@ html, body, #root {
     --debug-header-bg:     hsl(0 6% 91%);
     --debug-card-bg:       hsl(0 0% 100%);
     --debug-card-border:   hsl(0 8% 88%);
+    /* بطاقات حالة debug — الوضع الفاتح */
+    --debug-card-ok:   hsl(142 60% 94%);
+    --debug-card-warn: hsl(38  80% 93%);
+    --debug-card-err:  hsl(0   80% 95%);
+    --debug-card-info: hsl(214 80% 94%);
+    /* قيم نص debug — الوضع الفاتح (غامق وواضح) */
+    --debug-val-ok:   hsl(142 72% 22%);
+    --debug-val-warn: hsl(38  85% 28%);
+    --debug-val-err:  hsl(0   85% 38%);
+    --debug-val-info: hsl(214 85% 35%);
 
     /* ظلال الوضع الفاتح */
     --glow-primary:  0 2px 16px rgba(230, 0, 0, 0.22);
@@ -228,6 +238,16 @@ html, body, #root {
     --debug-header-bg:     hsl(220 30% 8%);
     --debug-card-bg:       hsl(220 30% 10%);
     --debug-card-border:   rgba(255,255,255,0.07);
+    /* بطاقات حالة debug — الوضع الغامق */
+    --debug-card-ok:   hsl(142 50% 8%);
+    --debug-card-warn: hsl(38  60% 9%);
+    --debug-card-err:  hsl(0   60% 9%);
+    --debug-card-info: hsl(214 50% 9%);
+    /* قيم نص debug — الوضع الغامق (فاتح وواضح) */
+    --debug-val-ok:   hsl(142 72% 62%);
+    --debug-val-warn: hsl(38  92% 58%);
+    --debug-val-err:  hsl(0   80% 68%);
+    --debug-val-info: hsl(214 90% 72%);
 
     --glass-bg:     rgba(255, 255, 255, 0.030);
     --glass-border: rgba(255, 255, 255, 0.08);

@@ -226,10 +226,10 @@ function DebugValueCard({
   status: 'ok' | 'warn' | 'error' | 'info';
 }) {
   const colors = {
-    ok:    { border: '#22c55e33', bg: '#0d1f0d', dot: '#22c55e', val: '#4ade80' },
-    warn:  { border: '#f59e0b33', bg: '#1f160a', dot: '#f59e0b', val: '#fbbf24' },
-    error: { border: '#ef444433', bg: '#1f0d0d', dot: '#ef4444', val: '#f87171' },
-    info:  { border: '#3b82f633', bg: '#0d1020', dot: '#60a5fa', val: '#93c5fd' },
+    ok:    { border: '#22c55e55', bg: 'var(--debug-card-ok)',   dot: '#22c55e', val: 'var(--debug-val-ok)'   },
+    warn:  { border: '#f59e0b55', bg: 'var(--debug-card-warn)', dot: '#f59e0b', val: 'var(--debug-val-warn)' },
+    error: { border: '#ef444455', bg: 'var(--debug-card-err)',  dot: '#ef4444', val: 'var(--debug-val-err)'  },
+    info:  { border: '#3b82f655', bg: 'var(--debug-card-info)', dot: '#3b82f6', val: 'var(--debug-val-info)' },
   }[status];
 
   return (
@@ -459,15 +459,15 @@ function NativeDebugPanel() {
         <div className="px-4 pb-4">
           <div className="rounded-xl px-4 py-3 flex items-center gap-3"
             style={{
-              background: canExec ? '#0d1f0d' : '#1f160a',
-              border: `1px solid ${canExec ? '#22c55e33' : '#f59e0b33'}`,
+              background: canExec ? 'var(--debug-card-ok)' : 'var(--debug-card-warn)',
+              border: `1px solid ${canExec ? '#22c55e55' : '#f59e0b55'}`,
             }}>
             {canExec
-              ? <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: '#22c55e' }} />
-              : <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#f59e0b' }} />}
+              ? <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: '#16a34a' }} />
+              : <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#b45309' }} />}
             <div className="min-w-0">
               <p className="text-xs font-bold font-mono"
-                style={{ color: canExec ? '#4ade80' : '#fbbf24' }}>
+                style={{ color: canExec ? 'var(--debug-val-ok)' : 'var(--debug-val-warn)' }}>
                 canExecuteNative = {canExec ? 'true' : 'false'}
               </p>
               <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -2715,7 +2715,7 @@ function HomePage() {
             { icon: '🔒', label: 'نظام اشتراكات آمن',   desc: 'حماية كاملة',              color: '#00C896' },
             { icon: '🎁', label: 'أكواد تفعيل ذكية',    desc: 'تجديد بضغطة واحدة',       color: '#a78bfa' },
           ].map(({ icon, label, desc, color }) => (
-            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-white/6 bg-card/60">
+            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-gradient-to-br from-indigo-500/8 via-card to-primary/5 shadow-sm">
               <span className="text-lg shrink-0">{icon}</span>
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-balance truncate" style={{ color }}>{label}</p>
