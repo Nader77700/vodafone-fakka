@@ -83,38 +83,38 @@ function HomeServicesCard() {
         className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95"
         aria-label="فتح قسم الخدمات"
       >
-        {/* Gradient Background — light: إندigo/أحمر جريء، dark: داكن */}
-        <div className="absolute inset-0 bg-card dark:bg-[linear-gradient(135deg,#1a0a1a_0%,#0d0010_50%,#0a0d1a_100%)]" />
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a1a] via-[#0d1020] to-[#0a0d1a]" />
         {/* Animated glow */}
-        <div className="absolute inset-0 opacity-80 group-hover:opacity-100 transition-opacity duration-700"
-          style={{ background: 'radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.15) 0%, transparent 55%)' }} />
-        {/* Border — واضح في الوضع الفاتح */}
-        <div className="absolute inset-0 border-[1.5px] border-border dark:border-white/10 rounded-[28px] pointer-events-none group-hover:border-primary/40 transition-colors duration-500" />
+        <div className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700"
+          style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.25) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.18) 0%, transparent 55%)' }} />
+        {/* Border */}
+        <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-indigo-500/30 transition-colors duration-500" />
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
-          style={{ background: 'linear-gradient(90deg, transparent 0%, #E60000 50%, transparent 100%)' }} />
+          style={{ background: 'linear-gradient(90deg, #6366f1 0%, #E60000 50%, #F7C948 100%)' }} />
 
         {/* Content */}
         <div className="relative z-10 p-5 flex flex-col gap-3">
           {/* Header row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-primary/30 shadow-inner"
-                style={{ background: 'rgba(230,0,0,0.12)' }}>
-                <Sparkles className="w-5 h-5 text-primary-foreground dark:text-white" />
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/15 shadow-inner"
+                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(230,0,0,0.2))' }}>
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-black leading-tight text-foreground dark:text-white drop-shadow-md">الخدمات</h3>
-                <p className="text-[10px] font-medium text-muted-foreground">جميع خدمات التطبيق في مكان واحد</p>
+                <h3 className="text-lg font-black text-white drop-shadow-md leading-tight">الخدمات</h3>
+                <p className="text-[10px] text-white/40 font-medium">جميع خدمات التطبيق في مكان واحد</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg"
-                style={{ background: 'rgba(230,0,0,0.10)', color: 'hsl(var(--primary))', border: '1px solid rgba(230,0,0,0.25)' }}>
+              <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg backdrop-blur-md"
+                style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
                 4+
               </span>
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-primary/20">
-                <ChevronLeft className="w-4 h-4 text-foreground dark:text-white" />
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-indigo-500/60 transition-colors border border-white/10 group-hover:border-indigo-400/50">
+                <ChevronLeft className="w-4 h-4 text-white" />
               </div>
             </div>
           </div>
@@ -166,7 +166,7 @@ function HomeNetworksCard() {
         </div>
         {/* Overlays */}
         <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
           style={{ background: 'radial-gradient(circle at center, #F7C94860 0%, transparent 70%)' }} />
         <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-white/20 transition-colors" />
@@ -2710,17 +2710,15 @@ function HomePage() {
       <div className="px-4 pt-3">
         <div className="grid grid-cols-2 gap-2">
           {[
-            { icon: '⚡', label: 'شحن سريع',            desc: 'تنفيذ فوري مباشر' },
-            { icon: '📊', label: 'إحصائيات فورية',       desc: 'تقارير العمليات' },
-            { icon: '🔒', label: 'نظام اشتراكات آمن',   desc: 'حماية كاملة' },
-            { icon: '🎁', label: 'أكواد تفعيل ذكية',    desc: 'تجديد بضغطة واحدة' },
-          ].map(({ icon, label, desc }) => (
-            <div key={label}
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border"
-              style={{ boxShadow: 'var(--shadow-card)' }}>
+            { icon: '⚡', label: 'شحن سريع',            desc: 'تنفيذ فوري مباشر',         color: '#00E5FF' },
+            { icon: '📊', label: 'إحصائيات فورية',       desc: 'تقارير العمليات',          color: '#F7C948' },
+            { icon: '🔒', label: 'نظام اشتراكات آمن',   desc: 'حماية كاملة',              color: '#00C896' },
+            { icon: '🎁', label: 'أكواد تفعيل ذكية',    desc: 'تجديد بضغطة واحدة',       color: '#a78bfa' },
+          ].map(({ icon, label, desc, color }) => (
+            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-white/6 bg-card/60">
               <span className="text-lg shrink-0">{icon}</span>
               <div className="min-w-0">
-                <p className="text-[11px] font-black text-foreground truncate">{label}</p>
+                <p className="text-[11px] font-bold text-balance truncate" style={{ color }}>{label}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{desc}</p>
               </div>
             </div>

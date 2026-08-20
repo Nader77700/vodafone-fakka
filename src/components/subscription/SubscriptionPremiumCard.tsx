@@ -38,7 +38,7 @@ function PremiumBar({ pct, color }: { pct: number; color: string }) {
   const [w, setW] = useState(0);
   useEffect(() => { const t = setTimeout(() => setW(pct), 120); return () => clearTimeout(t); }, [pct]);
   return (
-    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted))' }}>
+    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
       <div
         className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{
@@ -67,9 +67,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
   const progress   = isAdmin ? 0
     : fmtProgress(subscription?.activated_at ?? null, subscription?.expires_at ?? null);
 
-  // ألوان الحالة — المسؤول يأخذ الذهبي دائماً
+  // ألوان الحالة
   const statusColor =
-    isAdmin         ? '#F7C948'
+    isAdmin         ? '#00E5FF'
     : !subActive    ? '#ef4444'
     : timeLeft.status === 'critical' || timeLeft.status === 'expiring' ? '#F7C948'
     : '#22c55e';
@@ -141,16 +141,13 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
         {/* ── Info Grid: Admin → رسالة احترافية | User → تاريخ التفعيل + الانتهاء فقط ── */}
         {isAdmin ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
-            style={{
-              background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(230,150,0,0.08))',
-              border: '1.5px solid rgba(247,201,72,0.40)',
-            }}
+          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-[#00E5FF1a] transition-colors"
+            style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.18)' }}
             onClick={() => navigate('/admin')}
             title="الذهاب إلى لوحة التحكم"
           >
-            <Crown className="w-5 h-5 shrink-0" style={{ color: '#F7C948', filter: 'drop-shadow(0 0 6px #F7C94880)' }} />
-            <p className="text-xs font-black leading-snug" style={{ color: '#D4A017' }}>
+            <Crown className="w-5 h-5 shrink-0" style={{ color: '#00E5FF' }} />
+            <p className="text-xs font-bold leading-snug" style={{ color: '#00E5FF' }}>
               هذا الحساب يتمتع بصلاحيات مسؤول النظام واستخدام غير محدود ♾️
             </p>
           </div>
@@ -171,7 +168,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               },
             ].map(({ icon: Icon, label, value, color }) => (
               <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
-                style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${color}18`, color }}>
                   <Icon className="w-3.5 h-3.5" />
@@ -187,11 +184,11 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
         {/* ── قسم العمليات ── */}
         {!isAdmin && (
-          <div className="space-y-2.5 pt-1 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
+          <div className="space-y-2.5 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" style={{ color: '#F7C948' }} />
-                <span className="text-[11px] font-bold text-foreground">العمليات</span>
+                <span className="text-[11px] font-bold text-foreground/80">العمليات</span>
               </div>
               {!subActive ? (
                 <span className="text-sm font-black" style={{ color: '#ef4444' }}>لا توجد عمليات متاحة</span>
@@ -225,9 +222,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         {/* ── Subscription Number ── */}
         {subscription && (
           <div className="flex items-center justify-between pt-1 border-t"
-            style={{ borderColor: 'hsl(var(--border))' }}>
-            <span className="text-[9px] text-foreground/50 uppercase tracking-widest">رقم الاشتراك</span>
-            <span className="text-[11px] font-mono font-bold tabular-nums" className="text-foreground/70 font-mono text-[11px] font-bold tabular-nums">
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <span className="text-[9px] text-muted-foreground uppercase tracking-widest">رقم الاشتراك</span>
+            <span className="text-[11px] font-mono font-bold tabular-nums" style={{ color: '#94a3b8' }}>
               {subscription.serial_number ?? subscription.id.slice(0, 8).toUpperCase()}
             </span>
           </div>
