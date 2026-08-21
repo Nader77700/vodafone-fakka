@@ -22,7 +22,7 @@ export default function WalletLinesPage() {
     if (!access.allowed) {
       return (
         <div className="min-h-screen flex flex-col" dir="rtl"
-          style={{ background: 'var(--gradient-background)' }}>
+          style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
           <div className="sticky top-0 z-30 px-4 pt-safe-top"
             style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-3 py-4">
@@ -58,7 +58,7 @@ export default function WalletLinesPage() {
 
   return (
     <div className="min-h-screen pb-28 flex flex-col" dir="rtl"
-      style={{ background: 'var(--gradient-background)' }}>
+      style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"

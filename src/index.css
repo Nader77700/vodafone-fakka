@@ -53,11 +53,7 @@ html, body, #root {
 }
 
 @layer base {
-  /* ══════════════════════════════════════════════════════════════
-     الوضع الغامق — Dark Mode الأصلي (الافتراضي دائماً)
-     ══════════════════════════════════════════════════════════════ */
-  :root, html, html.dark {
-    color-scheme: dark;
+  :root {
     /* Vodafone Fakka Premium v15 — Official Vodafone Red · White · Dark */
     --radius: 0.75rem;
 
@@ -146,135 +142,9 @@ html, body, #root {
     --card-gold-border: rgba(247, 201, 72, 0.35);
     --card-cyan-glow:   0 0 18px rgba(0, 229, 255, 0.32);
     --card-gold-glow:   0 0 18px rgba(247, 201, 72, 0.32);
-
-    /* ── debug panel — الوضع الغامق ── */
-    --debug-bg:          hsl(0 8% 9%);
-    --debug-border:      rgba(255,255,255,0.08);
-    --debug-text-dim:    rgba(255,255,255,0.40);
-    --debug-header-bg:   hsl(220 30% 8%);
-    --debug-card-bg:     hsl(220 30% 10%);
-    --debug-card-border: rgba(255,255,255,0.07);
-    --debug-card-ok:     hsl(142 50% 8%);
-    --debug-card-warn:   hsl(38  60% 9%);
-    --debug-card-err:    hsl(0   60% 9%);
-    --debug-card-info:   hsl(214 50% 9%);
-    --debug-val-ok:      hsl(142 72% 62%);
-    --debug-val-warn:    hsl(38  92% 58%);
-    --debug-val-err:     hsl(0   80% 68%);
-    --debug-val-info:    hsl(214 90% 72%);
-
-    /* ── بطاقة الاشتراك Premium — Dark ── */
-    --sub-card-bg:     linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%);
-    --sub-card-border: 1.5px solid rgba(0,229,255,0.18);
-    --sub-card-shadow: 0 4px 32px rgba(0,229,255,0.08), 0 1px 0 rgba(255,255,255,0.04) inset;
-
-    /* ── card-shadow tokens ── */
-    --card-shadow:       0 4px 28px rgba(0,0,0,0.65);
-    --card-shadow-hover: 0 8px 36px rgba(230,0,0,0.30);
   }
 
-  /* ══════════════════════════════════════════════════════════════
-     الوضع الفاتح — Light Mode (عند class="light" فقط)
-     ══════════════════════════════════════════════════════════════ */
-  html.light {
-    color-scheme: light;
-
-    --background: 0 0% 96%;
-    --foreground: 0 0% 4%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 4%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 4%;
-
-    --primary: 0 100% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 93%;
-    --muted-foreground: 0 0% 25%;
-
-    --accent: 0 0% 90%;
-    --accent-foreground: 0 0% 4%;
-
-    --destructive: 0 84% 45%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 82%;
-    --input: 0 0% 90%;
-    --ring: 0 100% 45%;
-
-    --success: 142 60% 28%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 35%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 90% 38%;
-    --info-foreground: 0 0% 100%;
-
-    --chart-1: 0 100% 45%;
-    --chart-2: 0 0% 20%;
-    --chart-3: 142 60% 28%;
-    --chart-4: 38 92% 35%;
-    --chart-5: 210 90% 38%;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 8%;
-    --sidebar-primary: 0 100% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 93%;
-    --sidebar-accent-foreground: 0 0% 4%;
-    --sidebar-border: 0 0% 86%;
-    --sidebar-ring: 0 100% 45%;
-
-    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #CC0000 100%);
-    --gradient-secondary:  linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
-    --gradient-card:       linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%);
-    --gradient-background: linear-gradient(160deg, #f8f8f8 0%, #f0f0f0 100%);
-    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.05) 0%, rgba(0,0,0,0.02) 100%);
-
-    --glow-primary:  0 2px 20px rgba(230, 0, 0, 0.18);
-    --glow-secondary:0 2px 20px rgba(0, 0, 0, 0.10);
-    --glow-accent:   0 2px 20px rgba(230, 0, 0, 0.12);
-    --shadow-card:   0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05);
-    --shadow-hover:  0 6px 24px rgba(0, 0, 0, 0.12);
-
-    --card-shadow:       0 2px 8px rgba(0,0,0,0.08), 0 0 0 1.5px rgba(0,0,0,0.06);
-    --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.12), 0 0 0 1.5px rgba(230,0,0,0.2);
-
-    --sub-card-bg:     #ffffff;
-    --sub-card-border: 1.5px solid rgba(230,0,0,0.18);
-    --sub-card-shadow: 0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
-
-    --glass-bg:     rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(0, 0, 0, 0.08);
-
-    --card-red-border:  rgba(230, 0, 0, 0.22);
-    --card-red-glow:    0 0 12px rgba(230, 0, 0, 0.14);
-    --card-cyan-border: rgba(0, 120, 160, 0.25);
-    --card-gold-border: rgba(160, 120, 0, 0.25);
-    --card-cyan-glow:   0 0 10px rgba(0, 120, 160, 0.15);
-    --card-gold-glow:   0 0 10px rgba(160, 120, 0, 0.15);
-
-    --debug-bg:            hsl(0 0% 93%);
-    --debug-border:        hsl(0 0% 80%);
-    --debug-text-dim:      hsl(0 0% 35%);
-    --debug-header-bg:     hsl(0 0% 90%);
-    --debug-card-bg:       hsl(0 0% 100%);
-    --debug-card-border:   hsl(0 0% 85%);
-    --debug-card-ok:   hsl(142 55% 93%);
-    --debug-card-warn: hsl(38  75% 92%);
-    --debug-card-err:  hsl(0   70% 94%);
-    --debug-card-info: hsl(214 70% 93%);
-    --debug-val-ok:   hsl(142 72% 20%);
-    --debug-val-warn: hsl(38  85% 25%);
-    --debug-val-err:  hsl(0   85% 35%);
-    --debug-val-info: hsl(214 85% 30%);
-  }
-
-  /* Force dark mode always (default) */
+  /* Force dark mode always */
   html { color-scheme: dark; }
 
   * { @apply border-border; }
@@ -355,7 +225,7 @@ html, body, #root {
   .recharge-card.selected {
     border-color: rgba(7, 189, 212, 0.7);
     box-shadow: var(--card-cyan-glow), inset 0 0 16px rgba(7, 189, 212, 0.08);
-    background: linear-gradient(145deg, rgba(7, 189, 212, 0.08) 0%, hsl(var(--card)) 100%);
+    background: linear-gradient(145deg, rgba(7, 189, 212, 0.08) 0%, #121521 100%);
     animation: border-pulse-cyan 1.6s ease-in-out infinite;
   }
   /* Gold variant for Mared */

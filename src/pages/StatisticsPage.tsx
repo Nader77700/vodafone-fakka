@@ -37,11 +37,11 @@ function StatCard({ icon: Icon, label, value, sub, accent }: StatCardProps) {
 
 const CHART_TOOLTIP_STYLE = {
   contentStyle: {
-    background: 'hsl(var(--card))',
-    border: '1px solid hsl(var(--border))',
+    background: '#151523',
+    border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: '12px',
     fontSize: '12px',
-    color: 'hsl(var(--card-foreground))',
+    color: '#fff',
   },
   cursor: { fill: 'rgba(230,0,0,0.08)' },
 };

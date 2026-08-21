@@ -103,9 +103,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
     <div
       className="relative rounded-2xl overflow-hidden select-none"
       style={{
-        background: 'var(--sub-card-bg)',
-        border: 'var(--sub-card-border)',
-        boxShadow: 'var(--sub-card-shadow)',
+        background: 'linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%)',
+        border: `1.5px solid ${statusColor}35`,
+        boxShadow: `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
       }}
     >
       {/* Glow top line */}

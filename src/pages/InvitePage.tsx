@@ -69,7 +69,7 @@ export default function InvitePage() {
         {/* شعار التطبيق */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl overflow-hidden mb-4 border border-primary/30"
-            style={{ background: 'hsl(var(--card))', boxShadow: '0 0 24px rgba(230,0,0,0.2)' }}>
+            style={{ background: '#0d0000', boxShadow: '0 0 24px rgba(230,0,0,0.2)' }}>
             <img src={OFFICIAL_LOGO} alt="Vodafone Fakka Premium" className="w-full h-full object-contain p-1.5" />
           </div>
         </div>

@@ -129,7 +129,7 @@ function HomeServicesCard() {
             ].map(s => (
               <span key={s.label}
                 className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}40` }}>
+                style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` }}>
                 {s.label}
               </span>
             ))}
@@ -186,7 +186,7 @@ function HomeNetworksCard() {
             </span>
           </div>
           <div className="flex items-end justify-between gap-4 mt-1">
-            <p className="text-xs text-white/70 dark:text-white/60 font-medium leading-relaxed max-w-[80%]">
+            <p className="text-xs text-white/60 font-medium leading-relaxed max-w-[80%]">
               عروض حصرية لجميع الشبكات (فودافون، أورانج، اتصالات، وي).
             </p>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors border border-white/10 group-hover:border-primary">
@@ -226,10 +226,10 @@ function DebugValueCard({
   status: 'ok' | 'warn' | 'error' | 'info';
 }) {
   const colors = {
-    ok:    { border: '#22c55e55', bg: 'var(--debug-card-ok)',   dot: '#22c55e', val: 'var(--debug-val-ok)'   },
-    warn:  { border: '#f59e0b55', bg: 'var(--debug-card-warn)', dot: '#f59e0b', val: 'var(--debug-val-warn)' },
-    error: { border: '#ef444455', bg: 'var(--debug-card-err)',  dot: '#ef4444', val: 'var(--debug-val-err)'  },
-    info:  { border: '#3b82f655', bg: 'var(--debug-card-info)', dot: '#3b82f6', val: 'var(--debug-val-info)' },
+    ok:    { border: '#22c55e33', bg: '#0d1f0d', dot: '#22c55e', val: '#4ade80' },
+    warn:  { border: '#f59e0b33', bg: '#1f160a', dot: '#f59e0b', val: '#fbbf24' },
+    error: { border: '#ef444433', bg: '#1f0d0d', dot: '#ef4444', val: '#f87171' },
+    info:  { border: '#3b82f633', bg: '#0d1020', dot: '#60a5fa', val: '#93c5fd' },
   }[status];
 
   return (
@@ -240,14 +240,14 @@ function DebugValueCard({
         <span className="text-[10px] font-bold uppercase tracking-widest"
           style={{ color: colors.dot }}>{label}</span>
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded"
-          style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>{source}</span>
+          style={{ background: '#ffffff08', color: '#ffffff40' }}>{source}</span>
       </div>
       {/* Raw value — أكبر حجم وأوضح */}
       <p className="text-sm font-bold font-mono leading-tight break-all"
         style={{ color: colors.val }}>{rawValue}</p>
       {/* Sub value (e.g. MCC+MNC code) */}
       {subValue && (
-        <p className="text-[11px] font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>{subValue}</p>
+        <p className="text-[11px] font-mono" style={{ color: '#ffffff55' }}>{subValue}</p>
       )}
     </div>
   );
@@ -257,7 +257,7 @@ function DebugValueCard({
 function Row({ k, v, c }: { k: string; v: string; c?: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>{k}:</span>
+      <span className="shrink-0" style={{ color: '#ffffff30' }}>{k}:</span>
       <span className="text-right break-all" style={{ color: c ?? '#94a3b8' }}>{v}</span>
     </div>
   );
@@ -339,11 +339,11 @@ function NativeDebugPanel() {
 
   return (
     <div className="mx-4 rounded-2xl overflow-hidden border"
-      style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+      style={{ borderColor: '#ffffff12', background: '#080d14' }}>
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
+        style={{ background: 'linear-gradient(90deg,#0d1523 0%,#0f1a2e 100%)', borderBottom: '1px solid #ffffff0d' }}>
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-2 h-2 rounded-full shrink-0 animate-pulse"
             style={{ backgroundColor: canExec ? '#22c55e' : loading ? '#60a5fa' : '#f59e0b' }} />
@@ -430,11 +430,11 @@ function NativeDebugPanel() {
       )}
 
       {/* ── Divider ── */}
-      {info && <div style={{ height: '1px', background: 'hsl(var(--border))', margin: '0 16px' }} />}
+      {info && <div style={{ height: '1px', background: '#ffffff08', margin: '0 16px' }} />}
 
       {/* ── Extra Info rows ── */}
       {info && (
-        <div className="px-4 py-3 grid grid-cols-1 gap-0 divide-y divide-border">
+        <div className="px-4 py-3 grid grid-cols-1 gap-0 divide-y divide-white/[0.04]">
           {[
             { k: 'Phone Permission',    v: info.hasPhonePermission ? 'GRANTED ✓' : 'DENIED ✗',           ok: info.hasPhonePermission },
             { k: 'Active Data SIM',     v: info.isVodafoneMobile  ? 'Vodafone EG ✓' : `${info.activeDataSimOperatorName}`, ok: info.isVodafoneMobile },
@@ -459,18 +459,18 @@ function NativeDebugPanel() {
         <div className="px-4 pb-4">
           <div className="rounded-xl px-4 py-3 flex items-center gap-3"
             style={{
-              background: canExec ? 'var(--debug-card-ok)' : 'var(--debug-card-warn)',
-              border: `1px solid ${canExec ? '#22c55e55' : '#f59e0b55'}`,
+              background: canExec ? '#0d1f0d' : '#1f160a',
+              border: `1px solid ${canExec ? '#22c55e33' : '#f59e0b33'}`,
             }}>
             {canExec
-              ? <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: '#16a34a' }} />
-              : <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#b45309' }} />}
+              ? <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: '#22c55e' }} />
+              : <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#f59e0b' }} />}
             <div className="min-w-0">
               <p className="text-xs font-bold font-mono"
-                style={{ color: canExec ? 'var(--debug-val-ok)' : 'var(--debug-val-warn)' }}>
+                style={{ color: canExec ? '#4ade80' : '#fbbf24' }}>
                 canExecuteNative = {canExec ? 'true' : 'false'}
               </p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              <p className="text-[11px] mt-0.5" style={{ color: '#ffffff55' }}>
                 {canExec
                   ? 'Active Data SIM = Vodafone ✓  +  بيانات جوال ✓'
                   : [
@@ -487,7 +487,7 @@ function NativeDebugPanel() {
       {/* ── Web hint ── */}
       {!isNative && (
         <div className="px-4 pb-3 text-center">
-          <p className="text-[10px] font-mono" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
+          <p className="text-[10px] font-mono" style={{ color: '#ffffff25' }}>
             ⓘ القيم الحقيقية من TelephonyManager تظهر فقط داخل APK الأصلي
           </p>
         </div>
@@ -623,7 +623,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
               <ChevronLeft className="w-3 h-3" style={{ color: '#00E5FF' }} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-foreground/60 dark:text-white/70">🗓 {validity}</span>
+              <span className="text-[10px] font-medium text-white/70">🗓 {validity}</span>
               <span className="text-[11px] font-black"
                 style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.55)' }}>
                 تنفيذ الآن
@@ -649,7 +649,7 @@ function OperationDetailsDialog({
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
         className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[400px] p-0 border-0 max-h-[88dvh] overflow-y-auto"
-        className="bg-card border border-primary/25" style={{ borderRadius: 20 }}
+        style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
         dir="rtl"
       >
         <div className="h-1 w-full rounded-t-[20px]"
@@ -1202,7 +1202,7 @@ function ExecuteModal({
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[460px] p-0 border-0 max-h-[92dvh] overflow-y-auto gap-0"
-          className="bg-card border border-primary/25" style={{ borderRadius: 20 }}
+          style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
           dir="rtl"
         >
           {product && !receipt && (
@@ -1215,7 +1215,7 @@ function ExecuteModal({
               <div className="flex items-center gap-3 px-5 py-4 border-b"
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
-                  style={{ borderColor: 'rgba(230,0,0,0.3)', background: 'hsl(var(--card))' }}>
+                  style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
                   <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover bg-black" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1340,7 +1340,7 @@ function ExecuteModal({
                               { label: 'الشبكة الفعالة', value: networkInfo.activeNetwork, ok: networkInfo.isMobileDataActive && networkInfo.isVodafoneMobile },
                             ].map(r => (
                               <div key={r.label} className="flex items-center justify-between pt-1">
-                                <span className="text-muted-foreground">{r.label}</span>
+                                <span style={{ color: 'rgba(255,255,255,0.35)' }}>{r.label}</span>
                                 <span className="font-bold font-mono" style={{ color: r.ok ? '#4ade80' : '#f87171' }}>{r.value}</span>
                               </div>
                             ))}
@@ -1352,8 +1352,8 @@ function ExecuteModal({
                   if (bridgeActive === null) return (
                     <div className="flex items-center gap-2.5 p-3 rounded-xl border"
                       style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" className="text-muted-foreground" />
-                      <p className="text-xs" className="text-muted-foreground">جارٍ فحص الجسر المحلي…</p>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>جارٍ فحص الجسر المحلي…</p>
                     </div>
                   );
                   if (bridgeActive === true) return (
@@ -1417,12 +1417,12 @@ function ExecuteModal({
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
-                  <div className="rounded-xl overflow-hidden border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                  <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
-                    <div className="divide-y divide-border">
+                    <div className="divide-y divide-white/[0.04]">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
@@ -1498,7 +1498,7 @@ function ExecuteModal({
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                            <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
                               <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
                             <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
@@ -1512,7 +1512,7 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>Step {s.step}</span>
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
                             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
@@ -1520,10 +1520,10 @@ function ExecuteModal({
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                              <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
                                 <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
                               <div className="p-2 space-y-0.5 text-[9px] font-mono">
@@ -1572,10 +1572,10 @@ function ExecuteModal({
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-white">رقم الهاتف المستفيد</Label>
                   <div className="relative rounded-xl overflow-hidden border h-12"
-                    className="border-border bg-muted">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" className="text-muted-foreground" />
+                    style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'rgba(255,255,255,0.35)' }} />
                     <Input type="tel" inputMode="numeric" maxLength={11}
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-foreground placeholder:text-muted-foreground/40"
+                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
                       placeholder="01xxxxxxxxx" value={phone}
                       onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} dir="ltr"
                       disabled={submitting} />
@@ -1584,12 +1584,12 @@ function ExecuteModal({
 
                 {/* ── حقل الرقم السري ── */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-foreground">الرقم السري للمحفظة</Label>
+                  <Label className="text-sm font-medium text-white">الرقم السري للمحفظة</Label>
                   <div className="relative rounded-xl overflow-hidden border h-12"
-                    className="border-border bg-muted">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" className="text-muted-foreground" />
+                    style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'rgba(255,255,255,0.35)' }} />
                     <Input type="password" inputMode="numeric"
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-foreground placeholder:text-muted-foreground/40"
+                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
                       placeholder="أدخل الرقم السري" value={pin}
                       onChange={e => setPin(e.target.value)} disabled={submitting} />
                   </div>
@@ -1608,7 +1608,7 @@ function ExecuteModal({
                           }
                         }} 
                       />
-                      <span className="text-xs text-muted-foreground">حفظ الرقم السري لتسهيل العمليات القادمة</span>
+                      <span className="text-xs text-white/70">حفظ الرقم السري لتسهيل العمليات القادمة</span>
                     </label>
                     <p className="text-[11px] pr-1 flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
                       <span>⚠️</span>
@@ -1649,7 +1649,7 @@ function ExecuteModal({
                       {/* الحل */}
                       {hasSolution && (
                         <div className="pt-2.5 border-t space-y-1.5" style={{ borderColor: locked ? 'rgba(251,146,60,0.2)' : 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[10px] font-black uppercase tracking-wider" className="text-muted-foreground">الحل</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>الحل</p>
                           {hallLines.map((line, i) => (
                             <div key={i} className="flex items-start gap-1.5">
                               <span className="text-[9px] shrink-0 mt-1" style={{ color: titleColor }}>▸</span>
@@ -1671,7 +1671,7 @@ function ExecuteModal({
                       {/* نصائح الشبكة */}
                       {shouldShowNetworkTips(lastErrorType) && (
                         <div className="pt-2 border-t" style={{ borderColor: 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[10px] font-black uppercase tracking-wider mb-1.5" className="text-muted-foreground">تحقق أيضاً</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>تحقق أيضاً</p>
                           {['أوقف الـ WiFi وشغّل بيانات الهاتف (4G)', 'تأكد أن الشريحة النشطة هي Vodafone', 'أعد تشغيل بيانات الهاتف ثم حاول مجدداً'].map((tip, i) => (
                             <div key={i} className="flex items-start gap-1.5">
                               <span className="text-[9px] shrink-0 mt-1 text-red-400">▸</span>
@@ -1686,12 +1686,12 @@ function ExecuteModal({
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
-                  <div className="rounded-xl overflow-hidden border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                  <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
-                    <div className="divide-y divide-border">
+                    <div className="divide-y divide-white/[0.04]">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
@@ -1767,7 +1767,7 @@ function ExecuteModal({
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                            <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
                               <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
                             <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
@@ -1781,7 +1781,7 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>Step {s.step}</span>
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
                             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
@@ -1789,10 +1789,10 @@ function ExecuteModal({
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                              <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
                                 <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
                               <div className="p-2 space-y-0.5 text-[9px] font-mono">
@@ -1871,12 +1871,12 @@ function ExecuteModal({
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
-                  <div className="rounded-xl overflow-hidden border mt-4" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                  <div className="rounded-xl overflow-hidden border mt-4" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
+                    <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
                       <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
-                    <div className="divide-y divide-border">
+                    <div className="divide-y divide-white/[0.04]">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
@@ -1952,7 +1952,7 @@ function ExecuteModal({
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                            <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                            <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
                               <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
                             <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
@@ -1966,7 +1966,7 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>Step {s.step}</span>
+                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
                             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
@@ -1974,10 +1974,10 @@ function ExecuteModal({
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.detail}</p>
+                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
-                              <div className="px-2 py-1 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                              <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
                                 <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
                               <div className="p-2 space-y-0.5 text-[9px] font-mono">
@@ -2468,12 +2468,10 @@ function HomePage() {
             />
           </div>
               <div className="space-y-0.5">
-                <h1 className="text-xl font-black tracking-tight text-balance"
-                  style={{
-                    background: 'linear-gradient(90deg,#E60000,#F7C948)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))',
-                  }}>
+                <h1 className="text-xl font-black tracking-tight text-balance" style={{
+                  background: 'linear-gradient(90deg,#00E5FF,#F7C948)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>
                   Vodafone Fakka Premium
                 </h1>
                 <p className="text-[11px] text-muted-foreground font-medium tracking-wide">
@@ -2545,9 +2543,9 @@ function HomePage() {
         <div
           className="relative rounded-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 50%, hsl(var(--card)) 100%)',
+            background: 'linear-gradient(135deg,#0a0000 0%,#1a0000 50%,#0d0d0d 100%)',
             border: '1.5px solid rgba(230,0,0,0.25)',
-            boxShadow: '0 4px 32px rgba(230,0,0,0.10)',
+            boxShadow: '0 4px 32px rgba(230,0,0,0.12), 0 1px 0 rgba(255,255,255,0.04) inset',
           }}
         >
           {/* top glow line */}
@@ -2794,10 +2792,10 @@ function HomePage() {
       <div className="px-4 pt-3 space-y-4">
         {/* مجموعة كروت الفكة */}
         {displayedFakka.length > 0 && (
-          <div className="rounded-2xl border border-primary/20 bg-card/60 p-3 shadow-sm">
+          <div>
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-sm font-bold text-foreground">🎯 كروت الفكة</span>
-              <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
                 {displayedFakka.length}
               </span>
             </div>
@@ -2811,10 +2809,10 @@ function HomePage() {
 
         {/* مجموعة كروت المارد */}
         {displayedMared.length > 0 && (
-          <div className="rounded-2xl border border-amber-500/25 bg-card/60 p-3 shadow-sm">
+          <div>
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-sm font-bold text-foreground">🔥 كروت المارد</span>
-              <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
                 {displayedMared.length}
               </span>
             </div>
@@ -2923,7 +2921,7 @@ function HomePage() {
       <Dialog open={disabledProductOpen} onOpenChange={setDisabledProductOpen}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[88vw] md:max-w-sm p-0 border-0"
-          className="bg-card border border-primary/25" style={{ borderRadius: 20 }}
+          style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
           dir="rtl"
         >
           <div className="h-1 w-full rounded-t-[20px]"

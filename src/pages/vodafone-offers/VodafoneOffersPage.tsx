@@ -174,7 +174,7 @@ export default function VodafoneOffersPage() {
     <div
       className="min-h-screen pb-28 flex flex-col"
       dir="rtl"
-      style={{ background: 'var(--gradient-background)' }}
+      style={{ background: 'linear-gradient(180deg,#080d14 0%,#0a0a12 100%)' }}
     >
       {/* Header */}
       <div

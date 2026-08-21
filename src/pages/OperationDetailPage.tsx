@@ -81,7 +81,7 @@ export default function OperationDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" className="bg-background">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080000' }}>
         <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#E60000' }} />
       </div>
     );
@@ -89,7 +89,7 @@ export default function OperationDetailPage() {
 
   if (!op) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" className="bg-background" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: '#080000' }} dir="rtl">
         <p className="text-3xl">🔍</p>
         <p className="text-sm text-muted-foreground">لم يتم العثور على العملية</p>
         <button onClick={() => navigate(-1)} className="text-xs" style={{ color: '#E60000' }}>العودة</button>
@@ -183,7 +183,7 @@ export default function OperationDetailPage() {
   const apiResponseStr = opFull.api_response ?? null;
 
   return (
-    <div className="min-h-screen pb-10" className="bg-background" dir="rtl">
+    <div className="min-h-screen pb-10" style={{ background: '#080000' }} dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b"
         style={{ background: 'rgba(8,0,0,0.95)', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>

@@ -181,7 +181,7 @@ const OtpDialog = memo(function OtpDialog({
       <div
         className="w-full max-w-sm rounded-3xl p-6 space-y-5"
         dir="rtl"
-        className="bg-card border border-border"
+        style={{ background: '#0f1520', border: '1px solid rgba(255,255,255,0.1)' }}
       >
         {/* العنوان */}
         <div className="text-center space-y-1">
@@ -414,7 +414,7 @@ export default function WalletLinesResultsPage() {
 
   return (
     <div className="min-h-screen pb-28" dir="rtl"
-      style={{ background: 'var(--gradient-background)' }}>
+      style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"

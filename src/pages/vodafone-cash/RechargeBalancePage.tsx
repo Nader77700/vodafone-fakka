@@ -221,12 +221,12 @@ export default function RechargeBalancePage() {
     : '—';
 
   return (
-    <div className="min-h-screen bg-background pb-24 font-cairo selection:bg-[#E60000]/30 selection:text-white">
+    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo selection:bg-[#E60000]/30 selection:text-white">
 
       {/* ── Top Nav ─────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-between px-4 h-16">
-          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors">
+          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex-1 text-center">
@@ -235,7 +235,7 @@ export default function RechargeBalancePage() {
           </div>
           <button
             onClick={() => navigate('/vodafone-cash-center/history/recharge')}
-            className="p-2 -ml-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors text-white/70"
+            className="p-2 -ml-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors text-white/70"
           >
             <Clock className="w-5 h-5" />
           </button>
@@ -245,7 +245,7 @@ export default function RechargeBalancePage() {
       <div className="px-4 pt-5 space-y-4">
 
         {/* ── بطاقة حالة الجسر ────────────────────────────────── */}
-        <div className="bg-card border border-border rounded-2xl p-4 shadow-xl">
+        <div className="bg-[#111] border border-white/10 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-[#E60000]/15 flex items-center justify-center">
@@ -287,7 +287,7 @@ export default function RechargeBalancePage() {
         </div>
 
         {/* ── النموذج ─────────────────────────────────────────── */}
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+        <div className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#E60000]/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-5 relative z-10">
@@ -299,7 +299,7 @@ export default function RechargeBalancePage() {
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
                 ${rechargeForSelf
                   ? 'border-[#E60000]/60 bg-[#E60000]/10'
-                  : 'border-border bg-muted hover:border-primary/40'}`}
+                  : 'border-white/10 bg-[#1A1A1A] hover:border-white/20'}`}
             >
               <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors
                 ${rechargeForSelf ? 'bg-[#E60000] border-[#E60000]' : 'border-white/30 bg-transparent'}`}>
@@ -319,9 +319,9 @@ export default function RechargeBalancePage() {
             {/* رقم الهاتف */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-white/80">رقم الهاتف</label>
-              <div className={`flex items-center bg-muted border rounded-xl overflow-hidden transition-colors
-                ${rechargeForSelf ? 'border-border opacity-60' : activeReceiver && (!isReceiverValid || !isReceiverLengthValid)
-                  ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
+              <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors
+                ${rechargeForSelf ? 'border-white/5 opacity-60' : activeReceiver && (!isReceiverValid || !isReceiverLengthValid)
+                  ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
                 <div className="pl-3 pr-2 text-white/40">
                   <Phone className="w-5 h-5" />
                 </div>
@@ -353,15 +353,15 @@ export default function RechargeBalancePage() {
                 {/* خانة الرصيد الصافي */}
                 <div className="flex-1 min-w-0 relative pt-2">
                   <span
-                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-card leading-none whitespace-nowrap"
+                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-[#111] leading-none whitespace-nowrap"
                     style={{ color: lastEdited === 'net' ? '#E60000' : 'rgba(255,255,255,0.35)' }}
                   >
                     الرصيد الصافي
                   </span>
-                  <div className={`flex items-center bg-muted border rounded-xl overflow-hidden transition-all duration-200 h-12
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200 h-12
                     ${lastEdited === 'net'
                       ? 'border-[#E60000] shadow-[0_0_8px_rgba(230,0,0,0.15)]'
-                      : 'border-border'}`}>
+                      : 'border-white/10'}`}>
                     <input
                       type="tel"
                       dir="ltr"
@@ -378,7 +378,7 @@ export default function RechargeBalancePage() {
 
                 {/* أيقونة التحويل */}
                 <div className="flex items-center justify-center shrink-0 pt-2">
-                  <div className="w-7 h-7 rounded-full border border-border bg-muted flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full border border-white/10 bg-[#1A1A1A] flex items-center justify-center">
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                       <path d="M2 5 L8 5 L6 3 M11 8 L5 8 L7 10" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -388,15 +388,15 @@ export default function RechargeBalancePage() {
                 {/* خانة المبلغ الإجمالي */}
                 <div className="flex-1 min-w-0 relative pt-2">
                   <span
-                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-card leading-none whitespace-nowrap"
+                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-[#111] leading-none whitespace-nowrap"
                     style={{ color: lastEdited === 'total' ? '#E60000' : 'rgba(255,255,255,0.35)' }}
                   >
                     المبلغ الإجمالي
                   </span>
-                  <div className={`flex items-center bg-muted border rounded-xl overflow-hidden transition-all duration-200 h-12
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200 h-12
                     ${lastEdited === 'total'
                       ? 'border-[#E60000] shadow-[0_0_8px_rgba(230,0,0,0.15)]'
-                      : 'border-border'}`}>
+                      : 'border-white/10'}`}>
                     <input
                       type="tel"
                       dir="ltr"
@@ -434,7 +434,7 @@ export default function RechargeBalancePage() {
                       className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all duration-200 border
                         ${Number(netAmount) === n
                           ? 'bg-[#E60000]/15 border-[#E60000]/60 text-[#E60000]'
-                          : 'bg-muted border-border text-white/60 hover:border-primary/40 active:scale-95'}`}
+                          : 'bg-[#1A1A1A] border-white/8 text-white/60 hover:border-white/20 active:scale-95'}`}
                     >
                       {n}
                     </button>
@@ -445,7 +445,7 @@ export default function RechargeBalancePage() {
 
             {/* كلمة السر */}
             <div className="space-y-2">
-              <div className="bg-muted rounded-2xl p-4 border border-border">
+              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={isSubmitting} />
               </div>
             </div>
@@ -484,7 +484,7 @@ export default function RechargeBalancePage() {
         )}
 
         {/* ── ملاحظات هامة ─────────────────────────────────────── */}
-        <div className="bg-muted border border-[#E60000]/20 rounded-xl p-4 shadow-[0_0_15px_rgba(230,0,0,0.05)]">
+        <div className="bg-[#1A1A1A] border border-[#E60000]/20 rounded-xl p-4 shadow-[0_0_15px_rgba(230,0,0,0.05)]">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-[#E60000] shrink-0 mt-0.5" />
             <div className="space-y-2">
@@ -507,7 +507,7 @@ export default function RechargeBalancePage() {
           className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
             ${canSubmit
               ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-              : 'bg-white/5 text-white/30 cursor-not-allowed border border-border'}`}
+              : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}
         >
           {isSubmitting
             ? <Loader2 className="w-5 h-5 animate-spin" />

@@ -89,12 +89,12 @@ export default function WalletBalancePage() {
     d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   return (
-    <div className="min-h-screen bg-background pb-24 font-cairo">
+    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-between px-4 h-16">
           <button onClick={() => navigate('/vodafone-cash-center')}
-            className="p-2 -mr-2 rounded-full hover:bg-accent active:bg-accent/50 transition-colors">
+            className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex-1 text-center">
@@ -109,7 +109,7 @@ export default function WalletBalancePage() {
         {/* بطاقة حالة النظام */}
         <div className={`rounded-2xl border p-4 transition-all duration-500
           ${isConnected
-            ? 'bg-green-500/10 border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]'
+            ? 'bg-[#0D1F12] border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]'
             : 'bg-[#1A0D0D] border-[#E60000]/30 shadow-[0_0_20px_rgba(230,0,0,0.08)]'}`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export default function WalletBalancePage() {
               <span className="text-xs font-bold text-white/80">حالة النظام</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
-              className="p-1.5 rounded-full hover:bg-accent transition-colors disabled:opacity-40">
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-40">
               <RefreshCw className={`w-4 h-4 text-white/60 ${isCheckingConn ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -155,13 +155,13 @@ export default function WalletBalancePage() {
               disabled={!isConnected && !isCheckingConn}
               className={`w-full rounded-2xl border p-5 flex items-center gap-4 text-right transition-all duration-300
                 ${isConnected
-                  ? 'bg-card border-border hover:border-[#E60000]/50 hover:bg-[#1a0a0a] active:scale-[0.98] cursor-pointer'
-                  : 'bg-muted/50 border-border opacity-50 cursor-not-allowed'}`}>
+                  ? 'bg-[#111] border-white/10 hover:border-[#E60000]/50 hover:bg-[#1a0a0a] active:scale-[0.98] cursor-pointer'
+                  : 'bg-[#111]/50 border-white/5 opacity-50 cursor-not-allowed'}`}>
               <div className="w-12 h-12 rounded-xl bg-[#E60000]/10 border border-[#E60000]/20 flex items-center justify-center text-[#E60000] shrink-0">
                 {svc.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-foreground">{svc.title}</h3>
+                <h3 className="text-base font-bold text-white">{svc.title}</h3>
                 <p className="text-xs text-white/50 mt-0.5">{svc.desc}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-white/30 shrink-0 rotate-180" />
