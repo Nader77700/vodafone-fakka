@@ -53,16 +53,12 @@ html, body, #root {
 }
 
 @layer base {
-  :root {
-    /* Vodafone Fakka Premium — متغيرات مشتركة */
-    --radius: 0.75rem;
-  }
-
   /* ══════════════════════════════════════════════════════════════
-     الوضع الفاتح — Light Mode (الافتراضي)
+     الوضع الفاتح — Light Mode (الافتراضي لكل HTML بدون class)
      ══════════════════════════════════════════════════════════════ */
-  html, html.light {
+  :root, html, html.light {
     color-scheme: light;
+    --radius: 0.75rem;
 
     /* خلفية بيضاء نقية ثقيلة الإحساس */
     --background: 0 0% 96%;
