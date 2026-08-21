@@ -54,31 +54,148 @@ html, body, #root {
 
 @layer base {
   /* ══════════════════════════════════════════════════════════════
-     الوضع الفاتح — Light Mode (الافتراضي لكل HTML بدون class)
+     الوضع الغامق — Dark Mode الأصلي (الافتراضي دائماً)
      ══════════════════════════════════════════════════════════════ */
-  :root, html, html.light {
-    color-scheme: light;
+  :root, html, html.dark {
+    color-scheme: dark;
+    /* Vodafone Fakka Premium v15 — Official Vodafone Red · White · Dark */
     --radius: 0.75rem;
 
-    /* خلفية بيضاء نقية ثقيلة الإحساس */
+    /* ── Backgrounds — dark near-black with red undertone ── */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 8% 9%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 8% 9%;
+    --popover-foreground: 0 0% 100%;
+
+    /* ── Primary: Vodafone Red #E60000 → hsl(0,100%,45%) ── */
+    --primary: 0 100% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* ── Secondary: lighter red #FF3333 → hsl(0,100%,60%) ── */
+    --secondary: 0 100% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* ── Muted ── */
+    --muted: 0 6% 14%;
+    --muted-foreground: 0 4% 62%;
+
+    /* ── Accent: Vodafone light red / rose tint ── */
+    --accent: 0 70% 70%;
+    --accent-foreground: 0 0% 5%;
+
+    /* ── Destructive ── */
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* ── Border / Input ── */
+    --border: 0 10% 20%;
+    --input: 0 8% 12%;
+    --ring: 0 100% 45%;
+
+    /* ── Status ── */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    --info: 210 90% 55%;
+    --info-foreground: 0 0% 100%;
+
+    /* ── Charts ── */
+    --chart-1: 0 100% 45%;
+    --chart-2: 0 100% 65%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 210 90% 55%;
+
+    /* ── Sidebar ── */
+    --sidebar-background: 0 8% 7%;
+    --sidebar-foreground: 0 0% 88%;
+    --sidebar-primary: 0 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 6% 14%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 10% 16%;
+    --sidebar-ring: 0 100% 45%;
+
+    /* ── Brand glow / shadow tokens ── */
+    --glow-primary:  0 0px 22px rgba(230, 0, 0, 0.55);
+    --glow-secondary:0 0px 22px rgba(255, 60, 60, 0.45);
+    --glow-accent:   0 0px 28px rgba(230, 0, 0, 0.40);
+    --shadow-card:   0 4px 28px rgba(0, 0, 0, 0.65);
+    --shadow-hover:  0 8px 36px rgba(230, 0, 0, 0.30);
+
+    /* ── Gradients ── */
+    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF6666 100%);
+    --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #CC0000 100%);
+    --gradient-card:       linear-gradient(145deg, #180808 0%, #0D0303 100%);
+    --gradient-background: radial-gradient(ellipse at top, #1a0505 0%, #0D0000 65%);
+    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.14) 0%, rgba(180,0,0,0.08) 50%, rgba(100,0,0,0.05) 100%);
+
+    /* ── Glass ── */
+    --glass-bg:     rgba(255, 255, 255, 0.030);
+    --glass-border: rgba(255, 255, 255, 0.08);
+
+    /* ── Product card specific ── */
+    --card-red-border:  rgba(230, 0, 0, 0.40);
+    --card-red-glow:    0 0 20px rgba(230, 0, 0, 0.38);
+    --card-cyan-border: rgba(0, 229, 255, 0.30);
+    --card-gold-border: rgba(247, 201, 72, 0.35);
+    --card-cyan-glow:   0 0 18px rgba(0, 229, 255, 0.32);
+    --card-gold-glow:   0 0 18px rgba(247, 201, 72, 0.32);
+
+    /* ── debug panel — الوضع الغامق ── */
+    --debug-bg:          hsl(0 8% 9%);
+    --debug-border:      rgba(255,255,255,0.08);
+    --debug-text-dim:    rgba(255,255,255,0.40);
+    --debug-header-bg:   hsl(220 30% 8%);
+    --debug-card-bg:     hsl(220 30% 10%);
+    --debug-card-border: rgba(255,255,255,0.07);
+    --debug-card-ok:     hsl(142 50% 8%);
+    --debug-card-warn:   hsl(38  60% 9%);
+    --debug-card-err:    hsl(0   60% 9%);
+    --debug-card-info:   hsl(214 50% 9%);
+    --debug-val-ok:      hsl(142 72% 62%);
+    --debug-val-warn:    hsl(38  92% 58%);
+    --debug-val-err:     hsl(0   80% 68%);
+    --debug-val-info:    hsl(214 90% 72%);
+
+    /* ── بطاقة الاشتراك Premium — Dark ── */
+    --sub-card-bg:     linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%);
+    --sub-card-border: 1.5px solid rgba(0,229,255,0.18);
+    --sub-card-shadow: 0 4px 32px rgba(0,229,255,0.08), 0 1px 0 rgba(255,255,255,0.04) inset;
+
+    /* ── card-shadow tokens ── */
+    --card-shadow:       0 4px 28px rgba(0,0,0,0.65);
+    --card-shadow-hover: 0 8px 36px rgba(230,0,0,0.30);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     الوضع الفاتح — Light Mode (عند class="light" فقط)
+     ══════════════════════════════════════════════════════════════ */
+  html.light {
+    color-scheme: light;
+
     --background: 0 0% 96%;
-    --foreground: 0 0% 4%;          /* أسود حاد جداً */
+    --foreground: 0 0% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 4%;     /* نص الكروت أسود حاد */
+    --card-foreground: 0 0% 4%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 4%;
 
-    /* الأحمر الرئيسي */
     --primary: 0 100% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 20%;          /* رمادي داكن بدل أحمر ثانٍ */
+    --secondary: 0 0% 20%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 93%;
-    --muted-foreground: 0 0% 25%;   /* رمادي داكن — واضح جداً */
+    --muted-foreground: 0 0% 25%;
 
     --accent: 0 0% 90%;
     --accent-foreground: 0 0% 4%;
@@ -86,7 +203,7 @@ html, body, #root {
     --destructive: 0 84% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 82%;             /* حدود رمادية واضحة */
+    --border: 0 0% 82%;
     --input: 0 0% 90%;
     --ring: 0 100% 45%;
 
@@ -103,7 +220,6 @@ html, body, #root {
     --chart-4: 38 92% 35%;
     --chart-5: 210 90% 38%;
 
-    /* الشريط الجانبي في الوضع الفاتح */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 8%;
     --sidebar-primary: 0 100% 45%;
@@ -113,162 +229,53 @@ html, body, #root {
     --sidebar-border: 0 0% 86%;
     --sidebar-ring: 0 100% 45%;
 
-    /* تدرجات الوضع الفاتح — أبيض/رمادي فاخر */
     --gradient-primary:    linear-gradient(135deg, #E60000 0%, #CC0000 100%);
     --gradient-secondary:  linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
     --gradient-card:       linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%);
     --gradient-background: linear-gradient(160deg, #f8f8f8 0%, #f0f0f0 100%);
     --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.05) 0%, rgba(0,0,0,0.02) 100%);
 
-    /* ألوان debug panel — الوضع الفاتح */
-    --debug-bg:            hsl(0 0% 93%);
-    --debug-border:        hsl(0 0% 80%);
-    --debug-text-dim:      hsl(0 0% 35%);
-    --debug-header-bg:     hsl(0 0% 90%);
-    --debug-card-bg:       hsl(0 0% 100%);
-    --debug-card-border:   hsl(0 0% 85%);
-    /* بطاقات حالة debug — الوضع الفاتح */
-    --debug-card-ok:   hsl(142 55% 93%);
-    --debug-card-warn: hsl(38  75% 92%);
-    --debug-card-err:  hsl(0   70% 94%);
-    --debug-card-info: hsl(214 70% 93%);
-    /* قيم نص debug — الوضع الفاتح */
-    --debug-val-ok:   hsl(142 72% 20%);
-    --debug-val-warn: hsl(38  85% 25%);
-    --debug-val-err:  hsl(0   85% 35%);
-    --debug-val-info: hsl(214 85% 30%);
-
-    /* ظلال الوضع الفاتح */
     --glow-primary:  0 2px 20px rgba(230, 0, 0, 0.18);
     --glow-secondary:0 2px 20px rgba(0, 0, 0, 0.10);
     --glow-accent:   0 2px 20px rgba(230, 0, 0, 0.12);
     --shadow-card:   0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05);
     --shadow-hover:  0 6px 24px rgba(0, 0, 0, 0.12);
 
-    /* بروز الكروت — الوضع الفاتح */
-    --card-shadow:  0 2px 8px rgba(0,0,0,0.08), 0 0 0 1.5px rgba(0,0,0,0.06);
+    --card-shadow:       0 2px 8px rgba(0,0,0,0.08), 0 0 0 1.5px rgba(0,0,0,0.06);
     --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.12), 0 0 0 1.5px rgba(230,0,0,0.2);
 
-    /* بطاقة الاشتراك Premium — Light: أبيض بارز بحافة حمراء رفيعة */
     --sub-card-bg:     #ffffff;
     --sub-card-border: 1.5px solid rgba(230,0,0,0.18);
     --sub-card-shadow: 0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
 
-    /* زجاج الوضع الفاتح */
     --glass-bg:     rgba(255, 255, 255, 0.85);
     --glass-border: rgba(0, 0, 0, 0.08);
 
-    /* حدود كروت المنتجات — أحمر خفيف */
     --card-red-border:  rgba(230, 0, 0, 0.22);
     --card-red-glow:    0 0 12px rgba(230, 0, 0, 0.14);
     --card-cyan-border: rgba(0, 120, 160, 0.25);
     --card-gold-border: rgba(160, 120, 0, 0.25);
     --card-cyan-glow:   0 0 10px rgba(0, 120, 160, 0.15);
     --card-gold-glow:   0 0 10px rgba(160, 120, 0, 0.15);
+
+    --debug-bg:            hsl(0 0% 93%);
+    --debug-border:        hsl(0 0% 80%);
+    --debug-text-dim:      hsl(0 0% 35%);
+    --debug-header-bg:     hsl(0 0% 90%);
+    --debug-card-bg:       hsl(0 0% 100%);
+    --debug-card-border:   hsl(0 0% 85%);
+    --debug-card-ok:   hsl(142 55% 93%);
+    --debug-card-warn: hsl(38  75% 92%);
+    --debug-card-err:  hsl(0   70% 94%);
+    --debug-card-info: hsl(214 70% 93%);
+    --debug-val-ok:   hsl(142 72% 20%);
+    --debug-val-warn: hsl(38  85% 25%);
+    --debug-val-err:  hsl(0   85% 35%);
+    --debug-val-info: hsl(214 85% 30%);
   }
 
-  /* ══════════════════════════════════════════════════════════════
-     الوضع الغامق — Dark Mode (الأصلي بالضبط — لا يتغيّر أبداً)
-     ══════════════════════════════════════════════════════════════ */
-  html.dark {
-    color-scheme: dark;
-
-    /* ── Backgrounds — dark near-black with red undertone ── */
-    --background: 0 0% 5%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 8% 9%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 8% 9%;
-    --popover-foreground: 0 0% 100%;
-
-    /* ── Primary: Vodafone Red #E60000 ── */
-    --primary: 0 100% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    /* ── Secondary: lighter red #FF3333 ── */
-    --secondary: 0 100% 60%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 6% 14%;
-    --muted-foreground: 0 4% 62%;
-
-    --accent: 0 70% 70%;
-    --accent-foreground: 0 0% 5%;
-
-    --destructive: 0 84% 55%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 10% 20%;
-    --input: 0 8% 12%;
-    --ring: 0 100% 45%;
-
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
-    --info: 210 90% 55%;
-    --info-foreground: 0 0% 100%;
-
-    --chart-1: 0 100% 45%;
-    --chart-2: 0 100% 65%;
-    --chart-3: 142 76% 36%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 210 90% 55%;
-
-    --sidebar-background: 0 8% 7%;
-    --sidebar-foreground: 0 0% 88%;
-    --sidebar-primary: 0 100% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 6% 14%;
-    --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 10% 16%;
-    --sidebar-ring: 0 100% 45%;
-
-    --glow-primary:  0 0px 22px rgba(230, 0, 0, 0.55);
-    --glow-secondary:0 0px 22px rgba(255, 60, 60, 0.45);
-    --glow-accent:   0 0px 28px rgba(230, 0, 0, 0.40);
-    --shadow-card:   0 4px 28px rgba(0, 0, 0, 0.65);
-    --shadow-hover:  0 8px 36px rgba(230, 0, 0, 0.30);
-
-    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF6666 100%);
-    --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #CC0000 100%);
-    --gradient-card:       linear-gradient(145deg, #180808 0%, #0D0303 100%);
-    --gradient-background: radial-gradient(ellipse at top, #1a0505 0%, #0D0000 65%);
-    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.14) 0%, rgba(180,0,0,0.08) 50%, rgba(100,0,0,0.05) 100%);
-
-    --glass-bg:     rgba(255, 255, 255, 0.030);
-    --glass-border: rgba(255, 255, 255, 0.08);
-
-    --card-red-border:  rgba(230, 0, 0, 0.40);
-    --card-red-glow:    0 0 20px rgba(230, 0, 0, 0.38);
-    --card-cyan-border: rgba(0, 229, 255, 0.30);
-    --card-gold-border: rgba(247, 201, 72, 0.35);
-    --card-cyan-glow:   0 0 18px rgba(0, 229, 255, 0.32);
-    --card-gold-glow:   0 0 18px rgba(247, 201, 72, 0.32);
-
-    /* debug panel — الوضع الغامق */
-    --debug-bg:          hsl(0 8% 9%);
-    --debug-border:      rgba(255,255,255,0.08);
-    --debug-text-dim:    rgba(255,255,255,0.40);
-    --debug-header-bg:   hsl(220 30% 8%);
-    --debug-card-bg:     hsl(220 30% 10%);
-    --debug-card-border: rgba(255,255,255,0.07);
-    --debug-card-ok:     hsl(142 50% 8%);
-    --debug-card-warn:   hsl(38  60% 9%);
-    --debug-card-err:    hsl(0   60% 9%);
-    --debug-card-info:   hsl(214 50% 9%);
-    --debug-val-ok:      hsl(142 72% 62%);
-    --debug-val-warn:    hsl(38  92% 58%);
-    --debug-val-err:     hsl(0   80% 68%);
-    --debug-val-info:    hsl(214 90% 72%);
-
-    /* بطاقة الاشتراك — Dark: gradient أصلي */
-    --sub-card-bg:     linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%);
-    --sub-card-border: 1.5px solid rgba(0,229,255,0.18);
-    --sub-card-shadow: 0 4px 32px rgba(0,229,255,0.08), 0 1px 0 rgba(255,255,255,0.04) inset;
-  }
+  /* Force dark mode always (default) */
+  html { color-scheme: dark; }
 
   * { @apply border-border; }
 
