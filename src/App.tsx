@@ -16,6 +16,7 @@ import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { RuntimeConfigProvider, useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { PreviewModeProvider } from '@/contexts/PreviewModeContext';
 import { WifiOff } from 'lucide-react';
@@ -833,17 +834,19 @@ const App: React.FC = () => {
   useContentProtection();
   return (
     <Router>
-      <RuntimeConfigProvider>
-        <AuthProvider>
-          <PreviewModeProvider>
-            <MerchantProvider>
-              <MerchantClientProvider>
-                <AppWithGuard />
-              </MerchantClientProvider>
-            </MerchantProvider>
-          </PreviewModeProvider>
-        </AuthProvider>
-      </RuntimeConfigProvider>
+      <ThemeProvider>
+        <RuntimeConfigProvider>
+          <AuthProvider>
+            <PreviewModeProvider>
+              <MerchantProvider>
+                <MerchantClientProvider>
+                  <AppWithGuard />
+                </MerchantClientProvider>
+              </MerchantProvider>
+            </PreviewModeProvider>
+          </AuthProvider>
+        </RuntimeConfigProvider>
+      </ThemeProvider>
     </Router>
   );
 };

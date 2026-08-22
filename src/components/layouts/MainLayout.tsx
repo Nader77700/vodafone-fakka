@@ -2,10 +2,12 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import {
   Home, Radio, Heart, Clock, Bell, Settings, Download,
-  Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2, Gift
+  Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2, Gift,
+  Sun, Moon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -60,6 +62,7 @@ function NavLogo() {
 
 export default function MainLayout() {
   const { profile, signOut } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { hasUpdate } = useUpdateChecker();
@@ -99,9 +102,17 @@ export default function MainLayout() {
     <div className="flex min-h-screen w-full bg-background">
       {/* ==================== شريط جانبي — ديسكتوب ==================== */}
       <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-sidebar border-l border-sidebar-border fixed right-0 top-0 bottom-0 z-40">
-        {/* الشعار */}
-        <div className="p-5 border-b border-sidebar-border">
+        {/* الشعار + زر التبديل */}
+        <div className="p-5 border-b border-sidebar-border flex items-center justify-between">
           <NavLogo />
+          <Button
+            variant="ghost" size="icon"
+            className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
+            onClick={toggleTheme}
+            title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
         </div>
 
         {/* التنقل */}
@@ -181,6 +192,17 @@ export default function MainLayout() {
         <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-border">
           <NavLogo />
           <div className="flex items-center gap-1">
+            {/* زر تبديل الوضع الفاتح/الداكن */}
+            <Button
+              variant="ghost" size="icon"
+              className="w-9 h-9 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              onClick={toggleTheme}
+              title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
+            >
+              {isDark
+                ? <Sun className="w-4 h-4" />
+                : <Moon className="w-4 h-4" />}
+            </Button>
             {/* زر مشاركة رابط APK — يجلب الرابط الحالي دائماً من DB */}
             <Button
               variant="ghost" size="icon"

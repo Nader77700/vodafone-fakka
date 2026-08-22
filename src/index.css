@@ -53,8 +53,13 @@ html, body, #root {
 }
 
 @layer base {
-  :root {
-    /* Vodafone Fakka Premium v15 — Official Vodafone Red · White · Dark */
+  /* ══════════════════════════════════════════════════════════════
+     الوضع الداكن — Dark Mode (الافتراضي)
+     كل المتغيرات مستقلة تماماً عن الوضع الفاتح
+     ══════════════════════════════════════════════════════════════ */
+  :root,
+  html.dark {
+    color-scheme: dark;
     --radius: 0.75rem;
 
     /* ── Backgrounds — deep near-black with strong red undertone ── */
@@ -67,32 +72,26 @@ html, body, #root {
     --popover: 0 12% 8%;
     --popover-foreground: 0 0% 100%;
 
-    /* ── Primary: Vodafone Red #E60000 → hsl(0,100%,45%) ── */
+    /* ── Primary: Vodafone Red #E60000 ── */
     --primary: 0 100% 45%;
     --primary-foreground: 0 0% 100%;
 
-    /* ── Secondary: lighter red #FF3333 → hsl(0,100%,60%) ── */
     --secondary: 0 100% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    /* ── Muted ── */
     --muted: 0 8% 13%;
     --muted-foreground: 0 5% 68%;
 
-    /* ── Accent: Vodafone light red / rose tint ── */
     --accent: 0 70% 70%;
     --accent-foreground: 0 0% 5%;
 
-    /* ── Destructive ── */
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* ── Border / Input — more visible ── */
     --border: 0 15% 22%;
     --input: 0 10% 11%;
     --ring: 0 100% 45%;
 
-    /* ── Status ── */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -100,14 +99,12 @@ html, body, #root {
     --info: 210 90% 55%;
     --info-foreground: 0 0% 100%;
 
-    /* ── Charts ── */
     --chart-1: 0 100% 45%;
     --chart-2: 0 100% 65%;
     --chart-3: 142 76% 36%;
     --chart-4: 38 92% 50%;
     --chart-5: 210 90% 55%;
 
-    /* ── Sidebar ── */
     --sidebar-background: 0 12% 5%;
     --sidebar-foreground: 0 0% 92%;
     --sidebar-primary: 0 100% 45%;
@@ -117,35 +114,127 @@ html, body, #root {
     --sidebar-border: 0 15% 18%;
     --sidebar-ring: 0 100% 45%;
 
-    /* ── Brand glow / shadow tokens — boosted intensity ── */
-    --glow-primary:  0 0px 28px rgba(230, 0, 0, 0.80);
-    --glow-secondary:0 0px 28px rgba(255, 60, 60, 0.70);
-    --glow-accent:   0 0px 36px rgba(230, 0, 0, 0.65);
-    --shadow-card:   0 6px 32px rgba(0, 0, 0, 0.85);
-    --shadow-hover:  0 10px 42px rgba(230, 0, 0, 0.55);
+    --glow-primary:   0 0px 28px rgba(230, 0, 0, 0.80);
+    --glow-secondary: 0 0px 28px rgba(255, 60, 60, 0.70);
+    --glow-accent:    0 0px 36px rgba(230, 0, 0, 0.65);
+    --shadow-card:    0 6px 32px rgba(0, 0, 0, 0.85);
+    --shadow-hover:   0 10px 42px rgba(230, 0, 0, 0.55);
 
-    /* ── Gradients — deeper darks ── */
     --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF4444 100%);
     --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #AA0000 100%);
     --gradient-card:       linear-gradient(145deg, #1E0606 0%, #0A0101 100%);
     --gradient-background: radial-gradient(ellipse at top, #1E0404 0%, #080000 70%);
     --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.22) 0%, rgba(180,0,0,0.14) 50%, rgba(100,0,0,0.08) 100%);
 
-    /* ── Glass — slightly more visible ── */
     --glass-bg:     rgba(255, 255, 255, 0.045);
     --glass-border: rgba(255, 255, 255, 0.13);
 
-    /* ── Product card specific — vivid borders & strong glows ── */
     --card-red-border:  rgba(230, 0, 0, 0.70);
     --card-red-glow:    0 0 28px rgba(230, 0, 0, 0.65);
     --card-cyan-border: rgba(0, 229, 255, 0.65);
     --card-gold-border: rgba(247, 201, 72, 0.70);
     --card-cyan-glow:   0 0 26px rgba(0, 229, 255, 0.60);
     --card-gold-glow:   0 0 26px rgba(247, 201, 72, 0.60);
+
+    /* Debug panel */
+    --debug-card-bg:    #0d1117;
+    --debug-card-border:#1e2d3d;
+    --debug-val-cyan:   #00e5ff;
+    --debug-val-green:  #00e676;
+    --debug-val-orange: #ffb74d;
+    --debug-val-red:    #ff5252;
   }
 
-  /* Force dark mode always */
-  html { color-scheme: dark; }
+  /* ══════════════════════════════════════════════════════════════
+     الوضع الفاتح — Light Mode (مستقل تماماً)
+     تعديل أي متغير هنا لا يأثر على الوضع الداكن أبداً
+     ══════════════════════════════════════════════════════════════ */
+  html.light {
+    color-scheme: light;
+    --radius: 0.75rem;
+
+    /* ── Backgrounds — clean white / off-white ── */
+    --background: 0 0% 97%;
+    --foreground: 0 0% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+
+    /* ── Primary: Vodafone Red — same brand color ── */
+    --primary: 0 100% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 15%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 0 80% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 86%;
+    --input: 0 0% 92%;
+    --ring: 0 100% 45%;
+
+    --success: 142 60% 32%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 90% 44%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 80% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --chart-1: 0 100% 45%;
+    --chart-2: 0 80% 55%;
+    --chart-3: 142 60% 32%;
+    --chart-4: 38 90% 44%;
+    --chart-5: 210 80% 48%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 12%;
+    --sidebar-primary: 0 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 0 100% 45%;
+
+    --glow-primary:   0 0px 20px rgba(230, 0, 0, 0.30);
+    --glow-secondary: 0 0px 20px rgba(230, 0, 0, 0.20);
+    --glow-accent:    0 0px 24px rgba(230, 0, 0, 0.25);
+    --shadow-card:    0 2px 16px rgba(0, 0, 0, 0.10);
+    --shadow-hover:   0 6px 24px rgba(230, 0, 0, 0.18);
+
+    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF4444 100%);
+    --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #AA0000 100%);
+    --gradient-card:       linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%);
+    --gradient-background: linear-gradient(160deg, #fff5f5 0%, #ffffff 60%);
+    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.06) 0%, rgba(230,0,0,0.02) 100%);
+
+    --glass-bg:     rgba(255, 255, 255, 0.80);
+    --glass-border: rgba(0, 0, 0, 0.10);
+
+    --card-red-border:  rgba(230, 0, 0, 0.50);
+    --card-red-glow:    0 0 18px rgba(230, 0, 0, 0.30);
+    --card-cyan-border: rgba(0, 180, 210, 0.55);
+    --card-gold-border: rgba(200, 155, 20, 0.60);
+    --card-cyan-glow:   0 0 16px rgba(0, 180, 210, 0.35);
+    --card-gold-glow:   0 0 16px rgba(200, 155, 20, 0.35);
+
+    /* Debug panel */
+    --debug-card-bg:    #f0f4f8;
+    --debug-card-border:#d0dae6;
+    --debug-val-cyan:   #0077aa;
+    --debug-val-green:  #1a7a3a;
+    --debug-val-orange: #b85a00;
+    --debug-val-red:    #cc1111;
+  }
 
   * { @apply border-border; }
 
@@ -156,6 +245,11 @@ html, body, #root {
     background: var(--gradient-background);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* الوضع الفاتح — body override */
+  html.light body {
+    background: var(--gradient-background);
   }
 
   /* Scrollbar */
