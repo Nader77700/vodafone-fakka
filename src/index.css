@@ -657,3 +657,210 @@ html.light [style*="background: #0a0000"] {
   background: #ffffff !important;
   border-color: rgba(230,0,0,0.18) !important;
 }
+
+/* ══════════════════════════════════════════════════════════
+   BalanceChargePage / OperationDetailPage / UserOperationsPage
+   كل الصفحات ذات الخلفية #080000 / #0a0000 / #120000
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: #080000"],
+html.light [style*="background: '#080000'"] {
+  background: #f5f5f5 !important;
+}
+html.light [style*="background: #120000"],
+html.light [style*="background: '#120000'"] {
+  background: #fff5f5 !important;
+}
+html.light [style*="background: rgba(8,0,0,0.95)"],
+html.light [style*="background: rgba(8, 0, 0, 0.95)"] {
+  background: rgba(248,248,250,0.97) !important;
+  border-color: rgba(230,0,0,0.12) !important;
+}
+
+/* ── نصوص rgba(255,255,255,…) المتعددة في Light ── */
+html.light [style*="color: rgba(255,255,255,0.4)"],
+html.light [style*="color: rgba(255, 255, 255, 0.4)"],
+html.light [style*="color: rgba(255,255,255,0.6)"],
+html.light [style*="color: rgba(255, 255, 255, 0.6)"],
+html.light [style*="color: rgba(255,255,255,0.7)"],
+html.light [style*="color: rgba(255, 255, 255, 0.7)"] {
+  color: rgba(0,0,0,0.55) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.25)"],
+html.light [style*="color: rgba(255, 255, 255, 0.25)"],
+html.light [style*="color: rgba(255,255,255,0.30)"],
+html.light [style*="color: rgba(255,255,255,0.3)"] {
+  color: rgba(0,0,0,0.35) !important;
+}
+
+/* ── inputs dark في UserOperationsPage ── */
+html.light [style*="background: rgba(255,255,255,0.05)"],
+html.light [style*="background: rgba(255, 255, 255, 0.05)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light [style*="border: 1px solid rgba(255,255,255,0.08)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.07)"] {
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.light [style*="color: white"],
+html.light [style*="color: #fff"],
+html.light [style*="color: #ffffff"] {
+  color: hsl(0 0% 10%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   WalletLines + VodafoneOffers + ServicesPage
+   خلفية linear-gradient(180deg, #080d14 …)
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="linear-gradient(180deg, #080d14"],
+html.light [style*="linear-gradient(180deg,#080d14"] {
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef1f6 100%) !important;
+}
+html.light [style*="linear-gradient(180deg, #080d14 0%, #0a0a12"]  {
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef1f6 100%) !important;
+}
+html.light [style*="background: '#0d1120'"],
+html.light [style*="background: #0d1120"],
+html.light [style*="background: '#0f1520'"],
+html.light [style*="background: #0f1520"] {
+  background: #f0f4ff !important;
+  border-color: rgba(99,102,241,0.15) !important;
+}
+
+/* ── WalletLinesPage gradient cards ── */
+html.light [style*="linear-gradient(135deg, rgba(251,191,36,0.08)"][style*="#080d14"],
+html.light [style*="linear-gradient(135deg, rgba(99,102,241,0.08)"][style*="#080d14"] {
+  background: rgba(248,250,255,0.95) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ActivationPage — radial dark bg
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="radial-gradient(ellipse 90%"][style*="#200000"],
+html.light [style*="radial-gradient(ellipse 90%"][style*="#0d0000"] {
+  background: linear-gradient(135deg, #fff0f0 0%, #fce8e8 50%, #f5f5f5 100%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   LoginPage / InvitePage / JoinPage — logo bg #0d0000
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: #0d0000"],
+html.light [style*="background: '#0d0000'"] {
+  background: #fff0f0 !important;
+  box-shadow: 0 0 24px rgba(230,0,0,0.12) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   StatisticsPage — chart bg #151523
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: '#151523'"],
+html.light [style*="background: #151523"],
+html.light [style*="background: \"#151523\""] {
+  background: #f0f2ff !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   AdminDashboard / Admin pages — bg-background already semantic
+   extra overrides لعناصر inline
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: rgba(255,255,255,0.03)"],
+html.light [style*="background: rgba(255, 255, 255, 0.03)"] {
+  background: rgba(0,0,0,0.02) !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+html.light [style*="borderColor: 'rgba(255,255,255,0.05)'"],
+html.light [style*="border-color: rgba(255,255,255,0.05)"],
+html.light [style*="borderColor: rgba(255,255,255,0.05)"] {
+  border-color: rgba(0,0,0,0.07) !important;
+}
+html.light [style*="rgba(255,255,255,0.015)"],
+html.light [style*="rgba(255, 255, 255, 0.015)"] {
+  background: rgba(0,0,0,0.015) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MaintenanceScreen — لون النص الأبيض
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="color: '#FFFFFF'"],
+html.light [style*="color: \"#FFFFFF\""],
+html.light [style*="color: #FFFFFF"],
+html.light [style*="color: #ffffff"] {
+  color: hsl(0 0% 12%) !important;
+}
+html.light [style*="rgba(255,255,255,0.35)"],
+html.light [style*="rgba(255, 255, 255, 0.35)"] {
+  color: rgba(0,0,0,0.45) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MerchantClientHome — نصوص أبيض على خلفية brandColor
+   لا تحتاج override — brandColor يجلب لوناً ملوناً وليس أسود
+   ══════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════
+   DeviceBannedScreen — bg-black override
+   ══════════════════════════════════════════════════════════ */
+html.light .bg-black {
+  background-color: #1a1a1a !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   UpdatesPage — subtle gradient override
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: linear-gradient(135deg, #1a110015"],
+html.light [style*="background: linear-gradient(135deg, #1a0d0015"] {
+  background: linear-gradient(135deg, rgba(230,0,0,0.04), rgba(230,0,0,0.02)) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PrinterSetupModal / ESimOfferFormModal — dark modals
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: #0a0a14"],
+html.light [style*="background: '#0a0a14'"] {
+  background: #ffffff !important;
+  border-color: rgba(59,130,246,0.20) !important;
+}
+html.light [style*="background: #0d0d0d"],
+html.light [style*="background: '#0d0d0d'"] {
+  background: #ffffff !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MainLayout — brand logo bg #0d0000
+   ══════════════════════════════════════════════════════════ */
+html.light aside [style*="background: '#0d0000'"],
+html.light aside [style*="background: #0d0000"] {
+  background: #fff0f0 !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   NativeDebugPanel (HomePage) — debug log boxes
+   خلفيات #080d14, #0d1523, #050810, #0a1020, #0f1520
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: #080d14"],
+html.light [style*="background: '#080d14'"] {
+  background: #f0f4f8 !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: #0d1523"],
+html.light [style*="background: '#0d1523'"] {
+  background: #e8edf5 !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+html.light [style*="background: #050810"],
+html.light [style*="background: '#050810'"] {
+  background: #f5f7fb !important;
+}
+html.light [style*="background: #0a1020"],
+html.light [style*="background: '#0a1020'"] {
+  background: #edf1f8 !important;
+}
+html.light [style*="borderColor: '#ffffff10'"],
+html.light [style*="borderColor: '#ffffff08'"],
+html.light [style*="border-color: #ffffff10"],
+html.light [style*="border-color: #ffffff08"] {
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="borderColor: '#00E5FF12'"],
+html.light [style*="borderColor: '#00E5FF08'"] {
+  border-color: rgba(0,160,200,0.15) !important;
+}
