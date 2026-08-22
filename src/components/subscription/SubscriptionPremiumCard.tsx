@@ -107,7 +107,8 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden select-none"
+      className={`subscription-premium-card relative rounded-2xl overflow-hidden select-none${L ? ' is-light' : ''}`}
+      data-light={L ? 'true' : undefined}
       style={{
         background: L
           ? `linear-gradient(135deg,#ffffff 0%,#fef2f2 40%,#f9fafb 100%)`

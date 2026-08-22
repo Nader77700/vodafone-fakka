@@ -15,11 +15,13 @@
     <!-- ══ CRITICAL: منع الشاشة البيضاء قبل React — يُظهر الخلفية السوداء فوراً ══ -->
     <style>
       html, body, #root {
-        background: #050000 !important;
-        background-color: #050000 !important;
+        background: #050000;
         margin: 0; padding: 0;
         min-height: 100dvh;
         -webkit-tap-highlight-color: transparent;
+      }
+      html.light, html.light body, html.light #root {
+        background: #f5f7fa !important;
       }
       /* Inline loading indicator — يظهر قبل React بالكامل */
       #boot-loader {
@@ -28,6 +30,9 @@
         display: flex; align-items: center; justify-content: center;
         transition: opacity 0.3s ease;
       }
+      html.light #boot-loader {
+        background: #f5f7fa;
+      }
       #boot-loader.hidden { opacity: 0; pointer-events: none; }
       @keyframes bl-pulse {
         0% { transform: scale(0.9); opacity: 0.8; }
@@ -35,6 +40,21 @@
         100% { transform: scale(0.9); opacity: 0.8; }
       }
     </style>
+    <!-- ══ CRITICAL: تطبيق الثيم قبل React لمنع الوميض ══ -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('vfp_theme');
+          if (t === 'light') {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <!-- P3: Web Manifest link -->
     <link rel="manifest" href="/manifest.json?v=2.6.4" />
     <!-- ── حماية أمنية: Security Headers ──────────────────────────────── -->

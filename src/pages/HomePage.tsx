@@ -189,8 +189,8 @@ function HomeNetworksCard() {
           />
         </div>
         {/* Overlays */}
-        <div className="absolute inset-0" style={{ background: L ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.40)' }} />
-        <div className="absolute inset-0" style={{ background: L ? 'linear-gradient(to top,rgba(255,248,220,0.90) 0%,rgba(255,248,220,0.55) 50%,transparent 100%)' : 'linear-gradient(to top,#0A0A0A 0%,rgba(10,10,10,0.80) 50%,transparent 100%)' }} />
+        <div className="home-networks-dark-overlay absolute inset-0" style={{ background: L ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.40)' }} />
+        <div className="home-networks-gradient-overlay absolute inset-0" style={{ background: L ? 'linear-gradient(to top,rgba(255,248,220,0.90) 0%,rgba(255,248,220,0.55) 50%,transparent 100%)' : 'linear-gradient(to top,#0A0A0A 0%,rgba(10,10,10,0.80) 50%,transparent 100%)' }} />
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
           style={{ background: 'radial-gradient(circle at center, #F7C94860 0%, transparent 70%)' }} />
         <div className="absolute inset-0 rounded-[28px] pointer-events-none transition-colors"
