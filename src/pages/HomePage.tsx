@@ -7,6 +7,7 @@ import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import { useAssets } from '@/hooks/use-assets';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/db/supabase';
 import {
   getUserSubscription, getUserOperations, calcDaysRemaining, calcTimeRemaining,
@@ -75,51 +76,71 @@ import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
 
 function HomeServicesCard() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   return (
     <div className="px-4 pt-3">
       <div
         onClick={() => navigate('/services')}
-        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95"
+        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] hover:scale-[1.02] active:scale-95"
+        style={{
+          boxShadow: L ? '0 4px 24px rgba(99,102,241,0.12)' : '0 10px 40px rgba(0,0,0,0.4)',
+        }}
         aria-label="فتح قسم الخدمات"
       >
         {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a1a] via-[#0d1020] to-[#0a0d1a]" />
+        <div className="absolute inset-0"
+          style={{
+            background: L
+              ? 'linear-gradient(135deg,#f5f3ff 0%,#eef2ff 50%,#fff5f5 100%)'
+              : 'linear-gradient(135deg,#1a0a1a,#0d1020,#0a0d1a)',
+          }} />
         {/* Animated glow */}
         <div className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700"
-          style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(99,102,241,0.25) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,0.18) 0%, transparent 55%)' }} />
+          style={{ background: `radial-gradient(ellipse at 30% 60%, rgba(99,102,241,${L ? '0.15' : '0.25'}) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(230,0,0,${L ? '0.10' : '0.18'}) 0%, transparent 55%)` }} />
         {/* Border */}
-        <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-indigo-500/30 transition-colors duration-500" />
+        <div className={`absolute inset-0 rounded-[28px] pointer-events-none transition-colors duration-500 ${L ? 'border border-indigo-200 group-hover:border-indigo-300' : 'border border-white/10 group-hover:border-indigo-500/30'}`} />
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
           style={{ background: 'linear-gradient(90deg, #6366f1 0%, #E60000 50%, #F7C948 100%)' }} />
 
         {/* Content */}
         <div className="relative z-10 p-5 flex flex-col gap-3">
-          {/* Header row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/15 shadow-inner"
-                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(230,0,0,0.2))' }}>
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner"
+                style={{
+                  background: L ? 'linear-gradient(135deg,rgba(99,102,241,0.18),rgba(230,0,0,0.10))' : 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(230,0,0,0.2))',
+                  border: L ? '1px solid rgba(99,102,241,0.25)' : '1px solid rgba(255,255,255,0.15)',
+                }}>
+                <Sparkles className="w-5 h-5" style={{ color: L ? '#6366f1' : '#ffffff' }} />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white drop-shadow-md leading-tight">الخدمات</h3>
-                <p className="text-[10px] text-white/40 font-medium">جميع خدمات التطبيق في مكان واحد</p>
+                <h3 className="text-lg font-black drop-shadow-md leading-tight"
+                  style={{ color: L ? '#1e1b4b' : '#ffffff' }}>الخدمات</h3>
+                <p className="text-[10px] font-medium"
+                  style={{ color: L ? 'rgba(30,27,75,0.55)' : 'rgba(255,255,255,0.40)' }}>جميع خدمات التطبيق في مكان واحد</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg backdrop-blur-md"
-                style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
+                style={{
+                  background: L ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.2)',
+                  color: L ? '#4f46e5' : '#a5b4fc',
+                  border: L ? '1px solid rgba(99,102,241,0.22)' : '1px solid rgba(99,102,241,0.3)',
+                }}>
                 4+
               </span>
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-indigo-500/60 transition-colors border border-white/10 group-hover:border-indigo-400/50">
-                <ChevronLeft className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-indigo-500/60 transition-colors"
+                style={{
+                  background: L ? 'rgba(99,102,241,0.10)' : 'rgba(255,255,255,0.10)',
+                  border: L ? '1px solid rgba(99,102,241,0.20)' : '1px solid rgba(255,255,255,0.10)',
+                }}>
+                <ChevronLeft className="w-4 h-4" style={{ color: L ? '#4f46e5' : '#ffffff' }} />
               </div>
             </div>
           </div>
-
-          {/* Mini service badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { label: 'فليكس', color: '#E60000' },
@@ -129,7 +150,7 @@ function HomeServicesCard() {
             ].map(s => (
               <span key={s.label}
                 className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` }}>
+                style={{ background: `${s.color}${L ? '15' : '18'}`, color: s.color, border: `1px solid ${s.color}${L ? '25' : '30'}` }}>
                 {s.label}
               </span>
             ))}
@@ -146,12 +167,15 @@ function HomeServicesCard() {
 
 function HomeNetworksCard() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   return (
     <div className="px-4 pt-3">
       <div
         onClick={() => navigate('/networks')}
-        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95 hover:shadow-[0_10px_40px_rgba(247,201,72,0.15)]"
+        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] hover:scale-[1.02] active:scale-95"
+        style={{ boxShadow: L ? '0 4px 24px rgba(247,201,72,0.12)' : '0 10px 40px rgba(0,0,0,0.4)' }}
         aria-label="عروض باقي الشبكات"
       >
         {/* Background Image */}
@@ -165,32 +189,47 @@ function HomeNetworksCard() {
           />
         </div>
         {/* Overlays */}
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
+        <div className="absolute inset-0" style={{ background: L ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.40)' }} />
+        <div className="absolute inset-0" style={{ background: L ? 'linear-gradient(to top,rgba(255,248,220,0.90) 0%,rgba(255,248,220,0.55) 50%,transparent 100%)' : 'linear-gradient(to top,#0A0A0A 0%,rgba(10,10,10,0.80) 50%,transparent 100%)' }} />
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
           style={{ background: 'radial-gradient(circle at center, #F7C94860 0%, transparent 70%)' }} />
-        <div className="absolute inset-0 border border-white/10 rounded-[28px] pointer-events-none group-hover:border-white/20 transition-colors" />
+        <div className="absolute inset-0 rounded-[28px] pointer-events-none transition-colors"
+          style={{ border: L ? '1px solid rgba(247,201,72,0.30)' : '1px solid rgba(255,255,255,0.10)' }} />
 
         {/* Content */}
         <div className="relative z-10 p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center backdrop-blur-md bg-white/10 border border-white/20 shadow-inner">
-                <Radio className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner"
+                style={{
+                  background: L ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.10)',
+                  border: L ? '1px solid rgba(247,201,72,0.35)' : '1px solid rgba(255,255,255,0.20)',
+                }}>
+                <Radio className="w-5 h-5" style={{ color: L ? '#92400e' : '#ffffff' }} />
               </div>
-              <h3 className="text-lg font-black text-white drop-shadow-md">عروض باقي الشبكات</h3>
+              <h3 className="text-lg font-black drop-shadow-md"
+                style={{ color: L ? '#1c1207' : '#ffffff' }}>عروض باقي الشبكات</h3>
             </div>
-            <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md bg-black/50 border border-white/10"
-              style={{ color: '#F7C948' }}>
+            <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md"
+              style={{
+                background: L ? 'rgba(255,255,255,0.70)' : 'rgba(0,0,0,0.50)',
+                border: L ? '1px solid rgba(247,201,72,0.45)' : '1px solid rgba(255,255,255,0.10)',
+                color: '#F7C948',
+              }}>
               Premium
             </span>
           </div>
           <div className="flex items-end justify-between gap-4 mt-1">
-            <p className="text-xs text-white/60 font-medium leading-relaxed max-w-[80%]">
+            <p className="text-xs font-medium leading-relaxed max-w-[80%]"
+              style={{ color: L ? 'rgba(28,18,7,0.70)' : 'rgba(255,255,255,0.60)' }}>
               عروض حصرية لجميع الشبكات (فودافون، أورانج، اتصالات، وي).
             </p>
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors border border-white/10 group-hover:border-primary">
-              <ChevronLeft className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors"
+              style={{
+                background: L ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.10)',
+                border: L ? '1px solid rgba(247,201,72,0.30)' : '1px solid rgba(255,255,255,0.10)',
+              }}>
+              <ChevronLeft className="w-4 h-4" style={{ color: L ? '#92400e' : '#ffffff' }} />
             </div>
           </div>
         </div>
@@ -225,29 +264,32 @@ function DebugValueCard({
   subValue?: string;
   status: 'ok' | 'warn' | 'error' | 'info';
 }) {
+  const { isDark } = useTheme();
+  const L = !isDark;
   const colors = {
-    ok:    { border: '#22c55e33', bg: '#0d1f0d', dot: '#22c55e', val: '#4ade80' },
-    warn:  { border: '#f59e0b33', bg: '#1f160a', dot: '#f59e0b', val: '#fbbf24' },
-    error: { border: '#ef444433', bg: '#1f0d0d', dot: '#ef4444', val: '#f87171' },
-    info:  { border: '#3b82f633', bg: '#0d1020', dot: '#60a5fa', val: '#93c5fd' },
+    ok:    { border: '#22c55e33', bg: L ? '#f0fdf4' : '#0d1f0d', dot: '#22c55e', val: L ? '#15803d' : '#4ade80' },
+    warn:  { border: '#f59e0b33', bg: L ? '#fffbeb' : '#1f160a', dot: '#f59e0b', val: L ? '#b45309' : '#fbbf24' },
+    error: { border: '#ef444433', bg: L ? '#fef2f2' : '#1f0d0d', dot: '#ef4444', val: L ? '#b91c1c' : '#f87171' },
+    info:  { border: '#3b82f633', bg: L ? '#eff6ff' : '#0d1020', dot: '#60a5fa', val: L ? '#1d4ed8' : '#93c5fd' },
   }[status];
 
   return (
     <div className="rounded-xl p-3 flex flex-col gap-1.5 min-w-0"
       style={{ border: `1px solid ${colors.border}`, background: colors.bg }}>
-      {/* Label + source */}
       <div className="flex items-center justify-between gap-1">
         <span className="text-[10px] font-bold uppercase tracking-widest"
           style={{ color: colors.dot }}>{label}</span>
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded"
-          style={{ background: '#ffffff08', color: '#ffffff40' }}>{source}</span>
+          style={{
+            background: L ? 'rgba(0,0,0,0.06)' : '#ffffff08',
+            color: L ? 'rgba(0,0,0,0.45)' : '#ffffff40',
+          }}>{source}</span>
       </div>
-      {/* Raw value — أكبر حجم وأوضح */}
       <p className="text-sm font-bold font-mono leading-tight break-all"
         style={{ color: colors.val }}>{rawValue}</p>
-      {/* Sub value (e.g. MCC+MNC code) */}
       {subValue && (
-        <p className="text-[11px] font-mono" style={{ color: '#ffffff55' }}>{subValue}</p>
+        <p className="text-[11px] font-mono"
+          style={{ color: L ? 'rgba(0,0,0,0.40)' : '#ffffff55' }}>{subValue}</p>
       )}
     </div>
   );
@@ -255,10 +297,12 @@ function DebugValueCard({
 
 // ── Tiny row helper for RAW RESPONSE VIEWER ──
 function Row({ k, v, c }: { k: string; v: string; c?: string }) {
+  const { isDark } = useTheme();
+  const L = !isDark;
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="shrink-0" style={{ color: '#ffffff30' }}>{k}:</span>
-      <span className="text-right break-all" style={{ color: c ?? '#94a3b8' }}>{v}</span>
+      <span className="shrink-0" style={{ color: L ? 'rgba(0,0,0,0.35)' : '#ffffff30' }}>{k}:</span>
+      <span className="text-right break-all" style={{ color: c ?? (L ? '#374151' : '#94a3b8') }}>{v}</span>
     </div>
   );
 }
@@ -268,6 +312,8 @@ function NativeDebugPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const isNative = isNativeAndroid();
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   const fetchInfo = useCallback(async () => {
     setLoading(true);
@@ -339,11 +385,17 @@ function NativeDebugPanel() {
 
   return (
     <div className="mx-4 rounded-2xl overflow-hidden border"
-      style={{ borderColor: '#ffffff12', background: '#080d14' }}>
+      style={{
+        borderColor: L ? 'rgba(0,0,0,0.10)' : '#ffffff12',
+        background:  L ? '#f8fafc' : '#080d14',
+      }}>
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'linear-gradient(90deg,#0d1523 0%,#0f1a2e 100%)', borderBottom: '1px solid #ffffff0d' }}>
+        style={{
+          background: L ? 'linear-gradient(90deg,#f1f5f9 0%,#e2e8f0 100%)' : 'linear-gradient(90deg,#0d1523 0%,#0f1a2e 100%)',
+          borderBottom: `1px solid ${L ? 'rgba(0,0,0,0.08)' : '#ffffff0d'}`,
+        }}>
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-2 h-2 rounded-full shrink-0 animate-pulse"
             style={{ backgroundColor: canExec ? '#22c55e' : loading ? '#60a5fa' : '#f59e0b' }} />
@@ -353,7 +405,7 @@ function NativeDebugPanel() {
           <span className="text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold shrink-0"
             style={{
               background: isNative ? '#22c55e20' : '#f59e0b20',
-              color: isNative ? '#4ade80' : '#fbbf24',
+              color: isNative ? (L ? '#15803d' : '#4ade80') : (L ? '#b45309' : '#fbbf24'),
               border: `1px solid ${isNative ? '#22c55e30' : '#f59e0b30'}`,
             }}>
             {isNative ? '● APK' : '○ WEB'}
@@ -361,10 +413,12 @@ function NativeDebugPanel() {
         </div>
         <button onClick={fetchInfo} disabled={loading}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95"
-          style={{ background: '#00E5FF15', color: '#00E5FF', border: '1px solid #00E5FF25' }}>
-          {loading
-            ? <Loader2 className="w-3 h-3 animate-spin" />
-            : <RefreshCw className="w-3 h-3" />}
+          style={{
+            background: L ? 'rgba(0,160,200,0.10)' : '#00E5FF15',
+            color: L ? '#0077aa' : '#00E5FF',
+            border: `1px solid ${L ? 'rgba(0,160,200,0.22)' : '#00E5FF25'}`,
+          }}>
+          {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
           {loading ? 'قراءة…' : 'تحديث'}
         </button>
       </div>
@@ -372,8 +426,8 @@ function NativeDebugPanel() {
       {/* ── Loading ── */}
       {loading && !info && (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00E5FF' }} />
-          <p className="text-xs font-mono" style={{ color: '#ffffff50' }}>
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: L ? '#0077aa' : '#00E5FF' }} />
+          <p className="text-xs font-mono" style={{ color: L ? 'rgba(0,0,0,0.40)' : '#ffffff50' }}>
             يقرأ TelephonyManager…
           </p>
         </div>
@@ -382,59 +436,42 @@ function NativeDebugPanel() {
       {/* ── Error ── */}
       {error && (
         <div className="mx-4 my-3 px-4 py-3 rounded-xl flex items-start gap-2"
-          style={{ background: '#1f0d0d', border: '1px solid #ef444433' }}>
+          style={{
+            background: L ? '#fff5f5' : '#1f0d0d',
+            border: '1px solid #ef444433',
+          }}>
           <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#f87171' }} />
-          <p className="text-xs font-mono break-all" style={{ color: '#fca5a5' }}>{error}</p>
+          <p className="text-xs font-mono break-all" style={{ color: L ? '#b91c1c' : '#fca5a5' }}>{error}</p>
         </div>
       )}
 
       {/* ── 4 Main Value Cards ── */}
       {info && (
         <div className="p-4 grid grid-cols-2 gap-3">
-
-          {/* 1. Active Data SIM — القرار الحقيقي */}
-          <DebugValueCard
-            label="Active Data SIM"
-            source="getActiveDataSubscriptionId()"
+          <DebugValueCard label="Active Data SIM" source="getActiveDataSubscriptionId()"
             rawValue={info.activeDataSimOperatorName}
             subValue={`MCC+MNC: ${info.activeDataSimOperator} | subId: ${info.activeDataSubId}`}
-            status={info.isVodafoneMobile ? 'ok' : info.activeDataSimOperator === 'غير متوفر' ? 'error' : 'warn'}
-          />
-
-          {/* 2. Network Operator (للعرض فقط) */}
-          <DebugValueCard
-            label="Network Operator"
-            source="getNetworkOperatorName()"
+            status={info.isVodafoneMobile ? 'ok' : info.activeDataSimOperator === 'غير متوفر' ? 'error' : 'warn'} />
+          <DebugValueCard label="Network Operator" source="getNetworkOperatorName()"
             rawValue={info.networkOperatorName}
             subValue={`MCC+MNC: ${info.networkOperator}`}
-            status={info.networkOperator === 'غير متوفر' ? 'error' : 'info'}
-          />
-
-          {/* 3. Active Network */}
-          <DebugValueCard
-            label="Active Network"
-            source="getActiveNetwork()"
+            status={info.networkOperator === 'غير متوفر' ? 'error' : 'info'} />
+          <DebugValueCard label="Active Network" source="getActiveNetwork()"
             rawValue={info.activeNetwork}
-            status={info.isMobileDataActive ? 'ok' : info.isWifiActive ? 'warn' : 'error'}
-          />
-
-          {/* 4. Mobile Data State */}
-          <DebugValueCard
-            label="Mobile Data State"
-            source="TRANSPORT_CELLULAR"
+            status={info.isMobileDataActive ? 'ok' : info.isWifiActive ? 'warn' : 'error'} />
+          <DebugValueCard label="Mobile Data State" source="TRANSPORT_CELLULAR"
             rawValue={info.isMobileDataActive ? 'CONNECTED' : 'DISCONNECTED'}
             subValue={info.isMobileDataActive ? 'بيانات الجوال نشطة' : 'بيانات الجوال مطفية'}
-            status={info.isMobileDataActive ? 'ok' : 'error'}
-          />
+            status={info.isMobileDataActive ? 'ok' : 'error'} />
         </div>
       )}
 
       {/* ── Divider ── */}
-      {info && <div style={{ height: '1px', background: '#ffffff08', margin: '0 16px' }} />}
+      {info && <div style={{ height: '1px', background: L ? 'rgba(0,0,0,0.07)' : '#ffffff08', margin: '0 16px' }} />}
 
       {/* ── Extra Info rows ── */}
       {info && (
-        <div className="px-4 py-3 grid grid-cols-1 gap-0 divide-y divide-white/[0.04]">
+        <div className={`px-4 py-3 grid grid-cols-1 gap-0 ${L ? 'divide-y divide-black/[0.05]' : 'divide-y divide-white/[0.04]'}`}>
           {[
             { k: 'Phone Permission',    v: info.hasPhonePermission ? 'GRANTED ✓' : 'DENIED ✗',           ok: info.hasPhonePermission },
             { k: 'Active Data SIM',     v: info.isVodafoneMobile  ? 'Vodafone EG ✓' : `${info.activeDataSimOperatorName}`, ok: info.isVodafoneMobile },
@@ -444,9 +481,10 @@ function NativeDebugPanel() {
             { k: 'Android',             v: info.androidVersion },
           ].map(row => (
             <div key={row.k} className="flex items-center justify-between py-2 gap-3">
-              <span className="text-[10px] font-mono shrink-0" style={{ color: '#ffffff45' }}>{row.k}</span>
+              <span className="text-[10px] font-mono shrink-0"
+                style={{ color: L ? 'rgba(0,0,0,0.40)' : '#ffffff45' }}>{row.k}</span>
               <span className="text-[11px] font-mono font-bold text-right break-all"
-                style={{ color: row.ok === true ? '#4ade80' : row.ok === false ? '#f87171' : '#94a3b8' }}>
+                style={{ color: row.ok === true ? (L ? '#15803d' : '#4ade80') : row.ok === false ? '#f87171' : (L ? '#374151' : '#94a3b8') }}>
                 {row.v}
               </span>
             </div>
@@ -459,7 +497,7 @@ function NativeDebugPanel() {
         <div className="px-4 pb-4">
           <div className="rounded-xl px-4 py-3 flex items-center gap-3"
             style={{
-              background: canExec ? '#0d1f0d' : '#1f160a',
+              background: canExec ? (L ? '#f0fdf4' : '#0d1f0d') : (L ? '#fffbeb' : '#1f160a'),
               border: `1px solid ${canExec ? '#22c55e33' : '#f59e0b33'}`,
             }}>
             {canExec
@@ -467,10 +505,10 @@ function NativeDebugPanel() {
               : <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#f59e0b' }} />}
             <div className="min-w-0">
               <p className="text-xs font-bold font-mono"
-                style={{ color: canExec ? '#4ade80' : '#fbbf24' }}>
+                style={{ color: canExec ? (L ? '#15803d' : '#4ade80') : (L ? '#b45309' : '#fbbf24') }}>
                 canExecuteNative = {canExec ? 'true' : 'false'}
               </p>
-              <p className="text-[11px] mt-0.5" style={{ color: '#ffffff55' }}>
+              <p className="text-[11px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : '#ffffff55' }}>
                 {canExec
                   ? 'Active Data SIM = Vodafone ✓  +  بيانات جوال ✓'
                   : [
@@ -487,7 +525,7 @@ function NativeDebugPanel() {
       {/* ── Web hint ── */}
       {!isNative && (
         <div className="px-4 pb-3 text-center">
-          <p className="text-[10px] font-mono" style={{ color: '#ffffff25' }}>
+          <p className="text-[10px] font-mono" style={{ color: L ? 'rgba(0,0,0,0.30)' : '#ffffff25' }}>
             ⓘ القيم الحقيقية من TelephonyManager تظهر فقط داخل APK الأصلي
           </p>
         </div>

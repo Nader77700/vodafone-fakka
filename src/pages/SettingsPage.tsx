@@ -20,15 +20,18 @@ import {
 import { BUILD_INFO } from '@/lib/buildInfo';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const CURRENT_VERSION = `v${BUILD_INFO.appVersion}`;
 
 // ── شريط تقدم مصغّر ─────────────────────────────────────────────────────────
 function MiniBar({ pct, color }: { pct: number; color: string }) {
   const [w, setW] = useState(0);
+  const { isDark } = useTheme();
   useEffect(() => { const t = setTimeout(() => setW(pct), 300); return () => clearTimeout(t); }, [pct]);
   return (
-    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+    <div className="h-1.5 rounded-full overflow-hidden"
+      style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
       <div className="h-full rounded-full transition-all duration-1000"
         style={{ width: `${w}%`, background: color, boxShadow: `0 0 4px ${color}60` }} />
     </div>

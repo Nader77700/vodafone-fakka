@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   getUserSubscription, getSubscriptionHistory, getSubscriptionOpsInfo, derivePlanLabel,
   getActivityTimeline,
@@ -32,11 +33,12 @@ function AnimNum({ value }: { value: number }) {
 }
 
 // ── Progress Bar ─────────────────────────────────────────────────────────────
-function Bar({ pct, color }: { pct: number; color: string }) {
+function Bar({ pct, color, isDark = true }: { pct: number; color: string; isDark?: boolean }) {
   const [w, setW] = useState(0);
   useEffect(() => { const t = setTimeout(() => setW(pct), 200); return () => clearTimeout(t); }, [pct]);
   return (
-    <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+    <div className="h-2 rounded-full overflow-hidden"
+      style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
       <div className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{
           width: `${w}%`,
@@ -51,14 +53,21 @@ function Bar({ pct, color }: { pct: number; color: string }) {
 }
 
 // ── Section Wrapper ──────────────────────────────────────────────────────────
-function Section({ title, icon: Icon, color = '#E60000', children }: {
-  title: string; icon: React.ElementType; color?: string; children: React.ReactNode;
+function Section({ title, icon: Icon, color = '#E60000', children, isDark = true }: {
+  title: string; icon: React.ElementType; color?: string; children: React.ReactNode; isDark?: boolean;
 }) {
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ background: '#0d0d0d', border: `1px solid ${color}25` }}>
+      style={{
+        background: isDark ? '#0d0d0d' : '#ffffff',
+        border: `1px solid ${color}${isDark ? '25' : '20'}`,
+        boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)',
+      }}>
       <div className="flex items-center gap-2 px-4 py-3"
-        style={{ background: `${color}10`, borderBottom: `1px solid ${color}20` }}>
+        style={{
+          background: `${color}${isDark ? '10' : '08'}`,
+          borderBottom: `1px solid ${color}${isDark ? '20' : '15'}`,
+        }}>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center"
           style={{ background: `${color}20`, color }}>
           <Icon className="w-3.5 h-3.5" />
@@ -71,15 +80,16 @@ function Section({ title, icon: Icon, color = '#E60000', children }: {
 }
 
 // ── Info Row ─────────────────────────────────────────────────────────────────
-function InfoRow({ label, value, color = '#94a3b8', mono = false }: {
-  label: string; value: string; color?: string; mono?: boolean;
+function InfoRow({ label, value, color, mono = false, isDark = true }: {
+  label: string; value: string; color?: string; mono?: boolean; isDark?: boolean;
 }) {
+  const defaultColor = isDark ? '#94a3b8' : '#4b5563';
   return (
     <div className="flex items-center justify-between gap-3 py-2"
-      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'}` }}>
       <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
       <span className={`text-[12px] font-bold truncate text-right ${mono ? 'font-mono' : ''}`}
-        style={{ color }}>{value}</span>
+        style={{ color: color ?? defaultColor }}>{value}</span>
     </div>
   );
 }
@@ -87,6 +97,8 @@ function InfoRow({ label, value, color = '#94a3b8', mono = false }: {
 export default function SubscriptionDetailPage() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   const [subscription, setSub]     = useState<Subscription | null>(null);
   const [opsInfo, setOpsInfo]       = useState<SubscriptionOpsInfo | null>(null);
@@ -157,11 +169,15 @@ export default function SubscriptionDetailPage() {
   }
 
   return (
-    <div className="pb-8 space-y-4" dir="rtl" style={{ background: '#070707', minHeight: '100dvh' }}>
+    <div className="pb-8 space-y-4" dir="rtl"
+      style={{ background: L ? '#f8f9fa' : '#070707', minHeight: '100dvh' }}>
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-20 px-4 pt-4 pb-3"
-        style={{ background: '#070707', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{
+          background: L ? '#f8f9fa' : '#070707',
+          borderBottom: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'}`,
+        }}>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate(-1)}>
             <ArrowRight className="w-4 h-4" />
@@ -169,7 +185,6 @@ export default function SubscriptionDetailPage() {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black text-balance">تفاصيل الاشتراك</h1>
           </div>
-          {/* Status dot */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold"
             style={{ background: `${statusColor}18`, border: `1px solid ${statusColor}35`, color: statusColor }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: statusColor }} />
@@ -183,11 +198,11 @@ export default function SubscriptionDetailPage() {
         {/* ══════════════════════════════════════
             1. معلومات الاشتراك
            ══════════════════════════════════════ */}
-        <Section title="معلومات الاشتراك" icon={CreditCard} color={statusColor}>
+        <Section title="معلومات الاشتراك" icon={CreditCard} color={statusColor} isDark={isDark}>
           <div className="space-y-0">
-            <InfoRow label="الخطة"  value={planName} color={statusColor} />
-            <InfoRow label="الحالة" value={subActive ? 'نشط' : 'منتهي'} color={statusColor} />
-            <InfoRow label="تاريخ التفعيل" value={fmtDateAr(subscription?.activated_at)} />
+            <InfoRow label="الخطة"  value={planName} color={statusColor} isDark={isDark} />
+            <InfoRow label="الحالة" value={subActive ? 'نشط' : 'منتهي'} color={statusColor} isDark={isDark} />
+            <InfoRow label="تاريخ التفعيل" value={fmtDateAr(subscription?.activated_at)} isDark={isDark} />
             <InfoRow
               label="تاريخ الانتهاء"
               value={subscription?.expires_at ? fmtDateAr(subscription.expires_at) : (subActive ? 'غير محدود ♾️' : '—')}
@@ -201,7 +216,7 @@ export default function SubscriptionDetailPage() {
             <InfoRow label="رقم الاشتراك" value={formatSubId(subscription)} mono />
           </div>
 
-          {/* Time Progress — مستخدم فقط: 100% عند الانتهاء */}
+          {/* Time Progress */}
           {!isUnlimited && subscription?.expires_at && (
             <div className="mt-3 space-y-1.5">
               <div className="flex items-center justify-between text-[10px]">
@@ -210,7 +225,7 @@ export default function SubscriptionDetailPage() {
                   {subActive ? `${progress}%` : '100%'}
                 </span>
               </div>
-              <Bar pct={subActive ? progress : 100} color={statusColor} />
+              <Bar pct={subActive ? progress : 100} color={statusColor} isDark={isDark} />
             </div>
           )}
         </Section>
@@ -218,18 +233,18 @@ export default function SubscriptionDetailPage() {
         {/* ══════════════════════════════════════
             2. العمليات
            ══════════════════════════════════════ */}
-        <Section title="العمليات" icon={Zap} color="#F7C948">
+        <Section title="العمليات" icon={Zap} color="#F7C948" isDark={isDark}>
           {opsInfo ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: 'الحد الشهري', value: opsLimit != null ? String(opsLimit) : 'غير محدود ♾️', color: '#a78bfa', anim: false },
-                  { label: 'مستخدم',      value: String(opsUsed),   color: '#F7C948', anim: true,  raw: opsUsed },
+                  { label: 'مستخدم',      value: String(opsUsed),   color: L ? '#b45309' : '#F7C948', anim: true,  raw: opsUsed },
                   { label: 'متبقي',       value: opsRem != null ? String(opsRem) : '∞', color: '#22c55e', anim: opsRem !== null, raw: opsRem ?? 0 },
-                  { label: 'نسبة الاستهلاك', value: `${opsPct}%`, color: opsPct >= 90 ? '#ef4444' : opsPct >= 60 ? '#F7C948' : '#22c55e', anim: false },
+                  { label: 'نسبة الاستهلاك', value: `${opsPct}%`, color: opsPct >= 90 ? '#ef4444' : opsPct >= 60 ? (L ? '#b45309' : '#F7C948') : '#22c55e', anim: false },
                 ].map(({ label, value, color, anim, raw }) => (
                   <div key={label} className="p-3 rounded-xl text-center"
-                    style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
+                    style={{ background: `${color}${L ? '08' : '10'}`, border: `1px solid ${color}${L ? '20' : '25'}` }}>
                     <p className="text-[9px] text-muted-foreground mb-1">{label}</p>
                     <p className="text-base font-black tabular-nums" style={{ color }}>
                       {anim && raw !== undefined ? <AnimNum value={raw as number} /> : value}
@@ -245,16 +260,19 @@ export default function SubscriptionDetailPage() {
                       {opsUsed} مستخدم / {opsLimit} إجمالي
                     </span>
                     <span className="font-bold tabular-nums"
-                      style={{ color: opsPct >= 90 ? '#ef4444' : opsPct >= 60 ? '#F7C948' : '#22c55e' }}>
+                      style={{ color: opsPct >= 90 ? '#ef4444' : opsPct >= 60 ? (L ? '#b45309' : '#F7C948') : '#22c55e' }}>
                       {opsPct}%
                     </span>
                   </div>
-                  <Bar pct={opsPct} color="#F7C948" />
+                  <Bar pct={opsPct} color={L ? '#b45309' : '#F7C948'} isDark={isDark} />
                 </div>
               )}
               {opsLimit === null && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                  style={{ background: '#22c55e10', border: '1px solid #22c55e25' }}>
+                  style={{
+                    background: L ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.10)',
+                    border: `1px solid ${L ? 'rgba(34,197,94,0.20)' : 'rgba(34,197,94,0.25)'}`,
+                  }}>
                   <span className="text-xs font-bold" style={{ color: '#22c55e' }}>
                     ♾️ استخدام غير محدود
                   </span>
@@ -267,16 +285,16 @@ export default function SubscriptionDetailPage() {
         {/* ══════════════════════════════════════
             3. إحصائيات الاستخدام
            ══════════════════════════════════════ */}
-        <Section title="إحصائيات الاستخدام" icon={BarChart3} color="#00C896">
+        <Section title="إحصائيات الاستخدام" icon={BarChart3} color="#00C896" isDark={isDark}>
           <div className="grid grid-cols-2 gap-2 mb-3">
             {[
-              { label: 'اليوم',        value: todayOps,   color: '#00E5FF' },
+              { label: 'اليوم',        value: todayOps,   color: L ? '#0077aa' : '#00E5FF' },
               { label: 'هذا الأسبوع', value: weekOps,    color: '#a78bfa' },
-              { label: 'هذا الشهر',   value: monthOps,   color: '#F7C948' },
+              { label: 'هذا الشهر',   value: monthOps,   color: L ? '#b45309' : '#F7C948' },
               { label: 'الإجمالي',    value: totalOps,   color: '#00C896' },
             ].map(({ label, value, color }) => (
               <div key={label} className="p-3 rounded-xl text-center"
-                style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
+                style={{ background: `${color}${L ? '08' : '10'}`, border: `1px solid ${color}${L ? '20' : '25'}` }}>
                 <p className="text-[9px] text-muted-foreground mb-1">{label}</p>
                 <p className="text-2xl font-black tabular-nums" style={{ color }}>
                   <AnimNum value={value} />
@@ -285,7 +303,10 @@ export default function SubscriptionDetailPage() {
             ))}
           </div>
           <div className="flex items-center justify-between p-3 rounded-xl"
-            style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.20)' }}>
+            style={{
+              background: L ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.08)',
+              border: `1px solid ${L ? 'rgba(34,197,94,0.18)' : 'rgba(34,197,94,0.20)'}`,
+            }}>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" style={{ color: '#22c55e' }} />
               <span className="text-[11px] font-bold text-foreground/80">معدل النجاح</span>
@@ -299,7 +320,7 @@ export default function SubscriptionDetailPage() {
         {/* ══════════════════════════════════════
             4. سجل الاشتراكات
            ══════════════════════════════════════ */}
-        <Section title="سجل الاشتراكات" icon={Activity} color="#60a5fa">
+        <Section title="سجل الاشتراكات" icon={Activity} color="#60a5fa" isDark={isDark}>
           {history.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-6">
               <RefreshCw className="w-8 h-8 text-muted-foreground/30" />
@@ -309,7 +330,7 @@ export default function SubscriptionDetailPage() {
             <div className="space-y-2">
               {history.map((h, i) => {
                 const isExp = new Date(h.expires_at).getTime() < Date.now();
-                const hColor = isExp ? '#94a3b8' : '#22c55e';
+                const hColor = isExp ? (L ? '#6b7280' : '#94a3b8') : '#22c55e';
                 const typeLabel = h.code_type === 'trial' ? 'تجريبي'
                   : h.code_type === 'gift' ? 'هدية'
                   : h.code_type === 'paid' ? 'شهري'
@@ -317,8 +338,10 @@ export default function SubscriptionDetailPage() {
                 return (
                   <div key={h.id ?? i}
                     className="rounded-xl p-3 space-y-2"
-                    style={{ background: 'rgba(255,255,255,0.025)', border: `1px solid ${hColor}25` }}>
-                    {/* Header row */}
+                    style={{
+                      background: L ? (isExp ? '#f9fafb' : '#f0fdf4') : 'rgba(255,255,255,0.025)',
+                      border: `1px solid ${hColor}${L ? '30' : '25'}`,
+                    }}>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg flex items-center justify-center"
@@ -332,7 +355,6 @@ export default function SubscriptionDetailPage() {
                         {isExp ? 'منتهي' : 'نشط'}
                       </span>
                     </div>
-                    {/* Info */}
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                       {[
                         { k: 'تاريخ التفعيل', v: fmtDateAr(h.activated_at) },
@@ -347,9 +369,10 @@ export default function SubscriptionDetailPage() {
                       ))}
                     </div>
                     {h.code && (
-                      <div className="flex items-center gap-1 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                      <div className="flex items-center gap-1 pt-1 border-t"
+                        style={{ borderColor: L ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)' }}>
                         <span className="text-[9px] text-muted-foreground">الكود:</span>
-                        <span className="text-[10px] font-mono text-foreground/40">{h.code}</span>
+                        <span className="text-[10px] font-mono" style={{ color: L ? '#6b7280' : 'rgba(255,255,255,0.40)' }}>{h.code}</span>
                       </div>
                     )}
                   </div>
@@ -367,7 +390,7 @@ export default function SubscriptionDetailPage() {
             style={{
               background: 'linear-gradient(135deg,#E60000,#B30000)',
               color: '#fff',
-              boxShadow: '0 4px 20px rgba(230,0,0,0.40)',
+              boxShadow: L ? '0 4px 16px rgba(230,0,0,0.28)' : '0 4px 20px rgba(230,0,0,0.40)',
             }}
           >
             <Zap className="w-4 h-4" />

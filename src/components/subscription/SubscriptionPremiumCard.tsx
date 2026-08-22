@@ -8,6 +8,7 @@ import {
 import type { Subscription } from '@/types/types';
 import type { SubscriptionOpsInfo } from '@/lib/api';
 import { fmtDate, fmtDateAr, fmtTimeLeft, fmtProgress } from '@/lib/formatUtils';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Props {
   subscription: Subscription | null;
@@ -34,11 +35,12 @@ function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string
 }
 
 // ── Progress Bar متحرّك ─────────────────────────────────────────────────────
-function PremiumBar({ pct, color }: { pct: number; color: string }) {
+function PremiumBar({ pct, color, isDark = true }: { pct: number; color: string; isDark?: boolean }) {
   const [w, setW] = useState(0);
   useEffect(() => { const t = setTimeout(() => setW(pct), 120); return () => clearTimeout(t); }, [pct]);
   return (
-    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+    <div className="h-2.5 rounded-full overflow-hidden"
+      style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
       <div
         className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{
@@ -55,6 +57,10 @@ function PremiumBar({ pct, color }: { pct: number; color: string }) {
 
 export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin, onRenew }: Props) {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+
+  // ── light-mode helper palettes ──
+  const L = !isDark; // shorthand: true = light mode
 
   // Admin دائماً نشط بصرف النظر عن أي subscription row في DB
   const rawSubActive = !!(subscription?.status === 'active'
@@ -103,9 +109,13 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
     <div
       className="relative rounded-2xl overflow-hidden select-none"
       style={{
-        background: 'linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%)',
-        border: `1.5px solid ${statusColor}35`,
-        boxShadow: `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
+        background: L
+          ? `linear-gradient(135deg,#ffffff 0%,#fef2f2 40%,#f9fafb 100%)`
+          : 'linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%)',
+        border: `1.5px solid ${statusColor}${L ? '50' : '35'}`,
+        boxShadow: L
+          ? `0 4px 24px ${statusColor}18, 0 1px 0 rgba(0,0,0,0.04) inset`
+          : `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
       }}
     >
       {/* Glow top line */}
@@ -113,7 +123,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 70% 60% at 90% 10%,${statusColor}10,transparent)` }} />
+        style={{ background: `radial-gradient(ellipse 70% 60% at 90% 10%,${statusColor}${L ? '08' : '10'},transparent)` }} />
 
       <div className="relative p-4 space-y-4">
 
@@ -127,7 +137,6 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 {statusLabel}
               </div>
             </div>
-            {/* اسم الخطة: يظهر فقط إذا كان الاشتراك نشطاً */}
             {subActive && (
               <p className="text-lg font-black text-foreground">{planName}</p>
             )}
@@ -139,15 +148,18 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
           </div>
         </div>
 
-        {/* ── Info Grid: Admin → رسالة احترافية | User → تاريخ التفعيل + الانتهاء فقط ── */}
+        {/* ── Info Grid ── */}
         {isAdmin ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-[#00E5FF1a] transition-colors"
-            style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.18)' }}
+          <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
+            style={{
+              background: L ? 'rgba(0,160,200,0.08)' : 'rgba(0,229,255,0.06)',
+              border: `1px solid ${L ? 'rgba(0,160,200,0.22)' : 'rgba(0,229,255,0.18)'}`,
+            }}
             onClick={() => navigate('/admin')}
             title="الذهاب إلى لوحة التحكم"
           >
-            <Crown className="w-5 h-5 shrink-0" style={{ color: '#00E5FF' }} />
-            <p className="text-xs font-bold leading-snug" style={{ color: '#00E5FF' }}>
+            <Crown className="w-5 h-5 shrink-0" style={{ color: L ? '#0077aa' : '#00E5FF' }} />
+            <p className="text-xs font-bold leading-snug" style={{ color: L ? '#0077aa' : '#00E5FF' }}>
               هذا الحساب يتمتع بصلاحيات مسؤول النظام واستخدام غير محدود ♾️
             </p>
           </div>
@@ -157,7 +169,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               {
                 icon: Calendar, label: 'تاريخ التفعيل',
                 value: fmtDateAr(subscription?.activated_at),
-                color: '#94a3b8',
+                color: L ? '#6b7280' : '#94a3b8',
               },
               {
                 icon: Clock, label: 'تاريخ الانتهاء',
@@ -168,7 +180,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               },
             ].map(({ icon: Icon, label, value, color }) => (
               <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                style={{
+                  background: L ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'}`,
+                }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${color}18`, color }}>
                   <Icon className="w-3.5 h-3.5" />
@@ -184,7 +199,8 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
         {/* ── قسم العمليات ── */}
         {!isAdmin && (
-          <div className="space-y-2.5 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="space-y-2.5 pt-1 border-t"
+            style={{ borderColor: L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" style={{ color: '#F7C948' }} />
@@ -193,9 +209,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               {!subActive ? (
                 <span className="text-sm font-black" style={{ color: '#ef4444' }}>لا توجد عمليات متاحة</span>
               ) : opsLimit === null ? (
-                <span className="text-sm font-black" style={{ color: '#00C896' }}>♾️ غير محدود</span>
+                <span className="text-sm font-black" style={{ color: L ? '#059669' : '#00C896' }}>♾️ غير محدود</span>
               ) : (
-                <span className="text-xs font-black tabular-nums" style={{ color: '#F7C948' }}>
+                <span className="text-xs font-black tabular-nums" style={{ color: L ? '#b45309' : '#F7C948' }}>
                   <AnimatedNumber value={opsRem ?? 0} /> / {opsLimit} متبقٍ
                 </span>
               )}
@@ -203,14 +219,14 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
             {subActive && opsLimit !== null && (
               <>
-                <PremiumBar pct={opsPct} color="#F7C948" />
+                <PremiumBar pct={opsPct} color={L ? '#b45309' : '#F7C948'} isDark={isDark} />
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-muted-foreground">
-                    مستخدم: <span className="font-bold tabular-nums" style={{ color: '#F7C948' }}>
+                    مستخدم: <span className="font-bold tabular-nums" style={{ color: L ? '#b45309' : '#F7C948' }}>
                       <AnimatedNumber value={opsUsed} />
                     </span>
                   </span>
-                  <span className="font-bold" style={{ color: opsPct >= 90 ? '#ef4444' : opsPct >= 60 ? '#F7C948' : '#22c55e' }}>
+                  <span className="font-bold" style={{ color: opsPct >= 90 ? '#ef4444' : opsPct >= 60 ? (L ? '#b45309' : '#F7C948') : '#22c55e' }}>
                     {opsPct}%
                   </span>
                 </div>
@@ -222,9 +238,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         {/* ── Subscription Number ── */}
         {subscription && (
           <div className="flex items-center justify-between pt-1 border-t"
-            style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            style={{ borderColor: L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)' }}>
             <span className="text-[9px] text-muted-foreground uppercase tracking-widest">رقم الاشتراك</span>
-            <span className="text-[11px] font-mono font-bold tabular-nums" style={{ color: '#94a3b8' }}>
+            <span className="text-[11px] font-mono font-bold tabular-nums" style={{ color: L ? '#4b5563' : '#94a3b8' }}>
               {subscription.serial_number ?? subscription.id.slice(0, 8).toUpperCase()}
             </span>
           </div>
@@ -236,8 +252,8 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
             onClick={() => navigate('/subscription-detail')}
             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95"
             style={{
-              background: 'rgba(230,0,0,0.15)',
-              border: '1px solid rgba(230,0,0,0.35)',
+              background: L ? 'rgba(230,0,0,0.08)' : 'rgba(230,0,0,0.15)',
+              border: `1px solid ${L ? 'rgba(230,0,0,0.25)' : 'rgba(230,0,0,0.35)'}`,
               color: '#E60000',
             }}
           >
@@ -252,7 +268,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               style={{
                 background: 'linear-gradient(135deg,#E60000,#B30000)',
                 color: '#fff',
-                boxShadow: '0 2px 12px rgba(230,0,0,0.35)',
+                boxShadow: L ? '0 2px 10px rgba(230,0,0,0.25)' : '0 2px 12px rgba(230,0,0,0.35)',
               }}
             >
               تجديد

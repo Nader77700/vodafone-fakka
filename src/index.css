@@ -252,6 +252,34 @@ html, body, #root {
     background: var(--gradient-background);
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     Light Mode — Global Component Overrides
+     كل ما يلي يؤثر على Light Mode فقط ولا يمسّ Dark Mode
+     ══════════════════════════════════════════════════════════════ */
+
+  /* ── Tailwind utility overrides ── */
+  /* أي عنصر بـ text-white يصبح داكناً في Light Mode */
+  html.light .text-white { color: hsl(0 0% 10%) !important; }
+  html.light .text-white\/40 { color: hsl(0 0% 10% / 0.55) !important; }
+  html.light .text-white\/50 { color: hsl(0 0% 10% / 0.60) !important; }
+  html.light .text-white\/60 { color: hsl(0 0% 10% / 0.65) !important; }
+  html.light .text-white\/70 { color: hsl(0 0% 10% / 0.70) !important; }
+  html.light .text-white\/80 { color: hsl(0 0% 10% / 0.80) !important; }
+
+  /* bg-black / bg-[#...dark] overrides */
+  html.light .bg-black\/40 { background-color: rgba(0,0,0,0.08) !important; }
+  html.light .bg-black\/50 { background-color: rgba(0,0,0,0.06) !important; }
+  html.light .bg-black\/60 { background-color: rgba(0,0,0,0.07) !important; }
+
+  /* border-white overrides */
+  html.light .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+  html.light .border-white\/20 { border-color: rgba(0,0,0,0.14) !important; }
+
+  /* Hover bg-\[#00E5FF1a\] → light tint */
+  html.light .hover\:bg-\[\#00E5FF1a\]:hover {
+    background-color: rgba(0, 160, 200, 0.10) !important;
+  }
+
   /* Scrollbar */
   * {
     scrollbar-width: thin;
@@ -395,4 +423,237 @@ html, body, #root {
   .bottom-nav-item.active svg {
     filter: drop-shadow(0 0 6px rgba(230, 0, 0, 0.6));
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Light Mode — Component Class Overrides (خارج @layer)
+   تؤثر على html.light فقط — Dark Mode محمي تماماً
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── card-premium في Light Mode ── */
+html.light .card-premium {
+  background: #ffffff;
+  border: 1px solid rgba(230, 0, 0, 0.18);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+}
+html.light .card-premium:hover {
+  box-shadow: 0 6px 24px rgba(230, 0, 0, 0.12), 0 0 0 1px rgba(230,0,0,0.10);
+  border-color: rgba(230, 0, 0, 0.30);
+}
+
+/* ── glass-card في Light Mode ── */
+html.light .glass-card {
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(0,0,0,0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── recharge-card في Light Mode ── */
+html.light .recharge-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+html.light .recharge-card:hover {
+  border-color: rgba(0,160,200,0.50);
+  box-shadow: 0 4px 16px rgba(0,160,200,0.18);
+}
+html.light .recharge-card.selected {
+  border-color: rgba(0,160,200,0.70);
+  box-shadow: 0 4px 18px rgba(0,160,200,0.25);
+  background: linear-gradient(145deg, rgba(0,160,200,0.06) 0%, #fafafa 100%);
+}
+html.light .recharge-card.gold.selected {
+  border-color: rgba(180,135,0,0.70);
+  box-shadow: 0 4px 18px rgba(180,135,0,0.20);
+  background: linear-gradient(145deg, rgba(180,135,0,0.06) 0%, #fafafa 100%);
+}
+
+/* ── input-premium في Light Mode ── */
+html.light .input-premium {
+  background: #f8f9fa;
+  border: 1px solid rgba(0,0,0,0.18);
+}
+html.light .input-premium:focus-within {
+  border-color: #E60000;
+  box-shadow: 0 0 0 3px rgba(230,0,0,0.10);
+}
+
+/* ── Header/Nav في Light Mode ── */
+html.light header {
+  background: rgba(255,255,255,0.95) !important;
+  border-bottom-color: rgba(0,0,0,0.10) !important;
+}
+html.light aside {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── Bottom Nav في Light Mode ── */
+html.light .bottom-nav-item.active svg {
+  filter: drop-shadow(0 0 4px rgba(230, 0, 0, 0.40));
+}
+
+/* ── Inline style overrides لـ Debug Panel (HomePage) في Light Mode ── */
+html.light [style*="background: #080d14"],
+html.light [style*="background:#080d14"],
+html.light [style*="background: rgb(8, 13, 20)"] {
+  background: #f0f4f8 !important;
+}
+html.light [style*="background: linear-gradient(90deg,#0d1523"],
+html.light [style*="background:linear-gradient(90deg,#0d1523"] {
+  background: linear-gradient(90deg, #f8f9fb 0%, #f0f4f8 100%) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="borderColor: '#ffffff12'"],
+html.light [style*="border-color: rgb(255 255 255 / 0.071)"] {
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.light [style*="background: '#ffffff08'"],
+html.light [style*="background: rgba(255, 255, 255, 0.03)"],
+html.light [style*="background: rgba(255,255,255,0.03)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+
+/* ── Services banner (HomePage) في Light Mode ── */
+html.light [style*="radial-gradient(ellipse at 30%"] {
+  background: linear-gradient(135deg, rgba(99,102,241,0.10) 0%, rgba(230,0,0,0.06) 100%) !important;
+}
+html.light [style*="background: linear-gradient(135deg, rgba(99,102,241,0.3)"] {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(230,0,0,0.10)) !important;
+}
+
+/* ── Networks banner (HomePage) في Light Mode ── */
+html.light [style*="background: 'radial-gradient(circle at center, #F7C94860"] {
+  background: radial-gradient(circle at center, rgba(247,201,72,0.15) 0%, transparent 70%) !important;
+}
+
+/* ── Premium Subscription card bg في Light Mode ── */
+html.light [style*="radial-gradient(ellipse 70%"] {
+  opacity: 0.5;
+}
+
+/* ── SubscriptionPremiumCard stats boxes في Light Mode ── */
+html.light [style*="background: rgba(255,255,255,0.03)"],
+html.light [style*="background: rgba(255, 255, 255, 0.03)"] {
+  background: rgba(0,0,0,0.03) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(0,229,255,0.06)"],
+html.light [style*="background: rgba(0, 229, 255, 0.06)"] {
+  background: rgba(0,160,200,0.08) !important;
+  border-color: rgba(0,160,200,0.20) !important;
+}
+
+/* ── كل نص بلون inline أبيض/فاتح جداً في Light Mode ── */
+html.light [style*="color: '#ffffff"],
+html.light [style*="color: \"#ffffff"],
+html.light [style*="color: '#fff'"],
+html.light [style*="color: \"#fff\""] {
+  color: hsl(0 0% 12%) !important;
+}
+html.light [style*="color: '#94a3b8'"],
+html.light [style*="color: \"#94a3b8\""] {
+  color: #4b5563 !important;
+}
+html.light [style*="color: '#ffffff45'"],
+html.light [style*="color: '#ffffff50'"],
+html.light [style*="color: '#ffffff55'"],
+html.light [style*="color: '#ffffff30'"],
+html.light [style*="color: '#ffffff40'"] {
+  color: rgba(0,0,0,0.40) !important;
+}
+
+/* ── Login logo bg في Light Mode ── */
+html.light [style*="background: '#0d0000'"],
+html.light [style*="background: \"#0d0000\""] {
+  background: #fff5f5 !important;
+  box-shadow: 0 0 16px rgba(230,0,0,0.12) !important;
+}
+
+/* ── Vodafone Fakka Premium title في header ── */
+html.light .text-foreground { color: hsl(0 0% 10%); }
+
+/* ── Dialogs/Modals/Sheets في Light Mode ── */
+html.light [data-radix-dialog-content],
+html.light [role="dialog"] > div,
+html.light .fixed.inset-0 > [class*="bg-background"] {
+  background: #ffffff !important;
+  color: hsl(0 0% 8%) !important;
+}
+
+/* ── shimmer/loading في Light Mode ── */
+html.light .animate-pulse {
+  background-color: rgba(0,0,0,0.08);
+}
+
+/* ── ForceUpdate / Maintenance screens في Light Mode ── */
+html.light [style*="background: '#0B0B14'"],
+html.light [style*="background: \"#0B0B14\""],
+html.light [style*="background: #0B0B14"] {
+  background: #f8f9fa !important;
+}
+html.light [style*="background: '#0d0d0d'"],
+html.light [style*="background: #0d0d0d"] {
+  background: #ffffff !important;
+}
+
+/* ── drop-shadow filters في Light Mode (icons) ── */
+html.light .bottom-nav-item svg {
+  filter: none;
+}
+html.light .bottom-nav-item.active svg {
+  filter: drop-shadow(0 0 4px rgba(230,0,0,0.35));
+}
+
+/* ══════════════════════════════════════════════════════════
+   NetworksPage — inset shadow overrides
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="rgba(255,255,255,0.04) inset"] {
+  box-shadow: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ServicesPage — dark bg/gradient overrides
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: linear-gradient(135deg,"][style*="#0d1020"] {
+  background: linear-gradient(135deg, rgba(99,102,241,0.10) 0%, #f0f4ff 100%) !important;
+}
+html.light [style*="background: linear-gradient(180deg, #080d14"],
+html.light [style*="background: linear-gradient(180deg,#080d14"] {
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef1f6 100%) !important;
+}
+html.light [style*="background: rgba(8,13,20,0.92)"],
+html.light [style*="background: rgba(8, 13, 20, 0.92)"] {
+  background: rgba(248,249,252,0.96) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="border: '1px solid rgba(255,255,255,0.06)'"],
+html.light [style*="borderBottom: '1px solid rgba(255,255,255,0.06)'"] {
+  border-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PinInputBlock — border/bg overrides
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="borderColor: rgba(255,255,255,0.12)"],
+html.light [style*="border-color: rgba(255,255,255,0.12)"] {
+  border-color: rgba(0,0,0,0.14) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.04)"] {
+  background: rgba(0,0,0,0.03) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.35)"],
+html.light [style*="color: rgba(255, 255, 255, 0.35)"] {
+  color: rgba(0,0,0,0.40) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PinManagerDialog — dark modal override
+   ══════════════════════════════════════════════════════════ */
+html.light [style*="background: '#0a0000'"],
+html.light [style*="background: #0a0000"] {
+  background: #ffffff !important;
+  border-color: rgba(230,0,0,0.18) !important;
 }
