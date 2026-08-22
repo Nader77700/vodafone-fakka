@@ -57,14 +57,14 @@ html, body, #root {
     /* Vodafone Fakka Premium v15 — Official Vodafone Red · White · Dark */
     --radius: 0.75rem;
 
-    /* ── Backgrounds — dark near-black with red undertone ── */
-    --background: 0 0% 5%;
+    /* ── Backgrounds — deep near-black with strong red undertone ── */
+    --background: 0 0% 3%;
     --foreground: 0 0% 100%;
 
-    --card: 0 8% 9%;
+    --card: 0 12% 8%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 8% 9%;
+    --popover: 0 12% 8%;
     --popover-foreground: 0 0% 100%;
 
     /* ── Primary: Vodafone Red #E60000 → hsl(0,100%,45%) ── */
@@ -76,8 +76,8 @@ html, body, #root {
     --secondary-foreground: 0 0% 100%;
 
     /* ── Muted ── */
-    --muted: 0 6% 14%;
-    --muted-foreground: 0 4% 62%;
+    --muted: 0 8% 13%;
+    --muted-foreground: 0 5% 68%;
 
     /* ── Accent: Vodafone light red / rose tint ── */
     --accent: 0 70% 70%;
@@ -87,9 +87,9 @@ html, body, #root {
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* ── Border / Input ── */
-    --border: 0 10% 20%;
-    --input: 0 8% 12%;
+    /* ── Border / Input — more visible ── */
+    --border: 0 15% 22%;
+    --input: 0 10% 11%;
     --ring: 0 100% 45%;
 
     /* ── Status ── */
@@ -108,40 +108,40 @@ html, body, #root {
     --chart-5: 210 90% 55%;
 
     /* ── Sidebar ── */
-    --sidebar-background: 0 8% 7%;
-    --sidebar-foreground: 0 0% 88%;
+    --sidebar-background: 0 12% 5%;
+    --sidebar-foreground: 0 0% 92%;
     --sidebar-primary: 0 100% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 6% 14%;
+    --sidebar-accent: 0 8% 12%;
     --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 10% 16%;
+    --sidebar-border: 0 15% 18%;
     --sidebar-ring: 0 100% 45%;
 
-    /* ── Brand glow / shadow tokens ── */
-    --glow-primary:  0 0px 22px rgba(230, 0, 0, 0.55);
-    --glow-secondary:0 0px 22px rgba(255, 60, 60, 0.45);
-    --glow-accent:   0 0px 28px rgba(230, 0, 0, 0.40);
-    --shadow-card:   0 4px 28px rgba(0, 0, 0, 0.65);
-    --shadow-hover:  0 8px 36px rgba(230, 0, 0, 0.30);
+    /* ── Brand glow / shadow tokens — boosted intensity ── */
+    --glow-primary:  0 0px 28px rgba(230, 0, 0, 0.80);
+    --glow-secondary:0 0px 28px rgba(255, 60, 60, 0.70);
+    --glow-accent:   0 0px 36px rgba(230, 0, 0, 0.65);
+    --shadow-card:   0 6px 32px rgba(0, 0, 0, 0.85);
+    --shadow-hover:  0 10px 42px rgba(230, 0, 0, 0.55);
 
-    /* ── Gradients ── */
-    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF6666 100%);
-    --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #CC0000 100%);
-    --gradient-card:       linear-gradient(145deg, #180808 0%, #0D0303 100%);
-    --gradient-background: radial-gradient(ellipse at top, #1a0505 0%, #0D0000 65%);
-    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.14) 0%, rgba(180,0,0,0.08) 50%, rgba(100,0,0,0.05) 100%);
+    /* ── Gradients — deeper darks ── */
+    --gradient-primary:    linear-gradient(135deg, #E60000 0%, #FF4444 100%);
+    --gradient-secondary:  linear-gradient(135deg, #E60000 0%, #AA0000 100%);
+    --gradient-card:       linear-gradient(145deg, #1E0606 0%, #0A0101 100%);
+    --gradient-background: radial-gradient(ellipse at top, #1E0404 0%, #080000 70%);
+    --gradient-hero:       linear-gradient(160deg, rgba(230,0,0,0.22) 0%, rgba(180,0,0,0.14) 50%, rgba(100,0,0,0.08) 100%);
 
-    /* ── Glass ── */
-    --glass-bg:     rgba(255, 255, 255, 0.030);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    /* ── Glass — slightly more visible ── */
+    --glass-bg:     rgba(255, 255, 255, 0.045);
+    --glass-border: rgba(255, 255, 255, 0.13);
 
-    /* ── Product card specific ── */
-    --card-red-border:  rgba(230, 0, 0, 0.40);
-    --card-red-glow:    0 0 20px rgba(230, 0, 0, 0.38);
-    --card-cyan-border: rgba(0, 229, 255, 0.30);
-    --card-gold-border: rgba(247, 201, 72, 0.35);
-    --card-cyan-glow:   0 0 18px rgba(0, 229, 255, 0.32);
-    --card-gold-glow:   0 0 18px rgba(247, 201, 72, 0.32);
+    /* ── Product card specific — vivid borders & strong glows ── */
+    --card-red-border:  rgba(230, 0, 0, 0.70);
+    --card-red-glow:    0 0 28px rgba(230, 0, 0, 0.65);
+    --card-cyan-border: rgba(0, 229, 255, 0.65);
+    --card-gold-border: rgba(247, 201, 72, 0.70);
+    --card-cyan-glow:   0 0 26px rgba(0, 229, 255, 0.60);
+    --card-gold-glow:   0 0 26px rgba(247, 201, 72, 0.60);
   }
 
   /* Force dark mode always */
@@ -175,8 +175,8 @@ html, body, #root {
   .glass-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   /* Gradient text */
@@ -198,21 +198,21 @@ html, body, #root {
   /* Premium card */
   .card-premium {
     background: var(--gradient-card);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(230, 0, 0, 0.30);
+    box-shadow: var(--shadow-card), inset 0 0 0 1px rgba(255,255,255,0.04);
     border-radius: var(--radius);
     transition: all 0.25s ease;
   }
   .card-premium:hover {
-    box-shadow: var(--shadow-hover);
-    border-color: rgba(0, 229, 255, 0.25);
+    box-shadow: var(--shadow-hover), inset 0 0 0 1px rgba(255,255,255,0.06);
+    border-color: rgba(0, 229, 255, 0.45);
     transform: translateY(-1px);
   }
 
   /* Recharge card (product card) — Cyan */
   .recharge-card {
     background: var(--gradient-card);
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: calc(var(--radius) + 2px);
     cursor: pointer;
     transition: all 0.22s ease;
@@ -223,9 +223,9 @@ html, body, #root {
     transform: translateY(-2px);
   }
   .recharge-card.selected {
-    border-color: rgba(7, 189, 212, 0.7);
-    box-shadow: var(--card-cyan-glow), inset 0 0 16px rgba(7, 189, 212, 0.08);
-    background: linear-gradient(145deg, rgba(7, 189, 212, 0.08) 0%, #121521 100%);
+    border-color: rgba(7, 189, 212, 0.85);
+    box-shadow: var(--card-cyan-glow), inset 0 0 20px rgba(7, 189, 212, 0.12);
+    background: linear-gradient(145deg, rgba(7, 189, 212, 0.12) 0%, #100D1A 100%);
     animation: border-pulse-cyan 1.6s ease-in-out infinite;
   }
   /* Gold variant for Mared */
@@ -234,19 +234,19 @@ html, body, #root {
     box-shadow: var(--card-gold-glow);
   }
   .recharge-card.gold.selected {
-    border-color: rgba(249, 184, 37, 0.7);
-    box-shadow: var(--card-gold-glow), inset 0 0 16px rgba(249, 184, 37, 0.08);
-    background: linear-gradient(145deg, rgba(249, 184, 37, 0.08) 0%, #121521 100%);
+    border-color: rgba(249, 184, 37, 0.85);
+    box-shadow: var(--card-gold-glow), inset 0 0 20px rgba(249, 184, 37, 0.12);
+    background: linear-gradient(145deg, rgba(249, 184, 37, 0.12) 0%, #100D1A 100%);
     animation: border-pulse-gold 1.6s ease-in-out infinite;
   }
 
   @keyframes border-pulse-cyan {
-    0%, 100% { box-shadow: var(--card-cyan-glow), inset 0 0 16px rgba(7, 189, 212, 0.08); }
-    50%       { box-shadow: 0 0 28px rgba(7, 189, 212, 0.55), inset 0 0 20px rgba(7, 189, 212, 0.14); }
+    0%, 100% { box-shadow: var(--card-cyan-glow), inset 0 0 20px rgba(7, 189, 212, 0.12); }
+    50%       { box-shadow: 0 0 38px rgba(7, 189, 212, 0.75), inset 0 0 28px rgba(7, 189, 212, 0.20); }
   }
   @keyframes border-pulse-gold {
-    0%, 100% { box-shadow: var(--card-gold-glow), inset 0 0 16px rgba(249, 184, 37, 0.08); }
-    50%       { box-shadow: 0 0 28px rgba(249, 184, 37, 0.55), inset 0 0 20px rgba(249, 184, 37, 0.14); }
+    0%, 100% { box-shadow: var(--card-gold-glow), inset 0 0 20px rgba(249, 184, 37, 0.12); }
+    50%       { box-shadow: 0 0 38px rgba(249, 184, 37, 0.75), inset 0 0 28px rgba(249, 184, 37, 0.20); }
   }
 
   /* Status badges */
