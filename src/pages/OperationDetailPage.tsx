@@ -20,6 +20,7 @@ import InvoiceReceipt from '@/components/invoice/InvoiceReceipt';
 import PrintButton from '@/components/invoice/PrintButton';
 import type { InvoiceData } from '@/lib/printer/types';
 import { toast } from 'sonner';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function statusInfo(s: string) {
@@ -32,19 +33,20 @@ function copyText(text: string) {
   navigator.clipboard.writeText(text).then(() => toast.success('تم النسخ')).catch(() => {});
 }
 
-// بطاقة صف بيانات
-function DataRow({ label, value, mono = false, copyable = false }: {
-  label: string; value: string | number | null | undefined; mono?: boolean; copyable?: boolean;
+// بطاقة صف بيانات — تأخذ ألوان Light/Dark من الـ prop
+function DataRow({ label, value, mono = false, copyable = false, L }: {
+  label: string; value: string | number | null | undefined; mono?: boolean; copyable?: boolean; L: boolean;
 }) {
   const v = value != null && value !== '' ? String(value) : '—';
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b last:border-b-0"
-      style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+      style={{ borderColor: L ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)' }}>
       <p className="text-xs text-muted-foreground shrink-0 w-28">{label}</p>
-      <p className={`text-xs font-semibold text-white flex-1 min-w-0 ltr ${mono ? 'font-mono break-all' : 'truncate'}`}>{v}</p>
+      <p className={`text-xs font-semibold flex-1 min-w-0 ltr ${mono ? 'font-mono break-all' : 'truncate'}`}
+        style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{v}</p>
       {copyable && v !== '—' && (
         <button onClick={() => copyText(v)} className="shrink-0 opacity-40 hover:opacity-100 transition-opacity">
-          <Copy className="w-3 h-3 text-white" />
+          <Copy className="w-3 h-3" style={{ color: L ? '#1a1a2e' : '#ffffff' }} />
         </button>
       )}
     </div>
@@ -57,11 +59,22 @@ export default function OperationDetailPage() {
   const navigate           = useNavigate();
   const location           = useLocation();
   const { id }             = useParams<{ id: string }>();
+  const { isDark }         = useTheme();
+  const L                  = !isDark;
   const [op, setOp]        = useState<Operation | null>((location.state as { op?: Operation } | null)?.op ?? null);
   const [loading, setLoading] = useState(!op);
   const [showDebug, setShowDebug] = useState(false);
 
   const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
+
+  const pageBg   = L ? '#f5f7fa' : '#080000';
+  const hdrBg    = L ? 'rgba(245,247,250,0.95)' : 'rgba(8,0,0,0.95)';
+  const hdrBd    = L ? 'rgba(230,0,0,0.12)' : 'rgba(230,0,0,0.15)';
+  const btnBack  = L ? 'rgba(0,0,0,0.05)'   : 'rgba(230,0,0,0.1)';
+  const btnBd    = L ? 'rgba(0,0,0,0.10)'   : '1px solid rgba(230,0,0,0.2)';
+  const headClr  = L ? '#1a1a2e'            : '#ffffff';
+  const debugBg  = L ? 'rgba(0,0,0,0.015)'  : 'rgba(255,255,255,0.015)';
+  const debugRowBd = L ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
 
   // إذا لم تُمرَّر البيانات عبر state، نجلبها من DB
   useEffect(() => {
@@ -81,7 +94,7 @@ export default function OperationDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080000' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: pageBg }}>
         <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#E60000' }} />
       </div>
     );
@@ -89,7 +102,7 @@ export default function OperationDetailPage() {
 
   if (!op) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: '#080000' }} dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: pageBg }} dir="rtl">
         <p className="text-3xl">🔍</p>
         <p className="text-sm text-muted-foreground">لم يتم العثور على العملية</p>
         <button onClick={() => navigate(-1)} className="text-xs" style={{ color: '#E60000' }}>العودة</button>
@@ -183,16 +196,16 @@ export default function OperationDetailPage() {
   const apiResponseStr = opFull.api_response ?? null;
 
   return (
-    <div className="min-h-screen pb-10" style={{ background: '#080000' }} dir="rtl">
+    <div className="min-h-screen pb-10" style={{ background: pageBg }} dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b"
-        style={{ background: 'rgba(8,0,0,0.95)', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
+        style={{ background: hdrBg, borderColor: hdrBd, backdropFilter: 'blur(8px)' }}>
         <button onClick={() => navigate(-1)}
           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
+          style={{ background: btnBack, border: `1px solid ${btnBd}` }}>
           <ArrowRight className="w-4 h-4" style={{ color: '#E60000' }} />
         </button>
-        <h1 className="flex-1 text-sm font-black text-white truncate">تفاصيل العملية</h1>
+        <h1 className="flex-1 text-sm font-black truncate" style={{ color: headClr }}>تفاصيل العملية</h1>
         {isAdmin && (
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
             style={{ background: 'rgba(230,0,0,0.15)', color: '#ff8888', border: '1px solid rgba(230,0,0,0.25)' }}>
@@ -216,7 +229,7 @@ export default function OperationDetailPage() {
             style={{ background: 'rgba(248,113,113,0.06)', borderColor: 'rgba(248,113,113,0.2)' }}>
             <p className="text-xs font-bold" style={{ color: '#f87171' }}>سبب الفشل</p>
             {mapped.arabicMessage.split('\n').filter(Boolean).map((line, i) => (
-              <p key={i} className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>{line}</p>
+              <p key={i} className="text-xs leading-relaxed" style={{ color: L ? 'rgba(26,26,46,0.65)' : 'rgba(255,255,255,0.6)' }}>{line}</p>
             ))}
           </div>
         )}
@@ -225,7 +238,6 @@ export default function OperationDetailPage() {
         {isAdmin && (
           <div className="rounded-2xl border overflow-hidden"
             style={{ borderColor: 'rgba(230,0,0,0.2)' }}>
-            {/* رأس قابل للطي */}
             <button
               onClick={() => setShowDebug(v => !v)}
               className="w-full flex items-center justify-between px-4 py-3"
@@ -238,38 +250,34 @@ export default function OperationDetailPage() {
             </button>
 
             {showDebug && (
-              <div style={{ background: 'rgba(255,255,255,0.015)' }}>
-                {/* IDs */}
-                <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ background: debugBg }}>
+                <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
                   <p className="text-[10px] font-bold text-muted-foreground mb-1.5">معرّفات التتبع</p>
-                  <DataRow label="Operation ID"    value={opFull.id}                mono copyable />
-                  <DataRow label="User ID"          value={opFull.user_id}           mono copyable />
-                  <DataRow label="Correlation ID"   value={opFull.correlation_id}    mono copyable />
-                  <DataRow label="Idempotency Key"  value={opFull.idempotency_key}   mono copyable />
+                  <DataRow L={L} label="Operation ID"    value={opFull.id}                mono copyable />
+                  <DataRow L={L} label="User ID"          value={opFull.user_id}           mono copyable />
+                  <DataRow L={L} label="Correlation ID"   value={opFull.correlation_id}    mono copyable />
+                  <DataRow L={L} label="Idempotency Key"  value={opFull.idempotency_key}   mono copyable />
                 </div>
 
-                {/* تنفيذ */}
-                <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
                   <p className="text-[10px] font-bold text-muted-foreground mb-1.5">تفاصيل التنفيذ</p>
-                  <DataRow label="Operation Source" value={opFull.operation_source ?? 'vodafone_cash'} />
-                  <DataRow label="Execution Layer"  value={opFull.execution_layer} />
-                  <DataRow label="Retry Count"      value={opFull.retry_count ?? 0} />
-                  <DataRow label="Duration (ms)"    value={durationMs} />
-                  <DataRow label="Created At"       value={opFull.created_at ? formatEgyptDateTime(opFull.created_at) : '—'} />
+                  <DataRow L={L} label="Operation Source" value={opFull.operation_source ?? 'vodafone_cash'} />
+                  <DataRow L={L} label="Execution Layer"  value={opFull.execution_layer} />
+                  <DataRow L={L} label="Retry Count"      value={opFull.retry_count ?? 0} />
+                  <DataRow L={L} label="Duration (ms)"    value={durationMs} />
+                  <DataRow L={L} label="Created At"       value={opFull.created_at ? formatEgyptDateTime(opFull.created_at) : '—'} />
                 </div>
 
-                {/* نتيجة */}
-                <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
                   <p className="text-[10px] font-bold text-muted-foreground mb-1.5">نتيجة العملية</p>
-                  <DataRow label="Status"           value={op.status} />
-                  {op.status === 'success' && <DataRow label="سبب النجاح" value="اكتملت العملية بنجاح عبر API" />}
-                  {op.status === 'failed'  && <DataRow label="سبب الفشل"  value={mapped?.arabicMessage.split('\n')[0] ?? op.error_message} />}
-                  {op.status === 'failed'  && <DataRow label="Raw Error"   value={op.error_message} mono />}
+                  <DataRow L={L} label="Status"           value={op.status} />
+                  {op.status === 'success' && <DataRow L={L} label="سبب النجاح" value="اكتملت العملية بنجاح عبر API" />}
+                  {op.status === 'failed'  && <DataRow L={L} label="سبب الفشل"  value={mapped?.arabicMessage.split('\n')[0] ?? op.error_message} />}
+                  {op.status === 'failed'  && <DataRow L={L} label="Raw Error"   value={op.error_message} mono />}
                 </div>
 
-                {/* API Response */}
                 {apiResponseStr && (
-                  <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                  <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
                     <div className="flex items-center justify-between mb-1.5">
                       <p className="text-[10px] font-bold text-muted-foreground">API Response</p>
                       <button onClick={() => copyText(apiResponseStr)} className="text-[10px] text-primary hover:opacity-70 flex items-center gap-1">
@@ -282,7 +290,6 @@ export default function OperationDetailPage() {
                   </div>
                 )}
 
-                {/* card_data */}
                 {cardDataStr && (
                   <div className="px-3 py-2">
                     <div className="flex items-center justify-between mb-1.5">

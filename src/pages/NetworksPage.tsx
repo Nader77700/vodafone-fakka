@@ -5,6 +5,7 @@ import { Radio, ChevronLeft, Zap, Clock, Wifi } from 'lucide-react';
 import AppFooter from '@/components/common/AppFooter';
 import { getESimSettings } from '@/lib/esimApi';
 import type { ESimSettings } from '@/types/esim';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const BLUE = '#1E6FFF';
 const BLUE_GLOW = 'rgba(30,111,255,0.22)';
@@ -12,6 +13,8 @@ const BLUE_GLOW = 'rgba(30,111,255,0.22)';
 // ── بطاقة eSIM ──────────────────────────────────────────────────────────────
 function ESimCard({ settings }: { settings: ESimSettings | null }) {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   // مخفي للمستخدمين العاديين فقط إذا status=hidden
   if (settings?.section_status === 'hidden') return null;
@@ -21,10 +24,10 @@ function ESimCard({ settings }: { settings: ESimSettings | null }) {
       onClick={() => navigate('/networks/esim')}
       className="relative rounded-2xl overflow-hidden cursor-pointer select-none transition-all duration-200 active:scale-[0.97] hover:scale-[1.01]"
       style={{
-        background: `linear-gradient(135deg,${BLUE}18,${BLUE}08)`,
+        background: L ? '#ffffff' : `linear-gradient(135deg,${BLUE}18,${BLUE}08)`,
         backdropFilter: 'blur(12px)',
-        border: `1.5px solid ${BLUE}45`,
-        boxShadow: `0 4px 24px ${BLUE_GLOW}, 0 1px 0 rgba(255,255,255,0.04) inset`,
+        border: `1.5px solid ${L ? 'rgba(0,0,0,0.08)' : `${BLUE}45`}`,
+        boxShadow: L ? '0 2px 12px rgba(0,0,0,0.08)' : `0 4px 24px ${BLUE_GLOW}`,
       }}
     >
       {/* Glow layer */}
@@ -156,15 +159,17 @@ export const NETWORKS: NetworkConfig[] = [
 
 function NetworkCard({ network }: { network: NetworkConfig }) {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const L = !isDark;
   return (
     <div
       onClick={() => navigate(network.route)}
       className="relative rounded-2xl overflow-hidden cursor-pointer select-none transition-all duration-200 active:scale-[0.97] hover:scale-[1.01]"
       style={{
-        background: network.bgGradient,
+        background: L ? '#ffffff' : network.bgGradient,
         backdropFilter: 'blur(12px)',
-        border: `1.5px solid ${network.borderColor}`,
-        boxShadow: `0 4px 24px ${network.glowColor}, 0 1px 0 rgba(255,255,255,0.04) inset`,
+        border: `1.5px solid ${L ? 'rgba(0,0,0,0.08)' : network.borderColor}`,
+        boxShadow: L ? '0 2px 12px rgba(0,0,0,0.08)' : `0 4px 24px ${network.glowColor}`,
       }}
     >
       {/* Glow layer */}
@@ -216,13 +221,16 @@ function NetworkCard({ network }: { network: NetworkConfig }) {
 
 export default function NetworksPage() {
   const [esimSettings, setEsimSettings] = useState<ESimSettings | null>(null);
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   useEffect(() => {
     getESimSettings().then(s => setEsimSettings(s));
   }, []);
 
   return (
-    <div className="min-h-screen pb-6 page-enter" dir="rtl">
+    <div className="min-h-screen pb-6 page-enter" dir="rtl"
+      style={{ background: L ? '#f5f7fa' : undefined }}>
       {/* Header */}
       <div className="px-4 pt-5 pb-3">
         <div className="flex items-center gap-3 mb-1">

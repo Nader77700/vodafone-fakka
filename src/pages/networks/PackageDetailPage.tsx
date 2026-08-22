@@ -14,6 +14,7 @@ import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
+import { useTheme } from '@/contexts/ThemeContext';
 
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -27,6 +28,8 @@ export default function PackageDetailPage() {
   const { id }    = useParams<{ id: string }>();
   const navigate  = useNavigate();
   const { user, profile } = useAuth();
+  const { isDark } = useTheme();
+  const L = !isDark;
   const [pkg, setPkg]           = useState<RedPackage | null>(null);
   const [loading, setLoading]   = useState(true);
 
@@ -75,11 +78,17 @@ export default function PackageDetailPage() {
   };
 
   return (
-    <div className="min-h-screen pb-6 page-enter" dir="rtl">
+    <div className="min-h-screen pb-6 page-enter" dir="rtl"
+      style={{ background: L ? '#f5f7fa' : undefined }}>
 
       {/* ══ Header ══ */}
       <div className="relative overflow-hidden rounded-b-3xl mb-4"
-        style={{ background: `linear-gradient(135deg,${cardColor}38,rgba(0,0,0,0.88))`, borderBottom: `1.5px solid ${cardColor}59` }}>
+        style={{
+          background: L
+            ? `linear-gradient(135deg,${cardColor}18,rgba(245,247,250,0.98))`
+            : `linear-gradient(135deg,${cardColor}38,rgba(0,0,0,0.88))`,
+          borderBottom: `1.5px solid ${cardColor}${L ? '30' : '59'}`,
+        }}>
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: `radial-gradient(ellipse 70% 80% at 15% 50%,${cardColor}26,transparent)` }} />
         <div className="relative px-4 pt-5 pb-6">

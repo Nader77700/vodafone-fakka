@@ -98,8 +98,8 @@ export default function InvoiceReceipt({ invoice, compact = false }: InvoiceRece
               {invoice.status === 'success' ? '✓ تمت العملية بنجاح' : invoice.status === 'failed' ? '✗ فشلت العملية' : '⏳ معلقة'}
             </p>
             {invoice.opNumber != null && (
-              <p className="text-[11px] font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                رقم العملية: <span className="text-white font-bold">#{invoice.opNumber}</span>
+              <p className="text-[11px] font-mono text-muted-foreground">
+                رقم العملية: <span className="font-bold text-foreground">#{invoice.opNumber}</span>
               </p>
             )}
           </div>
@@ -111,23 +111,23 @@ export default function InvoiceReceipt({ invoice, compact = false }: InvoiceRece
         {rows.map(r => (
           <div
             key={r.label}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border"
+            style={{ background: 'var(--invoice-row-bg, rgba(255,255,255,0.03))', borderColor: 'var(--invoice-row-bd, rgba(255,255,255,0.06))' }}
           >
-            <span className="text-[11px] shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>{r.label}</span>
+            <span className="text-[11px] shrink-0 text-muted-foreground">{r.label}</span>
             <div className="flex items-center gap-1.5 min-w-0">
               <span
                 className={`text-xs font-mono truncate max-w-[160px] ${r.bold ? 'font-bold' : 'font-semibold'}`}
-                style={{ color: r.accent ? '#4ade80' : 'rgba(255,255,255,0.9)' }}
+                style={{ color: r.accent ? '#4ade80' : undefined }}
               >
-                {r.value || '—'}
+                {!r.accent ? (r.value || '—') : r.value || '—'}
               </span>
               {r.copyable && r.value && r.value !== '—' && (
                 <button
-                  className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors hover:bg-white/10"
+                  className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors hover:bg-muted/30"
                   onClick={() => { navigator.clipboard.writeText(r.value); toast.success('تم النسخ'); }}
                 >
-                  <Copy className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                  <Copy className="w-3 h-3 text-muted-foreground" />
                 </button>
               )}
             </div>

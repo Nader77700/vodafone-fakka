@@ -1305,3 +1305,451 @@ html.light .drop-shadow-md {
 html.light .bg-muted { background-color: hsl(0 0% 92%) !important; }
 html.light .bg-muted\/50 { background-color: hsl(0 0% 94%) !important; }
 
+/* ══════════════════════════════════════════════════════════════
+   ⑯ COMPREHENSIVE PAGE OVERRIDE — ALL dark-only pages
+   Covers: vodafone-cash, wallet-lines, networks, esim,
+           vodafone-offers, subscribe, package-detail, etc.
+   Strategy: Override hardcoded Tailwind classes + inline styles
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Page root backgrounds ── */
+html.light .bg-\[\#0A0A0A\],
+html.light .bg-\[\#0a0a0a\] { background-color: #f5f7fa !important; }
+html.light .bg-\[\#111\]    { background-color: #ffffff !important; }
+html.light .bg-\[\#1A1A1A\],
+html.light .bg-\[\#1a1a1a\] { background-color: #f0f2f5 !important; }
+html.light .bg-\[\#0D0D0D\],
+html.light .bg-\[\#0d0d0d\] { background-color: #f5f7fa !important; }
+html.light .bg-\[\#161616\] { background-color: #f8f9fb !important; }
+html.light .bg-\[\#121212\] { background-color: #f8f9fb !important; }
+html.light .bg-\[\#1C1C1C\],
+html.light .bg-\[\#1c1c1c\] { background-color: #f0f2f5 !important; }
+
+/* ── Inline style: hardcoded dark bg ── */
+html.light [style*="background: #0A0A0A"],
+html.light [style*="background: #0a0a0a"],
+html.light [style*="background:#0A0A0A"],
+html.light [style*="background:#0a0a0a"] { background: #f5f7fa !important; }
+
+html.light [style*="background: #111"],
+html.light [style*="background:#111"]    { background: #ffffff !important; }
+
+html.light [style*="background: #1A1A1A"],
+html.light [style*="background: #1a1a1a"],
+html.light [style*="background:#1A1A1A"],
+html.light [style*="background:#1a1a1a"] { background: #f0f2f5 !important; }
+
+html.light [style*="background: #1C1C1C"],
+html.light [style*="background: #1c1c1c"] { background: #f0f2f5 !important; }
+
+html.light [style*="background: #161616"] { background: #f8f9fb !important; }
+
+/* ── rgba(255,255,255,0.0X) glass cards → white/light ── */
+html.light [style*="background: rgba(255,255,255,0.02)"],
+html.light [style*="background:rgba(255,255,255,0.02)"],
+html.light [style*="background: rgba(255, 255, 255, 0.02)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.03)"],
+html.light [style*="background:rgba(255,255,255,0.03)"],
+html.light [style*="background: rgba(255, 255, 255, 0.03)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.04)"],
+html.light [style*="background:rgba(255,255,255,0.04)"],
+html.light [style*="background: rgba(255, 255, 255, 0.04)"] {
+  background: #f5f5f7 !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.05)"],
+html.light [style*="background:rgba(255,255,255,0.05)"],
+html.light [style*="background: rgba(255, 255, 255, 0.05)"] {
+  background: #f0f2f5 !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.06)"],
+html.light [style*="background:rgba(255,255,255,0.06)"],
+html.light [style*="background: rgba(255, 255, 255, 0.06)"] {
+  background: #eef0f3 !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.07)"],
+html.light [style*="background:rgba(255,255,255,0.07)"],
+html.light [style*="background: rgba(255, 255, 255, 0.07)"] {
+  background: #eef0f3 !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.08)"],
+html.light [style*="background:rgba(255,255,255,0.08)"],
+html.light [style*="background: rgba(255, 255, 255, 0.08)"] {
+  background: #e8eaed !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── rgba borders: white/alpha → dark/alpha ── */
+html.light [style*="border: 1px solid rgba(255,255,255,0.05)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.06)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.07)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.08)"] {
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="border: 1.5px solid rgba(255,255,255,0.08)"],
+html.light [style*="border: 1.5px solid rgba(255,255,255,0.1)"],
+html.light [style*="border: 1.5px solid rgba(255,255,255,0.12)"] {
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.light [style*="borderBottom: '1px solid rgba(255,255,255,0.06)'"],
+html.light [style*="borderBottom: 1px solid rgba(255,255,255,0.06)"],
+html.light [style*="borderColor: 'rgba(255,255,255,0.06)'"],
+html.light [style*="borderColor: rgba(255,255,255,0.06)"] {
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── Tailwind border-white/X classes ── */
+html.light .border-white\/5  { border-color: rgba(0,0,0,0.06) !important; }
+html.light .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
+html.light .border-white\/20 { border-color: rgba(0,0,0,0.12) !important; }
+
+/* ── sticky header backgrounds (dark) ── */
+html.light .bg-\[\#0A0A0A\]\/80,
+html.light .bg-\[\#0a0a0a\]\/80 {
+  background-color: rgba(255,255,255,0.95) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+/* ── Text color overrides for hardcoded white opacity ── */
+html.light .text-white      { color: #1a1a2e !important; }
+html.light .text-white\/90  { color: rgba(26,26,46,0.90) !important; }
+html.light .text-white\/80  { color: rgba(26,26,46,0.80) !important; }
+html.light .text-white\/70  { color: rgba(26,26,46,0.70) !important; }
+html.light .text-white\/60  { color: rgba(26,26,46,0.55) !important; }
+html.light .text-white\/50  { color: rgba(26,26,46,0.45) !important; }
+html.light .text-white\/45  { color: rgba(26,26,46,0.40) !important; }
+html.light .text-white\/40  { color: rgba(26,26,46,0.35) !important; }
+html.light .text-white\/35  { color: rgba(26,26,46,0.30) !important; }
+html.light .text-white\/30  { color: rgba(26,26,46,0.28) !important; }
+
+/* ── Selection color ── */
+html.light .selection\:text-white::selection { color: #1a1a2e !important; }
+
+/* ── Input fields — dark to light ── */
+html.light input.bg-transparent {
+  color: #1a1a2e !important;
+}
+html.light input.bg-transparent::placeholder {
+  color: rgba(26,26,46,0.30) !important;
+}
+html.light .bg-\[\#1A1A1A\] input,
+html.light .bg-\[\#1a1a1a\] input,
+html.light .bg-\[\#111\] input {
+  color: #1a1a2e !important;
+  background: transparent !important;
+}
+
+/* ── Status panel "bg-[#111]" cards ── */
+html.light .bg-\[\#111\].border.border-white\/10.rounded-2xl {
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── Hover overlay classes ── */
+html.light .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.06) !important; }
+html.light .hover\:bg-white\/20:hover { background-color: rgba(0,0,0,0.10) !important; }
+
+/* ── Black overlay fallbacks ── */
+html.light .bg-black\/40  { background-color: rgba(0,0,0,0.04) !important; }
+html.light .bg-black\/80  { background-color: rgba(0,0,0,0.70) !important; }
+
+/* ── Package/Subscription cards that rely on dark gradient ── */
+html.light [style*="background: linear-gradient(135deg,rgba(0,0,0"] {
+  background: #f8f9fb !important;
+}
+html.light [style*="background: linear-gradient(135deg,rgba(255,255,255,0.0"] {
+  background: #ffffff !important;
+}
+
+/* ── Execution log row ── */
+html.light .bg-black\/40.p-2\.5.rounded-lg { background-color: #f5f6f8 !important; }
+
+/* ── "border-b border-white/5" sticky nav ── */
+html.light .sticky.border-b[class*="border-white"] {
+  border-color: rgba(0,0,0,0.07) !important;
+  background: rgba(255,255,255,0.95) !important;
+}
+
+/* ── Vodafone Cash Center image cards: keep overlay dark (for legibility on images) ── */
+html.light .from-\[\#0A0A0A\] { --tw-gradient-from: #111111; }
+
+/* ── inline style rgba color → light ── */
+html.light [style*="color: rgba(255,255,255,0.9)"],
+html.light [style*="color: rgba(255, 255, 255, 0.9)"]  { color: rgba(26,26,46,0.90) !important; }
+html.light [style*="color: rgba(255,255,255,0.8)"],
+html.light [style*="color: rgba(255, 255, 255, 0.8)"]  { color: rgba(26,26,46,0.80) !important; }
+html.light [style*="color: rgba(255,255,255,0.7)"],
+html.light [style*="color: rgba(255, 255, 255, 0.7)"]  { color: rgba(26,26,46,0.70) !important; }
+html.light [style*="color: rgba(255,255,255,0.6)"],
+html.light [style*="color: rgba(255, 255, 255, 0.6)"],
+html.light [style*="color: rgba(255,255,255,0.55)"],
+html.light [style*="color: rgba(255, 255, 255, 0.55)"] { color: rgba(26,26,46,0.55) !important; }
+html.light [style*="color: rgba(255,255,255,0.5)"],
+html.light [style*="color: rgba(255, 255, 255, 0.5)"],
+html.light [style*="color: rgba(255,255,255,0.50)"]    { color: rgba(26,26,46,0.48) !important; }
+html.light [style*="color: rgba(255,255,255,0.4)"],
+html.light [style*="color: rgba(255, 255, 255, 0.4)"],
+html.light [style*="color: rgba(255,255,255,0.45)"]    { color: rgba(26,26,46,0.40) !important; }
+html.light [style*="color: rgba(255,255,255,0.3)"],
+html.light [style*="color: rgba(255, 255, 255, 0.3)"]  { color: rgba(26,26,46,0.32) !important; }
+
+/* ── ESimDetailPage fixed bottom bar ── */
+html.light .fixed.bottom-0[style*="background: linear-gradient(to top, rgba(0,0,0"] {
+  background: linear-gradient(to top, rgba(255,255,255,0.98) 70%, transparent) !important;
+}
+
+/* ── WalletLines / eSIM / Vodafone Cash header "sticky" bars ── */
+html.light .sticky.top-0.z-50[class*="bg-\[#0A0A0A\]"],
+html.light .sticky.top-0.z-50[class*="bg-\[#0a0a0a\]"] {
+  background-color: rgba(255,255,255,0.95) !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ── SubscriptionPremiumCard gradient bg ── */
+html.light [style*="background: 'linear-gradient(135deg, #1a0a00"],
+html.light [style*="background: linear-gradient(135deg, #1a0a00"] {
+  background: linear-gradient(135deg, #fff5f0, #fff0ea) !important;
+}
+
+/* ── PackageDetailPage / SubscribePackagePage "disabled" buttons ── */
+html.light [style*="background: rgba(255,255,255,0.04), border: 1px solid rgba(255,255,255,0.08)"] {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── TransactionHistory / WalletLines results row borders ── */
+html.light [style*="borderColor: 'rgba(255,255,255,0.06)'"],
+html.light [style*="borderColor: rgba(255,255,255,0.06)"] {
+  border-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ── drop-shadow on image overlays keep dark for readability ── */
+html.light .drop-shadow-\[0_2px_4px_rgba\(0\,0\,0\,0\.8\)\] {
+  filter: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑰ FINAL COMPREHENSIVE OVERRIDE — vodafone-cash, wallet-lines,
+      ESim, networks, BalanceCharge, OperationDetail, InvoiceReceipt
+      Strategy: Target every remaining rgba/text-white/bg-dark pattern
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── InvoiceReceipt CSS variables ── */
+html.light {
+  --invoice-row-bg: rgba(0,0,0,0.03);
+  --invoice-row-bd: rgba(0,0,0,0.07);
+}
+
+/* ── text-white/* Tailwind opacity variants (complete set) ── */
+html.light .text-white\/25 { color: rgba(26,26,46,0.35) !important; }
+html.light .text-white\/30 { color: rgba(26,26,46,0.40) !important; }
+html.light .text-white\/35 { color: rgba(26,26,46,0.45) !important; }
+html.light .text-white\/45 { color: rgba(26,26,46,0.55) !important; }
+html.light .text-white\/55 { color: rgba(26,26,46,0.60) !important; }
+html.light .text-white\/65 { color: rgba(26,26,46,0.68) !important; }
+html.light .text-white\/75 { color: rgba(26,26,46,0.75) !important; }
+html.light .text-white\/85 { color: rgba(26,26,46,0.88) !important; }
+html.light .text-white\/90 { color: rgba(26,26,46,0.92) !important; }
+
+/* ── bg-white/* Tailwind opacity variants ── */
+html.light .bg-white\/5  { background-color: rgba(0,0,0,0.04) !important; }
+html.light .bg-white\/8  { background-color: rgba(0,0,0,0.05) !important; }
+html.light .bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
+html.light .bg-white\/15 { background-color: rgba(0,0,0,0.07) !important; }
+html.light .bg-white\/20 { background-color: rgba(0,0,0,0.08) !important; }
+
+/* ── border-white/* Tailwind opacity variants (complete set) ── */
+html.light .border-white\/5  { border-color: rgba(0,0,0,0.06) !important; }
+html.light .border-white\/6  { border-color: rgba(0,0,0,0.07) !important; }
+html.light .border-white\/8  { border-color: rgba(0,0,0,0.08) !important; }
+html.light .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+html.light .border-white\/12 { border-color: rgba(0,0,0,0.11) !important; }
+html.light .border-white\/20 { border-color: rgba(0,0,0,0.14) !important; }
+html.light .border-white\/30 { border-color: rgba(0,0,0,0.18) !important; }
+
+/* ── hover:bg-white/* and active:bg-white/* ── */
+html.light .hover\:bg-white\/10:hover  { background-color: rgba(0,0,0,0.06) !important; }
+html.light .hover\:bg-white\/20:hover  { background-color: rgba(0,0,0,0.08) !important; }
+html.light .active\:bg-white\/5:active { background-color: rgba(0,0,0,0.04) !important; }
+html.light .hover\:text-white:hover    { color: #1a1a2e !important; }
+
+/* ── bg-[#111] cards with border (TransactionHistoryPage cards) ── */
+html.light .bg-\[\#111\].border {
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.light .bg-\[\#111\].border.border-white\/8 {
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+
+/* ── bg-[#111]/50 (WalletBalancePage disabled service cards) ── */
+html.light .bg-\[\#111\]\/50 { background-color: rgba(255,255,255,0.6) !important; }
+
+/* ── bg-[#1a0a0a] hover on WalletBalancePage service cards ── */
+html.light .hover\:bg-\[\#1a0a0a\]:hover { background-color: #f5f7fa !important; }
+
+/* ── sticky header: bg-[#0A0A0A]/80 pattern (vodafone-cash pages) ── */
+html.light .bg-\[\#0A0A0A\]\/80,
+html.light .bg-\[\#0a0a0a\]\/80 {
+  background-color: rgba(255,255,255,0.95) !important;
+}
+html.light .border-white\/5 { border-color: rgba(0,0,0,0.07) !important; }
+
+/* ── shadow-[0_4px_30px_rgba(0,0,0,0.5)] stays — already dark enough ── */
+
+/* ── hover:border-[#E60000]/50 on WalletBalancePage cards — keep ── */
+
+/* ── inline rgba glass cards on vodafone-cash pages ── */
+html.light [style*="background: rgba(255,255,255,0.03)"],
+html.light [style*="background:rgba(255,255,255,0.03)"] {
+  background: rgba(0,0,0,0.03) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.04)"],
+html.light [style*="background:rgba(255,255,255,0.04)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.05)"],
+html.light [style*="background:rgba(255,255,255,0.05)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.06)"],
+html.light [style*="background:rgba(255,255,255,0.06)"] {
+  background: rgba(0,0,0,0.05) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.08)"],
+html.light [style*="background:rgba(255,255,255,0.08)"] {
+  background: rgba(0,0,0,0.05) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.02)"],
+html.light [style*="background:rgba(255,255,255,0.02)"] {
+  background: rgba(0,0,0,0.025) !important;
+}
+
+/* ── inline border rgba(255,255,255,...) ── */
+html.light [style*="border: 1px solid rgba(255,255,255,0.05)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.06)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.07)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.08)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.09)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.10)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.1)"],
+html.light [style*="border:1px solid rgba(255,255,255,0.08)"],
+html.light [style*="border:1px solid rgba(255,255,255,0.1)"] {
+  border-color: rgba(0,0,0,0.09) !important;
+}
+html.light [style*="border: 1.5px solid rgba(255,255,255,0.08)"] {
+  border-color: rgba(0,0,0,0.09) !important;
+}
+
+/* ── borderBottom rgba(255,255,255,...) ── */
+html.light [style*="borderBottom: '1px solid rgba(255,255,255,0.06)'"],
+html.light [style*="borderBottom: 1px solid rgba(255,255,255,0.06)"] {
+  border-bottom-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ── wallet-lines header: rgba(8,13,20,0.92) → white ── */
+html.light [style*="background: rgba(8,13,20"],
+html.light [style*="background:rgba(8,13,20"] {
+  background: rgba(255,255,255,0.97) !important;
+}
+html.light [style*="borderBottom: '1px solid rgba(255,255,255,0.06)'"] {
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── wallet-lines text colors ── */
+html.light .text-white\/60 { color: rgba(26,26,46,0.65) !important; }
+html.light .text-white\/40 { color: rgba(26,26,46,0.52) !important; }
+
+/* ── WalletLinesOtpPage OTP digit box ── */
+html.light .border-indigo-400\/70 { border-color: rgba(99,102,241,0.60) !important; }
+html.light .bg-indigo-500\/10      { background-color: rgba(99,102,241,0.08) !important; }
+
+/* ── WalletLinesChangePasswordPage step indicators ── */
+html.light .bg-white\/10.text-white\/40 {
+  background-color: rgba(0,0,0,0.07) !important;
+  color: rgba(26,26,46,0.40) !important;
+}
+
+/* ── ESimPage / ESimDetailPage admin button rows ── */
+html.light .w-7.h-7.rounded-lg[style*="rgba(255,255,255,0.05)"] {
+  background: rgba(0,0,0,0.05) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── SubscribePackagePage / ESimDetailPage main button ── */
+html.light .text-white.transition-all.active\:scale-\[0\.98\] {
+  color: #ffffff !important;
+}
+
+/* ── BalanceChargePage C.bgCard inline cards ── */
+html.light [style*="background: rgba(255,255,255,0.03), border: 1px solid rgba(255,255,255,0.07)"] {
+  background: rgba(0,0,0,0.03) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── BalanceChargePage session account cards ── */
+html.light [style*="border: 1px solid rgba(255,255,255,0.08)"][style*="background: rgba(255,255,255,0.03)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.06)"][style*="border: 1px solid rgba(255,255,255,0.1)"] {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── MerchantClientHome product cards border ── */
+html.light [style*="border: '1px solid rgba(255,255,255,0.20)'"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.20)"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.14)"] {
+  border-color: rgba(0,0,0,0.12) !important;
+}
+
+/* ── MerchantClientHome text color rgba overrides ── */
+html.light [style*="color: 'rgba(255,255,255,0.80)'"],
+html.light [style*="color: rgba(255,255,255,0.80)"],
+html.light [style*="color: rgba(255,255,255,0.70)"] {
+  color: rgba(26,26,46,0.80) !important;
+}
+
+/* ── AnnouncementBanner — keep text-white on colored bg (info/warning/error/success) ── */
+html.light .bg-blue-500   .text-white,
+html.light .bg-amber-500  .text-white,
+html.light .bg-red-600    .text-white,
+html.light .bg-green-600  .text-white { color: #ffffff !important; }
+
+/* ── PromotionBanner CTA button — keep text-white ── */
+html.light a[style*="background"][style*="#E60000"] .text-white,
+html.light button[style*="background"][style*="#E60000"] { color: #ffffff !important; }
+
+/* ── WalletLinesPage / WalletLinesLoginPage headers (already done by prev sections) ── */
+
+/* ── NetworksPage / ESimPage admin control buttons ── */
+html.light button.w-7.h-7.rounded-lg {
+  background: rgba(0,0,0,0.05) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+
+/* ── font-cairo pages root: text-white on min-h-screen root divs ── */
+html.light .font-cairo.text-white,
+html.light .min-h-screen.text-white.font-cairo {
+  color: #1a1a2e !important;
+}
+
+/* ── disable selection highlight dark color on light mode ── */
+html.light .selection\:bg-\[#E60000\]\/30::selection {
+  background-color: rgba(230,0,0,0.20) !important;
+}
+html.light .selection\:text-white::selection {
+  color: #1a1a2e !important;
+}
+
