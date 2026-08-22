@@ -552,6 +552,8 @@ function ProductIcon({ type, className = 'w-4 h-4', style }: { type: string; cla
 function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect: (p: VodafoneProduct) => void }) {
   const isMared = product.category === 'mared';
   const validity = getValidity(product);
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   return (
     <button
@@ -559,12 +561,12 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       onClick={() => onSelect(product)}
       className="relative w-full overflow-hidden select-none"
       style={{
-        minHeight: 136,   // P1: تقليل من 190 → 136px (~28%)
+        minHeight: 136,
         borderRadius: 14,
-        border: '1.5px solid rgba(230,0,0,0.45)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.70)',
+        border: `1.5px solid ${L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)'}`,
+        boxShadow: L ? '0 4px 18px rgba(0,0,0,0.12), 0 0 0 1px rgba(230,0,0,0.08)' : '0 4px 24px rgba(0,0,0,0.70)',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
-        background: '#0D0303',
+        background: L ? '#ffffff' : '#0D0303',
       }}
       onTouchStart={e => {
         const el = e.currentTarget as HTMLElement;
@@ -574,33 +576,45 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       onTouchEnd={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.transform = 'scale(1)';
-        el.style.boxShadow = '0 4px 24px rgba(0,0,0,0.70)';
+        el.style.boxShadow = L ? '0 4px 18px rgba(0,0,0,0.12)' : '0 4px 24px rgba(0,0,0,0.70)';
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.transform = 'translateY(-3px)';
-        el.style.boxShadow = '0 12px 36px rgba(0,0,0,0.75), 0 0 28px rgba(230,0,0,0.42)';
-        el.style.borderColor = 'rgba(230,0,0,0.75)';
+        el.style.boxShadow = L
+          ? '0 8px 28px rgba(230,0,0,0.18), 0 0 0 1px rgba(230,0,0,0.18)'
+          : '0 12px 36px rgba(0,0,0,0.75), 0 0 28px rgba(230,0,0,0.42)';
+        el.style.borderColor = L ? 'rgba(230,0,0,0.60)' : 'rgba(230,0,0,0.75)';
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.transform = 'translateY(0)';
-        el.style.boxShadow = '0 4px 24px rgba(0,0,0,0.70)';
-        el.style.borderColor = 'rgba(230,0,0,0.45)';
+        el.style.boxShadow = L ? '0 4px 18px rgba(0,0,0,0.12)' : '0 4px 24px rgba(0,0,0,0.70)';
+        el.style.borderColor = L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)';
       }}
     >
-      {/* خلفية AI */}
-      <img
-        src="/images/vf-card-bg.jpg"
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ borderRadius: 'inherit', objectPosition: 'center center' }}
-      />
-      <div className="absolute inset-0" style={{
-        background: 'linear-gradient(to right, rgba(4,0,0,0.95) 38%, rgba(4,0,0,0.55) 58%, rgba(4,0,0,0.02) 100%)',
-        borderRadius: 'inherit',
-      }} />
+      {/* خلفية AI — تُخفى في Light Mode */}
+      {!L && (
+        <img
+          src="/images/vf-card-bg.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ borderRadius: 'inherit', objectPosition: 'center center' }}
+        />
+      )}
+      {!L && (
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to right, rgba(4,0,0,0.95) 38%, rgba(4,0,0,0.55) 58%, rgba(4,0,0,0.02) 100%)',
+          borderRadius: 'inherit',
+        }} />
+      )}
+      {L && (
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 50%, #fef2f2 100%)',
+          borderRadius: 'inherit',
+        }} />
+      )}
 
       {/* Layout: يسار = لوجو+توقيع، يمين = بيانات */}
       <div className="relative z-10 flex flex-row h-full" style={{ minHeight: 136 }}>
@@ -609,23 +623,26 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
         <div className="flex flex-col justify-between py-2 px-2" style={{ width: '36%', minWidth: 0 }}>
           <div className="flex items-center gap-1">
             <VFLogo size={15} />
-            <span className="text-[8px] font-black text-white leading-none"
-              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.90)' }}>vodafone</span>
+            <span className="text-[8px] font-black leading-none"
+              style={{ color: L ? '#E60000' : '#ffffff', textShadow: L ? 'none' : '0 1px 4px rgba(0,0,0,0.90)' }}>vodafone</span>
           </div>
           <div>
-            <p className="text-[9px] font-bold leading-tight text-white"
-              style={{ fontFamily: "'Dancing Script','Brush Script MT',cursive", textShadow: '0 1px 6px rgba(0,0,0,0.95)' }}>
+            <p className="text-[9px] font-bold leading-tight"
+              style={{
+                color: L ? '#1a1a2e' : '#ffffff',
+                fontFamily: "'Dancing Script','Brush Script MT',cursive",
+                textShadow: L ? 'none' : '0 1px 6px rgba(0,0,0,0.95)',
+              }}>
               Nader Akram
             </p>
             <p className="text-[7px] font-bold" style={{ color: '#E60000' }}>Developer</p>
           </div>
         </div>
 
-        {/* الجانب الأيمن — P2: حُذف displayName (كان مكرراً مع السعر) */}
-        {/* P3: توزيع رأسي: badge → سعر → وحدات → صافي → صلاحية → زر */}
+        {/* الجانب الأيمن */}
         <div className="flex flex-col flex-1 min-w-0 px-2 py-1.5 text-right justify-between">
 
-          {/* Badge النوع فقط — P2: لا اسم كارت مكرر */}
+          {/* Badge النوع */}
           <div className="flex justify-end">
             <span className="text-[9px] font-black px-2 py-0.5 rounded-full"
               style={{ color: '#fff', background: '#E60000', border: '1px solid rgba(255,255,255,0.20)' }}>
@@ -635,35 +652,47 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
 
           {/* السعر الكبير */}
           <p className="text-[28px] font-black tabular-nums leading-none mt-0.5"
-            style={{ color: '#ffffff', textShadow: '0 0 18px rgba(230,0,0,0.75), 0 2px 8px rgba(0,0,0,0.90)' }}>
+            style={{
+              color: L ? '#1a1a2e' : '#ffffff',
+              textShadow: L ? 'none' : '0 0 18px rgba(230,0,0,0.75), 0 2px 8px rgba(0,0,0,0.90)',
+            }}>
             {product.priceLabel}
           </p>
 
-          {/* الوحدات + صافي الربح في صف واحد — P3: لا فراغات هدر */}
+          {/* الوحدات + صافي الربح */}
           <div className="flex items-center justify-end gap-2 mt-0.5">
             <span className="text-[10px] font-semibold tabular-nums"
-              style={{ color: 'rgba(255,255,255,0.80)' }}>
+              style={{ color: L ? 'rgba(0,0,0,0.60)' : 'rgba(255,255,255,0.80)' }}>
               {product.unitsLabel}
             </span>
             {product.net_balance > 0 && (
               <span className="text-[10px] font-semibold"
-                style={{ color: 'rgba(255,200,0,0.90)', textShadow: '0 1px 3px rgba(0,0,0,0.80)' }}>
+                style={{ color: L ? '#b45309' : 'rgba(255,200,0,0.90)', textShadow: L ? 'none' : '0 1px 3px rgba(0,0,0,0.80)' }}>
                 صافي: {product.net_balance.toFixed(2)} ج
               </span>
             )}
           </div>
 
-          {/* الصلاحية + زر تنفيذ في صف واحد — P3 */}
+          {/* الصلاحية + زر تنفيذ */}
           <div className="flex items-center justify-between mt-1"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.14)', paddingTop: 5 }}>
+            style={{ borderTop: `1px solid ${L ? 'rgba(230,0,0,0.12)' : 'rgba(255,255,255,0.14)'}`, paddingTop: 5 }}>
             <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(0,229,255,0.14)', border: '1px solid rgba(0,229,255,0.38)' }}>
-              <ChevronLeft className="w-3 h-3" style={{ color: '#00E5FF' }} />
+              style={{
+                background: L ? 'rgba(0,160,200,0.10)' : 'rgba(0,229,255,0.14)',
+                border: `1px solid ${L ? 'rgba(0,160,200,0.30)' : 'rgba(0,229,255,0.38)'}`,
+              }}>
+              <ChevronLeft className="w-3 h-3" style={{ color: L ? '#0077aa' : '#00E5FF' }} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-white/70">🗓 {validity}</span>
+              <span className="text-[10px] font-medium"
+                style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.70)' }}>
+                🗓 {validity}
+              </span>
               <span className="text-[11px] font-black"
-                style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.55)' }}>
+                style={{
+                  color: L ? '#0077aa' : '#00E5FF',
+                  textShadow: L ? 'none' : '0 0 10px rgba(0,229,255,0.55)',
+                }}>
                 تنفيذ الآن
               </span>
             </div>
@@ -682,6 +711,8 @@ function OperationDetailsDialog({
   onClose: () => void;
   invoice: InvoiceData;
 }) {
+  const { isDark } = useTheme();
+  const L = !isDark;
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent
@@ -698,10 +729,10 @@ function OperationDetailsDialog({
             style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)' }}>
             <CheckCircle2 className="w-4 h-4 text-green-400" />
           </div>
-          <p className="text-sm font-black text-white flex-1 min-w-0">تفاصيل العملية الكاملة</p>
+          <p className="text-sm font-black flex-1 min-w-0" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>تفاصيل العملية الكاملة</p>
           <button onClick={onClose}
             className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.05)' }}>
+            style={{ background: L ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}>
             <XCircle className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -711,7 +742,11 @@ function OperationDetailsDialog({
           <PrintButton invoice={invoice} variant="full" />
           <button
             className="w-full h-10 rounded-xl text-sm font-medium transition-all"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+            style={{
+              background: L ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)'}`,
+              color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.5)',
+            }}
             onClick={onClose}
           >إغلاق</button>
         </div>
@@ -733,6 +768,8 @@ function ReceiptView({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { config } = useRuntimeConfig();
   const feedbackEnabled = config.feature_flags.ff_card_feedback_enabled;
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   return (
     <div className="flex flex-col" dir="rtl">
@@ -746,7 +783,7 @@ function ReceiptView({
       {/* أزرار الإجراءات */}
       <div className="px-5 py-4 space-y-2.5">
         <PrintButton invoice={invoice} variant="full" />
-        
+
         {feedbackEnabled && invoice.status === 'success' && (
           <button
             className="w-full h-11 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
@@ -759,7 +796,11 @@ function ReceiptView({
 
         <button
           className="w-full h-11 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+          style={{
+            background: L ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${L ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)'}`,
+            color: L ? 'rgba(0,0,0,0.60)' : 'rgba(255,255,255,0.7)',
+          }}
           onClick={() => setDetailsOpen(true)}
         >
           <Info className="w-4 h-4" />عرض التفاصيل الكاملة
@@ -773,7 +814,11 @@ function ReceiptView({
         </button>
         <button
           className="w-full h-11 rounded-2xl font-medium text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-          style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)' }}
+          style={{
+            background: 'transparent',
+            border: `1px solid ${L ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.1)'}`,
+            color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.35)',
+          }}
           onClick={() => { onClose(); navigate('/'); }}
         >
           <Home className="w-4 h-4" />الرجوع للرئيسية
@@ -782,7 +827,7 @@ function ReceiptView({
 
       {/* نافذة التفاصيل */}
       <OperationDetailsDialog open={detailsOpen} onClose={() => setDetailsOpen(false)} invoice={invoice} />
-      
+
       {/* نافذة التقييم */}
       <CardFeedbackModal
         isOpen={feedbackOpen}
@@ -805,6 +850,8 @@ function ExecuteModal({
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const navigate = useNavigate();
   const { config } = useRuntimeConfig();
+  const { isDark } = useTheme();
+  const L = !isDark;
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
   const [sender, setSender] = useState(''); // مقروء تلقائياً من Native — لا يظهر للمستخدم
@@ -1240,7 +1287,11 @@ function ExecuteModal({
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[460px] p-0 border-0 max-h-[92dvh] overflow-y-auto gap-0"
-          style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
+          style={{
+            background: L ? '#ffffff' : '#0a0000',
+            border: `1px solid ${L ? 'rgba(230,0,0,0.20)' : 'rgba(230,0,0,0.25)'}`,
+            borderRadius: 20,
+          }}
           dir="rtl"
         >
           {product && !receipt && (
@@ -1253,11 +1304,11 @@ function ExecuteModal({
               <div className="flex items-center gap-3 px-5 py-4 border-b"
                 style={{ borderColor: 'rgba(230,0,0,0.15)', background: 'rgba(230,0,0,0.04)' }}>
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border"
-                  style={{ borderColor: 'rgba(230,0,0,0.3)', background: '#0d0000' }}>
-                  <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover bg-black" />
+                  style={{ borderColor: 'rgba(230,0,0,0.3)', background: L ? '#fff5f5' : '#0d0000' }}>
+                  <img src={DefaultLogo} alt="Logo" className="w-full h-full object-cover" style={{ background: L ? '#fff5f5' : '#000' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-black text-white text-balance">تنفيذ شحن كارت</p>
+                  <p className="text-base font-black text-balance" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>تنفيذ شحن كارت</p>
                   <p className="text-[10px] font-mono truncate" style={{ color: 'rgba(230,0,0,0.6)' }}>
                     {product.id}
                   </p>
@@ -1282,7 +1333,7 @@ function ExecuteModal({
                       <div className="text-4xl">🔒</div>
                       <div className="space-y-1.5">
                         <p className="text-sm font-black text-orange-300">حسابك مجمَّد مؤقتاً</p>
-                        <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                        <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
                           تم تجميد Vodafone Cash بسبب تكرار الرقم السري الخاطئ 3 مرات.
                         </p>
                       </div>
@@ -1292,15 +1343,15 @@ function ExecuteModal({
                         <p className="text-2xl font-black tabular-nums text-orange-300">{hoursLeft} ساعة</p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>لفتح الحساب فوراً:</p>
+                        <p className="text-[10px] font-bold" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.4)' }}>لفتح الحساب فوراً:</p>
                         {['اتصل على 888 من خطك وقل "رقم سري"', 'أو اكتب #912# وأرسل من نفس الخط'].map((s, i) => (
                           <div key={i} className="flex items-start gap-1.5">
                             <span className="text-[10px] font-black text-orange-400 shrink-0">{i + 1}.</span>
-                            <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>{s}</p>
+                            <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.5)' }}>{s}</p>
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      <p className="text-[10px]" style={{ color: L ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.3)' }}>
                         سيُفتح الحساب تلقائياً عند انتهاء المدة
                       </p>
                     </div>
@@ -1314,7 +1365,8 @@ function ExecuteModal({
                   <div className="flex items-center gap-2 px-4 py-3 border-b"
                     style={{ borderColor: 'rgba(230,0,0,0.12)', background: 'rgba(230,0,0,0.06)' }}>
                     <ProductIcon type={product.type} className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
-                    <p className="text-sm font-black text-white flex-1 min-w-0 truncate text-balance">{product.name}</p>
+                    <p className="text-sm font-black flex-1 min-w-0 truncate text-balance"
+                      style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{product.name}</p>
                   </div>
                   {/* شبكة 2×2 */}
                   <div className="grid grid-cols-2">
@@ -1608,12 +1660,17 @@ function ExecuteModal({
 
                 {/* ── حقل رقم المستفيد ── */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-white">رقم الهاتف المستفيد</Label>
+                  <Label className="text-sm font-medium" style={{ color: L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>رقم الهاتف المستفيد</Label>
                   <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                    style={{
+                      borderColor: L ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
+                      background: L ? '#ffffff' : 'rgba(255,255,255,0.04)',
+                    }}>
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10"
+                      style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)' }} />
                     <Input type="tel" inputMode="numeric" maxLength={11}
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
+                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent placeholder:opacity-40"
+                      style={{ color: L ? '#1a1a2e' : '#ffffff' }}
                       placeholder="01xxxxxxxxx" value={phone}
                       onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} dir="ltr"
                       disabled={submitting} />
@@ -1622,12 +1679,17 @@ function ExecuteModal({
 
                 {/* ── حقل الرقم السري ── */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-white">الرقم السري للمحفظة</Label>
+                  <Label className="text-sm font-medium" style={{ color: L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>الرقم السري للمحفظة</Label>
                   <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                    style={{
+                      borderColor: L ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
+                      background: L ? '#ffffff' : 'rgba(255,255,255,0.04)',
+                    }}>
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10"
+                      style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)' }} />
                     <Input type="password" inputMode="numeric"
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent text-white placeholder:text-white/25"
+                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent placeholder:opacity-40"
+                      style={{ color: L ? '#1a1a2e' : '#ffffff' }}
                       placeholder="أدخل الرقم السري" value={pin}
                       onChange={e => setPin(e.target.value)} disabled={submitting} />
                   </div>

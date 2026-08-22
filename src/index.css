@@ -430,6 +430,31 @@ html, body, #root {
    تؤثر على html.light فقط — Dark Mode محمي تماماً
    ══════════════════════════════════════════════════════════════ */
 
+/* ── Premium Gold badge ── */
+html.light .premium-badge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  border: 1px solid rgba(180,130,0,0.35) !important;
+  color: #92400e !important;
+}
+
+/* ── Active admin status badge ── */
+html.light .admin-status-badge {
+  background: rgba(180,130,0,0.12) !important;
+  border: 1px solid rgba(180,130,0,0.30) !important;
+  color: #92400e !important;
+}
+
+/* ── Page-level page containers ── */
+html.light .page-container-dark {
+  background: #f5f7fa !important;
+}
+
+/* ── Service card dark overlay overrides ── */
+html.light .service-card-overlay {
+  background: rgba(248,249,252,0.96) !important;
+}
+
+
 /* ── card-premium في Light Mode ── */
 html.light .card-premium {
   background: #ffffff;
@@ -864,3 +889,419 @@ html.light [style*="borderColor: '#00E5FF12'"],
 html.light [style*="borderColor: '#00E5FF08'"] {
   border-color: rgba(0,160,200,0.15) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ② ServicesPage — Service cards dark overlays + text-white
+   ══════════════════════════════════════════════════════════════ */
+
+/* Gradient background على كروت الخدمات (accentColor22, #0d1020) */
+html.light [style*="#0d1020"] {
+  --tw-gradient-stops: unset;
+}
+html.light [style*="linear-gradient(135deg,"][style*="#0d1020"],
+html.light [style*="linear-gradient(135deg, "][style*="#0d1020"] {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, #f0f4ff 100%) !important;
+}
+/* Dark overlay bg-black/35 */
+html.light .bg-black\/35 {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+html.light .bg-black\/50 {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+/* gradient-to-t from-[#080d14] overlay */
+html.light [class*="from-\[#080d14\]"] {
+  --tw-gradient-from: #f5f7fa !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+/* text-white/55 على وصف الخدمة */
+html.light .text-white\/55 { color: rgba(0,0,0,0.52) !important; }
+html.light .text-white\/45 { color: rgba(0,0,0,0.48) !important; }
+html.light .text-white\/30 { color: rgba(0,0,0,0.32) !important; }
+html.light .text-white\/25 { color: rgba(0,0,0,0.30) !important; }
+html.light .text-white\/20 { color: rgba(0,0,0,0.25) !important; }
+html.light .text-white\/70 { color: rgba(0,0,0,0.65) !important; }
+html.light .text-white\/65 { color: rgba(0,0,0,0.60) !important; }
+html.light .text-white\/40 { color: rgba(0,0,0,0.42) !important; }
+html.light .text-white\/60 { color: rgba(0,0,0,0.55) !important; }
+html.light .text-white\/80 { color: rgba(0,0,0,0.75) !important; }
+html.light .text-white\/10 { color: rgba(0,0,0,0.14) !important; }
+
+/* إصلاح border-white/10 على كروت الخدمات */
+html.light .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+html.light .border-white\/20 { border-color: rgba(0,0,0,0.14) !important; }
+html.light .group-hover\:border-white\/20:hover { border-color: rgba(0,0,0,0.18) !important; }
+html.light .border-white\/15 { border-color: rgba(0,0,0,0.12) !important; }
+
+/* icon container bg-white/10 */
+html.light .bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
+html.light .bg-white\/15 { background-color: rgba(0,0,0,0.07) !important; }
+html.light .group-hover\:bg-white\/20:hover { background-color: rgba(0,0,0,0.08) !important; }
+
+/* ServicesPage header bar */
+html.light [style*="background: 'rgba(8,13,20,0.92)'"],
+html.light [style*="background: rgba(8,13,20,0.92)"],
+html.light [style*="background:rgba(8,13,20,0.92)"] {
+  background: rgba(255,255,255,0.96) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: 'linear-gradient(180deg,#080d14"],
+html.light [style*="background: linear-gradient(180deg,#080d14"],
+html.light [style*="background:linear-gradient(180deg,#080d14"] {
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef1f6 100%) !important;
+}
+html.light [style*="borderBottom: '1px solid rgba(255,255,255,0.06)'"],
+html.light [style*="borderBottom: \"1px solid rgba(255,255,255,0.06)\""] {
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ③ VodafoneOffersPage + VodafoneOffersShell — headers + cards
+   ══════════════════════════════════════════════════════════════ */
+
+/* Coming soon / maintenance overlays on service cards */
+html.light [style*="background: 'rgba(8,13,20,0.55)'"],
+html.light [style*="background: rgba(8,13,20,0.55)"],
+html.light [style*="background: rgba(8,13,20,0.6)"],
+html.light [style*="background: 'rgba(8,13,20,0.6)'"] {
+  background: rgba(248,249,252,0.88) !important;
+}
+
+/* VodafoneOffersPage offer navigation cards */
+html.light [style*="background: 'rgba(255,255,255,0.03)'"],
+html.light [style*="background: rgba(255,255,255,0.03)"],
+html.light [style*="background:rgba(255,255,255,0.03)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ④ WalletLines + VodafoneOffers — كل شاشات الـ header الداكن
+   ══════════════════════════════════════════════════════════════ */
+
+/* WalletLines input borders */
+html.light [style*="background: 'rgba(255,255,255,0.06)'"],
+html.light [style*="background: rgba(255,255,255,0.06)"] {
+  background: rgba(0,0,0,0.03) !important;
+}
+html.light [style*="background: 'rgba(255,255,255,0.07)'"],
+html.light [style*="background: rgba(255,255,255,0.07)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light [style*="background: 'rgba(255,255,255,0.08)'"],
+html.light [style*="background: rgba(255,255,255,0.08)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light [style*="border: '1px solid rgba(255,255,255,0.1)'"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.1)"],
+html.light [style*="border:1px solid rgba(255,255,255,0.1)"] {
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.light [style*="border: '1px solid rgba(255,255,255,0.12)'"],
+html.light [style*="border: 1px solid rgba(255,255,255,0.12)"] {
+  border-color: rgba(0,0,0,0.12) !important;
+}
+
+/* WalletLines balance display text */
+html.light [style*="color: 'rgba(255,255,255,0.55)'"],
+html.light [style*="color: rgba(255,255,255,0.55)"] {
+  color: rgba(0,0,0,0.50) !important;
+}
+html.light [style*="color: 'rgba(255,255,255,0.65)'"],
+html.light [style*="color: rgba(255,255,255,0.65)"] {
+  color: rgba(0,0,0,0.58) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑤ ExecuteModal — dark modal + inputs
+   ══════════════════════════════════════════════════════════════ */
+
+/* Modal body background #0a0000 */
+html.light [style*="background: #0a0000"],
+html.light [style*="background: '#0a0000'"],
+html.light [style*="background:'#0a0000'"] {
+  background: #ffffff !important;
+  border-color: rgba(230,0,0,0.15) !important;
+}
+/* Modal header bar rgba(230,0,0,0.04) */
+html.light [style*="background: rgba(230,0,0,0.04)"],
+html.light [style*="background:'rgba(230,0,0,0.04)'"] {
+  background: rgba(230,0,0,0.03) !important;
+}
+/* Logo box #0d0000 inside modal */
+html.light [style*="background: '#0d0000'"],
+html.light [style*="background:#0d0000"],
+html.light [style*="background: #0d0000"] {
+  background: #fff5f5 !important;
+}
+/* Card details bg rgba(230,0,0,0.06) */
+html.light [style*="background: 'linear-gradient(135deg,rgba(230,0,0,0.06)"],
+html.light [style*="background: linear-gradient(135deg,rgba(230,0,0,0.06)"] {
+  background: linear-gradient(135deg, rgba(230,0,0,0.03) 0%, transparent 100%) !important;
+}
+/* Cell bg rgba(230,0,0,0.06) */
+html.light [style*="background: rgba(230,0,0,0.06)"],
+html.light [style*="background:'rgba(230,0,0,0.06)'"] {
+  background: rgba(230,0,0,0.04) !important;
+}
+/* Input field bg rgba(255,255,255,0.04) */
+html.light [style*="background: 'rgba(255,255,255,0.04)'"],
+html.light [style*="background: rgba(255,255,255,0.04)"],
+html.light [style*="background:rgba(255,255,255,0.04)"] {
+  background: rgba(0,0,0,0.03) !important;
+}
+/* Input border */
+html.light [style*="borderColor: 'rgba(255,255,255,0.12)'"],
+html.light [style*="borderColor: rgba(255,255,255,0.12)"] {
+  border-color: rgba(0,0,0,0.14) !important;
+}
+/* Instructions banner bg rgba(34,197,94,0.05) stays */
+/* Loading steps border circle */
+html.light [style*="borderColor: 'rgba(255,255,255,0.2)'"],
+html.light [style*="border-color: rgba(255,255,255,0.2)"] {
+  border-color: rgba(0,0,0,0.18) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑥ Networks — VodafonePage + OrangePage + EtisalatPage headers
+   ══════════════════════════════════════════════════════════════ */
+
+/* Page header bar dark gradient */
+html.light [style*="linear-gradient(135deg,rgba(230,0,0,0.22),rgba(180,0,0,0.10),rgba(0,0,0,0.88)"],
+html.light [style*="linear-gradient(135deg,rgba(255,102,0,0.18),rgba(200,80,0,0.08),rgba(0,0,0,0.80)"],
+html.light [style*="linear-gradient(135deg,rgba(0,112,200,0.18),rgba(0,80,160,0.08),rgba(0,0,0,0.80)"],
+html.light [style*="linear-gradient(135deg,rgba(20,100,20,0.18),rgba(10,80,10,0.08),rgba(0,0,0,0.80)"] {
+  background: rgba(255,255,255,0.97) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+/* Inset glow radials on page headers */
+html.light [style*="radial-gradient(ellipse 70% 80% at 15% 50%,rgba(230,0,0,0.14)"],
+html.light [style*="radial-gradient(ellipse 80% 60% at 20% 50%,rgba(255,102,0,0.12)"],
+html.light [style*="radial-gradient(ellipse 80% 60% at 20% 50%,rgba(0,112,200,0.12)"] {
+  opacity: 0 !important;
+}
+/* VodafonePage card bg rgba(255,255,255,0.04) */
+html.light [style*="background: 'rgba(255,255,255,0.04)'"],
+html.light [style*="background: rgba(255,255,255,0.04)"] {
+  background: rgba(0,0,0,0.03) !important;
+}
+/* Package card list item */
+html.light [style*="background: rgba(255,255,255,0.04), border: 1px solid rgba(255,255,255,0.08)"],
+html.light [style*="background: rgba(255,255,255,0.04)"][style*="border: 1px solid rgba(255,255,255,0.08)"] {
+  background: rgba(0,0,0,0.03) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(255,255,255,0.03)"][style*="border: 1px solid rgba(255,255,255,0.08)"] {
+  background: rgba(0,0,0,0.02) !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑦ OperationsPage + OperationDetailPage + BalanceChargePage
+   ══════════════════════════════════════════════════════════════ */
+
+/* Textarea/input dark bg in modals */
+html.light textarea.bg-transparent { background: transparent !important; }
+html.light .bg-transparent { background: transparent !important; }
+
+/* OperationsPage filter chips + cards use semantic classes ✓ */
+
+/* ── input[type=tel/password] text color ── */
+html.light input.text-white,
+html.light input[class*="text-white"] {
+  color: hsl(0 0% 10%) !important;
+}
+html.light input[class*="placeholder\:text-white"] {
+  --tw-placeholder-opacity: 0.38 !important;
+  color: rgba(0,0,0,0.38) !important;
+}
+html.light input::placeholder {
+  color: rgba(0,0,0,0.38) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑧ StatisticsPage — CHART_TOOLTIP_STYLE
+   (handled in JS — just override inline here as fallback)
+   ══════════════════════════════════════════════════════════════ */
+
+html.light .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.10) !important;
+  color: hsl(0 0% 10%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑨ RechargeCard selected — override animation colors
+   ══════════════════════════════════════════════════════════════ */
+@keyframes light-border-pulse-cyan {
+  0%, 100% { box-shadow: 0 4px 16px rgba(0,160,200,0.22), inset 0 0 12px rgba(0,160,200,0.08); }
+  50%       { box-shadow: 0 4px 24px rgba(0,160,200,0.35), inset 0 0 16px rgba(0,160,200,0.12); }
+}
+@keyframes light-border-pulse-gold {
+  0%, 100% { box-shadow: 0 4px 16px rgba(180,130,0,0.18), inset 0 0 12px rgba(180,130,0,0.06); }
+  50%       { box-shadow: 0 4px 24px rgba(180,130,0,0.28), inset 0 0 16px rgba(180,130,0,0.10); }
+}
+html.light .recharge-card.selected {
+  animation: light-border-pulse-cyan 1.6s ease-in-out infinite !important;
+}
+html.light .recharge-card.gold.selected {
+  animation: light-border-pulse-gold 1.6s ease-in-out infinite !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑩ ReceiptView + OperationDetailsDialog inside HomePage
+   ══════════════════════════════════════════════════════════════ */
+
+html.light [style*="background: '#0a0000'"],
+html.light [style*="background:#0a0000"] {
+  background: #ffffff !important;
+}
+/* Divider lines */
+html.light [style*="borderColor: 'rgba(255,255,255,0.06)'"],
+html.light [style*="border-color: rgba(255,255,255,0.06)"],
+html.light [style*="borderTop: '1px solid rgba(255,255,255,0.08)'"],
+html.light [style*="border-top: 1px solid rgba(255,255,255,0.08)"] {
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑪ Inline rgba(255,255,255,0.50) / 0.15 / 0.10 / 0.20 texts
+   ══════════════════════════════════════════════════════════════ */
+html.light [style*="color: rgba(255,255,255,0.50)"],
+html.light [style*="color: rgba(255, 255, 255, 0.50)"],
+html.light [style*="color: rgba(255,255,255,0.5)"],
+html.light [style*="color: rgba(255, 255, 255, 0.5)"] {
+  color: rgba(0,0,0,0.48) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.45)"],
+html.light [style*="color: rgba(255, 255, 255, 0.45)"] {
+  color: rgba(0,0,0,0.44) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.20)"],
+html.light [style*="color: rgba(255, 255, 255, 0.20)"],
+html.light [style*="color: rgba(255,255,255,0.2)"],
+html.light [style*="color: rgba(255, 255, 255, 0.2)"] {
+  color: rgba(0,0,0,0.25) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.15)"],
+html.light [style*="color: rgba(255, 255, 255, 0.15)"] {
+  color: rgba(0,0,0,0.20) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.10)"],
+html.light [style*="color: rgba(255, 255, 255, 0.1)"] {
+  color: rgba(0,0,0,0.16) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.75)"],
+html.light [style*="color: rgba(255, 255, 255, 0.75)"] {
+  color: rgba(0,0,0,0.68) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.80)"],
+html.light [style*="color: rgba(255, 255, 255, 0.80)"],
+html.light [style*="color: rgba(255,255,255,0.8)"],
+html.light [style*="color: rgba(255, 255, 255, 0.8)"] {
+  color: rgba(0,0,0,0.72) !important;
+}
+html.light [style*="color: rgba(255,255,255,0.90)"],
+html.light [style*="color: rgba(255, 255, 255, 0.9)"] {
+  color: rgba(0,0,0,0.80) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑫ GracePeriodBanner — dark borders/bg
+   ══════════════════════════════════════════════════════════════ */
+html.light [style*="rgba(251,146,60,0.06)"] { background: rgba(251,146,60,0.04) !important; }
+html.light [style*="rgba(251,146,60,0.12)"] { background: rgba(251,146,60,0.08) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   ⑬ AdminDashboard + Admin pages
+   ══════════════════════════════════════════════════════════════ */
+
+/* Admin header gradient */
+html.light [style*="background: linear-gradient(135deg, #0a0000"],
+html.light [style*="background: linear-gradient(135deg,#0a0000"],
+html.light [style*="background: 'linear-gradient(135deg, #0a0000'"] {
+  background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 50%, #f9fafb 100%) !important;
+}
+html.light [style*="background: linear-gradient(135deg, #0d0000"],
+html.light [style*="background: linear-gradient(135deg,#0d0000"] {
+  background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑭ Components: subscription/merchant/common modals
+   ══════════════════════════════════════════════════════════════ */
+
+/* SubscriptionHealthCard + SubscriptionAlertBanner */
+html.light [style*="background: '#1a0a1a'"],
+html.light [style*="background: #1a0a1a"],
+html.light [style*="background: '#120820'"],
+html.light [style*="background: #120820"] {
+  background: #fefcff !important;
+  border-color: rgba(139,92,246,0.15) !important;
+}
+/* WelcomeGiftBox */
+html.light [style*="background: 'linear-gradient(135deg, #0a0a14"],
+html.light [style*="background: linear-gradient(135deg, #0a0a14"] {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%) !important;
+}
+/* WhatsApp popup */
+html.light [style*="background: '#0d1a0d'"],
+html.light [style*="background: #0d1a0d"] {
+  background: #f0fff4 !important;
+}
+/* AnnouncementBanner */
+html.light [style*="background: 'rgba(255,255,255,0.02)'"],
+html.light [style*="background: rgba(255,255,255,0.02)"] {
+  background: rgba(0,0,0,0.02) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑮ Misc — remaining dark grays used across pages
+   ══════════════════════════════════════════════════════════════ */
+html.light [style*="background: '#1a1a2e'"],
+html.light [style*="background: #1a1a2e"] {
+  background: #f0f2ff !important;
+}
+html.light [style*="background: '#0f0f1a'"],
+html.light [style*="background: #0f0f1a"],
+html.light [style*="background: '#0b0b14'"],
+html.light [style*="background: #0b0b14"] {
+  background: #f5f7fb !important;
+}
+html.light [style*="background: '#1a0000'"],
+html.light [style*="background: #1a0000"],
+html.light [style*="background: '#140000'"],
+html.light [style*="background: #140000"] {
+  background: #fff5f5 !important;
+}
+html.light [style*="background: '#100000'"],
+html.light [style*="background: #100000"],
+html.light [style*="background: '#0e0000'"],
+html.light [style*="background: #0e0000"] {
+  background: #fffafa !important;
+}
+
+/* Any remaining inset rgba(255,255,255,0.04) shadows */
+html.light [style*="rgba(255,255,255,0.04) inset"],
+html.light [style*="rgba(255, 255, 255, 0.04) inset"] {
+  box-shadow: none !important;
+}
+
+/* Gradient text stays readable on light */
+html.light .gradient-text {
+  background: linear-gradient(135deg, #E60000, #CC0000) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ── Drop-shadow filters on SVG icons ── */
+html.light .drop-shadow-md {
+  filter: none;
+}
+
+/* ── Tailwind bg-muted overrides for skeletons ── */
+html.light .bg-muted { background-color: hsl(0 0% 92%) !important; }
+html.light .bg-muted\/50 { background-color: hsl(0 0% 94%) !important; }
+

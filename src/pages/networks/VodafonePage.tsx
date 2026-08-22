@@ -11,8 +11,9 @@ import AppFooter from '@/components/common/AppFooter';
 import { getRedPackages, calcPackageDiscount } from '@/lib/api';
 import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl, validateRedSubscription } from '@/lib/redWhatsApp';
+import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   available:   { label: 'متاحة',    color: '#00C896', bg: 'rgba(0,200,150,0.12)' },
@@ -31,6 +32,8 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
   const statusMeta = STATUS_META[pkg.status] ?? STATUS_META.available;
   const cardColor  = pkg.card_color  || '#E60000';
   const darkColor  = pkg.color_secondary || '#B30000';
+  const { isDark } = useTheme();
+  const L = !isDark;
 
   const sf = pkg.show_fields ?? { gb: true, minutes: true, duration: true, renewal: true, features: true };
 
@@ -50,8 +53,8 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
 
       <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end z-10">
         {pct > 0 && (
-          <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-            style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})` }}>
+          <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+            style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})`, color: '#ffffff' }}>
             وفر {pct}%
           </span>
         )}
@@ -143,15 +146,18 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
         {pkg.subscription_enabled && pkg.status !== 'coming_soon' && pkg.status !== 'disabled' ? (
           <button
             onClick={() => onSubscribe(pkg)}
-            className="w-full h-10 rounded-xl text-sm font-black text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2"
-            style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})` }}>
+            className="w-full h-10 rounded-xl text-sm font-black transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+            style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})`, color: '#ffffff' }}>
             <CheckCircle className="w-4 h-4" />
             اشترك الآن
           </button>
         ) : (
           <button disabled
             className="w-full h-10 rounded-xl text-sm font-semibold text-muted-foreground flex items-center justify-center gap-2 cursor-not-allowed"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{
+              background: L ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+            }}>
             {pkg.status === 'coming_soon' ? <><Clock className="w-4 h-4" />قريباً</> : <><Lock className="w-4 h-4" />غير متاح</>}
           </button>
         )}
@@ -179,6 +185,8 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
 export default function VodafonePage() {
   const navigate           = useNavigate();
   const { user, profile }  = useAuth();
+  const { isDark }         = useTheme();
+  const L                  = !isDark;
   const [packages, setPackages] = useState<RedPackage[]>([]);
   const [loading, setLoading]   = useState(true);
 
@@ -207,11 +215,17 @@ export default function VodafonePage() {
   };
 
   return (
-    <div className="min-h-screen pb-6 page-enter" dir="rtl">
+    <div className="min-h-screen pb-6 page-enter" dir="rtl"
+      style={{ background: L ? '#f5f7fa' : undefined }}>
       <div className="relative overflow-hidden rounded-b-3xl mb-4"
-        style={{ background: 'linear-gradient(135deg,rgba(230,0,0,0.22),rgba(180,0,0,0.10),rgba(0,0,0,0.88))', borderBottom: '1.5px solid rgba(230,0,0,0.30)' }}>
+        style={{
+          background: L
+            ? 'linear-gradient(135deg,rgba(230,0,0,0.08),rgba(255,255,255,0.96))'
+            : 'linear-gradient(135deg,rgba(230,0,0,0.22),rgba(180,0,0,0.10),rgba(0,0,0,0.88))',
+          borderBottom: '1.5px solid rgba(230,0,0,0.30)',
+        }}>
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 70% 80% at 15% 50%,rgba(230,0,0,0.14),transparent)' }} />
+          style={{ background: 'radial-gradient(ellipse 70% 80% at 15% 50%,rgba(230,0,0,0.10),transparent)' }} />
         <div className="relative px-4 pt-5 pb-6">
           <Button variant="ghost" size="sm" className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/networks')}>
@@ -225,8 +239,8 @@ export default function VodafonePage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-black text-foreground">Vodafone</h1>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-                  style={{ background: 'linear-gradient(90deg,#E60000,#B30000)' }}>RED</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                  style={{ background: 'linear-gradient(90deg,#E60000,#B30000)', color: '#ffffff' }}>RED</span>
               </div>
               <p className="text-sm font-bold" style={{ color: '#E60000' }}>باقات خطوط الأفراد</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">اشترك وادفع شهرياً — تجديد تلقائي</p>

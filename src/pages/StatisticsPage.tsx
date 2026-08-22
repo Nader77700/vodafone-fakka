@@ -1,6 +1,8 @@
+// ── StatisticsPage ─────────────────────────────────────
 // صفحة الإحصائيات
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getUserStatistics } from '@/lib/api';
 import type { UserStatistics } from '@/types/types';
 import {
@@ -35,19 +37,21 @@ function StatCard({ icon: Icon, label, value, sub, accent }: StatCardProps) {
   );
 }
 
-const CHART_TOOLTIP_STYLE = {
-  contentStyle: {
-    background: '#151523',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '12px',
-    fontSize: '12px',
-    color: '#fff',
-  },
-  cursor: { fill: 'rgba(230,0,0,0.08)' },
-};
-
 export default function StatisticsPage() {
   const { user } = useAuth();
+  const { isDark } = useTheme();
+  const L = !isDark;
+
+  const CHART_TOOLTIP_STYLE = {
+    contentStyle: {
+      background: L ? '#ffffff' : '#151523',
+      border: `1px solid ${L ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.08)'}`,
+      borderRadius: '12px',
+      fontSize: '12px',
+      color: L ? '#1a1a2e' : '#fff',
+    },
+    cursor: { fill: 'rgba(230,0,0,0.08)' },
+  };
   const [stats, setStats] = useState<UserStatistics | null>(null);
   const [loading, setLoading] = useState(true);
 

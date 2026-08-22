@@ -4,6 +4,7 @@ import { ChevronRight, Radio, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppFooter from '@/components/common/AppFooter';
 import { COMING_SOON_SERVICES } from '@/pages/networks/_services';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const NETWORK = {
   name: 'WE',
@@ -15,13 +16,21 @@ const NETWORK = {
 
 export default function WEPage() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const L = !isDark;
   return (
-    <div className="min-h-screen pb-6 page-enter" dir="rtl">
+    <div className="min-h-screen pb-6 page-enter" dir="rtl"
+      style={{ background: L ? '#f5f7fa' : undefined }}>
       {/* Header */}
       <div className="relative overflow-hidden rounded-b-3xl mb-4"
-        style={{ background: 'linear-gradient(135deg,rgba(123,47,190,0.18),rgba(90,20,160,0.08),rgba(0,0,0,0.80))', borderBottom: '1.5px solid rgba(123,47,190,0.25)' }}>
+        style={{
+          background: L
+            ? 'linear-gradient(135deg,rgba(123,47,190,0.07),rgba(255,255,255,0.95))'
+            : 'linear-gradient(135deg,rgba(123,47,190,0.18),rgba(90,20,160,0.08),rgba(0,0,0,0.80))',
+          borderBottom: '1.5px solid rgba(123,47,190,0.25)',
+        }}>
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 80% 60% at 20% 50%,rgba(123,47,190,0.12),transparent)' }} />
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 20% 50%,rgba(123,47,190,0.10),transparent)' }} />
         <div className="relative px-4 pt-5 pb-6">
           <Button variant="ghost" size="sm" className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/networks')}>
@@ -30,7 +39,7 @@ export default function WEPage() {
           </Button>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black"
-              style={{ background: 'linear-gradient(135deg,rgba(123,47,190,0.25),rgba(90,20,160,0.15))', border: '2px solid rgba(123,47,190,0.40)' }}>
+              style={{ background: 'linear-gradient(135deg,rgba(123,47,190,0.20),rgba(90,20,160,0.12))', border: '2px solid rgba(123,47,190,0.35)' }}>
               {NETWORK.logo}
             </div>
             <div>
@@ -67,7 +76,11 @@ export default function WEPage() {
         <div className="grid grid-cols-2 gap-3">
           {COMING_SOON_SERVICES.map(service => (
             <div key={service.id} className="rounded-xl p-3 space-y-2"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{
+                background: L ? '#ffffff' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                boxShadow: L ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+              }}>
               <div className="flex items-center justify-between">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{ background: `${NETWORK.color}18`, border: `1px solid ${NETWORK.color}25` }}>
