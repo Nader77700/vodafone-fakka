@@ -39,7 +39,7 @@ function PremiumBar({ pct, color, isDark = true }: { pct: number; color: string;
   const [w, setW] = useState(0);
   useEffect(() => { const t = setTimeout(() => setW(pct), 120); return () => clearTimeout(t); }, [pct]);
   return (
-    <div className="h-2.5 rounded-full overflow-hidden"
+    <div className="spc-bar-track h-2.5 rounded-full overflow-hidden"
       style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
       <div
         className="h-full rounded-full transition-all duration-1000 ease-out"
@@ -104,16 +104,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
   return (
     <div
-      className={`subscription-premium-card relative rounded-2xl overflow-hidden select-none${L ? ' is-light' : ''}`}
-      data-light={L ? 'true' : undefined}
+      className={`subscription-premium-card relative rounded-2xl overflow-hidden select-none`}
       style={{
-        background: L
-          ? `linear-gradient(135deg,#ffffff 0%,#fef2f2 40%,#f9fafb 100%)`
-          : 'linear-gradient(135deg,#0a0000 0%,#1a0000 40%,#0d0d0d 100%)',
-        border: `1.5px solid ${statusColor}${L ? '50' : '35'}`,
-        boxShadow: L
-          ? `0 4px 24px ${statusColor}18, 0 1px 0 rgba(0,0,0,0.04) inset`
-          : `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
+        border: `1.5px solid ${statusColor}35`,
+        boxShadow: `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
       }}
     >
       {/* Glow top line */}
@@ -248,7 +242,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         <div className="flex items-center gap-2 pt-1">
           <button
             onClick={() => navigate('/subscription-detail')}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95"
+            className="spc-detail-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95"
             style={{
               background: L ? 'rgba(230,0,0,0.08)' : 'rgba(230,0,0,0.15)',
               border: `1px solid ${L ? 'rgba(230,0,0,0.25)' : 'rgba(230,0,0,0.35)'}`,

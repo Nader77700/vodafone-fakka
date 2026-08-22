@@ -1759,15 +1759,72 @@ html.light .selection\:text-white::selection {
       Solution: High-specificity class-based overrides
    ══════════════════════════════════════════════════════════════ */
 
-/* ── SubscriptionPremiumCard — Light Mode Premium gradient ── */
+/* ── SubscriptionPremiumCard dark default ── */
+.subscription-premium-card {
+  background: linear-gradient(135deg, #0a0000 0%, #1a0000 40%, #0d0d0d 100%);
+}
+
+/* ── SubscriptionPremiumCard Light Mode — full premium white design ── */
 html.light .subscription-premium-card {
-  background: linear-gradient(135deg, #ffffff 0%, #fef2f2 40%, #f9fafb 100%) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fff5f5 40%, #f9fafb 100%) !important;
+  box-shadow: 0 4px 24px rgba(230,0,0,0.08), 0 1px 0 rgba(0,0,0,0.04) inset !important;
 }
-/* data-light attribute = extra specificity guarantee */
-html.light .subscription-premium-card[data-light="true"] {
-  background: linear-gradient(135deg, #ffffff 0%, #fef2f2 40%, #f9fafb 100%) !important;
-  color: #1a1a2e !important;
+
+/* Light: نصوص داخل الكارت */
+html.light .subscription-premium-card,
+html.light .subscription-premium-card p,
+html.light .subscription-premium-card h1,
+html.light .subscription-premium-card h2,
+html.light .subscription-premium-card h3,
+html.light .subscription-premium-card span {
+  color: #1a1a2e;
 }
+
+/* Light: text-foreground داخل الكارت */
+html.light .subscription-premium-card .text-foreground { color: #1a1a2e !important; }
+html.light .subscription-premium-card .text-muted-foreground { color: rgba(26,26,46,0.55) !important; }
+
+/* Light: الخلايا الداخلية (info grid cells) */
+html.light .subscription-premium-card [style*="background: rgba(255,255,255,0.03)"],
+html.light .subscription-premium-card [style*="background:rgba(255,255,255,0.03)"],
+html.light .subscription-premium-card [style*="background: rgba(255,255,255,0.06)"],
+html.light .subscription-premium-card [style*="background:rgba(255,255,255,0.06)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light .subscription-premium-card [style*="border: 1px solid rgba(255,255,255,0.06)"],
+html.light .subscription-premium-card [style*="border: 1px solid rgba(255,255,255,0.08)"],
+html.light .subscription-premium-card [style*="borderColor: rgba(255,255,255,0.06)"],
+html.light .subscription-premium-card [style*="borderColor: rgba(255,255,255,0.08)"] {
+  border-color: rgba(0,0,0,0.09) !important;
+}
+
+/* Light: progress bar track */
+html.light .subscription-premium-card .spc-bar-track {
+  background: rgba(0,0,0,0.08) !important;
+}
+
+/* Light: admin info box */
+html.light .subscription-premium-card [style*="background: rgba(0,160,200,0.08)"] {
+  background: rgba(0,160,200,0.10) !important;
+  border-color: rgba(0,160,200,0.25) !important;
+}
+
+/* Light: admin info box (cyan variant) */
+html.light .subscription-premium-card [style*="background: rgba(0,229,255,0.06)"] {
+  background: rgba(0,160,200,0.08) !important;
+  border-color: rgba(0,160,200,0.22) !important;
+}
+
+/* Light: زر تفاصيل الاشتراك */
+html.light .subscription-premium-card .spc-detail-btn {
+  background: rgba(230,0,0,0.07) !important;
+  border-color: rgba(230,0,0,0.22) !important;
+  color: #E60000 !important;
+}
+
+/* Light: border-top dividers */
+html.light .subscription-premium-card [style*="borderColor: rgba(255,255,255,0.06)"],
+html.light .subscription-premium-card .border-t { border-color: rgba(0,0,0,0.09) !important; }
 
 /* ── HomeNetworksCard gradient overlay — Light Mode warm golden ── */
 html.light .home-networks-gradient-overlay {
@@ -1775,15 +1832,6 @@ html.light .home-networks-gradient-overlay {
 }
 html.light .home-networks-dark-overlay {
   background: rgba(0,0,0,0.25) !important;
-}
-
-/* ── Ensure text inside subscription-premium-card is dark in light mode ── */
-html.light .subscription-premium-card .text-foreground {
-  color: #1a1a2e !important;
-}
-html.light .subscription-premium-card p,
-html.light .subscription-premium-card span:not([style]) {
-  color: inherit;
 }
 
 /* ── index.html forces html background #050000 !important ──
