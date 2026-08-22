@@ -8,7 +8,7 @@ import {
 import type { Subscription } from '@/types/types';
 import type { SubscriptionOpsInfo } from '@/lib/api';
 import { fmtDate, fmtDateAr, fmtTimeLeft, fmtProgress } from '@/lib/formatUtils';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 interface Props {
   subscription: Subscription | null;
@@ -57,10 +57,7 @@ function PremiumBar({ pct, color, isDark = true }: { pct: number; color: string;
 
 export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin, onRenew }: Props) {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-
-  // ── light-mode helper palettes ──
-  const L = !isDark; // shorthand: true = light mode
+  const L = useIsLight(); // يقرأ html.classList مباشرة — مضمون 100%
 
   // Admin دائماً نشط بصرف النظر عن أي subscription row في DB
   const rawSubActive = !!(subscription?.status === 'active'
@@ -220,7 +217,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
             {subActive && opsLimit !== null && (
               <>
-                <PremiumBar pct={opsPct} color={L ? '#b45309' : '#F7C948'} isDark={isDark} />
+                <PremiumBar pct={opsPct} color={L ? '#b45309' : '#F7C948'} isDark={!L} />
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-muted-foreground">
                     مستخدم: <span className="font-bold tabular-nums" style={{ color: L ? '#b45309' : '#F7C948' }}>

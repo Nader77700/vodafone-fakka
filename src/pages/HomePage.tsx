@@ -7,7 +7,7 @@ import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import { useAssets } from '@/hooks/use-assets';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, useIsLight } from '@/contexts/ThemeContext';
 import { supabase } from '@/db/supabase';
 import {
   getUserSubscription, getUserOperations, calcDaysRemaining, calcTimeRemaining,
@@ -167,8 +167,7 @@ function HomeServicesCard() {
 
 function HomeNetworksCard() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight(); // يقرأ html.classList مباشرة — مضمون 100%
 
   return (
     <div className="px-4 pt-3">
