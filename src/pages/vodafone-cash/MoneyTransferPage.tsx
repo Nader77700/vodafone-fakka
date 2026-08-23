@@ -256,7 +256,7 @@ export default function MoneyTransferPage() {
                 {/* Receiver Field */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-foreground">رقم المستفيد</label>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
+                  <div className={`flex items-center bg-card border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                     <div className="pl-3 pr-2 text-muted-foreground">
                       <Phone className="w-5 h-5" />
                     </div>
@@ -283,7 +283,7 @@ export default function MoneyTransferPage() {
                 {/* Amount Field */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-foreground">المبلغ</label>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
+                  <div className={`flex items-center bg-card border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                     <div className="pl-3 pr-2 text-muted-foreground">
                       <span className="text-sm font-bold">EGP</span>
                     </div>
@@ -307,7 +307,7 @@ export default function MoneyTransferPage() {
 
                 {/* Password Field */}
                 <div className="space-y-2 mt-4">
-                  <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-border">
+                  <div className="bg-card rounded-2xl p-4 border border-border">
                     <PinInputBlock pin={pin} setPin={setPin} submitting={isSubmitting} />
                   </div>
                 </div>

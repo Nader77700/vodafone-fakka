@@ -235,7 +235,7 @@ export default function WalletLinesLoginPage() {
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-[10px] text-white/20 mt-2">
+        <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 mt-2">
           <span className="text-indigo-400/60 font-bold">تسجيل الدخول</span>
           <span>←</span><span>التحقق بالرقم القومي</span>
           <span>←</span><span>النتائج</span>

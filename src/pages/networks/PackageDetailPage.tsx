@@ -154,7 +154,7 @@ export default function PackageDetailPage() {
           <div className="grid grid-cols-2 gap-3">
             {sf.duration !== false && pkg.duration && (
               <div className="rounded-xl p-3 flex items-center gap-2"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
                 <Timer className="w-4 h-4 shrink-0" style={{ color: cardColor }} />
                 <div>
                   <p className="text-[9px] text-muted-foreground">مدة الاشتراك</p>
@@ -164,7 +164,7 @@ export default function PackageDetailPage() {
             )}
             {sf.renewal !== false && pkg.renewal_type && (
               <div className="rounded-xl p-3 flex items-center gap-2"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
                 <RotateCcw className="w-4 h-4 shrink-0" style={{ color: cardColor }} />
                 <div>
                   <p className="text-[9px] text-muted-foreground">نوع التجديد</p>
@@ -177,7 +177,7 @@ export default function PackageDetailPage() {
 
         {/* ══ بطاقة السعر ══ */}
         <div className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.03)', border: `1.5px solid ${cardColor}38` }}>
+          style={{ background: 'hsl(var(--card))', border: `1.5px solid ${cardColor}38` }}>
           <p className="text-xs font-bold text-muted-foreground mb-3 flex items-center gap-2">
             <Tag className="w-3.5 h-3.5" style={{ color: cardColor }} />السعر والعروض
           </p>
@@ -206,7 +206,7 @@ export default function PackageDetailPage() {
         {/* ══ الوصف الكامل ══ */}
         {pkg.full_description && (
           <div className="rounded-2xl p-4"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
             <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
               <Info className="w-3.5 h-3.5" style={{ color: cardColor }} />عن الباقة
             </p>
@@ -217,7 +217,7 @@ export default function PackageDetailPage() {
         {/* ══ المميزات ══ */}
         {sf.features !== false && pkg.features.length > 0 && (
           <div className="rounded-2xl p-4"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
             <p className="text-xs font-bold text-foreground mb-3 flex items-center gap-2">
               <Star className="w-3.5 h-3.5" style={{ color: '#F7C948' }} />مميزات الباقة
             </p>
@@ -235,7 +235,7 @@ export default function PackageDetailPage() {
         {/* ══ المتطلبات ══ */}
         {sf.requirements !== false && pkg.requirements.length > 0 && (
           <div className="rounded-2xl p-4"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
             <p className="text-xs font-bold text-foreground mb-3 flex items-center gap-2">
               <Shield className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />المتطلبات
             </p>
@@ -271,7 +271,7 @@ export default function PackageDetailPage() {
         {/* ══ طريقة الاشتراك ══ */}
         {sf.instructions !== false && (pkg.subscription_instructions || pkg.subscription_method) && (
           <div className="rounded-2xl p-4"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
             <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
               <RefreshCw className="w-3.5 h-3.5" style={{ color: '#00C896' }} />طريقة وتعليمات الاشتراك
             </p>
@@ -283,7 +283,7 @@ export default function PackageDetailPage() {
 
         {/* ══ بيانات الدعم ══ */}
         <div className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
           <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
             <MessageCircle className="w-3.5 h-3.5" style={{ color: '#25d366' }} />الدعم والتواصل
           </p>
@@ -304,7 +304,7 @@ export default function PackageDetailPage() {
           ) : (
             <button disabled
               className="w-full h-12 rounded-xl text-base font-semibold text-muted-foreground flex items-center justify-center gap-2 cursor-not-allowed"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
               {pkg.status === 'coming_soon' ? <><Clock className="w-5 h-5" />قريباً</> : <><Lock className="w-5 h-5" />غير متاح</>}
             </button>
           )}
@@ -317,7 +317,7 @@ export default function PackageDetailPage() {
           <button
             onClick={() => navigate('/networks/vodafone')}
             className="w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 text-muted-foreground transition-all active:scale-[0.97]"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
             <ArrowLeft className="w-4 h-4" />العودة للباقات
           </button>
         </div>

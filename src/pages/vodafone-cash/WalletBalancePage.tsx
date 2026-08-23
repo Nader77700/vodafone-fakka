@@ -8,10 +8,12 @@ import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { VodafoneDetector } from '@/lib/vodafoneDetector';
 import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 export default function WalletBalancePage() {
   const navigate = useNavigate();
   const { config } = useRuntimeConfig();
+  const L = useIsLight();
 
   const [networkName, setNetworkName]       = useState('جاري التحقق...');
   const [isConnected, setIsConnected]       = useState(false);
@@ -107,14 +109,26 @@ export default function WalletBalancePage() {
 
       <div className="px-4 pt-6 space-y-5">
         {/* بطاقة حالة النظام */}
-        <div className={`rounded-2xl border p-4 transition-all duration-500
-          ${isConnected
-            ? 'bg-[#0D1F12] border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]'
-            : 'bg-[#1A0D0D] border-[#E60000]/30 shadow-[0_0_20px_rgba(230,0,0,0.08)]'}`}>
+        <div className={`rounded-2xl border p-4 transition-all duration-500 ${
+          isConnected
+            ? 'light:bg-emerald-50 light:border-emerald-200 bg-[#0D1F12] border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]'
+            : 'light:bg-red-50 light:border-red-200 bg-[#1A0D0D] border-[#E60000]/30 shadow-[0_0_20px_rgba(230,0,0,0.08)]'
+        }`}
+          style={L ? {
+            background: isConnected ? '#f0fdf4' : '#fff1f2',
+            border: `1.5px solid ${isConnected ? '#bbf7d0' : '#fecaca'}`,
+            boxShadow: isConnected ? '0 2px 10px rgba(34,197,94,0.10)' : '0 2px 10px rgba(230,0,0,0.08)',
+          } : {}}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-primary'}`} />
-              <span className="text-xs font-bold text-foreground">حالة النظام</span>
+              <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-600' : 'text-red-600'}`}
+                style={L
+                  ? { color: isConnected ? '#16a34a' : '#dc2626' } : {}} />
+              <span className="text-xs font-bold" style={
+                L
+                  ? { color: isConnected ? '#15803d' : '#b91c1c' }
+                  : {}
+              }>حالة النظام</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
               className="p-1.5 rounded-full hover:bg-muted transition-colors disabled:opacity-40">
@@ -122,24 +136,32 @@ export default function WalletBalancePage() {
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-[#E60000]'}`} />
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 {isConnected
-                  ? <Wifi className="w-4 h-4 text-green-400 shrink-0" />
-                  : <WifiOff className="w-4 h-4 text-primary shrink-0" />}
-                <span className="text-sm font-bold truncate">{networkName}</span>
+                  ? <Wifi className="w-4 h-4 text-green-500 shrink-0" />
+                  : <WifiOff className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-sm font-bold truncate text-foreground">{networkName}</span>
               </div>
               {lastChecked && (
                 <p className="text-[10px] text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
               )}
             </div>
-            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-[#E60000]/20 text-primary'}`}>
+            <div className="text-xs font-bold px-2 py-0.5 rounded-full"
+              style={L ? {
+                background: isConnected ? '#dcfce7' : '#fee2e2',
+                color: isConnected ? '#16a34a' : '#dc2626',
+              } : {
+                background: isConnected ? 'rgba(34,197,94,0.20)' : 'rgba(230,0,0,0.20)',
+                color: isConnected ? '#4ade80' : '#E60000',
+              }}>
               {isConnected ? 'جاهز' : 'غير جاهز'}
             </div>
           </div>
           {!isConnected && !isCheckingConn && (
-            <p className="text-xs text-primary/80 mt-3 flex items-start gap-1.5">
+            <p className="text-xs mt-3 flex items-start gap-1.5"
+              style={{ color: L ? '#b91c1c' : 'rgba(230,0,0,0.80)' }}>
               <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               يجب تشغيل بيانات فودافون (Vodafone Mobile Data) لاستخدام هذه الخدمة. Wi-Fi وحده لا يكفي.
             </p>
@@ -170,12 +192,24 @@ export default function WalletBalancePage() {
         </div>
 
         {/* ملاحظات */}
-        <div className="bg-[#1A1A1A] border border-[#E60000]/20 rounded-xl p-4">
+        <div className="rounded-xl p-4"
+          style={L ? {
+            background: '#fff7ed',
+            border: '1.5px solid #fed7aa',
+          } : {
+            background: '#1A1A1A',
+            border: '1px solid rgba(230,0,0,0.20)',
+          }}>
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5"
+              style={{ color: L ? '#c2410c' : '#E60000' }} />
             <div className="space-y-1.5">
-              <h4 className="text-sm font-bold text-primary">ملاحظات هامة:</h4>
-              <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside pr-1">
+              <h4 className="text-sm font-bold"
+                style={{ color: L ? '#9a3412' : '#E60000' }}>
+                ملاحظات هامة:
+              </h4>
+              <ul className="text-xs space-y-1 list-disc list-inside pr-1"
+                style={{ color: L ? '#57534e' : 'hsl(var(--muted-foreground))' }}>
                 <li>يجب تشغيل بيانات فودافون (Vodafone Data) للاستخدام.</li>
                 <li>PIN المحفظة مطلوب لكل عملية ولا يُحفظ.</li>
                 <li>لن يتم إجراء أي عملية تحويل — استعلام فقط.</li>

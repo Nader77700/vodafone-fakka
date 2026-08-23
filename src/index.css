@@ -171,7 +171,7 @@ html, body, #root {
     --secondary-foreground: 0 0% 15%;
 
     --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 38%;
 
     --accent: 0 80% 58%;
     --accent-foreground: 0 0% 100%;
@@ -2240,3 +2240,179 @@ html.light span[class*="rounded-full"][style*="background"][style*="color:#fffff
   color: #ffffff !important;
 }
 
+
+/* ════════════════════════════════════════════════════════
+   Section ㉒ — FINAL COMPREHENSIVE LIGHT MODE OVERRIDES
+   All inline dark backgrounds, rgba dark, opacity-low text
+   ════════════════════════════════════════════════════════ */
+
+/* ── 1. Dark input containers in VodafoneCash forms ── */
+html.light .bg-card input,
+html.light .bg-card textarea,
+html.light .bg-card select {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── 2. All network detail pages: dark mini-cards → card bg ── */
+html.light [style*="rgba(255,255,255,0.02)"],
+html.light [style*="rgba(255,255,255,0.03)"],
+html.light [style*="rgba(255,255,255,0.04)"],
+html.light [style*="rgba(255,255,255,0.05)"] {
+  background-color: hsl(var(--card)) !important;
+}
+html.light [style*="rgba(255,255,255,0.06)"],
+html.light [style*="rgba(255,255,255,0.07)"],
+html.light [style*="rgba(255,255,255,0.08)"],
+html.light [style*="rgba(255,255,255,0.09)"],
+html.light [style*="rgba(255,255,255,0.10)"] {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── 3. Dark solid backgrounds → card ── */
+html.light [style*="background: #0d1120"],
+html.light [style*="background:#0d1120"],
+html.light [style*="background: rgb(13, 17, 32)"] {
+  background-color: hsl(var(--card)) !important;
+}
+
+/* ── 4. UpcomingSubscriptions section header ── */
+html.light .upcoming-subs-section {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── 5. Status cards: dark bg variants ── */
+html.light .bg-\[\#0D1F12\] { background-color: #f0fdf4 !important; border-color: #bbf7d0 !important; }
+html.light .bg-\[\#1A0D0D\] { background-color: #fff1f2 !important; border-color: #fecaca !important; }
+
+/* ── 6. LegacyFlexSystemsPage: bg-[#0D0D0D] cards already handled above ─ */
+html.light .bg-\[\#0D0D0D\] { background-color: hsl(var(--card)) !important; border-color: hsl(var(--border)) !important; }
+
+/* ── 7. text-white/XX opacity classes in light mode ── */
+html.light .text-white\/90, html.light .text-white\/80 { color: hsl(var(--foreground)) !important; }
+html.light .text-white\/70, html.light .text-white\/60 { color: hsl(var(--foreground)) !important; }
+html.light .text-white\/55, html.light .text-white\/50 { color: hsl(var(--muted-foreground)) !important; }
+html.light .text-white\/45, html.light .text-white\/40 { color: hsl(var(--muted-foreground)) !important; }
+html.light .text-white\/35, html.light .text-white\/30 { color: hsl(var(--muted-foreground)) !important; }
+
+/* ── 8. border-white/XX opacity classes in light mode ── */
+html.light .border-white\/10,
+html.light .border-white\/15,
+html.light .border-white\/20 { border-color: hsl(var(--border)) !important; }
+
+/* ── 9. bg-white/XX in dark containers in light mode ── */
+html.light .bg-white\/5  { background-color: hsl(var(--muted)) !important; }
+html.light .bg-white\/10 { background-color: hsl(var(--muted)) !important; }
+
+/* ── 10. Typography: faded text → proper contrast ── */
+html.light .text-foreground\/80 { color: hsl(var(--foreground)) !important; }
+html.light .text-foreground\/70 { color: hsl(var(--foreground)) !important; }
+html.light .text-foreground\/60 { color: hsl(var(--muted-foreground)) !important; }
+
+/* ── 11. Disabled-looking: faded active elements ── */
+html.light button:not(:disabled) .text-muted-foreground\/50,
+html.light a .text-muted-foreground\/50 { color: hsl(var(--muted-foreground)) !important; }
+
+/* ── 12. PackageDetailPage: all inner detail rows ── */
+html.light .package-detail-row {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+html.light .package-detail-row * { color: hsl(var(--foreground)) !important; }
+
+/* ── 13. VodafoneCash navigation bar ── */
+html.light nav[style*="#0a0000"],
+html.light div[style*="background: #0a0000"],
+html.light div[style*="background:#0a0000"] {
+  background: rgba(255,255,255,0.95) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── 14. MoneyTransfer / Recharge: confirm summary card ── */
+html.light .vodafone-cash-summary {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+html.light .vodafone-cash-summary * { color: hsl(var(--foreground)) !important; }
+
+/* ── 15. Networks header gradient overlay ── */
+html.light .network-header-overlay {
+  background: linear-gradient(135deg,#f9fafb 0%,#fff5f5 50%,#f5f5f5 100%) !important;
+}
+
+/* ── 16. LegacyFlex modal ── */
+html.light [data-state="open"] .bg-black\/40 {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+html.light [data-state="open"] .border-white\/10 {
+  border-color: hsl(var(--border)) !important;
+}
+html.light [data-state="open"] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── 17. Services section: description text opacity ── */
+html.light .services-hub-desc { color: #4b5563 !important; }
+html.light .services-hub-desc .text-muted-foreground { color: #6b7280 !important; }
+
+/* ── 18. Quick features card in Home ── */
+html.light .border-white\/6 { border-color: hsl(var(--border)) !important; }
+
+/* ── 19. Subscription Premium Card: proper foreground ── */
+html.light .subscription-premium-card h1,
+html.light .subscription-premium-card h2,
+html.light .subscription-premium-card h3 { color: #111827 !important; }
+html.light .subscription-premium-card .text-muted-foreground { color: #6b7280 !important; }
+
+/* ── 20. RechargeBalance: amount chip unselected ── */
+html.light .recharge-amount-chip { background-color: hsl(var(--card)) !important; border-color: hsl(var(--border)) !important; }
+html.light .recharge-amount-chip span { color: hsl(var(--foreground)) !important; }
+
+/* ── END Section ㉒ ── */
+
+/* ── Section ㉒ Extension: Dialog/Sheet overrides in Light Mode ── */
+html.light [role="dialog"] .text-white,
+html.light [data-radix-popper-content-wrapper] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+html.light [role="dialog"] .border-white\/10,
+html.light [role="dialog"] .border-white\/20 {
+  border-color: hsl(var(--border)) !important;
+}
+html.light [role="dialog"] .bg-white\/5,
+html.light [role="dialog"] .bg-white\/10 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* ── LegacyFlex progress dialog ── */
+html.light .legacy-flex-progress-dialog {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── VodafoneOffers shell: phone number section ── */
+html.light .vodafone-offers-phone-row { background: hsl(var(--card)) !important; }
+
+/* ── OfferCard: keep text readable ── */
+html.light .offer-card-title { color: hsl(var(--foreground)) !important; }
+html.light .offer-card-desc  { color: hsl(var(--muted-foreground)) !important; }
+
+/* ── Ensure section ㉒ base: rgba dark bg catch-all ── */
+html.light [style*="background: rgba(255,255,255,0.02)"],
+html.light [style*="background:rgba(255,255,255,0.02)"],
+html.light [style*="background: rgba(255,255,255,0.03)"],
+html.light [style*="background:rgba(255,255,255,0.03)"],
+html.light [style*="background: rgba(255,255,255,0.04)"],
+html.light [style*="background:rgba(255,255,255,0.04)"] {
+  background-color: hsl(var(--card)) !important;
+}
+html.light [style*="border: 1px solid rgba(255,255,255,0.0"],
+html.light [style*="border:1px solid rgba(255,255,255,0.0"],
+html.light [style*="border-color: rgba(255,255,255,0.0"] {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── END Section ㉒ Extension ── */

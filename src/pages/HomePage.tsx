@@ -63,7 +63,7 @@ import SubscriptionPremiumCard from '@/components/subscription/SubscriptionPremi
 import TrialExhaustedPopup from '@/components/TrialExhaustedPopup';
 import { fmtTimeLeft } from '@/lib/formatUtils';
 import { toast } from 'sonner';
-import { Radio, ArrowLeft, Wallet, Eye } from 'lucide-react';
+import { Radio, ArrowLeft, Wallet, Eye, Star } from 'lucide-react';
 import PromotionBanner from '@/components/common/PromotionBanner';
 import { formatError } from '@/lib/formatError';
 import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
@@ -166,68 +166,136 @@ function HomeServicesCard() {
 
 function HomeNetworksCard() {
   const navigate = useNavigate();
-  const L = useIsLight(); // يقرأ html.classList مباشرة — مضمون 100%
+  const L = useIsLight();
 
+  if (L) {
+    // ── Light Mode: Same design language as Services card ──────────────────
+    return (
+      <div className="px-4 pt-3">
+        <div
+          onClick={() => navigate('/networks')}
+          className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
+          style={{
+            background: 'linear-gradient(145deg,#ffffff 0%,#fafafa 100%)',
+            border: '1.5px solid rgba(0,0,0,0.09)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+          }}
+          aria-label="عروض باقي الشبكات"
+        >
+          {/* Top accent stripe */}
+          <div className="h-[3px] w-full"
+            style={{ background: 'linear-gradient(90deg,#E60000 0%,#F7C948 50%,#E60000 100%)' }} />
+
+          <div className="p-4">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg,rgba(230,0,0,0.08) 0%,rgba(247,201,72,0.10) 100%)',
+                    border: '1.5px solid rgba(230,0,0,0.15)',
+                  }}>
+                  <Radio className="w-5 h-5" style={{ color: '#cc0000' }} />
+                </div>
+                {/* Title + description */}
+                <div>
+                  <h3 className="text-base font-black" style={{ color: '#111827' }}>
+                    عروض باقي الشبكات
+                  </h3>
+                  <p className="text-[11px] font-medium mt-0.5" style={{ color: '#6b7280' }}>
+                    أورانج · اتصالات · وي
+                  </p>
+                </div>
+              </div>
+              {/* Premium badge */}
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg,#fffbeb,#fef3c7)',
+                  border: '1.5px solid #F7C948',
+                  boxShadow: '0 1px 4px rgba(247,201,72,0.20)',
+                }}>
+                <Star className="w-3 h-3 fill-current" style={{ color: '#92400e' }} />
+                <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#78350f' }}>
+                  Premium
+                </span>
+              </div>
+            </div>
+
+            {/* Network preview thumbnails strip */}
+            <div className="relative rounded-xl overflow-hidden mb-3" style={{ height: 80 }}>
+              <img
+                src="https://miaoda-site-img.s3cdn.medo.dev/images/KLing_8b380f76-5fd3-40a0-a550-2936d7aed23d.jpg"
+                alt="شبكات"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                loading="lazy" decoding="async"
+              />
+              {/* Light overlay for readability */}
+              <div className="absolute inset-0"
+                style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.20) 100%)' }} />
+            </div>
+
+            {/* Footer row */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium" style={{ color: '#4b5563' }}>
+                عروض حصرية لجميع الشبكات المصرية
+              </p>
+              <div className="flex items-center gap-1 text-[11px] font-bold" style={{ color: '#cc0000' }}>
+                عرض الكل
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Dark Mode: original design preserved ────────────────────────────────
   return (
     <div className="px-4 pt-3">
       <div
         onClick={() => navigate('/networks')}
         className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[160px] hover:scale-[1.02] active:scale-95"
-        style={{ boxShadow: L ? '0 4px 24px rgba(247,201,72,0.12)' : '0 10px 40px rgba(0,0,0,0.4)' }}
+        style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}
         aria-label="عروض باقي الشبكات"
       >
-        {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
           <img
             src="https://miaoda-site-img.s3cdn.medo.dev/images/KLing_8b380f76-5fd3-40a0-a550-2936d7aed23d.jpg"
             alt="عروض باقي الشبكات"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            loading="lazy"
-            decoding="async"
+            loading="lazy" decoding="async"
           />
         </div>
-        {/* Overlays */}
-        <div className="home-networks-dark-overlay absolute inset-0" style={{ background: L ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.40)' }} />
-        <div className="home-networks-gradient-overlay absolute inset-0" style={{ background: L ? 'linear-gradient(to top,rgba(255,248,220,0.90) 0%,rgba(255,248,220,0.55) 50%,transparent 100%)' : 'linear-gradient(to top,#0A0A0A 0%,rgba(10,10,10,0.80) 50%,transparent 100%)' }} />
+        <div className="home-networks-dark-overlay absolute inset-0" style={{ background: 'rgba(0,0,0,0.40)' }} />
+        <div className="home-networks-gradient-overlay absolute inset-0"
+          style={{ background: 'linear-gradient(to top,#0A0A0A 0%,rgba(10,10,10,0.80) 50%,transparent 100%)' }} />
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"
           style={{ background: 'radial-gradient(circle at center, #F7C94860 0%, transparent 70%)' }} />
-        <div className="absolute inset-0 rounded-[28px] pointer-events-none transition-colors"
-          style={{ border: L ? '1px solid rgba(247,201,72,0.30)' : '1px solid rgba(255,255,255,0.10)' }} />
-
-        {/* Content */}
+        <div className="absolute inset-0 rounded-[28px] pointer-events-none"
+          style={{ border: '1px solid rgba(255,255,255,0.10)' }} />
         <div className="relative z-10 p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner"
-                style={{
-                  background: L ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.10)',
-                  border: L ? '1px solid rgba(247,201,72,0.35)' : '1px solid rgba(255,255,255,0.20)',
-                }}>
-                <Radio className="w-5 h-5" style={{ color: L ? '#92400e' : '#ffffff' }} />
+                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.20)' }}>
+                <Radio className="w-5 h-5 text-white" />
               </div>
-              <h3 className="text-lg font-black drop-shadow-md"
-                style={{ color: L ? '#1c1207' : '#ffffff' }}>عروض باقي الشبكات</h3>
+              <h3 className="text-lg font-black text-white drop-shadow-md">عروض باقي الشبكات</h3>
             </div>
             <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md"
-              style={{
-                background: L ? 'rgba(255,255,255,0.70)' : 'rgba(0,0,0,0.50)',
-                border: L ? '1px solid rgba(247,201,72,0.45)' : '1px solid rgba(255,255,255,0.10)',
-                color: '#F7C948',
-              }}>
+              style={{ background: 'rgba(0,0,0,0.50)', border: '1px solid rgba(255,255,255,0.10)', color: '#F7C948' }}>
               Premium
             </span>
           </div>
           <div className="flex items-end justify-between gap-4 mt-1">
-            <p className="text-xs font-medium leading-relaxed max-w-[80%]"
-              style={{ color: L ? 'rgba(28,18,7,0.70)' : 'rgba(255,255,255,0.60)' }}>
+            <p className="text-xs font-medium leading-relaxed max-w-[80%]" style={{ color: 'rgba(255,255,255,0.60)' }}>
               عروض حصرية لجميع الشبكات (فودافون، أورانج، اتصالات، وي).
             </p>
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors"
-              style={{
-                background: L ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.10)',
-                border: L ? '1px solid rgba(247,201,72,0.30)' : '1px solid rgba(255,255,255,0.10)',
-              }}>
-              <ChevronLeft className="w-4 h-4" style={{ color: L ? '#92400e' : '#ffffff' }} />
+              style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              <ChevronLeft className="w-4 h-4 text-white" />
             </div>
           </div>
         </div>

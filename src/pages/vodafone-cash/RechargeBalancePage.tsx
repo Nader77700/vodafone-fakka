@@ -299,7 +299,7 @@ export default function RechargeBalancePage() {
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
                 ${rechargeForSelf
                   ? 'border-[#E60000]/60 bg-[#E60000]/10'
-                  : 'border-border bg-[#1A1A1A] hover:border-border'}`}
+                  : 'border-border bg-card hover:border-border'}`}
             >
               <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors
                 ${rechargeForSelf ? 'bg-[#E60000] border-[#E60000]' : 'border-border bg-transparent'}`}>
@@ -434,7 +434,7 @@ export default function RechargeBalancePage() {
                       className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all duration-200 border
                         ${Number(netAmount) === n
                           ? 'bg-[#E60000]/15 border-[#E60000]/60 text-primary'
-                          : 'bg-[#1A1A1A] border-border text-muted-foreground hover:border-border active:scale-95'}`}
+                          : 'bg-card border-border text-muted-foreground hover:border-border active:scale-95'}`}
                     >
                       {n}
                     </button>
@@ -484,7 +484,7 @@ export default function RechargeBalancePage() {
         )}
 
         {/* ── ملاحظات هامة ─────────────────────────────────────── */}
-        <div className="bg-[#1A1A1A] border border-[#E60000]/20 rounded-xl p-4 shadow-[0_0_15px_rgba(230,0,0,0.05)]">
+        <div className="bg-card border border-[#E60000]/20 rounded-xl p-4 shadow-[0_0_15px_rgba(230,0,0,0.05)]">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="space-y-2">

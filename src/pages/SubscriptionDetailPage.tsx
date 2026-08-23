@@ -38,7 +38,7 @@ function Bar({ pct, color, isDark = true }: { pct: number; color: string; isDark
   useEffect(() => { const t = setTimeout(() => setW(pct), 200); return () => clearTimeout(t); }, [pct]);
   return (
     <div className="h-2 rounded-full overflow-hidden"
-      style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
+      style={{ background: isDark ? 'hsl(var(--border))' : 'rgba(0,0,0,0.08)' }}>
       <div className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{
           width: `${w}%`,
@@ -86,7 +86,7 @@ function InfoRow({ label, value, color, mono = false, isDark = true }: {
   const defaultColor = isDark ? '#94a3b8' : '#4b5563';
   return (
     <div className="flex items-center justify-between gap-3 py-2"
-      style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'}` }}>
+      style={{ borderBottom: `1px solid ${isDark ? 'hsl(var(--card))' : 'rgba(0,0,0,0.06)'}` }}>
       <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
       <span className={`text-[12px] font-bold truncate text-right ${mono ? 'font-mono' : ''}`}
         style={{ color: color ?? defaultColor }}>{value}</span>
@@ -176,7 +176,7 @@ export default function SubscriptionDetailPage() {
       <div className="sticky top-0 z-20 px-4 pt-4 pb-3"
         style={{
           background: L ? '#f8f9fa' : '#070707',
-          borderBottom: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'}`,
+          borderBottom: `1px solid ${L ? 'rgba(0,0,0,0.08)' : 'hsl(var(--border))'}`,
         }}>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate(-1)}>
@@ -370,7 +370,7 @@ export default function SubscriptionDetailPage() {
                     </div>
                     {h.code && (
                       <div className="flex items-center gap-1 pt-1 border-t"
-                        style={{ borderColor: L ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)' }}>
+                        style={{ borderColor: L ? 'rgba(0,0,0,0.06)' : 'hsl(var(--card))' }}>
                         <span className="text-[9px] text-muted-foreground">الكود:</span>
                         <span className="text-[10px] font-mono" style={{ color: L ? '#6b7280' : 'rgba(255,255,255,0.40)' }}>{h.code}</span>
                       </div>

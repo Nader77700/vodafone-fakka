@@ -32,12 +32,12 @@ export default function UpcomingSubscriptionCard({
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+      style={{ background: 'hsl(var(--muted)/0.3)', border: '1px solid rgba(255,255,255,0.08)' }}
     >
       {/* رأس الباقة */}
       <div
         className="flex items-center justify-between px-3 py-2.5"
-        style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'hsl(var(--muted)/0.2)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div
@@ -50,12 +50,12 @@ export default function UpcomingSubscriptionCard({
             <p className="text-[13px] font-black text-foreground truncate">{displayName}</p>
             <div className="flex items-center gap-1.5 flex-wrap">
               {sub.price && (
-                <span className="text-[10px] font-bold text-white/60">
+                <span className="text-[10px] font-bold text-muted-foreground">
                   {sub.price} جنيه
                 </span>
               )}
               {sub.type && sub.type !== sub.description && (
-                <span className="text-[10px] text-white/40 truncate">{sub.type}</span>
+                <span className="text-[10px] text-muted-foreground truncate">{sub.type}</span>
               )}
             </div>
           </div>

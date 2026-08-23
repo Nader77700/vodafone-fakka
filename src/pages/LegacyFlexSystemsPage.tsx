@@ -206,13 +206,13 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
         </div>
         <div>
           <p className="text-lg font-black text-foreground leading-none tracking-tight">{Number(system.flexCount || 0).toLocaleString()}</p>
-          <p className="text-[9px] text-white/40 font-bold -mt-0.5">فليكس</p>
+          <p className="text-[9px] text-muted-foreground font-bold -mt-0.5">فليكس</p>
         </div>
       </div>
 
       {/* 3. Price */}
       <div className="relative z-10 bg-white/5 rounded-lg p-1.5 border border-white/5 flex justify-between items-center mt-auto">
-        <span className="text-[10px] text-white/50 font-bold">السعر</span>
+        <span className="text-[10px] text-muted-foreground font-bold">السعر</span>
         <div className="text-right">
           <span className="text-sm font-black text-foreground">{system.price}</span>
           <span className="text-[9px] text-primary ml-0.5 font-bold">ج.م</span>
@@ -397,7 +397,7 @@ function ActivationDialog({
             <Zap className="w-5 h-5 text-primary" />
             تفعيل {system?.name}
           </DialogTitle>
-          <DialogDescription className="text-xs text-white/50 font-medium">
+          <DialogDescription className="text-xs text-muted-foreground font-medium">
             سيتم استهلاك {system?.price} ج.م للحصول على {Number(system?.flexCount || 0).toLocaleString()} فليكس.
           </DialogDescription>
         </DialogHeader>
@@ -408,9 +408,9 @@ function ActivationDialog({
               {/* Inputs */}
               <div className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-white/70 ml-1">رقم الهاتف</label>
+                  <label className="text-[11px] font-bold text-foreground ml-1">رقم الهاتف</label>
                   <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
                       type="tel" 
                       value={msisdn}
@@ -423,9 +423,9 @@ function ActivationDialog({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-white/70 ml-1">كلمة مرور Ana Vodafone</label>
+                  <label className="text-[11px] font-bold text-foreground ml-1">كلمة مرور Ana Vodafone</label>
                   <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
                       type={showPassword ? 'text' : 'password'} 
                       value={password}
@@ -438,7 +438,7 @@ function ActivationDialog({
                       type="button"
                       variant="ghost" 
                       size="icon" 
-                      className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 text-white/40 hover:text-white hover:bg-white/5 rounded-lg"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 text-muted-foreground hover:text-white hover:bg-white/5 rounded-lg"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -460,7 +460,7 @@ function ActivationDialog({
                     'سيتم عرض نتيجة التنفيذ فور انتهاء العملية.',
                     'في حالة الفشل سيتم عرض السبب الحقيقي.'
                   ].map((note, i) => (
-                    <li key={i} className="flex items-start gap-1.5 text-[10px] text-white/60 font-medium leading-relaxed">
+                    <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted-foreground font-medium leading-relaxed">
                       <div className="w-1 h-1 rounded-full bg-primary/60 mt-1.5 shrink-0" />
                       <span>{note}</span>
                     </li>
@@ -495,7 +495,7 @@ function ActivationDialog({
                   <AlertCircle className="w-3.5 h-3.5" />
                   نتيجة الفحص:
                 </h4>
-                <p className="text-xs text-white/80 leading-relaxed font-medium">
+                <p className="text-xs text-foreground leading-relaxed font-medium">
                   {eligibilityResult.message}
                 </p>
               </div>
@@ -527,7 +527,7 @@ function ActivationDialog({
               </div>
               <div className="text-center space-y-1">
                 <h3 className="text-sm font-black text-foreground">جاري التنفيذ...</h3>
-                <p className="text-xs text-white/50">{progressStep ? getStepText(progressStep) : 'يرجى الانتظار'}</p>
+                <p className="text-xs text-muted-foreground">{progressStep ? getStepText(progressStep) : 'يرجى الانتظار'}</p>
               </div>
             </div>
           )}
@@ -548,7 +548,7 @@ function ActivationDialog({
                   </div>
                 )}
                 {result.executionTime && (
-                  <p className="text-[10px] text-white/40 mt-2 font-mono text-center">
+                  <p className="text-[10px] text-muted-foreground mt-2 font-mono text-center">
                     زمن التنفيذ: {(result.executionTime / 1000).toFixed(1)}s
                   </p>
                 )}

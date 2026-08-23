@@ -26,7 +26,7 @@ export default function BalanceRechargeShortcutPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-black text-foreground mb-0.5">شحن الرصيد</h2>
-              <p className="text-[11px] text-white/55 leading-relaxed">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
                 هذا الاختصار يفتح نظام شحن الرصيد الأساسي الموجود في التطبيق. لا يوجد نظام شحن جديد هنا.
               </p>
             </div>
@@ -63,7 +63,7 @@ export default function BalanceRechargeShortcutPage() {
           <ArrowRight className="w-4 h-4 rotate-180" />
         </button>
 
-        <p className="text-[10px] text-white/30 text-center px-4 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground text-center px-4 leading-relaxed">
           الضغط على الزر ينقلك إلى صفحة الشحن الرئيسية ضمن نفس التطبيق.
         </p>
       </div>
@@ -75,17 +75,17 @@ function FeatureRow({ icon: Icon, title, desc }: { icon: typeof Wallet; title: s
   return (
     <div
       className="flex items-center gap-3 rounded-xl px-3 py-3"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+      style={{ background: 'hsl(var(--card))', border: '1px solid rgba(255,255,255,0.08)' }}
     >
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: 'hsl(var(--border))', border: '1px solid rgba(255,255,255,0.1)' }}
       >
-        <Icon className="w-4 h-4 text-white/60" />
+        <Icon className="w-4 h-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-black text-foreground mb-0.5">{title}</p>
-        <p className="text-[10px] text-white/45 leading-relaxed">{desc}</p>
+        <p className="text-[10px] text-muted-foreground leading-relaxed">{desc}</p>
       </div>
     </div>
   );

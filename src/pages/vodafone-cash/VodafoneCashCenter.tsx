@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Phone, Wallet } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Wallet, ChevronRight } from 'lucide-react';
 import { useIsLight } from '@/contexts/ThemeContext';
 
 export default function VodafoneCashCenter() {
@@ -43,74 +43,104 @@ export default function VodafoneCashCenter() {
   return (
     <div className="min-h-screen pb-24 font-cairo selection:bg-[#E60000]/30"
       dir="rtl"
-      style={{ background: L ? '#f5f7fa' : '#0A0A0A', color: L ? '#1a1a2e' : '#ffffff' }}>
+      style={{ background: L ? '#f5f7fa' : '#0A0A0A' }}>
       {/* ── Top Nav ── */}
-      <div className="sticky top-0 z-50 backdrop-blur-xl border-b shadow-[0_4px_30px_rgba(0,0,0,0.2)]"
+      <div className="sticky top-0 z-50 backdrop-blur-xl border-b"
         style={{
-          background: L ? 'hsl(var(--foreground))' : 'rgba(10,10,10,0.80)',
-          borderColor: L ? 'rgba(0,0,0,0.08)' : 'hsl(var(--muted-foreground) / 0.4)',
+          background: L ? 'rgba(255,255,255,0.95)' : 'rgba(10,10,10,0.80)',
+          borderColor: L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
+          boxShadow: L ? '0 2px 12px rgba(0,0,0,0.06)' : '0 4px 30px rgba(0,0,0,0.2)',
         }}>
         <div className="flex items-center justify-between px-4 h-16">
           <button
             onClick={() => navigate('/')}
             className="p-2 -mr-2 rounded-full transition-colors"
-            style={{ color: L ? '#1a1a2e' : '#ffffff' }}
+            style={{ color: L ? '#111827' : '#ffffff' }}
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex-1 text-center">
-            <h1 className="text-[17px] font-bold tracking-wide" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>Vodafone Cash Center</h1>
-            <p className="text-[10px] font-medium" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'hsl(var(--muted-foreground))' }}>اختر الخدمة التي تريد استخدامها</p>
+            <h1 className="text-[17px] font-bold tracking-wide"
+              style={{ color: L ? '#111827' : '#ffffff' }}>Vodafone Cash Center</h1>
+            <p className="text-[10px] font-medium"
+              style={{ color: L ? '#6b7280' : 'rgba(255,255,255,0.55)' }}>اختر الخدمة التي تريد استخدامها</p>
           </div>
           <div className="w-10"></div>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div className="px-4 pt-6 space-y-6">
+      <div className="px-4 pt-6 space-y-5">
         {services.map(svc => (
           <div
             key={svc.id}
             onClick={() => navigate(svc.path)}
-            className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end transition-all duration-500 min-h-[220px] cursor-pointer hover:scale-[1.02] active:scale-95"
-            style={{ boxShadow: L ? '0 8px 32px rgba(0,0,0,0.12)' : '0 10px 40px rgba(0,0,0,0.4)' }}
+            className="group relative rounded-[24px] overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
+            style={L ? {
+              background: 'linear-gradient(145deg,#ffffff 0%,#fafafa 100%)',
+              border: '1.5px solid rgba(0,0,0,0.08)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+            } : {
+              boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+            }}
           >
-            {/* Background Image */}
-            <div className="absolute inset-0 w-full h-full">
-              <img src={svc.bgImage} alt={svc.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-            </div>
-
-            {/* Overlay — always dark over image for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent opacity-90" />
-
-            {/* Content Container */}
-            <div className="relative z-10 p-5 flex flex-col items-start w-full">
-              <div className="flex items-center gap-3 mb-2">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-md border border-border transition-transform duration-500 group-hover:scale-110"
-                  style={{ background: `linear-gradient(135deg, ${svc.color} 0%, rgba(230,0,0,0.8) 100%)` }}
-                >
-                  {svc.icon}
+            {/* ── Light mode: structured card ── */}
+            {L ? (
+              <>
+                {/* Top accent */}
+                <div className="h-[3px] w-full"
+                  style={{ background: `linear-gradient(90deg,${svc.color} 0%,rgba(247,201,72,0.6) 100%)` }} />
+                <div className="p-4 flex items-center gap-4">
+                  {/* Icon */}
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: `linear-gradient(135deg,${svc.color} 0%,rgba(180,0,0,0.85) 100%)`,
+                      boxShadow: `0 4px 12px ${svc.color}35`,
+                    }}>
+                    {svc.icon}
+                  </div>
+                  {/* Text */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-black" style={{ color: '#111827' }}>{svc.title}</h3>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest mt-0.5" style={{ color: '#9ca3af' }}>
+                      {svc.titleEn}
+                    </p>
+                    <p className="text-xs mt-1.5 leading-relaxed" style={{ color: '#4b5563' }}>{svc.desc}</p>
+                  </div>
+                  {/* Arrow */}
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.15)' }}>
+                    <ChevronRight className="w-4 h-4 rotate-180" style={{ color: '#cc0000' }} />
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <h3 className="text-xl font-black tracking-wide text-foreground leading-tight">
-                    {svc.title}
-                  </h3>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                    {svc.titleEn}
-                  </span>
+              </>
+            ) : (
+              /* ── Dark mode: image card ── */
+              <>
+                <div className="absolute inset-0 w-full h-full" style={{ minHeight: 220 }}>
+                  <img src={svc.bgImage} alt={svc.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 </div>
-              </div>
-              <p className="text-sm text-muted-foreground font-medium leading-relaxed max-w-[85%] mt-1 drop-shadow-md">
-                {svc.desc}
-              </p>
-              <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 border border-border text-[11px] font-bold text-foreground backdrop-blur-sm transition-all duration-300 group-hover:bg-muted group-hover:border-border group-hover:text-foreground">
-                الدخول <ArrowLeft className="w-3 h-3 ml-1 rotate-180" />
-              </div>
-            </div>
-
-            {/* Border Glow */}
-            <div className="absolute inset-0 rounded-[28px] border border-border transition-colors duration-500 group-hover:border-[#E60000]/50 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent opacity-90" />
+                <div className="relative z-10 p-5 flex flex-col items-start w-full min-h-[220px] justify-end">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-md border border-white/10"
+                      style={{ background: `linear-gradient(135deg,${svc.color} 0%,rgba(230,0,0,0.8) 100%)` }}>
+                      {svc.icon}
+                    </div>
+                    <div className="flex flex-col">
+                      <h3 className="text-xl font-black tracking-wide text-white leading-tight">{svc.title}</h3>
+                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>{svc.titleEn}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-white/60 font-medium leading-relaxed max-w-[85%] mt-1">{svc.desc}</p>
+                  <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold text-white backdrop-blur-sm">
+                    الدخول <ArrowLeft className="w-3 h-3 ml-1 rotate-180" />
+                  </div>
+                </div>
+                <div className="absolute inset-0 rounded-[24px] border border-white/8 group-hover:border-[#E60000]/50 transition-colors pointer-events-none" />
+              </>
+            )}
           </div>
         ))}
       </div>

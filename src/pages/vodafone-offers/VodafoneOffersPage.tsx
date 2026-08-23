@@ -77,10 +77,10 @@ function MenuCard({ item }: { item: typeof menuItems[0] }) {
           <h3 className="text-sm font-black mb-0.5 truncate"
             style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{item.label}</h3>
           <p className="text-[11px] truncate"
-            style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)' }}>{item.desc}</p>
+            style={{ color: L ? '#4b5563' : 'rgba(255,255,255,0.65)' }}>{item.desc}</p>
         </div>
         <ArrowRight className="w-4 h-4 rotate-180 transition-colors shrink-0"
-          style={{ color: L ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.30)' }} />
+          style={{ color: L ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.15)' }} />
       </div>
     </button>
   );
@@ -111,12 +111,12 @@ function SessionCard({
         <div className="flex items-center gap-3">
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}
           >
-            <PhoneCall className="w-3.5 h-3.5 text-white/70" />
+            <PhoneCall className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-white/40 mb-0.5">رقم الهاتف المسجّل</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">رقم الهاتف المسجّل</p>
             <p className="text-sm font-black text-foreground font-mono tracking-wide truncate">{formatPhone(phone)}</p>
           </div>
           <button
@@ -151,11 +151,11 @@ function RechargeShortcutCard({ ready, onClick }: { ready: boolean; onClick: () 
         </div>
         <div className="flex-1 min-w-0 text-right">
           <h3 className="text-sm font-black text-foreground mb-0.5 truncate">شحن الرصيد</h3>
-          <p className="text-[11px] text-white/45 truncate">
+          <p className="text-[11px] text-muted-foreground truncate">
             {ready ? 'فتح نظام الشحن الأساسي' : 'غير متاح — تأكد من اتصال الشبكة'}
           </p>
         </div>
-        <ArrowRight className="w-4 h-4 text-white/30 rotate-180 group-hover:text-white/70 transition-colors shrink-0" />
+        <ArrowRight className="w-4 h-4 text-muted-foreground/60 rotate-180 group-hover:text-foreground transition-colors shrink-0" />
       </div>
     </button>
   );

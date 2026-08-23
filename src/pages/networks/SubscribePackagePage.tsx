@@ -149,7 +149,7 @@ export default function SubscribePackagePage() {
 
         {/* ══ بيانات المستخدم — التحقق ══ */}
         <div className="rounded-2xl p-4 space-y-3"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
           <p className="text-xs font-bold text-foreground flex items-center gap-2">
             <User className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />بيانات الحساب
           </p>
@@ -193,7 +193,7 @@ export default function SubscribePackagePage() {
 
           {/* تاريخ الطلب */}
           <div className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
             <Calendar className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
               <p className="text-[9px] text-muted-foreground">تاريخ الطلب</p>
@@ -254,7 +254,7 @@ export default function SubscribePackagePage() {
           <button
             onClick={() => navigate(`/networks/vodafone/package/${pkg.id}`)}
             className="w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 text-muted-foreground transition-all active:scale-[0.97]"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
             <ArrowLeft className="w-4 h-4" />العودة للتفاصيل
           </button>
         </div>

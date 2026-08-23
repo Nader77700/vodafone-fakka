@@ -62,7 +62,7 @@ export default function UpcomingSubscriptionsSection({
             <path d="M20 6 9 17l-5-5" />
           </svg>
           <p className="text-[12px] font-bold text-green-300 flex-1">{cancelSuccess}</p>
-          <button onClick={clearCancelSuccess} className="text-[10px] text-white/50 mr-auto">إغلاق</button>
+          <button onClick={clearCancelSuccess} className="text-[10px] text-muted-foreground mr-auto">إغلاق</button>
         </div>
       )}
       {cancelError && (
@@ -72,7 +72,7 @@ export default function UpcomingSubscriptionsSection({
         >
           <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
           <p className="text-[12px] font-medium text-red-200 flex-1">{cancelError}</p>
-          <button onClick={clearCancelError} className="text-[10px] text-white/50 mr-auto">إغلاق</button>
+          <button onClick={clearCancelError} className="text-[10px] text-muted-foreground mr-auto">إغلاق</button>
         </div>
       )}
 
@@ -93,7 +93,7 @@ export default function UpcomingSubscriptionsSection({
         <button
           onClick={() => load()}
           disabled={loading || !!cancellingId}
-          className="flex items-center gap-1.5 text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors disabled:opacity-40 shrink-0"
+          className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           تحديث
@@ -105,8 +105,8 @@ export default function UpcomingSubscriptionsSection({
           className="flex flex-col items-center justify-center py-14 gap-3 rounded-[18px]"
           style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <Loader2 className="w-6 h-6 animate-spin text-white/40" />
-          <p className="text-[12px] text-white/35">جاري جلب الاشتراكات...</p>
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <p className="text-[12px] text-muted-foreground">جاري جلب الاشتراكات...</p>
         </div>
       ) : error ? (
         <div
@@ -120,10 +120,10 @@ export default function UpcomingSubscriptionsSection({
             <TriangleAlert className="w-5 h-5 text-red-400" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-black text-white/90 mb-1">
+            <p className="text-sm font-black text-foreground mb-1">
               {code === 'SESSION_EXPIRED' ? 'انتهت صلاحية الجلسة' : 'فشل جلب الاشتراكات'}
             </p>
-            <p className="text-[12px] text-white/45 leading-relaxed max-w-[260px]">{error}</p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[260px]">{error}</p>
           </div>
           <button
             onClick={() => load()}
@@ -140,13 +140,13 @@ export default function UpcomingSubscriptionsSection({
         >
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
           >
-            <PackageX className="w-6 h-6 text-white/30" />
+            <PackageX className="w-6 h-6 text-muted-foreground" />
           </div>
           <div className="text-center px-4">
-            <p className="text-sm font-black text-white/60 mb-1">لا توجد اشتراكات قادمة</p>
-            <p className="text-[11px] text-white/30 leading-relaxed">لا توجد اشتراكات مرتبطة بهذا الرقم حالياً</p>
+            <p className="text-sm font-black text-foreground mb-1">لا توجد اشتراكات قادمة</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">لا توجد اشتراكات مرتبطة بهذا الرقم حالياً</p>
           </div>
         </div>
       ) : (
@@ -169,7 +169,7 @@ export default function UpcomingSubscriptionsSection({
         <AlertDialogContent
           className="max-w-[calc(100%-2rem)] md:max-w-lg rounded-[24px]"
           dir="rtl"
-          style={{ background: '#0d1120', border: '1px solid rgba(255,255,255,0.1)' }}
+          style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
         >
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
@@ -181,15 +181,15 @@ export default function UpcomingSubscriptionsSection({
               </div>
               <AlertDialogTitle className="text-base font-black text-foreground">تأكيد إلغاء الاشتراك</AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-[12px] text-white/55 leading-relaxed text-right">
-              هل تريد إلغاء الاشتراك <span className="font-black text-white/80">{confirmSub?.description || confirmSub?.type || 'الباقة'}</span>؟<br />
+            <AlertDialogDescription className="text-[12px] text-muted-foreground leading-relaxed text-right">
+              هل تريد إلغاء الاشتراك <span className="font-black text-foreground">{confirmSub?.description || confirmSub?.type || 'الباقة'}</span>؟<br />
               لا يمكن التراجع عن هذا الإجراء بعد التأكيد.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-3 mt-4">
             <AlertDialogCancel
               onClick={() => setConfirmSub(null)}
-              className="flex-1 h-11 rounded-xl font-bold text-white/70 border border-white/10 bg-transparent hover:bg-white/5"
+              className="flex-1 h-11 rounded-xl font-bold text-foreground border border-border bg-transparent hover:bg-muted"
             >
               إلغاء
             </AlertDialogCancel>

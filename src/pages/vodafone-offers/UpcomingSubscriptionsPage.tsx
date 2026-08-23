@@ -36,7 +36,7 @@ export default function UpcomingSubscriptionsPage() {
     return (
       <VodafoneOffersShell title="الاشتراكات القادمة" subtitle="إدارة اشتراكات أنا فودافون">
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-white/40" />
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       </VodafoneOffersShell>
     );
@@ -63,12 +63,12 @@ export default function UpcomingSubscriptionsPage() {
             <div className="flex items-center gap-3">
               <div
                 className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}
               >
-                <PhoneCall className="w-3.5 h-3.5 text-white/70" />
+                <PhoneCall className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] text-white/40 mb-0.5">رقم الهاتف المسجّل</p>
+                <p className="text-[10px] text-muted-foreground mb-0.5">رقم الهاتف المسجّل</p>
                 <p className="text-sm font-black text-foreground font-mono tracking-wide truncate">{formatPhone(session.phone)}</p>
               </div>
             </div>
