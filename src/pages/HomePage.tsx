@@ -711,7 +711,7 @@ function OperationDetailsDialog({
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
         className="max-w-[calc(100%-2rem)] w-[92vw] md:max-w-[400px] p-0 border-0 max-h-[88dvh] overflow-y-auto"
-        style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
+        style={{ background: 'hsl(var(--card))', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
         dir="rtl"
       >
         <div className="h-1 w-full rounded-t-[20px]"
@@ -2632,7 +2632,7 @@ function HomePage() {
       <div className="px-4 pt-3">
         {/* ── بطاقة الترحيب Premium ── */}
         <div
-          className="relative rounded-2xl overflow-hidden"
+          className="relative rounded-2xl overflow-hidden welcome-card-hero"
           style={{
             background: 'linear-gradient(135deg,#0a0000 0%,#1a0000 50%,#0d0d0d 100%)',
             border: '1.5px solid rgba(230,0,0,0.25)',
@@ -2659,7 +2659,7 @@ function HomePage() {
                 </span>
                 {/* Username — white bold + red glow */}
                 <h2
-                  className="text-2xl font-black leading-tight text-white"
+                  className="text-2xl font-black leading-tight text-foreground"
                   style={{
                     textShadow: '0 0 12px rgba(230,0,0,0.55), 0 0 24px rgba(230,0,0,0.25)',
                   }}
@@ -3012,7 +3012,7 @@ function HomePage() {
       <Dialog open={disabledProductOpen} onOpenChange={setDisabledProductOpen}>
         <DialogContent
           className="max-w-[calc(100%-2rem)] w-[88vw] md:max-w-sm p-0 border-0"
-          style={{ background: '#0a0000', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
+          style={{ background: 'hsl(var(--card))', border: '1px solid rgba(230,0,0,0.25)', borderRadius: 20 }}
           dir="rtl"
         >
           <div className="h-1 w-full rounded-t-[20px]"
@@ -3023,7 +3023,7 @@ function HomePage() {
               <span className="text-2xl">🚫</span>
             </div>
             <DialogHeader>
-              <DialogTitle className="text-white text-base font-black text-balance">
+              <DialogTitle className="text-foreground text-base font-black text-balance">
                 المنتج موقف مؤقتاً
               </DialogTitle>
               <DialogDescription className="text-sm leading-relaxed text-pretty" style={{ color: 'rgba(255,255,255,0.55)' }}>

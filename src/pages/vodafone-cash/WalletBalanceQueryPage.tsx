@@ -243,7 +243,7 @@ export default function WalletBalanceQueryPage() {
 
         {/* فورم الـ PIN */}
         {(queryStatus === 'idle' || queryStatus === 'checking' || queryStatus === 'querying') && (
-          <div className="bg-[#111] border border-border rounded-2xl p-5 space-y-5 relative overflow-hidden">
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#E60000]/5 rounded-full blur-3xl" />
             <div className="relative z-10 space-y-5">
               <p className="text-sm text-muted-foreground">أدخل PIN محفظتك Vodafone Cash للاستعلام عن الرصيد. لن يُحفظ أو يُسجَّل.</p>

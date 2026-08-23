@@ -184,7 +184,7 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
 
   return (
     <div 
-      className="group relative bg-[#0D0D0D] border border-white/10 rounded-[20px] p-3 flex flex-col gap-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-primary/50 hover:shadow-[0_8px_30px_rgba(230,0,0,0.15)] active:scale-95"
+      className="group relative bg-card border border-border rounded-[20px] p-3 flex flex-col gap-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-primary/50 hover:shadow-[0_8px_30px_rgba(230,0,0,0.15)] active:scale-95"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -193,7 +193,7 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
 
       {/* 1. Header: Name & Status */}
       <div className="relative z-10 flex justify-between items-start gap-1">
-        <h3 className="text-sm font-black text-white drop-shadow-md truncate">{system.name}</h3>
+        <h3 className="text-sm font-black text-foreground truncate">{system.name}</h3>
         {system.status === 'active' && (
           <span className="shrink-0 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" />
         )}
@@ -205,7 +205,7 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
           <Zap className="w-3.5 h-3.5 text-primary drop-shadow-[0_0_5px_rgba(230,0,0,0.8)]" />
         </div>
         <div>
-          <p className="text-lg font-black text-white leading-none tracking-tight">{Number(system.flexCount || 0).toLocaleString()}</p>
+          <p className="text-lg font-black text-foreground leading-none tracking-tight">{Number(system.flexCount || 0).toLocaleString()}</p>
           <p className="text-[9px] text-white/40 font-bold -mt-0.5">فليكس</p>
         </div>
       </div>
@@ -214,7 +214,7 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
       <div className="relative z-10 bg-white/5 rounded-lg p-1.5 border border-white/5 flex justify-between items-center mt-auto">
         <span className="text-[10px] text-white/50 font-bold">السعر</span>
         <div className="text-right">
-          <span className="text-sm font-black text-white">{system.price}</span>
+          <span className="text-sm font-black text-foreground">{system.price}</span>
           <span className="text-[9px] text-primary ml-0.5 font-bold">ج.م</span>
         </div>
       </div>
@@ -393,7 +393,7 @@ function ActivationDialog({
         <div className="absolute top-0 right-0 w-full h-32 bg-primary/10 blur-[50px] rounded-full pointer-events-none" />
 
         <DialogHeader className="p-6 pb-4 text-right relative z-10">
-          <DialogTitle className="text-xl font-black text-white flex items-center gap-2">
+          <DialogTitle className="text-xl font-black text-foreground flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
             تفعيل {system?.name}
           </DialogTitle>
@@ -416,7 +416,7 @@ function ActivationDialog({
                       value={msisdn}
                       onChange={e => setMsisdn(e.target.value)}
                       placeholder="010XXXXXXXX" 
-                      className="h-11 pr-9 rounded-xl bg-black/40 border-white/10 text-left text-white focus-visible:ring-primary/30" 
+                      className="h-11 pr-9 rounded-xl bg-input border-border text-left text-foreground focus-visible:ring-primary/30" 
                       dir="ltr"
                     />
                   </div>
@@ -431,7 +431,7 @@ function ActivationDialog({
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="h-11 pr-9 pl-10 rounded-xl bg-black/40 border-white/10 text-left text-white focus-visible:ring-primary/30" 
+                      className="h-11 pr-9 pl-10 rounded-xl bg-input border-border text-left text-foreground focus-visible:ring-primary/30" 
                       dir="ltr"
                     />
                     <Button 
@@ -472,7 +472,7 @@ function ActivationDialog({
               <div className="pt-2 flex gap-2">
                 <Button 
                   variant="ghost" 
-                  className="flex-1 h-11 rounded-xl font-bold text-xs bg-transparent border border-white/10 text-white hover:bg-white/5"
+                  className="flex-1 h-11 rounded-xl font-bold text-xs bg-transparent border border-border text-foreground hover:bg-muted"
                   onClick={onClose}
                 >
                   إلغاء
@@ -503,7 +503,7 @@ function ActivationDialog({
               <div className="pt-2 flex gap-2">
                 <Button 
                   variant="ghost" 
-                  className="flex-1 h-11 rounded-xl font-bold text-xs bg-transparent border border-white/10 text-white hover:bg-white/5"
+                  className="flex-1 h-11 rounded-xl font-bold text-xs bg-transparent border border-border text-foreground hover:bg-muted"
                   onClick={() => setEligibilityResult(null)}
                 >
                   تعديل البيانات
@@ -526,7 +526,7 @@ function ActivationDialog({
                 <Zap className="w-6 h-6 text-primary animate-pulse" />
               </div>
               <div className="text-center space-y-1">
-                <h3 className="text-sm font-black text-white">جاري التنفيذ...</h3>
+                <h3 className="text-sm font-black text-foreground">جاري التنفيذ...</h3>
                 <p className="text-xs text-white/50">{progressStep ? getStepText(progressStep) : 'يرجى الانتظار'}</p>
               </div>
             </div>
@@ -556,7 +556,7 @@ function ActivationDialog({
 
               <Button 
                 variant="ghost" 
-                className="w-full h-11 mt-4 rounded-xl font-bold text-xs bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                className="w-full h-11 mt-4 rounded-xl font-bold text-xs bg-muted border border-border text-foreground hover:bg-muted"
                 onClick={onClose}
               >
                 إغلاق

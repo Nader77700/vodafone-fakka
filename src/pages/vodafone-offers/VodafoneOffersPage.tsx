@@ -117,7 +117,7 @@ function SessionCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] text-white/40 mb-0.5">رقم الهاتف المسجّل</p>
-            <p className="text-sm font-black text-white font-mono tracking-wide truncate">{formatPhone(phone)}</p>
+            <p className="text-sm font-black text-foreground font-mono tracking-wide truncate">{formatPhone(phone)}</p>
           </div>
           <button
             onClick={logout}
@@ -150,7 +150,7 @@ function RechargeShortcutCard({ ready, onClick }: { ready: boolean; onClick: () 
           <Wallet className="w-5 h-5 text-green-400" />
         </div>
         <div className="flex-1 min-w-0 text-right">
-          <h3 className="text-sm font-black text-white mb-0.5 truncate">شحن الرصيد</h3>
+          <h3 className="text-sm font-black text-foreground mb-0.5 truncate">شحن الرصيد</h3>
           <p className="text-[11px] text-white/45 truncate">
             {ready ? 'فتح نظام الشحن الأساسي' : 'غير متاح — تأكد من اتصال الشبكة'}
           </p>

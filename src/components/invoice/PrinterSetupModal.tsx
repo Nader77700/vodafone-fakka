@@ -231,7 +231,7 @@ export default function PrinterSetupModal({
             <Printer className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <p className="text-sm font-black text-white">اختيار الطابعة</p>
+            <p className="text-sm font-black text-foreground">اختيار الطابعة</p>
             <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
               يُحفظ اختيارك للمرات القادمة
             </p>
@@ -255,7 +255,7 @@ export default function PrinterSetupModal({
               : <Monitor className="w-5 h-5 text-green-400" />}
             </div>
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-sm font-bold text-white">طباعة عبر Android</p>
+              <p className="text-sm font-bold text-foreground">طباعة عبر Android</p>
               <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 WiFi · USB · Network · طابعة مدمجة · POS
               </p>
@@ -281,7 +281,7 @@ export default function PrinterSetupModal({
                 : <Cpu className="w-5 h-5 text-purple-400" />}
               </div>
               <div className="flex-1 min-w-0 text-right">
-                <p className="text-sm font-bold text-white">{builtinInfo.name || 'الطابعة المدمجة'}</p>
+                <p className="text-sm font-bold text-foreground">{builtinInfo.name || 'الطابعة المدمجة'}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
                   طابعة داخلية · Sunmi · PAX · Newland · فوري
                 </p>
@@ -308,7 +308,7 @@ export default function PrinterSetupModal({
                 : <Bluetooth className="w-5 h-5 text-blue-400" />}
               </div>
               <div className="flex-1 min-w-0 text-right">
-                <p className="text-sm font-bold text-white">
+                <p className="text-sm font-bold text-foreground">
                   {btState === 'idle' ? 'طابعة Bluetooth (ESC/POS)' : btLabel}
                 </p>
                 <p className="text-[11px] mt-0.5" style={{ color: btState === 'error' ? '#f87171' : 'rgba(255,255,255,0.45)' }}>
@@ -336,7 +336,7 @@ export default function PrinterSetupModal({
                   >
                     <Bluetooth className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{dev.name}</p>
+                      <p className="text-xs font-semibold text-foreground truncate">{dev.name}</p>
                       <p className="text-[10px] text-muted-foreground">{dev.address}</p>
                     </div>
                     {isProbablyPrinter(dev.name) && (
@@ -359,7 +359,7 @@ export default function PrinterSetupModal({
               style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
               <Printer className="w-4 h-4 text-yellow-400" />
             </div>
-            <span className="text-xs font-semibold text-white flex-1 text-right">
+            <span className="text-xs font-semibold text-foreground flex-1 text-right">
               حجم الورق: {paperWidth}mm
             </span>
             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showPaper ? 'rotate-180' : ''}`} />

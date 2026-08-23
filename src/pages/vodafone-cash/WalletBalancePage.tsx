@@ -155,8 +155,8 @@ export default function WalletBalancePage() {
               disabled={!isConnected && !isCheckingConn}
               className={`w-full rounded-2xl border p-5 flex items-center gap-4 text-right transition-all duration-300
                 ${isConnected
-                  ? 'bg-[#111] border-border hover:border-[#E60000]/50 hover:bg-[#1a0a0a] active:scale-[0.98] cursor-pointer'
-                  : 'bg-[#111]/50 border-border opacity-50 cursor-not-allowed'}`}>
+                  ? 'bg-card border-border hover:border-[#E60000]/50 hover:bg-muted active:scale-[0.98] cursor-pointer'
+                  : 'bg-card/50 border-border opacity-50 cursor-not-allowed'}`}>
               <div className="w-12 h-12 rounded-xl bg-[#E60000]/10 border border-[#E60000]/20 flex items-center justify-center text-primary shrink-0">
                 {svc.icon}
               </div>

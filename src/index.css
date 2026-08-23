@@ -2220,3 +2220,23 @@ html.light select[style*="background: hsl(var(--input))"] {
   border-color: hsl(var(--border)) !important;
 }
 
+/* ── HomePage welcome hero card ── */
+html.light .welcome-card-hero {
+  background: linear-gradient(135deg,#f9fafb 0%,#fff5f5 50%,#f5f5f5 100%) !important;
+}
+html.light .welcome-card-hero h1,
+html.light .welcome-card-hero h2,
+html.light .welcome-card-hero p,
+html.light .welcome-card-hero span { color: hsl(var(--foreground)) !important; }
+
+/* ── LegacyFlexSystemsPage cards ── */
+html.light .bg-\[\#0D0D0D\] {
+  background-color: hsl(var(--card)) !important;
+}
+
+/* ── PackageDetailPage badge on colored bg — keep text-white ── */
+html.light span[class*="rounded-full"][style*="background"][style*="color: rgb(255,255,255)"],
+html.light span[class*="rounded-full"][style*="background"][style*="color:#ffffff"] {
+  color: #ffffff !important;
+}
+

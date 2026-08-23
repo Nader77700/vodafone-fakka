@@ -80,7 +80,7 @@ export default function UpcomingSubscriptionsSection({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-1 h-5 rounded-full shrink-0" style={{ background: '#E60000' }} />
-          <h3 className="text-sm font-black text-white truncate">الاشتراكات القادمة</h3>
+          <h3 className="text-sm font-black text-foreground truncate">الاشتراكات القادمة</h3>
           {!loading && subscriptions.length > 0 && (
             <span
               className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0"
@@ -179,7 +179,7 @@ export default function UpcomingSubscriptionsSection({
               >
                 <TriangleAlert className="w-5 h-5 text-red-400" />
               </div>
-              <AlertDialogTitle className="text-base font-black text-white">تأكيد إلغاء الاشتراك</AlertDialogTitle>
+              <AlertDialogTitle className="text-base font-black text-foreground">تأكيد إلغاء الاشتراك</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-[12px] text-white/55 leading-relaxed text-right">
               هل تريد إلغاء الاشتراك <span className="font-black text-white/80">{confirmSub?.description || confirmSub?.type || 'الباقة'}</span>؟<br />

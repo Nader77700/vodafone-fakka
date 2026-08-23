@@ -69,7 +69,7 @@ export default function UpcomingSubscriptionsPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] text-white/40 mb-0.5">رقم الهاتف المسجّل</p>
-                <p className="text-sm font-black text-white font-mono tracking-wide truncate">{formatPhone(session.phone)}</p>
+                <p className="text-sm font-black text-foreground font-mono tracking-wide truncate">{formatPhone(session.phone)}</p>
               </div>
             </div>
           </div>

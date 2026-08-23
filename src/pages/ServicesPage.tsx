@@ -191,7 +191,7 @@ export default function ServicesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6" dir="rtl">
         <Wrench className="w-10 h-10 text-muted-foreground" />
-        <p className="text-white text-sm font-bold">
+        <p className="text-foreground text-sm font-bold">
           {mainAccess.reason === 'maintenance' ? (mainAccess.message ?? 'صيانة مؤقتة — نعود قريباً') :
            mainAccess.reason === 'disabled'    ? 'قسم الخدمات معطل حالياً'                          :
            'قسم الخدمات غير متاح'}

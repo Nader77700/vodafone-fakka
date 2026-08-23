@@ -47,7 +47,7 @@ export default function UpcomingSubscriptionCard({
             <ListChecks className="w-4 h-4 text-red-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-[13px] font-black text-white truncate">{displayName}</p>
+            <p className="text-[13px] font-black text-foreground truncate">{displayName}</p>
             <div className="flex items-center gap-1.5 flex-wrap">
               {sub.price && (
                 <span className="text-[10px] font-bold text-white/60">

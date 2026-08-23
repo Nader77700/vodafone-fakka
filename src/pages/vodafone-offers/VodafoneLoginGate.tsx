@@ -61,7 +61,7 @@ export default function VodafoneLoginGate({ children, onLogin }: VodafoneLoginGa
             <LogIn className="w-4 h-4" style={{ color: '#f87171' }} />
           </div>
           <div>
-            <h2 className="text-sm font-black text-white">سجّل دخولك</h2>
+            <h2 className="text-sm font-black text-foreground">سجّل دخولك</h2>
             <p className="text-[11px] text-white/45 leading-relaxed">أدخل بيانات أنا فودافون لعرض الاشتراكات والعروض</p>
           </div>
         </div>

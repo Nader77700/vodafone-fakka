@@ -25,7 +25,7 @@ export default function BalanceRechargeShortcutPage() {
               <Wallet className="w-4 h-4" style={{ color: '#4ade80' }} />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-black text-white mb-0.5">شحن الرصيد</h2>
+              <h2 className="text-sm font-black text-foreground mb-0.5">شحن الرصيد</h2>
               <p className="text-[11px] text-white/55 leading-relaxed">
                 هذا الاختصار يفتح نظام شحن الرصيد الأساسي الموجود في التطبيق. لا يوجد نظام شحن جديد هنا.
               </p>
@@ -84,7 +84,7 @@ function FeatureRow({ icon: Icon, title, desc }: { icon: typeof Wallet; title: s
         <Icon className="w-4 h-4 text-white/60" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-black text-white mb-0.5">{title}</p>
+        <p className="text-[12px] font-black text-foreground mb-0.5">{title}</p>
         <p className="text-[10px] text-white/45 leading-relaxed">{desc}</p>
       </div>
     </div>
