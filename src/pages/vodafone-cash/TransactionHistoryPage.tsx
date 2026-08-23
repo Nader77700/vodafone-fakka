@@ -70,7 +70,7 @@ function TxCard({ tx, index }: { tx: Transaction; index: number }) {
   const isOut      = Number(amount) < 0;
 
   return (
-    <div className="bg-[#111] border border-white/8 rounded-2xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
       {/* رأس البطاقة */}
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0
@@ -91,35 +91,35 @@ function TxCard({ tx, index }: { tx: Transaction; index: number }) {
       {/* تفاصيل */}
       <div className="grid grid-cols-2 gap-2">
         {receiver && (
-          <div className="flex items-center gap-1.5 bg-white/3 rounded-lg px-2.5 py-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <Hash className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-            <span className="text-[11px] text-white/60 truncate font-mono" dir="ltr">{receiver}</span>
+            <span className="text-[11px] text-muted-foreground truncate font-mono" dir="ltr">{receiver}</span>
           </div>
         )}
         {recvName && (
-          <div className="flex items-center gap-1.5 bg-white/3 rounded-lg px-2.5 py-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <User className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-            <span className="text-[11px] text-white/60 truncate">{recvName}</span>
+            <span className="text-[11px] text-muted-foreground truncate">{recvName}</span>
           </div>
         )}
-        <div className="flex items-center gap-1.5 bg-white/3 rounded-lg px-2.5 py-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
           <Calendar className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-          <span className="text-[11px] text-white/60 truncate" dir="ltr">{date}</span>
+          <span className="text-[11px] text-muted-foreground truncate" dir="ltr">{date}</span>
         </div>
-        <div className="flex items-center gap-1.5 bg-white/3 rounded-lg px-2.5 py-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
           <Clock className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-          <span className="text-[11px] text-white/60 truncate" dir="ltr">{time}</span>
+          <span className="text-[11px] text-muted-foreground truncate" dir="ltr">{time}</span>
         </div>
         {channel && (
-          <div className="flex items-center gap-1.5 bg-white/3 rounded-lg px-2.5 py-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <CreditCard className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-            <span className="text-[11px] text-white/60 truncate">{channel}</span>
+            <span className="text-[11px] text-muted-foreground truncate">{channel}</span>
           </div>
         )}
         {tax !== undefined && tax !== 0 && (
-          <div className="flex items-center gap-1.5 bg-white/3 rounded-lg px-2.5 py-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <span className="text-[10px] text-muted-foreground/50 shrink-0">ضريبة</span>
-            <span className="text-[11px] text-white/60 truncate">{tax} ج</span>
+            <span className="text-[11px] text-muted-foreground truncate">{tax} ج</span>
           </div>
         )}
       </div>
@@ -286,8 +286,8 @@ export default function TransactionHistoryPage() {
               <span className="text-sm font-bold truncate">{networkName}</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
-              className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-40">
-              <RefreshCw className={`w-4 h-4 text-white/60 ${isCheckingConn ? 'animate-spin' : ''}`} />
+              className="p-1.5 rounded-full hover:bg-muted transition-colors disabled:opacity-40">
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isCheckingConn ? 'animate-spin' : ''}`} />
             </button>
           </div>
           {lastChecked && (
@@ -299,18 +299,18 @@ export default function TransactionHistoryPage() {
         {(status === 'idle' || status === 'checking' || status === 'loading') && (
           <>
             {/* اختيار الفترة */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <Filter className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-bold text-white/80">اختر الفترة الزمنية</h3>
+                <h3 className="text-sm font-bold text-foreground">اختر الفترة الزمنية</h3>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {PERIODS.map((p) => (
                   <button key={p.value} onClick={() => setPeriod(p.value)}
                     className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-all duration-200
                       ${period === p.value
-                        ? 'bg-[#E60000] text-white shadow-[0_0_15px_rgba(230,0,0,0.3)]'
-                        : 'bg-[#1A1A1A] text-white/60 border border-white/8 hover:border-white/20'}`}>
+                        ? 'bg-[#E60000] text-foreground shadow-[0_0_15px_rgba(230,0,0,0.3)]'
+                        : 'bg-[#1A1A1A] text-muted-foreground border border-border hover:border-border'}`}>
                     {p.label}
                   </button>
                 ))}
@@ -319,19 +319,19 @@ export default function TransactionHistoryPage() {
               {/* فترة مخصصة */}
               {period === 'custom' && (
                 <div className="space-y-3 pt-2">
-                  <p className="text-xs text-white/50">الصيغة: DD-MM-YYYY (مثال: 01-01-2025)</p>
+                  <p className="text-xs text-muted-foreground">الصيغة: DD-MM-YYYY (مثال: 01-01-2025)</p>
                   <div className="space-y-2">
                     <input
                       type="text" placeholder="تاريخ البداية (DD-MM-YYYY)"
                       value={customStart} onChange={(e) => setCustomStart(e.target.value)}
                       dir="ltr"
-                      className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-[#E60000] focus:outline-none font-mono"
+                      className="w-full bg-[#1A1A1A] border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-[#E60000] focus:outline-none font-mono"
                     />
                     <input
                       type="text" placeholder="تاريخ النهاية (DD-MM-YYYY)"
                       value={customEnd} onChange={(e) => setCustomEnd(e.target.value)}
                       dir="ltr"
-                      className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-[#E60000] focus:outline-none font-mono"
+                      className="w-full bg-[#1A1A1A] border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-[#E60000] focus:outline-none font-mono"
                     />
                   </div>
                 </div>
@@ -339,10 +339,10 @@ export default function TransactionHistoryPage() {
             </div>
 
             {/* PIN */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#E60000]/5 rounded-full blur-3xl" />
-              <p className="text-xs text-white/50 relative z-10">PIN محفظة Vodafone Cash — لن يُحفظ أو يُسجَّل.</p>
-              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5 relative z-10">
+              <p className="text-xs text-muted-foreground relative z-10">PIN محفظة Vodafone Cash — لن يُحفظ أو يُسجَّل.</p>
+              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-border relative z-10">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={status !== 'idle'} />
               </div>
             </div>
@@ -351,8 +351,8 @@ export default function TransactionHistoryPage() {
             <button disabled={!canSubmit || status !== 'idle'} onClick={handleLoad}
               className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
                 ${canSubmit && status === 'idle'
-                  ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-                  : 'bg-white/5 text-muted-foreground/50 cursor-not-allowed border border-white/5'}`}>
+                  ? 'bg-[#E60000] text-foreground shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
+                  : 'bg-muted/50 text-muted-foreground/50 cursor-not-allowed border border-border'}`}>
               {status === 'checking' || status === 'loading'
                 ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري التحميل...</>
                 : <><History className="w-5 h-5" /> تحميل السجل</>}
@@ -376,7 +376,7 @@ export default function TransactionHistoryPage() {
                   <p className="text-[10px] text-muted-foreground mt-0.5">{periodLabel}</p>
                 </div>
                 <button onClick={handleReset}
-                  className="text-xs font-bold text-white/50 bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0">
+                  className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors shrink-0">
                   بحث جديد
                 </button>
               </div>
@@ -390,11 +390,11 @@ export default function TransactionHistoryPage() {
             {/* قائمة العمليات */}
             {transactions.length === 0 ? (
               <div className="text-center py-16 space-y-3">
-                <History className="w-12 h-12 text-white/10 mx-auto" />
+                <History className="w-12 h-12 text-muted-foreground/60 mx-auto" />
                 <p className="text-muted-foreground font-bold">لا توجد عمليات في هذه الفترة</p>
-                <p className="text-xs text-white/25">جرب فترة زمنية أوسع</p>
+                <p className="text-xs text-muted-foreground/50">جرب فترة زمنية أوسع</p>
                 <button onClick={handleReset}
-                  className="mt-4 px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white/60 hover:bg-white/10 transition-colors">
+                  className="mt-4 px-6 py-2.5 rounded-xl bg-muted/50 border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-colors">
                   بحث جديد
                 </button>
               </div>
@@ -403,7 +403,7 @@ export default function TransactionHistoryPage() {
                 {transactions.map((tx, i) => (
                   <TxCard key={i} tx={tx} index={i + 1} />
                 ))}
-                <p className="text-center text-xs text-white/25 pt-2">
+                <p className="text-center text-xs text-muted-foreground/50 pt-2">
                   تم عرض {transactions.length} عملية بالكامل
                 </p>
               </div>
@@ -418,7 +418,7 @@ export default function TransactionHistoryPage() {
               <XCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="text-sm font-bold text-primary mb-1">تعذر تحميل السجل</h3>
-                <p className="text-xs text-white/60">{errorMsg}</p>
+                <p className="text-xs text-muted-foreground">{errorMsg}</p>
               </div>
             </div>
             <button onClick={handleReset}
@@ -432,7 +432,7 @@ export default function TransactionHistoryPage() {
         {!isConnected && !isCheckingConn && status === 'idle' && (
           <div className="bg-[#1A0D0D] border border-[#E60000]/30 rounded-xl p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-white/60">
+            <p className="text-xs text-muted-foreground">
               يجب تشغيل <span className="text-primary font-bold">بيانات فودافون</span> لعرض سجل العمليات.
             </p>
           </div>

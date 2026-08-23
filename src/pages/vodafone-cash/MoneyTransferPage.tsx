@@ -186,7 +186,7 @@ export default function MoneyTransferPage() {
             <h1 className="text-[17px] font-bold tracking-wide">تحويل الأموال</h1>
             <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
           </div>
-          <button onClick={() => navigate('/vodafone-cash-center/history/transfer')} className="p-2 -ml-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors text-white/70">
+          <button onClick={() => navigate('/vodafone-cash-center/history/transfer')} className="p-2 -ml-2 rounded-full hover:bg-muted active:bg-muted/50 transition-colors text-muted-foreground">
             <Clock className="w-5 h-5" />
           </button>
         </div>
@@ -194,13 +194,13 @@ export default function MoneyTransferPage() {
 
       <div className="px-4 pt-6 space-y-6">
         {/* System Status Panel */}
-        <div className="bg-[#111] border border-white/10 rounded-2xl p-4 relative overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
               حالة النظام
             </h2>
-            <button onClick={checkConnection} disabled={isCheckingConn} className="text-xs text-white/60 hover:text-white flex items-center gap-1">
+            <button onClick={checkConnection} disabled={isCheckingConn} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
               <RefreshCw className={`w-3.5 h-3.5 ${isCheckingConn ? 'animate-spin' : ''}`} />
               تحديث
             </button>
@@ -208,10 +208,10 @@ export default function MoneyTransferPage() {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-white/60">حالة الاتصال</span>
+              <span className="text-xs text-muted-foreground">حالة الاتصال</span>
               <div className="flex items-center gap-1.5">
                 {isCheckingConn ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white/60" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                 ) : isConnected ? (
                   <Wifi className="w-3.5 h-3.5 text-green-500" />
                 ) : (
@@ -224,12 +224,12 @@ export default function MoneyTransferPage() {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-xs text-white/60">الشبكة الحالية</span>
-              <span className="text-xs font-medium text-white/90" dir="ltr">{networkName}</span>
+              <span className="text-xs text-muted-foreground">الشبكة الحالية</span>
+              <span className="text-xs font-medium text-foreground" dir="ltr">{networkName}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-xs text-white/60">اخر فحص</span>
+              <span className="text-xs text-muted-foreground">اخر فحص</span>
               <span className="text-[10px] text-muted-foreground" dir="ltr">
                 {lastChecked ? lastChecked.toLocaleTimeString() : '--:--'}
               </span>
@@ -251,12 +251,12 @@ export default function MoneyTransferPage() {
         {execStatus === 'idle' ? (
           <>
             {/* Form Container */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl relative overflow-hidden">
               <div className="space-y-5 relative z-10">
                 {/* Receiver Field */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-white/80">رقم المستفيد</label>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
+                  <label className="text-sm font-bold text-foreground">رقم المستفيد</label>
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                     <div className="pl-3 pr-2 text-muted-foreground">
                       <Phone className="w-5 h-5" />
                     </div>
@@ -269,7 +269,7 @@ export default function MoneyTransferPage() {
                         if (val.length <= 11) setReceiver(val);
                       }}
                       placeholder="01xxxxxxxxx"
-                      className="flex-1 bg-transparent border-none text-white text-lg py-3 outline-none placeholder:text-white/20 text-left"
+                      className="flex-1 bg-transparent border-none text-foreground text-lg py-3 outline-none placeholder:text-muted-foreground/40 text-left"
                     />
                   </div>
                   {receiver.length > 0 && !isReceiverValid && (
@@ -282,8 +282,8 @@ export default function MoneyTransferPage() {
 
                 {/* Amount Field */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-white/80">المبلغ</label>
-                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
+                  <label className="text-sm font-bold text-foreground">المبلغ</label>
+                  <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                     <div className="pl-3 pr-2 text-muted-foreground">
                       <span className="text-sm font-bold">EGP</span>
                     </div>
@@ -293,7 +293,7 @@ export default function MoneyTransferPage() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="0"
-                      className="flex-1 bg-transparent border-none text-white text-lg py-3 outline-none placeholder:text-white/20 text-left"
+                      className="flex-1 bg-transparent border-none text-foreground text-lg py-3 outline-none placeholder:text-muted-foreground/40 text-left"
                     />
                   </div>
                   <div className="flex justify-between items-center px-1">
@@ -307,7 +307,7 @@ export default function MoneyTransferPage() {
 
                 {/* Password Field */}
                 <div className="space-y-2 mt-4">
-                  <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5">
+                  <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-border">
                     <PinInputBlock pin={pin} setPin={setPin} submitting={isSubmitting} />
                   </div>
                 </div>
@@ -320,8 +320,8 @@ export default function MoneyTransferPage() {
               onClick={handleSubmit}
               className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
                 ${canSubmit 
-                  ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]' 
-                  : 'bg-white/5 text-muted-foreground/50 cursor-not-allowed border border-white/5'}`}
+                  ? 'bg-[#E60000] text-foreground shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]' 
+                  : 'bg-muted/50 text-muted-foreground/50 cursor-not-allowed border border-border'}`}
             >
               <Send className="w-5 h-5" />
               تحويل الآن
@@ -330,10 +330,10 @@ export default function MoneyTransferPage() {
         ) : (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* Status Card */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-6 text-center shadow-xl">
+            <div className="bg-card border border-border rounded-2xl p-6 text-center shadow-xl">
               <div className="flex justify-center mb-4">
                 {execStatus === 'checking' || execStatus === 'executing' ? (
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   </div>
                 ) : execStatus === 'success' ? (
@@ -363,7 +363,7 @@ export default function MoneyTransferPage() {
               {(execStatus === 'success' || execStatus === 'failed') && (
                 <button
                   onClick={resetForm}
-                  className="mt-6 px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold transition-colors"
+                  className="mt-6 px-6 py-2.5 bg-muted hover:bg-muted rounded-xl text-sm font-bold transition-colors"
                 >
                   إجراء تحويل جديد
                 </button>
@@ -372,14 +372,14 @@ export default function MoneyTransferPage() {
 
             {/* Execution Logs */}
             {execLogs.length > 0 && (
-              <div className="bg-[#111] border border-white/5 rounded-2xl p-4">
-                <h4 className="text-xs font-bold text-white/60 mb-3 flex items-center gap-1.5">
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <h4 className="text-xs font-bold text-muted-foreground mb-3 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5" />
                   سجل التنفيذ (من السيرفر)
                 </h4>
                 <div className="space-y-2">
                   {execLogs.map((log, i) => (
-                    <div key={i} className="flex gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-white/5">
+                    <div key={i} className="flex gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-border">
                       <div className="w-12 shrink-0 text-muted-foreground/50 font-mono text-[10px] mt-0.5" dir="ltr">
                         {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second:'2-digit' })}
                       </div>
@@ -392,9 +392,9 @@ export default function MoneyTransferPage() {
                               'bg-blue-500/20 text-blue-400'}`}>
                             {log.status}
                           </span>
-                          <span className="font-mono text-white/50 text-[10px]">{log.step}</span>
+                          <span className="font-mono text-muted-foreground text-[10px]">{log.step}</span>
                         </div>
-                        <p className="text-white/80 break-words leading-relaxed" dir="auto">{log.detail}</p>
+                        <p className="text-foreground break-words leading-relaxed" dir="auto">{log.detail}</p>
                       </div>
                     </div>
                   ))}

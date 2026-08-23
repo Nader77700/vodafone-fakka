@@ -2153,3 +2153,70 @@ html.light .shadow-\[0_8px_30px_rgba\(0\,0\,0\,0\.5\)\] {
   box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Section ⑳  VodafoneCash / WalletLines / UserOps — bg-[#111] + dark cards
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* bg-[#111] cards → white card in light */
+html.light .bg-\[\#111\] {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* dark inline card backgrounds used in MoneyTransfer / Recharge / Transactions */
+html.light [style*="background: rgb(17, 17, 17)"],
+html.light [style*="background:#111"],
+html.light [style*="background: #111"] {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+html.light [style*="background: rgba(8,0,0"],
+html.light [style*="background: rgba(12,0,0"],
+html.light [style*="background: rgba(10,0,0"],
+html.light [style*="background: '#120000'"],
+html.light [style*="background: '#0a0000'"] {
+  background: hsl(var(--card)) !important;
+}
+
+/* MoneyTransfer input lines — transparent inputs inside dark cards */
+html.light input.bg-transparent,
+html.light textarea.bg-transparent {
+  color: hsl(var(--foreground)) !important;
+  caret-color: #E60000 !important;
+}
+
+/* Connection status rows */
+html.light .text-muted-foreground { color: hsl(var(--muted-foreground)) !important; }
+
+/* WalletLines results — collapse section headers */
+html.light .bg-white\/5  { background-color: hsl(var(--muted)) !important; }
+html.light .bg-white\/8  { background-color: hsl(var(--muted)) !important; }
+html.light .bg-muted\/50 { background-color: hsl(var(--muted) / 0.5) !important; }
+
+/* BalanceChargePage dialog/sheet */
+html.light [data-radix-dialog-content],
+html.light [data-radix-sheet-content] {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* UserOps sticky header */
+html.light .sticky.top-0[style*="blur"] {
+  background: hsl(var(--background) / 0.95) !important;
+}
+
+/* Stats mini-cards in UserOps — '#ffffff' color → foreground */
+html.light [style*="color: rgb(255, 255, 255)"],
+html.light [style*="color: #ffffff"],
+html.light [style*="color: #fff"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Inputs & selects with dark inline bg */
+html.light input[style*="background: hsl(var(--input))"],
+html.light select[style*="background: hsl(var(--input))"] {
+  background: hsl(var(--input)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+

@@ -164,10 +164,10 @@ export default function WalletLinesChangePasswordPage() {
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={handleBackToLogin}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all">
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95 transition-all">
             <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1">
@@ -187,11 +187,11 @@ export default function WalletLinesChangePasswordPage() {
             return (
               <div key={s} className="flex items-center gap-2">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                  active ? 'bg-amber-500 text-amber-950' : done ? 'bg-green-500 text-green-950' : 'bg-white/10 text-white/40'
+                  active ? 'bg-amber-500 text-amber-950' : done ? 'bg-green-500 text-green-950' : 'bg-muted text-muted-foreground'
                 }`}>
                   {done ? '✓' : i + 1}
                 </div>
-                {i < 3 && <div className={`w-8 h-0.5 ${done ? 'bg-green-500' : 'bg-white/10'}`} />}
+                {i < 3 && <div className={`w-8 h-0.5 ${done ? 'bg-green-500' : 'bg-muted'}`} />}
               </div>
             );
           })}
@@ -208,21 +208,21 @@ export default function WalletLinesChangePasswordPage() {
         {/* الخطوة 1: رقم الهاتف */}
         {step === 'phone' && (
           <form onSubmit={handleSendOtp} className="space-y-4">
-            <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
+            <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                   <Phone className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-foreground">أدخل رقم الهاتف</h2>
-                  <p className="text-[10px] text-white/50">سنرسل رمز التحقق إلى رقم الهاتف المسجل.</p>
+                  <p className="text-[10px] text-muted-foreground">سنرسل رمز التحقق إلى رقم الهاتف المسجل.</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cp-phone" className="text-sm font-semibold text-white/80">رقم الهاتف</Label>
+                <Label htmlFor="cp-phone" className="text-sm font-semibold text-foreground">رقم الهاتف</Label>
                 <div className="relative">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <Input
                     id="cp-phone" type="tel" inputMode="numeric" maxLength={11}
                     value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 11)); setErrorMsg(null); }}
@@ -252,7 +252,7 @@ export default function WalletLinesChangePasswordPage() {
             )}
 
             <button type="button" onClick={handleBackToLogin}
-              className="w-full text-center text-xs text-white/50 hover:text-white/80 transition-colors">
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors">
               العودة لتسجيل الدخول
             </button>
           </form>
@@ -261,24 +261,24 @@ export default function WalletLinesChangePasswordPage() {
         {/* الخطوة 2: OTP */}
         {step === 'otp' && (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
+            <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                   <KeyRound className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-foreground">التحقق من الرمز</h2>
-                  <p className="text-[10px] text-white/50">تم إرسال رمز التحقق إلى الرقم التالي.</p>
+                  <p className="text-[10px] text-muted-foreground">تم إرسال رمز التحقق إلى الرقم التالي.</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/6 px-3 py-2">
                 <Phone className="w-4 h-4 text-indigo-400" />
-                <p className="text-sm font-mono font-bold text-white/90" dir="ltr">{maskPhone(phone)}</p>
+                <p className="text-sm font-mono font-bold text-foreground" dir="ltr">{maskPhone(phone)}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cp-otp" className="text-sm font-semibold text-white/80">رمز التحقق</Label>
+                <Label htmlFor="cp-otp" className="text-sm font-semibold text-foreground">رمز التحقق</Label>
                 <Input
                   id="cp-otp" type="text" inputMode="numeric" maxLength={6}
                   value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setErrorMsg(null); }}
@@ -302,7 +302,7 @@ export default function WalletLinesChangePasswordPage() {
             <div className="flex items-center justify-center gap-4">
               <button type="button" onClick={handleResendOtp}
                 disabled={loading || resendCooldown > 0 || isLockedOut}
-                className="text-xs text-white/60 hover:text-white/90 disabled:text-white/30 disabled:cursor-not-allowed transition-colors">
+                className="text-xs text-muted-foreground hover:text-foreground disabled:text-muted-foreground/60 disabled:cursor-not-allowed transition-colors">
                 {resendCooldown > 0 ? `إعادة الإرسال بعد ${resendCooldown} ثانية` : 'إعادة إرسال الرمز'}
               </button>
             </div>
@@ -315,7 +315,7 @@ export default function WalletLinesChangePasswordPage() {
             )}
 
             <button type="button" onClick={handleBackToLogin}
-              className="w-full text-center text-xs text-white/50 hover:text-white/80 transition-colors">
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors">
               إلغاء والعودة لتسجيل الدخول
             </button>
           </form>
@@ -324,19 +324,19 @@ export default function WalletLinesChangePasswordPage() {
         {/* الخطوة 3: كلمة السر الجديدة */}
         {step === 'password' && (
           <form onSubmit={handleResetPassword} className="space-y-4">
-            <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
+            <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center border border-green-500/20">
                   <Lock className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-foreground">إنشاء كلمة سر جديدة</h2>
-                  <p className="text-[10px] text-white/50">كلمة السر يجب أن تكون 6 أحرف على الأقل.</p>
+                  <p className="text-[10px] text-muted-foreground">كلمة السر يجب أن تكون 6 أحرف على الأقل.</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cp-password" className="text-sm font-semibold text-white/80">كلمة السر الجديدة</Label>
+                <Label htmlFor="cp-password" className="text-sm font-semibold text-foreground">كلمة السر الجديدة</Label>
                 <div className="relative">
                   <Input
                     id="cp-password" type={showPassword ? 'text' : 'password'}
@@ -346,14 +346,14 @@ export default function WalletLinesChangePasswordPage() {
                     className="pl-10 h-12 rounded-xl"
                   />
                   <button type="button" onClick={() => setShowPassword(p => !p)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cp-confirm" className="text-sm font-semibold text-white/80">تأكيد كلمة السر</Label>
+                <Label htmlFor="cp-confirm" className="text-sm font-semibold text-foreground">تأكيد كلمة السر</Label>
                 <div className="relative">
                   <Input
                     id="cp-confirm" type={showConfirm ? 'text' : 'password'}
@@ -363,7 +363,7 @@ export default function WalletLinesChangePasswordPage() {
                     className="pl-10 h-12 rounded-xl"
                   />
                   <button type="button" onClick={() => setShowConfirm(p => !p)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -380,7 +380,7 @@ export default function WalletLinesChangePasswordPage() {
             </Button>
 
             <button type="button" onClick={handleBackToLogin}
-              className="w-full text-center text-xs text-white/50 hover:text-white/80 transition-colors">
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors">
               إلغاء والعودة لتسجيل الدخول
             </button>
           </form>
@@ -394,10 +394,10 @@ export default function WalletLinesChangePasswordPage() {
             </div>
             <div className="space-y-1">
               <h2 className="text-lg font-black text-foreground">تم تغيير كلمة السر بنجاح</h2>
-              <p className="text-xs text-white/60">يمكنك الآن تسجيل الدخول باستخدام كلمة السر الجديدة.</p>
+              <p className="text-xs text-muted-foreground">يمكنك الآن تسجيل الدخول باستخدام كلمة السر الجديدة.</p>
             </div>
             <Button onClick={handleBackToLogin}
-              className="w-full h-12 text-sm font-black rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/15">
+              className="w-full h-12 text-sm font-black rounded-xl bg-muted hover:bg-muted text-foreground border border-border">
               <span className="flex items-center gap-2"><ArrowRight className="w-4 h-4" />العودة لتسجيل الدخول</span>
             </Button>
           </div>

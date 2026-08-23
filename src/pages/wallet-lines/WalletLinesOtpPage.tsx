@@ -87,10 +87,10 @@ export default function WalletLinesOtpPage() {
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate(-1)} disabled={isDisabled}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95">
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95">
             <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div>
@@ -104,11 +104,11 @@ export default function WalletLinesOtpPage() {
 
         {/* إرشاد */}
         <div className="text-center space-y-1.5">
-          <p className="text-sm text-white/70 font-medium">تم إرسال رمز التحقق إلى</p>
+          <p className="text-sm text-muted-foreground font-medium">تم إرسال رمز التحقق إلى</p>
           <p className="text-base font-black text-foreground font-mono" dir="ltr">
             {phone || 'رقمك المسجل'}
           </p>
-          <p className="text-xs text-white/40">أدخل الرمز المكوّن من {OTP_LENGTH} أرقام — يمكنك لصقه مباشرة</p>
+          <p className="text-xs text-muted-foreground">أدخل الرمز المكوّن من {OTP_LENGTH} أرقام — يمكنك لصقه مباشرة</p>
         </div>
 
         {/* حقل OTP الموحّد */}
@@ -121,10 +121,10 @@ export default function WalletLinesOtpPage() {
                   ${otp[i]
                     ? errorMsg
                       ? 'border-2 border-red-400/60 bg-red-500/8 text-red-300'
-                      : 'border-2 border-indigo-400/70 bg-indigo-500/10 text-white'
+                      : 'border-2 border-indigo-400/70 bg-indigo-500/10 text-foreground'
                     : i === otp.length
                       ? 'border-2 border-indigo-400/40 bg-indigo-500/5 text-transparent'
-                      : 'border-2 border-white/10 bg-white/3 text-transparent'
+                      : 'border-2 border-border bg-muted/50 text-transparent'
                   }`}>
                 {otp[i] || ''}
               </div>
@@ -133,7 +133,7 @@ export default function WalletLinesOtpPage() {
 
           {/* الـ Input الحقيقي — مخفي بصريًا لكن accessible */}
           <div className="relative">
-            <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+            <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
             <input
               ref={inputRef}
               type="text"
@@ -147,9 +147,9 @@ export default function WalletLinesOtpPage() {
               disabled={isDisabled}
               placeholder="اكتب أو الصق الرمز هنا"
               className={`w-full h-12 pr-9 pl-4 rounded-xl text-center text-base font-mono tracking-widest outline-none transition-all duration-200
-                bg-white/5 text-white placeholder:text-white/20
+                bg-muted/50 text-foreground placeholder:text-muted-foreground/40
                 focus:ring-2 focus:ring-indigo-400/50 focus:bg-indigo-500/5
-                ${errorMsg ? 'border border-red-400/50' : 'border border-white/10'}
+                ${errorMsg ? 'border border-red-400/50' : 'border border-border'}
                 ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
               aria-label="رمز التحقق المكوّن من 6 أرقام"
             />
@@ -191,9 +191,9 @@ export default function WalletLinesOtpPage() {
               <RefreshCw className="w-3.5 h-3.5" /> إعادة إرسال الرمز
             </button>
           ) : (
-            <p className="text-xs text-white/35">
+            <p className="text-xs text-muted-foreground/70">
               إعادة الإرسال بعد{' '}
-              <span className="text-white/70 font-bold tabular-nums">{countdown}</span> ثانية
+              <span className="text-muted-foreground font-bold tabular-nums">{countdown}</span> ثانية
             </p>
           )}
         </div>

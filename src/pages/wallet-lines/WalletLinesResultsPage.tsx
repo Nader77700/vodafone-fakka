@@ -57,7 +57,7 @@ const AvailabilityBadge = memo(function AvailabilityBadge({ avail }: { avail: Da
 const WalletCard = memo(function WalletCard({ w }: { w: WalletInfo }) {
   const meta = CARRIER_META[w.carrier];
   return (
-    <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
+    <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">{meta.emoji}</span>
@@ -95,7 +95,7 @@ const WalletCard = memo(function WalletCard({ w }: { w: WalletInfo }) {
 const LineCard = memo(function LineCard({ l, fullNums }: { l: LineInfo; fullNums?: string[] }) {
   const meta = CARRIER_META[l.carrier];
   return (
-    <div className="rounded-2xl p-4 border border-white/8 bg-white/3 space-y-3">
+    <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">{meta.emoji}</span>
@@ -181,7 +181,7 @@ const OtpDialog = memo(function OtpDialog({
       <div
         className="w-full max-w-sm rounded-3xl p-6 space-y-5"
         dir="rtl"
-        style={{ background: '#0f1520', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: '#0f1520', border: '1px solid hsl(var(--muted-foreground) / 0.4)' }}
       >
         {/* العنوان */}
         <div className="text-center space-y-1">
@@ -200,7 +200,7 @@ const OtpDialog = memo(function OtpDialog({
               : 'أدخل الرمز أو الصقه إذا وصلك في رسالة.'}
           </p>
           {phone && (
-            <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-white/5 px-3 py-2 mt-2">
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 mt-2">
               <Phone className="w-3.5 h-3.5 text-indigo-400" />
               <p className="text-sm font-mono text-foreground" dir="ltr">{phone}</p>
             </div>
@@ -223,10 +223,10 @@ const OtpDialog = memo(function OtpDialog({
             spellCheck={false}
             className="w-full h-14 text-center text-2xl font-black rounded-xl border outline-none transition-all tracking-[0.35em] placeholder:text-sm placeholder:tracking-normal placeholder:font-normal"
             style={{
-              background: value ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
+              background: value ? 'rgba(251,191,36,0.08)' : 'hsl(var(--muted-foreground) / 0.4)',
               border: value.length === 6
                 ? '1.5px solid rgba(251,191,36,0.55)'
-                : '1px solid rgba(255,255,255,0.14)',
+                : '1px solid hsl(var(--muted-foreground) / 0.4)',
               color: '#fbbf24',
               caretColor: '#fbbf24',
             }}
@@ -239,7 +239,7 @@ const OtpDialog = memo(function OtpDialog({
                 key={i}
                 className="w-2 h-2 rounded-full transition-all duration-200"
                 style={{
-                  background: i < value.length ? '#fbbf24' : 'rgba(255,255,255,0.12)',
+                  background: i < value.length ? '#fbbf24' : 'hsl(var(--muted-foreground) / 0.4)',
                   transform: i < value.length ? 'scale(1.2)' : 'scale(1)',
                 }}
               />
@@ -260,7 +260,7 @@ const OtpDialog = memo(function OtpDialog({
           <button
             onClick={onClose}
             disabled={loading || sending}
-            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-border text-muted-foreground hover:bg-white/5 transition-all"
+            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-border text-muted-foreground hover:bg-muted/50 transition-all"
           >
             إلغاء
           </button>
@@ -271,8 +271,8 @@ const OtpDialog = memo(function OtpDialog({
             style={{
               background: isComplete && !loading && !sending
                 ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-                : 'rgba(255,255,255,0.06)',
-              color: isComplete && !loading && !sending ? '#000' : 'rgba(255,255,255,0.25)',
+                : 'hsl(var(--muted-foreground) / 0.4)',
+              color: isComplete && !loading && !sending ? '#000' : 'hsl(var(--muted-foreground) / 0.4)',
             }}
           >
             {loading
@@ -418,10 +418,10 @@ export default function WalletLinesResultsPage() {
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate('/wallet-lines')}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-white/5 hover:bg-white/10 active:scale-95">
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95">
             <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1">
@@ -478,7 +478,7 @@ export default function WalletLinesResultsPage() {
             {fullNumbers ? <CheckCircle2 className="w-5 h-5 text-amber-400" /> : <Lock className="w-5 h-5 text-amber-400" />}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-black text-white">{fullNumbers ? 'تم التحقق بنجاح' : 'إظهار الأرقام كاملة'}</h3>
+            <h3 className="text-sm font-black text-foreground">{fullNumbers ? 'تم التحقق بنجاح' : 'إظهار الأرقام كاملة'}</h3>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
               {fullNumbers
                 ? 'تم إظهار الأرقام الكاملة لكل الشركات أدناه.'
@@ -548,8 +548,8 @@ export default function WalletLinesResultsPage() {
         </div>
 
         {/* دليل الحالات */}
-        <div className="rounded-2xl p-4 border border-white/6 bg-white/2 space-y-2">
-          <p className="text-[11px] font-bold text-white/40 mb-2">دليل الحالات</p>
+        <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-2">
+          <p className="text-[11px] font-bold text-muted-foreground mb-2">دليل الحالات</p>
           {([
             ['loaded', 'بيانات موجودة'],
             ['empty', 'لا توجد بيانات (الاستجابة صحيحة)'],

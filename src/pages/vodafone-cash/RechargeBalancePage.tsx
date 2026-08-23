@@ -235,7 +235,7 @@ export default function RechargeBalancePage() {
           </div>
           <button
             onClick={() => navigate('/vodafone-cash-center/history/recharge')}
-            className="p-2 -ml-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors text-white/70"
+            className="p-2 -ml-2 rounded-full hover:bg-muted active:bg-muted/50 transition-colors text-muted-foreground"
           >
             <Clock className="w-5 h-5" />
           </button>
@@ -245,18 +245,18 @@ export default function RechargeBalancePage() {
       <div className="px-4 pt-5 space-y-4">
 
         {/* ── بطاقة حالة الجسر ────────────────────────────────── */}
-        <div className="bg-[#111] border border-white/10 rounded-2xl p-4 shadow-xl">
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-xl">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-[#E60000]/15 flex items-center justify-center">
                 <div className="w-3 h-3 rounded-full bg-[#E60000]" />
               </div>
-              <span className="text-sm font-bold text-white/90">حالة النظام</span>
+              <span className="text-sm font-bold text-foreground">حالة النظام</span>
             </div>
             <button
               onClick={checkConnection}
               disabled={isCheckingConn}
-              className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isCheckingConn ? 'animate-spin' : ''}`} />
               تحديث
@@ -280,14 +280,14 @@ export default function RechargeBalancePage() {
               )}
             </div>
             <div className="text-muted-foreground text-right">الشبكة الحالية</div>
-            <div className="text-white/80 font-medium truncate">{networkName}</div>
+            <div className="text-foreground font-medium truncate">{networkName}</div>
             <div className="text-muted-foreground text-right">آخر فحص</div>
-            <div className="text-white/50">{lastCheckedStr}</div>
+            <div className="text-muted-foreground">{lastCheckedStr}</div>
           </div>
         </div>
 
         {/* ── النموذج ─────────────────────────────────────────── */}
-        <div className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#E60000]/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-5 relative z-10">
@@ -299,29 +299,29 @@ export default function RechargeBalancePage() {
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
                 ${rechargeForSelf
                   ? 'border-[#E60000]/60 bg-[#E60000]/10'
-                  : 'border-white/10 bg-[#1A1A1A] hover:border-white/20'}`}
+                  : 'border-border bg-[#1A1A1A] hover:border-border'}`}
             >
               <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors
-                ${rechargeForSelf ? 'bg-[#E60000] border-[#E60000]' : 'border-white/30 bg-transparent'}`}>
-                {rechargeForSelf && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                ${rechargeForSelf ? 'bg-[#E60000] border-[#E60000]' : 'border-border bg-transparent'}`}>
+                {rechargeForSelf && <CheckCircle2 className="w-3.5 h-3.5 text-foreground" />}
               </div>
               <div className="flex items-center gap-2 flex-1">
                 <UserCheck className={`w-4 h-4 ${rechargeForSelf ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`text-sm font-bold ${rechargeForSelf ? 'text-primary' : 'text-white/70'}`}>
+                <span className={`text-sm font-bold ${rechargeForSelf ? 'text-primary' : 'text-muted-foreground'}`}>
                   شحن رصيد لنفسي
                 </span>
               </div>
               {rechargeForSelf && detectedMsisdn && (
-                <span className="text-xs text-white/50 font-mono shrink-0">{detectedMsisdn}</span>
+                <span className="text-xs text-muted-foreground font-mono shrink-0">{detectedMsisdn}</span>
               )}
             </button>
 
             {/* رقم الهاتف */}
             <div className="space-y-2">
-              <label className="text-sm font-bold text-white/80">رقم الهاتف</label>
+              <label className="text-sm font-bold text-foreground">رقم الهاتف</label>
               <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors
-                ${rechargeForSelf ? 'border-white/5 opacity-60' : activeReceiver && (!isReceiverValid || !isReceiverLengthValid)
-                  ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
+                ${rechargeForSelf ? 'border-border opacity-60' : activeReceiver && (!isReceiverValid || !isReceiverLengthValid)
+                  ? 'border-red-500' : 'border-border focus-within:border-[#E60000]'}`}>
                 <div className="pl-3 pr-2 text-muted-foreground">
                   <Phone className="w-5 h-5" />
                 </div>
@@ -332,7 +332,7 @@ export default function RechargeBalancePage() {
                   onChange={handleReceiverChange}
                   readOnly={rechargeForSelf}
                   placeholder="01xxxxxxxxx"
-                  className="flex-1 bg-transparent border-none text-white text-lg py-3 outline-none placeholder:text-white/20"
+                  className="flex-1 bg-transparent border-none text-foreground text-lg py-3 outline-none placeholder:text-muted-foreground/40"
                 />
               </div>
               {!rechargeForSelf && activeReceiver.length > 0 && !isReceiverValid && (
@@ -345,7 +345,7 @@ export default function RechargeBalancePage() {
 
             {/* ── قيمة الشحن — خانتان ذكيتان ─────────────────────── */}
             <div className="space-y-3">
-              <label className="text-sm font-bold text-white/80">قيمة الشحن</label>
+              <label className="text-sm font-bold text-foreground">قيمة الشحن</label>
 
               {/* الخانتان جنباً إلى جنب — layout مضغوط يتكيف مع أي شاشة */}
               <div className="flex items-stretch gap-2 w-full">
@@ -353,15 +353,15 @@ export default function RechargeBalancePage() {
                 {/* خانة الرصيد الصافي */}
                 <div className="flex-1 min-w-0 relative pt-2">
                   <span
-                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-[#111] leading-none whitespace-nowrap"
-                    style={{ color: lastEdited === 'net' ? '#E60000' : 'rgba(255,255,255,0.35)' }}
+                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-card leading-none whitespace-nowrap"
+                    style={{ color: lastEdited === 'net' ? '#E60000' : 'hsl(var(--muted-foreground) / 0.6)' }}
                   >
                     الرصيد الصافي
                   </span>
                   <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200 h-12
                     ${lastEdited === 'net'
                       ? 'border-[#E60000] shadow-[0_0_8px_rgba(230,0,0,0.15)]'
-                      : 'border-white/10'}`}>
+                      : 'border-border'}`}>
                     <input
                       type="tel"
                       dir="ltr"
@@ -370,7 +370,7 @@ export default function RechargeBalancePage() {
                       onChange={handleNetChange}
                       onFocus={() => setLastEdited('net')}
                       placeholder="0"
-                      className="w-full bg-transparent border-none text-white text-base font-bold py-0 px-2 outline-none placeholder:text-white/20 text-center"
+                      className="w-full bg-transparent border-none text-foreground text-base font-bold py-0 px-2 outline-none placeholder:text-muted-foreground/40 text-center"
                     />
                     <span className="text-[10px] font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
@@ -378,9 +378,9 @@ export default function RechargeBalancePage() {
 
                 {/* أيقونة التحويل */}
                 <div className="flex items-center justify-center shrink-0 pt-2">
-                  <div className="w-7 h-7 rounded-full border border-white/10 bg-[#1A1A1A] flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full border border-border bg-[#1A1A1A] flex items-center justify-center">
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path d="M2 5 L8 5 L6 3 M11 8 L5 8 L7 10" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2 5 L8 5 L6 3 M11 8 L5 8 L7 10" stroke="hsl(var(--muted-foreground) / 0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                 </div>
@@ -388,15 +388,15 @@ export default function RechargeBalancePage() {
                 {/* خانة المبلغ الإجمالي */}
                 <div className="flex-1 min-w-0 relative pt-2">
                   <span
-                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-[#111] leading-none whitespace-nowrap"
-                    style={{ color: lastEdited === 'total' ? '#E60000' : 'rgba(255,255,255,0.35)' }}
+                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-card leading-none whitespace-nowrap"
+                    style={{ color: lastEdited === 'total' ? '#E60000' : 'hsl(var(--muted-foreground) / 0.6)' }}
                   >
                     المبلغ الإجمالي
                   </span>
                   <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-all duration-200 h-12
                     ${lastEdited === 'total'
                       ? 'border-[#E60000] shadow-[0_0_8px_rgba(230,0,0,0.15)]'
-                      : 'border-white/10'}`}>
+                      : 'border-border'}`}>
                     <input
                       type="tel"
                       dir="ltr"
@@ -405,7 +405,7 @@ export default function RechargeBalancePage() {
                       onChange={handleTotalChange}
                       onFocus={() => setLastEdited('total')}
                       placeholder="0"
-                      className="w-full bg-transparent border-none text-white text-base font-bold py-0 px-2 outline-none placeholder:text-white/20 text-center"
+                      className="w-full bg-transparent border-none text-foreground text-base font-bold py-0 px-2 outline-none placeholder:text-muted-foreground/40 text-center"
                     />
                     <span className="text-[10px] font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
@@ -424,7 +424,7 @@ export default function RechargeBalancePage() {
 
               {/* Quick-picks */}
               <div className="space-y-1">
-                <p className="text-[11px] text-white/35 font-semibold">خيارات مقترحة للرصيد</p>
+                <p className="text-[11px] text-muted-foreground/70 font-semibold">خيارات مقترحة للرصيد</p>
                 <div className="flex gap-2">
                   {QUICK_PICKS_NET.map(n => (
                     <button
@@ -434,7 +434,7 @@ export default function RechargeBalancePage() {
                       className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all duration-200 border
                         ${Number(netAmount) === n
                           ? 'bg-[#E60000]/15 border-[#E60000]/60 text-primary'
-                          : 'bg-[#1A1A1A] border-white/8 text-white/60 hover:border-white/20 active:scale-95'}`}
+                          : 'bg-[#1A1A1A] border-border text-muted-foreground hover:border-border active:scale-95'}`}
                     >
                       {n}
                     </button>
@@ -445,7 +445,7 @@ export default function RechargeBalancePage() {
 
             {/* كلمة السر */}
             <div className="space-y-2">
-              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-white/5">
+              <div className="bg-[#1C1C1C] rounded-2xl p-4 border border-border">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={isSubmitting} />
               </div>
             </div>
@@ -489,7 +489,7 @@ export default function RechargeBalancePage() {
             <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="space-y-2">
               <h4 className="text-sm font-bold text-primary">ملاحظات هامة:</h4>
-              <ul className="text-xs text-white/70 space-y-1.5 list-disc list-inside pr-1">
+              <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside pr-1">
                 <li>يجب تشغيل بيانات فودافون (Vodafone Data).</li>
                 <li>يجب أن تكون محفظتك مفعلة.</li>
                 <li>يجب توفر رصيد كافٍ في المحفظة.</li>
@@ -506,8 +506,8 @@ export default function RechargeBalancePage() {
           onClick={handleSubmit}
           className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
             ${canSubmit
-              ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-              : 'bg-white/5 text-muted-foreground/50 cursor-not-allowed border border-white/5'}`}
+              ? 'bg-[#E60000] text-foreground shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
+              : 'bg-muted/50 text-muted-foreground/50 cursor-not-allowed border border-border'}`}
         >
           {isSubmitting
             ? <Loader2 className="w-5 h-5 animate-spin" />

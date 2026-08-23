@@ -114,11 +114,11 @@ export default function WalletBalancePage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-primary'}`} />
-              <span className="text-xs font-bold text-white/80">حالة النظام</span>
+              <span className="text-xs font-bold text-foreground">حالة النظام</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
-              className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-40">
-              <RefreshCw className={`w-4 h-4 text-white/60 ${isCheckingConn ? 'animate-spin' : ''}`} />
+              className="p-1.5 rounded-full hover:bg-muted transition-colors disabled:opacity-40">
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isCheckingConn ? 'animate-spin' : ''}`} />
             </button>
           </div>
           <div className="flex items-center gap-3">
@@ -155,14 +155,14 @@ export default function WalletBalancePage() {
               disabled={!isConnected && !isCheckingConn}
               className={`w-full rounded-2xl border p-5 flex items-center gap-4 text-right transition-all duration-300
                 ${isConnected
-                  ? 'bg-[#111] border-white/10 hover:border-[#E60000]/50 hover:bg-[#1a0a0a] active:scale-[0.98] cursor-pointer'
-                  : 'bg-[#111]/50 border-white/5 opacity-50 cursor-not-allowed'}`}>
+                  ? 'bg-[#111] border-border hover:border-[#E60000]/50 hover:bg-[#1a0a0a] active:scale-[0.98] cursor-pointer'
+                  : 'bg-[#111]/50 border-border opacity-50 cursor-not-allowed'}`}>
               <div className="w-12 h-12 rounded-xl bg-[#E60000]/10 border border-[#E60000]/20 flex items-center justify-center text-primary shrink-0">
                 {svc.icon}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-base font-bold text-foreground">{svc.title}</h3>
-                <p className="text-xs text-white/50 mt-0.5">{svc.desc}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{svc.desc}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground/50 shrink-0 rotate-180" />
             </button>
@@ -175,7 +175,7 @@ export default function WalletBalancePage() {
             <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1.5">
               <h4 className="text-sm font-bold text-primary">ملاحظات هامة:</h4>
-              <ul className="text-xs text-white/60 space-y-1 list-disc list-inside pr-1">
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside pr-1">
                 <li>يجب تشغيل بيانات فودافون (Vodafone Data) للاستخدام.</li>
                 <li>PIN المحفظة مطلوب لكل عملية ولا يُحفظ.</li>
                 <li>لن يتم إجراء أي عملية تحويل — استعلام فقط.</li>

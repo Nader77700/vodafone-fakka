@@ -47,8 +47,8 @@ export default function VodafoneCashCenter() {
       {/* ── Top Nav ── */}
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b shadow-[0_4px_30px_rgba(0,0,0,0.2)]"
         style={{
-          background: L ? 'rgba(255,255,255,0.95)' : 'rgba(10,10,10,0.80)',
-          borderColor: L ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.05)',
+          background: L ? 'hsl(var(--foreground))' : 'rgba(10,10,10,0.80)',
+          borderColor: L ? 'rgba(0,0,0,0.08)' : 'hsl(var(--muted-foreground) / 0.4)',
         }}>
         <div className="flex items-center justify-between px-4 h-16">
           <button
@@ -60,7 +60,7 @@ export default function VodafoneCashCenter() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>Vodafone Cash Center</h1>
-            <p className="text-[10px] font-medium" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.50)' }}>اختر الخدمة التي تريد استخدامها</p>
+            <p className="text-[10px] font-medium" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'hsl(var(--muted-foreground))' }}>اختر الخدمة التي تريد استخدامها</p>
           </div>
           <div className="w-10"></div>
         </div>
@@ -87,7 +87,7 @@ export default function VodafoneCashCenter() {
             <div className="relative z-10 p-5 flex flex-col items-start w-full">
               <div className="flex items-center gap-3 mb-2">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-md border border-white/20 transition-transform duration-500 group-hover:scale-110"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-md border border-border transition-transform duration-500 group-hover:scale-110"
                   style={{ background: `linear-gradient(135deg, ${svc.color} 0%, rgba(230,0,0,0.8) 100%)` }}
                 >
                   {svc.icon}
@@ -96,21 +96,21 @@ export default function VodafoneCashCenter() {
                   <h3 className="text-xl font-black tracking-wide text-foreground leading-tight">
                     {svc.title}
                   </h3>
-                  <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                     {svc.titleEn}
                   </span>
                 </div>
               </div>
-              <p className="text-sm text-white/70 font-medium leading-relaxed max-w-[85%] mt-1 drop-shadow-md">
+              <p className="text-sm text-muted-foreground font-medium leading-relaxed max-w-[85%] mt-1 drop-shadow-md">
                 {svc.desc}
               </p>
-              <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-white/90 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20 group-hover:border-white/30 group-hover:text-white">
+              <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 border border-border text-[11px] font-bold text-foreground backdrop-blur-sm transition-all duration-300 group-hover:bg-muted group-hover:border-border group-hover:text-foreground">
                 الدخول <ArrowLeft className="w-3 h-3 ml-1 rotate-180" />
               </div>
             </div>
 
             {/* Border Glow */}
-            <div className="absolute inset-0 rounded-[28px] border border-white/10 transition-colors duration-500 group-hover:border-[#E60000]/50 pointer-events-none" />
+            <div className="absolute inset-0 rounded-[28px] border border-border transition-colors duration-500 group-hover:border-[#E60000]/50 pointer-events-none" />
           </div>
         ))}
       </div>

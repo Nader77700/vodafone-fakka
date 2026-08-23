@@ -82,10 +82,10 @@ export default function WalletLinesNationalIdPage() {
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate(-1)} disabled={isDisabled}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95">
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95">
             <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1">
@@ -108,12 +108,12 @@ export default function WalletLinesNationalIdPage() {
           <p className="text-[10px] font-bold text-indigo-300/70 uppercase tracking-wide">حساب My NTRA</p>
           <div className="flex items-center gap-2.5 text-sm">
             <User className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span className="text-white/55 text-[11px]">الاسم</span>
+            <span className="text-muted-foreground text-[11px]">الاسم</span>
             <span className="flex-1 text-foreground font-bold truncate text-left">{userFullName}</span>
           </div>
           <div className="flex items-center gap-2.5 text-sm">
             <Mail className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span className="text-white/55 text-[11px]">البريد</span>
+            <span className="text-muted-foreground text-[11px]">البريد</span>
             <span className="flex-1 text-foreground font-bold truncate text-left" dir="ltr">{userEmail}</span>
           </div>
         </div>
@@ -123,14 +123,14 @@ export default function WalletLinesNationalIdPage() {
             style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05))' }}>
             <IdCard className="w-8 h-8 text-indigo-400" />
           </div>
-          <p className="text-sm text-white/80 font-semibold">أدخل رقمك القومي المكوّن من 14 رقمًا</p>
-          <p className="text-[11px] text-white/50 leading-relaxed px-2">
+          <p className="text-sm text-foreground font-semibold">أدخل رقمك القومي المكوّن من 14 رقمًا</p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed px-2">
             للتأكد من ارتباط الرقم القومي بحسابك على My NTRA قبل إظهار بيانات الخطوط والمحافظ الكاملة.
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="wl-nid" className="text-sm font-semibold text-white/80">الرقم القومي</Label>
+          <Label htmlFor="wl-nid" className="text-sm font-semibold text-foreground">الرقم القومي</Label>
           <Input
             id="wl-nid" type="text" inputMode="numeric" placeholder="00000000000000"
             value={value} onChange={handleChange}
@@ -139,14 +139,14 @@ export default function WalletLinesNationalIdPage() {
             className="text-center text-xl font-black tracking-[0.2em] h-14 rounded-xl font-mono"
             dir="ltr" aria-invalid={!!err} autoComplete="off"
           />
-          <div className="flex gap-0.5 h-1 rounded-full overflow-hidden bg-white/8">
+          <div className="flex gap-0.5 h-1 rounded-full overflow-hidden bg-muted">
             {Array.from({ length: 14 }).map((_, i) => (
               <div key={i} className="flex-1 rounded-full transition-colors duration-200"
                 style={{ background: i < filled ? '#6366f1' : 'transparent' }} />
             ))}
           </div>
           <p className="text-[11px] text-center"
-            style={{ color: filled === 14 ? '#a5b4fc' : 'rgba(255,255,255,0.3)' }}>
+            style={{ color: filled === 14 ? '#a5b4fc' : 'hsl(var(--muted-foreground) / 0.6)' }}>
             {filled} / 14 رقم
           </p>
           {err && (
@@ -179,9 +179,9 @@ export default function WalletLinesNationalIdPage() {
             : 'تحقق وعرض النتائج'}
         </Button>
 
-        <div className="flex items-start gap-2 p-3 rounded-xl border border-white/6 bg-white/3">
+        <div className="flex items-start gap-2 p-3 rounded-xl border border-border bg-muted/50">
           <ShieldCheck className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-white/40 leading-relaxed">
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
             رقمك القومي لا يُحفظ ولا يُرسل لأي طرف ثالث — يُستخدم فقط للاستعلام الآمن.
           </p>
         </div>

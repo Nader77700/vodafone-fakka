@@ -53,9 +53,9 @@ const C = {
   redGlow:     'rgba(230,0,0,0.35)',
   redDeep:     '#c00000',
   bg:          '#080000',
-  bgCard:      'rgba(255,255,255,0.03)',
-  bgCardBorder:'rgba(255,255,255,0.07)',
-  muted:       'rgba(255,255,255,0.45)',
+  bgCard:      'hsl(var(--muted-foreground) / 0.4)',
+  bgCardBorder:'hsl(var(--muted-foreground) / 0.4)',
+  muted:       'hsl(var(--muted-foreground) / 0.6)',
   warning:     '#fbbf24',
   warningBg:   'rgba(251,191,36,0.08)',
   warningBd:   'rgba(251,191,36,0.25)',
@@ -120,10 +120,10 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
       <DialogContent
         className="max-w-[calc(100%-2rem)] md:max-w-sm rounded-2xl p-0 overflow-hidden border-0"
-        style={{ background: '#111', border: '1px solid rgba(230,0,0,0.25)' }}
+        style={{ background: 'hsl(var(--card))', border: '1px solid rgba(230,0,0,0.25)' }}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/5">
+        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.25)' }}>
             <Wallet className="w-5 h-5" style={{ color: C.red }} />
@@ -178,7 +178,7 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
                 أدخل الرقم السري لمحفظتك لعرض رصيدك فوراً
               </p>
               {/* PIN */}
-              <div className="bg-[#1A1A1A] rounded-2xl p-3 border border-white/5">
+              <div className="bg-[#1A1A1A] rounded-2xl p-3 border border-border">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={status === 'loading'} />
               </div>
               <p className="text-[10px] text-amber-400/70 flex items-start gap-1.5">
@@ -191,8 +191,8 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
                 disabled={pin.length < 4 || status === 'loading'}
                 className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all"
                 style={{
-                  background: pin.length >= 4 && status !== 'loading' ? C.red : 'rgba(255,255,255,0.05)',
-                  color: pin.length >= 4 && status !== 'loading' ? '#fff' : 'rgba(255,255,255,0.25)',
+                  background: pin.length >= 4 && status !== 'loading' ? C.red : 'hsl(var(--muted-foreground) / 0.4)',
+                  color: pin.length >= 4 && status !== 'loading' ? '#fff' : 'hsl(var(--muted-foreground) / 0.4)',
                   boxShadow: pin.length >= 4 && status !== 'loading' ? `0 0 16px ${C.redGlow}` : 'none',
                 }}
               >
@@ -246,7 +246,7 @@ function BalanceProductCard({ product, onSelect }: { product: BalanceProduct; on
       </p>
       <p className="text-[10px] mt-1" style={{ color: C.muted }}>{product.validity}</p>
       {product.net_charge_label && (
-        <p className="text-[9px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <p className="text-[9px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
           صافي: {product.net_charge_label === 'غير محدد' ? 'غير محدد' : `${product.net_charge_label} ج`}
         </p>
       )}
@@ -282,8 +282,8 @@ function SessionAccountCard({
     <div
       className="rounded-2xl overflow-hidden transition-all"
       style={{
-        border: isActive ? `1.5px solid ${C.red}` : `1px solid rgba(255,255,255,0.08)`,
-        background: isActive ? 'rgba(230,0,0,0.06)' : 'rgba(255,255,255,0.03)',
+        border: isActive ? `1.5px solid ${C.red}` : `1px solid hsl(var(--muted-foreground) / 0.4)`,
+        background: isActive ? 'rgba(230,0,0,0.06)' : 'hsl(var(--muted-foreground) / 0.4)',
       }}
     >
       {/* معلومات الحساب */}
@@ -291,7 +291,7 @@ function SessionAccountCard({
         <div className="flex items-center gap-3">
           {/* أيقونة الحساب */}
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: isActive ? C.redLight : 'rgba(255,255,255,0.05)', border: `1px solid ${isActive ? C.redBorder : 'rgba(255,255,255,0.1)'}` }}>
+            style={{ background: isActive ? C.redLight : 'hsl(var(--muted-foreground) / 0.4)', border: `1px solid ${isActive ? C.redBorder : 'hsl(var(--muted-foreground) / 0.4)'}` }}>
             <User className="w-4 h-4" style={{ color: isActive ? C.red : C.muted }} />
           </div>
 
@@ -330,7 +330,7 @@ function SessionAccountCard({
               {100 - progress}% متبقي
             </span>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted-foreground) / 0.4)' }}>
             <div
               className="h-full rounded-full transition-all"
               style={{
@@ -350,7 +350,7 @@ function SessionAccountCard({
       {!isActive && (
         <button
           className="w-full py-2.5 flex items-center justify-center gap-2 transition-all text-xs font-bold border-t"
-          style={{ borderColor: 'rgba(255,255,255,0.06)', color: isSwitching ? C.muted : C.red }}
+          style={{ borderColor: 'hsl(var(--muted-foreground) / 0.4)', color: isSwitching ? C.muted : C.red }}
           disabled={!!switching}
           onClick={() => onSwitch(session.phone)}
         >
@@ -410,7 +410,7 @@ function AccountsPanel({
       <SheetContent
         side="right"
         className="w-[85vw] max-w-[340px] p-0 border-0 flex flex-col"
-        style={{ background: 'var(--accounts-panel-bg, #0a0000)', borderLeft: `1px solid rgba(230,0,0,0.2)` }}
+        style={{ background: 'hsl(var(--card))', borderLeft: `1px solid rgba(230,0,0,0.2)` }}
       >
         {/* هيدر اللوحة */}
         <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
@@ -423,7 +423,7 @@ function AccountsPanel({
             <p className="text-[10px]" style={{ color: C.muted }}>{sessions.length} حساب محفوظ · جلسات 24 ساعة</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.05)' }}>
+            style={{ background: 'hsl(var(--muted-foreground) / 0.4)' }}>
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -486,7 +486,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
       <div className="mx-4 mt-3 flex items-center gap-2.5 p-3 rounded-xl"
         style={{ background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)' }}>
         <Phone className="w-4 h-4 shrink-0" style={{ color: '#60a5fa' }} />
-        <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
+        <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
           هذا القسم يشحن من <span className="font-black text-foreground">رصيد الهاتف مباشرة</span> وليس من Vodafone Cash.
           سيُخصَم مبلغ الكارت من رصيد الخط.
         </p>
@@ -495,7 +495,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
   }
   return (
     <div className="mx-4 mt-4 rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(230,0,0,0.2)` }}>
+      style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: `1px solid rgba(230,0,0,0.2)` }}>
       <div className="p-4 space-y-3">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -516,7 +516,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
             { icon: <Users className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />, text: 'حسابات متعددة' },
           ].map((f, i) => (
             <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
               {f.icon}
               <span className="text-[9px] font-bold text-center" style={{ color: C.muted }}>{f.text}</span>
             </div>
@@ -535,7 +535,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-1.5">
                   <span className="text-[8px] font-black" style={{ color: C.warning }}>•</span>
-                  <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.6)' }}>{item}</span>
+                  <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{item}</span>
                 </li>
               ))}
             </ul>
@@ -552,7 +552,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
 function VodafoneCashCard({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="mx-4 mb-4 rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
       <div className="p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
@@ -593,7 +593,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
 
   return (
     <div className="mx-4 mt-4 rounded-2xl overflow-hidden"
-      style={{ border: `1.5px solid rgba(230,0,0,0.3)`, background: 'rgba(255,255,255,0.03)' }}>
+      style={{ border: `1.5px solid rgba(230,0,0,0.3)`, background: 'hsl(var(--muted-foreground) / 0.4)' }}>
 
       {/* رأس: الحساب النشط */}
       <div className="p-4 border-b" style={{ borderColor: 'rgba(230,0,0,0.10)' }}>
@@ -616,7 +616,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
           {/* زر الحسابات */}
           <button
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold shrink-0 transition-all"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
+            style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--muted-foreground))' }}
             onClick={onManageAccounts}
           >
             <Users className="w-3 h-3" />
@@ -636,13 +636,13 @@ function SessionCard({ session, allCount, onManageAccounts }: {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" style={{ color: isWarn ? C.warning : C.muted }} />
-              <span className="text-[11px] font-bold" style={{ color: isWarn ? C.warning : 'rgba(255,255,255,0.8)' }}>
+              <span className="text-[11px] font-bold" style={{ color: isWarn ? C.warning : 'hsl(var(--foreground))' }}>
                 {isWarn ? `⚠️ تنتهي خلال ${remaining}` : `باقي على الجلسة ${remaining}`}
               </span>
             </div>
             <span className="text-[10px]" style={{ color: C.muted }}>{100 - progress}%</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted-foreground) / 0.4)' }}>
             <div className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${progress}%`,
@@ -782,7 +782,7 @@ function BalanceLoginDialog({
               <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.muted }} />
               <input
                 className="w-full h-11 rounded-xl pr-9 pl-3 text-sm font-medium outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: '#fff' }}
                 placeholder="01XXXXXXXXX" type="tel" inputMode="numeric" maxLength={11}
                 value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                 disabled={loading} dir="ltr"
@@ -796,7 +796,7 @@ function BalanceLoginDialog({
               <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.muted }} />
               <input
                 className="w-full h-11 rounded-xl pr-9 pl-10 text-sm font-medium outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: '#fff' }}
                 placeholder="••••••••" type={showPass ? 'text' : 'password'}
                 value={password} onChange={e => setPassword(e.target.value)}
                 disabled={loading}
@@ -810,7 +810,7 @@ function BalanceLoginDialog({
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <div
               className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all"
-              style={{ background: rememberMe ? C.red : 'rgba(255,255,255,0.06)', border: `1px solid ${rememberMe ? C.red : 'rgba(255,255,255,0.15)'}` }}
+              style={{ background: rememberMe ? C.red : 'hsl(var(--muted-foreground) / 0.4)', border: `1px solid ${rememberMe ? C.red : 'hsl(var(--muted-foreground) / 0.4)'}` }}
               onClick={() => setRememberMe(v => !v)}
             >
               {rememberMe && <CheckCircle2 className="w-3 h-3 text-foreground" />}
@@ -839,7 +839,7 @@ function BalanceLoginDialog({
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جارٍ تسجيل الدخول…</> : <><LogIn className="w-4 h-4" />دخول</>}
           </button>
 
-          <p className="text-[10px] text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          <p className="text-[10px] text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
             <Shield className="w-3 h-3 inline ml-1" />
             بيانات الدخول مشفّرة · الجلسة تستمر 24 ساعة تلقائياً
           </p>
@@ -954,7 +954,7 @@ function ErrorDetailCard({
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: C.warning }} />
             <div>
               <p className="text-[10px] font-black" style={{ color: C.warning }}>سبب الفشل</p>
-              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>{info.reason}</p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{info.reason}</p>
             </div>
           </div>
 
@@ -962,14 +962,14 @@ function ErrorDetailCard({
             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: C.green }} />
             <div>
               <p className="text-[10px] font-black" style={{ color: C.green }}>الحل المقترح</p>
-              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>{info.solution}</p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{info.solution}</p>
             </div>
           </div>
         </div>
 
         {/* وقت العملية */}
         {opTime && (
-          <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'hsl(var(--muted-foreground) / 0.4)' }}>
             <Clock className="w-3 h-3" style={{ color: C.muted }} />
             <span className="text-[10px]" style={{ color: C.muted }}>وقت المحاولة: {opTime}</span>
           </div>
@@ -980,8 +980,8 @@ function ErrorDetailCard({
           <button
             className="w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
             style={{
-              background: cooldownLeft > 0 || submitting ? 'rgba(255,255,255,0.05)' : C.redLight,
-              border: `1px solid ${cooldownLeft > 0 || submitting ? 'rgba(255,255,255,0.1)' : C.redBorder}`,
+              background: cooldownLeft > 0 || submitting ? 'hsl(var(--muted-foreground) / 0.4)' : C.redLight,
+              border: `1px solid ${cooldownLeft > 0 || submitting ? 'hsl(var(--muted-foreground) / 0.4)' : C.redBorder}`,
               color: cooldownLeft > 0 || submitting ? C.muted : C.red,
             }}
             disabled={cooldownLeft > 0 || submitting}
@@ -1359,7 +1359,7 @@ function BalanceExecuteDialog({
                 <div className="flex items-start gap-2.5 p-3 rounded-xl"
                   style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)' }}>
                   <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#60a5fa' }} />
-                  <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     سيتم خصم قيمة الكارت مباشرةً من <span className="font-black text-foreground">رصيد الخط</span> وليس من محفظة Vodafone Cash.
                   </p>
                 </div>
@@ -1368,7 +1368,7 @@ function BalanceExecuteDialog({
                 <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${C.bgCardBorder}`, background: C.bgCard }}>
                   {details.map((row, i) => (
                     <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b last:border-b-0"
-                      style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                      style={{ borderColor: 'hsl(var(--muted-foreground) / 0.4)' }}>
                       <span className="text-xs" style={{ color: C.muted }}>{row.label}</span>
                       <span
                         className={`text-xs font-bold ${row.label === 'رقم الشحن' ? 'font-mono' : ''}`}
@@ -1390,14 +1390,14 @@ function BalanceExecuteDialog({
                     <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: C.warning }} />
                     <p className="text-xs font-black" style={{ color: C.warning }}>هل أنت متأكد من تنفيذ عملية الشحن؟</p>
                   </div>
-                  <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     سيتم خصم <span className="font-black text-foreground">{product.price} جنيه</span> من رصيد الخط الحالي.
                   </p>
                   <ul className="space-y-1">
                     {['وجود رصيد كافٍ على الخط.', 'أن الخط الحالي هو نفس الخط المسجل.', 'أن الخدمة تعمل بشكل طبيعي.'].map((item, i) => (
                       <li key={i} className="flex items-center gap-1.5">
                         <span className="text-[8px] font-black" style={{ color: C.warning }}>✔</span>
-                        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{item}</span>
+                        <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -1407,7 +1407,7 @@ function BalanceExecuteDialog({
                 <div className="flex gap-2.5">
                   <button
                     className="flex-1 h-11 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
+                    style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--muted-foreground))' }}
                     onClick={handleClose}
                   >
                     إلغاء
@@ -1436,7 +1436,7 @@ function BalanceExecuteDialog({
                   }}
                 >
                   <Wallet className="w-4 h-4 shrink-0" style={{ color: C.red }} />
-                  <span className="flex-1 text-right text-[11px] font-bold" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  <span className="flex-1 text-right text-[11px] font-bold" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     استعلام رصيد محفظتك Vodafone Cash
                   </span>
                   <ChevronLeft className="w-3 h-3 shrink-0" style={{ color: 'rgba(230,0,0,0.4)' }} />
@@ -1458,7 +1458,7 @@ function BalanceExecuteDialog({
                 <div className="text-center space-y-1.5">
                   <p className="text-sm font-black text-foreground">جارٍ الشحن من رصيد الهاتف…</p>
                   <p className="text-xs" style={{ color: C.muted }}>لا تغلق هذه النافذة</p>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
                     يتم خصم {product.price} جنيه من رصيد خط {receiverPhone}
                   </p>
                 </div>
@@ -1481,7 +1481,7 @@ function BalanceExecuteDialog({
                   <div className="flex items-start gap-2 p-3 rounded-xl"
                     style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
                     <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.warning }} />
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       لا يوجد رصيد كافٍ على خطك. يرجى شحن الخط أولاً ثم إعادة المحاولة.
                       سيُتاح زر إعادة المحاولة خلال <span className="font-black text-foreground">{cooldownLeft}</span> ثانية.
                     </p>
@@ -1491,7 +1491,7 @@ function BalanceExecuteDialog({
             )}
 
             {step !== 'executing' && (
-              <p className="text-[10px] text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.25)' }}>
+              <p className="text-[10px] text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
                 <Shield className="w-3 h-3 inline ml-1" />
                 الشحن يتم من رصيد رقم {receiverPhone} مباشرة — لا علاقة لـ Vodafone Cash
               </p>
@@ -1649,8 +1649,8 @@ export default function BalanceChargePage() {
     return (
       <div className="min-h-screen flex flex-col" style={{ background: C.bg }} dir="rtl">
         <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b"
-          style={{ background: 'rgba(8,0,0,0.95)', backdropFilter: 'blur(12px)', borderColor: 'rgba(230,0,0,0.1)' }}>
-          <button className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/5"
+          style={{ background: 'hsl(var(--card))', backdropFilter: 'blur(12px)', borderColor: 'rgba(230,0,0,0.1)' }}>
+          <button className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-muted/50"
             onClick={() => navigate('/')}>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -1669,7 +1669,7 @@ export default function BalanceChargePage() {
           </div>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
+            style={{ background: 'hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--muted-foreground))' }}
             onClick={() => window.location.reload()}
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1685,9 +1685,9 @@ export default function BalanceChargePage() {
 
       {/* ── هيدر الصفحة ── */}
       <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b"
-        style={{ background: 'rgba(8,0,0,0.95)', backdropFilter: 'blur(12px)', borderColor: 'rgba(230,0,0,0.1)' }}>
+        style={{ background: 'hsl(var(--card))', backdropFilter: 'blur(12px)', borderColor: 'rgba(230,0,0,0.1)' }}>
         <button
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 hover:bg-white/5 transition-colors"
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 hover:bg-muted/50 transition-colors"
           onClick={() => navigate('/')}
         >
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -1709,7 +1709,7 @@ export default function BalanceChargePage() {
             {/* زر إدارة الحسابات */}
             <button
               className="relative flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }}
+              style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--foreground))' }}
               onClick={() => setAccountsOpen(true)}
             >
               <Users className="w-3.5 h-3.5" />
@@ -1787,9 +1787,9 @@ export default function BalanceChargePage() {
               key={tab.value}
               className="flex-1 h-9 rounded-xl text-xs font-bold transition-all"
               style={{
-                background: activeCategory === tab.value ? C.redLight : 'rgba(255,255,255,0.05)',
-                border: activeCategory === tab.value ? `1px solid ${C.redBorder}` : '1px solid rgba(255,255,255,0.08)',
-                color: activeCategory === tab.value ? C.red : 'rgba(255,255,255,0.5)',
+                background: activeCategory === tab.value ? C.redLight : 'hsl(var(--muted-foreground) / 0.4)',
+                border: activeCategory === tab.value ? `1px solid ${C.redBorder}` : '1px solid hsl(var(--muted-foreground) / 0.4)',
+                color: activeCategory === tab.value ? C.red : 'hsl(var(--muted-foreground))',
               }}
               onClick={() => setActiveCategory(tab.value)}
             >

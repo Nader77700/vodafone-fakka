@@ -219,7 +219,7 @@ export default function UserOperationsPage() {
     <div className="min-h-screen pb-8 bg-background" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b"
-        style={{ background: 'var(--ops-header-bg, rgba(8,0,0,0.95))', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
+        style={{ background: 'hsl(var(--background) / 0.95)', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
         <button onClick={() => navigate(-1)}
           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>

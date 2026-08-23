@@ -91,9 +91,9 @@ export default function WalletLinesRegisterPage() {
     maxLength?: number; rightEl?: React.ReactNode; dir?: string; className?: string;
   }) => (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-sm font-semibold text-white/80">{label}</Label>
+      <Label htmlFor={id} className="text-sm font-semibold text-foreground">{label}</Label>
       <div className="relative">
-        <Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+        <Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
         <Input
           id={id} type={type} inputMode={inputMode} placeholder={placeholder}
           value={value} maxLength={maxLength}
@@ -125,10 +125,10 @@ export default function WalletLinesRegisterPage() {
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate('/wallet-lines/login')}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95"
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95"
             disabled={isDisabled}>
             <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
@@ -146,10 +146,10 @@ export default function WalletLinesRegisterPage() {
           <div className="flex items-start gap-2.5">
             <Info className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-[11px] text-white/65 leading-relaxed">
-                الحساب الذي يتم إنشاؤه هنا هو حساب <span className="font-bold text-white/85">My NTRA الرسمي</span>، وليس حسابًا خاصًا بالتطبيق.
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                الحساب الذي يتم إنشاؤه هنا هو حساب <span className="font-bold text-foreground">My NTRA الرسمي</span>، وليس حسابًا خاصًا بالتطبيق.
               </p>
-              <p className="text-[10px] text-white/40 leading-relaxed">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
                 أدخل بياناتك لإنشاء حسابك على My NTRA والوصول إلى خدمة الاستعلام عن الخطوط والمحافظ.
               </p>
             </div>
@@ -175,15 +175,15 @@ export default function WalletLinesRegisterPage() {
 
         {/* كلمة المرور */}
         <div className="space-y-1.5">
-          <Label htmlFor="wl-reg-pass" className="text-sm font-semibold text-white/80">كلمة المرور</Label>
+          <Label htmlFor="wl-reg-pass" className="text-sm font-semibold text-foreground">كلمة المرور</Label>
           <div className="relative">
-            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
             <Input id="wl-reg-pass" type={showPass ? 'text' : 'password'} placeholder="8 أحرف على الأقل"
               value={form.password} onChange={e => setField('password', e.target.value)}
               onBlur={() => setErrs(e => ({ ...e, password: validators.password(form.password) }))}
               disabled={isDisabled} className="pr-9 pl-10" aria-invalid={!!errs.password} />
             <button type="button" tabIndex={-1} onClick={() => setShowPass(p => !p)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground">
               {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
@@ -192,15 +192,15 @@ export default function WalletLinesRegisterPage() {
 
         {/* تأكيد كلمة المرور */}
         <div className="space-y-1.5">
-          <Label htmlFor="wl-confirm" className="text-sm font-semibold text-white/80">تأكيد كلمة المرور</Label>
+          <Label htmlFor="wl-confirm" className="text-sm font-semibold text-foreground">تأكيد كلمة المرور</Label>
           <div className="relative">
-            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
             <Input id="wl-confirm" type={showConfirm ? 'text' : 'password'} placeholder="أعد كلمة المرور"
               value={form.confirm} onChange={e => setField('confirm', e.target.value)}
               onBlur={() => setErrs(e => ({ ...e, confirm: validators.confirm(form.confirm, form.password) }))}
               disabled={isDisabled} className="pr-9 pl-10" aria-invalid={!!errs.confirm} />
             <button type="button" tabIndex={-1} onClick={() => setShowConfirm(p => !p)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground">
               {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
@@ -214,7 +214,7 @@ export default function WalletLinesRegisterPage() {
             : 'إنشاء الحساب'}
         </Button>
 
-        <p className="text-center text-xs text-white/40">
+        <p className="text-center text-xs text-muted-foreground">
           لديك حساب؟{' '}
           <button type="button" onClick={() => navigate('/wallet-lines/login')} disabled={isDisabled}
             className="text-indigo-400 font-semibold hover:underline">تسجيل الدخول</button>
