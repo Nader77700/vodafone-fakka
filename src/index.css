@@ -393,6 +393,11 @@ html, body, #root {
     100% { transform: translateX(200%); }
   }
 
+  @keyframes goldShimmer {
+    0%   { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
   .page-enter {
     animation: page-fade-in 0.35s ease-out;
   }

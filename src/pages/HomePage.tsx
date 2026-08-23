@@ -2446,11 +2446,14 @@ function HomePage() {
     if (subscription?.status === 'cancelled')         return { label: '🚫 Cancelled', color: '#dc2626',               bg: L ? 'rgba(220,38,38,0.10)' : 'rgba(239,68,68,0.10)' };
     if (!subActive)                                   return { label: '❌ Expired',   color: '#dc2626',               bg: L ? 'rgba(220,38,38,0.10)' : 'rgba(239,68,68,0.12)' };
     const ct = opsInfo?.codeType;
-    const planName = opsInfo?.planLabel;
-    if (ct === 'trial') return { label: `⚡ ${planName ?? 'Trial'}`,   color: L ? '#b45309' : '#F7C948', bg: L ? 'rgba(180,83,9,0.10)' : 'rgba(247,201,72,0.12)' };
-    if (ct === 'gift')  return { label: `🎁 ${planName ?? 'Gift'}`,    color: L ? '#7c3aed' : '#a78bfa', bg: L ? 'rgba(124,58,237,0.10)' : 'rgba(167,139,250,0.12)' };
-    if (ct === 'paid')  return { label: `📅 ${planName ?? 'Monthly'}`, color: L ? '#1d4ed8' : '#60a5fa', bg: L ? 'rgba(29,78,216,0.10)' : 'rgba(96,165,250,0.12)' };
-    return { label: `💎 ${planName ?? 'PREMIUM VIP'}`, color: L ? '#92400e' : '#D4AF37', bg: L ? 'rgba(146,64,14,0.10)' : 'rgba(212,175,55,0.12)' };
+    // الاسم الحقيقي من DB — نعرضه فقط إذا لم يكن عربياً (fallback إلى الإنجليزي)
+    const rawLabel = opsInfo?.planLabel ?? '';
+    const isArabic = /[\u0600-\u06FF]/.test(rawLabel);
+    const safeLabel = isArabic ? '' : rawLabel;
+    if (ct === 'trial') return { label: `⚡ ${safeLabel || 'Trial'}`,        color: L ? '#b45309' : '#F7C948', bg: L ? 'rgba(180,83,9,0.10)' : 'rgba(247,201,72,0.12)' };
+    if (ct === 'gift')  return { label: `🎁 ${safeLabel || 'Gift'}`,         color: L ? '#7c3aed' : '#a78bfa', bg: L ? 'rgba(124,58,237,0.10)' : 'rgba(167,139,250,0.12)' };
+    if (ct === 'paid')  return { label: `📅 ${safeLabel || 'Monthly'}`,      color: L ? '#1d4ed8' : '#60a5fa', bg: L ? 'rgba(29,78,216,0.10)' : 'rgba(96,165,250,0.12)' };
+    return { label: `💎 ${safeLabel || 'PREMIUM VIP'}`, color: L ? '#92400e' : '#D4AF37', bg: L ? 'rgba(146,64,14,0.10)' : 'rgba(212,175,55,0.12)' };
   })();
 
   const displayName = profile?.full_name ?? profile?.username ?? 'المستخدم';
@@ -2726,14 +2729,17 @@ function HomePage() {
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: subBadge.color }} />
                   {subBadge.label}
                 </span>
-                {/* Username — Light: dark crimson-gold gradient (readable on white), Dark: white shimmer */}
+                {/* Username — Light: shimmer gold-white metallic (luxury feel), Dark: white-gold-red shimmer */}
                 <h2
-                  className="text-2xl font-black leading-tight"
+                  className="text-2xl font-black leading-tight tracking-tight"
                   style={L ? {
-                    background: 'linear-gradient(100deg, #1a0a00 0%, #7c2d12 35%, #dc2626 65%, #92400e 100%)',
+                    // ذهبي-أبيض-ذهبي — تأثير معدني لامع فاخر على الخلفية الفاتحة
+                    background: 'linear-gradient(105deg, #78350f 0%, #b45309 18%, #fef3c7 35%, #d97706 50%, #fef9c3 65%, #b45309 80%, #78350f 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.15))',
+                    backgroundSize: '200% auto',
+                    filter: 'drop-shadow(0 1px 3px rgba(180,83,9,0.30)) drop-shadow(0 0 8px rgba(212,175,55,0.20))',
+                    animation: 'goldShimmer 3s linear infinite',
                   } : {
                     background: 'linear-gradient(100deg, #ffffff 0%, #fde68a 30%, #E60000 62%, #ffffff 100%)',
                     WebkitBackgroundClip: 'text',

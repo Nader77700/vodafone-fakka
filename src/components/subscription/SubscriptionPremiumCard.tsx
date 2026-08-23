@@ -88,12 +88,14 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
   const planName = (() => {
     if (isAdmin) return '👑 مسؤول النظام';
-    const label = opsInfo?.planLabel;
-    if (label) return label;
+    const label = opsInfo?.planLabel ?? '';
+    // إذا كان الاسم عربياً → استبدله بالإنجليزي
+    const isArabic = /[\u0600-\u06FF]/.test(label);
+    if (label && !isArabic) return label;
     const ct = opsInfo?.codeType;
-    if (ct === 'trial') return 'تجريبي';
-    if (ct === 'gift')  return 'هدية';
-    return 'Premium';
+    if (ct === 'trial') return 'Trial';
+    if (ct === 'gift')  return 'Gift';
+    return 'PREMIUM VIP';
   })();
 
   const opsUsed  = isAdmin ? 0 : (opsInfo?.opsUsed ?? 0);
@@ -191,14 +193,16 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
-            {/* Plan name — Light: dark crimson-gold readable, Dark: bright shimmer */}
+            {/* Plan name — Light: gold shimmer metallic (luxury), Dark: bright white-gold-red shimmer */}
             {subActive && (
-              <p className="text-xl font-black leading-tight"
+              <p className="text-xl font-black leading-tight tracking-tight"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #1a0a00 0%, #7c2d12 35%, #dc2626 65%, #92400e 100%)',
+                  background: 'linear-gradient(105deg, #78350f 0%, #b45309 18%, #fef3c7 35%, #d97706 50%, #fef9c3 65%, #b45309 80%, #78350f 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.15))',
+                  backgroundSize: '200% auto',
+                  filter: 'drop-shadow(0 1px 3px rgba(180,83,9,0.28)) drop-shadow(0 0 8px rgba(212,175,55,0.18))',
+                  animation: 'goldShimmer 3s linear infinite',
                 } : {
                   background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 35%, #E60000 65%, #ffffff 100%)',
                   WebkitBackgroundClip: 'text',
