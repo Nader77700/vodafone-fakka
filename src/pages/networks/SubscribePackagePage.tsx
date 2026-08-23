@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { buildRedWhatsAppUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
 import { formatEgyptDate } from '@/lib/egyptTime';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 const VF_RED  = '#E60000';
 const VF_DARK = '#B30000';
@@ -74,6 +75,7 @@ export default function SubscribePackagePage() {
   );
   if (!pkg) return null;
 
+  const L = useIsLight();
   const { currentPrice, originalPrice, pct } = calcPackageDiscount(pkg);
   const userName = profile?.full_name || profile?.username;
 
@@ -82,7 +84,7 @@ export default function SubscribePackagePage() {
 
       {/* ══ Header ══ */}
       <div className="relative overflow-hidden rounded-b-3xl mb-4"
-        style={{ background: `linear-gradient(135deg,${cardColor}38,rgba(0,0,0,0.88))`, borderBottom: `1.5px solid ${cardColor}59` }}>
+        style={{ background: L ? `linear-gradient(135deg,${cardColor}18,#f9fafb)` : `linear-gradient(135deg,${cardColor}38,rgba(0,0,0,0.88))`, borderBottom: `1.5px solid ${cardColor}59` }}>
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: `radial-gradient(ellipse 70% 80% at 15% 50%,${cardColor}26,transparent)` }} />
         <div className="relative px-4 pt-5 pb-6">
@@ -108,7 +110,7 @@ export default function SubscribePackagePage() {
 
         {/* ══ ملخص الباقة ══ */}
         <div className="rounded-2xl p-4"
-          style={{ background: `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.65))`, border: `1.5px solid ${cardColor}4d` }}>
+          style={{ background: L ? `linear-gradient(135deg,${cardColor}10,#f9fafb)` : `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.65))`, border: `1.5px solid ${cardColor}4d` }}>
           <p className="text-[10px] font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
             <Package className="w-3 h-3" />الباقة المختارة
           </p>

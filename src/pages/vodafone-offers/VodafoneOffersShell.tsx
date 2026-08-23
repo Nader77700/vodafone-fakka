@@ -5,7 +5,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 interface VodafoneOffersShellProps {
   title: string;
@@ -15,8 +15,7 @@ interface VodafoneOffersShellProps {
 
 export default function VodafoneOffersShell({ title, subtitle, children }: VodafoneOffersShellProps) {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <div

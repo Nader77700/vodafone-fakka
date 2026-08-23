@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Phone, Wallet } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 export default function VodafoneCashCenter() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   const services = [
     {

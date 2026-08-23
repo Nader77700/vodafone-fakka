@@ -9,14 +9,13 @@ import {
   Lock, Wrench, Loader2,
 } from 'lucide-react';
 import { useServicesControl } from '@/hooks/useServicesControl';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 import { useState } from 'react';
 
 export default function WalletLinesPage() {
   const navigate = useNavigate();
   const { isAccessible, loading: cfgLoading } = useServicesControl();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   // ── خلفية + header مشتركة ──
   const pageBg = L ? '#f5f7fa' : 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)';

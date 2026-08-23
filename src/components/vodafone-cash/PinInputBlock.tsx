@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Lock, ShieldCheck } from 'lucide-react';
 import { useWalletPins } from '@/hooks/useWalletPins';
 import { PinManagerDialog } from './PinManagerDialog';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 interface PinInputBlockProps {
   pin: string;
@@ -15,8 +15,7 @@ interface PinInputBlockProps {
 
 export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
   const { savedPins, defaultPin } = useWalletPins();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   const [useSaved, setUseSaved] = useState(false);
   const [shouldSaveNew, setShouldSaveNew] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);

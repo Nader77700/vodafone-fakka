@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, useIsLight } from '@/contexts/ThemeContext';
 import {
   getUserSubscription, getSubscriptionHistory, getSubscriptionOpsInfo, derivePlanLabel,
   getActivityTimeline,
@@ -97,8 +97,8 @@ function InfoRow({ label, value, color, mono = false, isDark = true }: {
 export default function SubscriptionDetailPage() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
+  const isDark = !L;
 
   const [subscription, setSub]     = useState<Subscription | null>(null);
   const [opsInfo, setOpsInfo]       = useState<SubscriptionOpsInfo | null>(null);

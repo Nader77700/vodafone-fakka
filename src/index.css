@@ -1847,3 +1847,104 @@ html.light #root {
   background: #f5f7fa !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ⑲ WalletLines pages — sticky headers rgba(8,13,20) → white
+      + page backgrounds → bg-background
+      + RechargeHistoryPage / LegacyFlexSystems hardcoded darks
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── WalletLines sticky headers (5 pages share same pattern) ── */
+html.light [style*="background: rgba(8,13,20"],
+html.light [style*="background: rgba(8, 13, 20"],
+html.light [style*="background:rgba(8,13,20"] {
+  background: rgba(255,255,255,0.96) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+
+/* ── WalletLines page background gradient ── */
+html.light [style*="background: linear-gradient(180deg, #080d14"],
+html.light [style*="background: linear-gradient(180deg,#080d14"],
+html.light [style*="background: linear-gradient(180deg, #0a0a12"],
+html.light [style*="background: linear-gradient(180deg,#0a0a12"] {
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef1f5 100%) !important;
+}
+
+/* ── WalletLinesResults backdrop ── */
+html.light [style*="background: rgba(0,0,0,0.78)"] {
+  background: rgba(0,0,0,0.45) !important;
+}
+html.light [style*="background: #0f1520"] {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── WalletLines back-button border/bg inside light header ── */
+html.light [style*="background: rgba(8,13,20"] .border-white\/10,
+html.light [style*="background: rgba(255,255,255,0.96)"] .border-white\/10 {
+  border-color: rgba(0,0,0,0.12) !important;
+}
+html.light [style*="background: rgba(8,13,20"] .bg-white\/5,
+html.light [style*="background: rgba(255,255,255,0.96)"] .bg-white\/5 {
+  background: rgba(0,0,0,0.04) !important;
+}
+html.light [style*="background: rgba(8,13,20"] .text-white,
+html.light [style*="background: rgba(255,255,255,0.96)"] .text-white {
+  color: #1a1a2e !important;
+}
+
+/* ── BalanceChargePage: WalletQuickBalanceModal dark bg ── */
+html.light [style*="background: '#111'"],
+html.light [style*="background: #111"] {
+  background: #ffffff !important;
+  border-color: rgba(230,0,0,0.15) !important;
+}
+html.light [style*="background: '#111'"] .text-white,
+html.light [style*="background: #111"] .text-white { color: #1a1a2e !important; }
+html.light [style*="background: '#111'"] .text-white\/40,
+html.light [style*="background: #111"] .text-white\/40 { color: rgba(26,26,46,0.40) !important; }
+html.light [style*="background: '#111'"] .border-white\/5,
+html.light [style*="background: #111"] .border-white\/5 { border-color: rgba(0,0,0,0.07) !important; }
+
+/* ── BalanceChargePage: SheetContent dark bg (#0a0000) ── */
+/* (covered by global ⑰ section already, re-enforce) */
+html.light [style*="background: '#0a0000'"],
+html.light [style*="background: #0a0000"] {
+  background: #ffffff !important;
+}
+
+/* ── LegacyFlexSystemsPage: bg-[#0D0D0D] cards ── */
+html.light .bg-\[\#0D0D0D\] {
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+html.light .bg-\[\#0F0F0F\]\/95,
+html.light .bg-\[\#0F0F0F\] {
+  background-color: rgba(255,255,255,0.97) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+/* fix text inside legacy cards */
+html.light .bg-\[\#0D0D0D\] .text-white { color: #1a1a2e !important; }
+html.light .bg-\[\#0D0D0D\] .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
+
+/* ── RechargeHistoryPage: bg-[#0A0A0A] ── */
+html.light .bg-\[\#0A0A0A\] {
+  background-color: hsl(var(--background)) !important;
+}
+html.light .bg-\[\#0A0A0A\] .text-white { color: #1a1a2e !important; }
+
+/* ── SubscribePackagePage gradients ── */
+html.light [style*="linear-gradient(135deg"][style*="rgba(0,0,0,0.88)"],
+html.light [style*="linear-gradient(135deg"][style*="rgba(0,0,0,0.65)"] {
+  background: linear-gradient(135deg, var(--tw-gradient-from, rgba(230,0,0,0.10)), #f9fafb) !important;
+}
+html.light [style*="linear-gradient(145deg"][style*="rgba(0,0,0,0.85)"],
+html.light [style*="linear-gradient(145deg"][style*="rgba(0,0,0,0.75)"] {
+  background: linear-gradient(145deg, rgba(230,0,0,0.08), rgba(249,250,251,0.95)) !important;
+}
+
+/* ── ESimDetailPage overlay ── */
+html.light [style*="background: 'linear-gradient(to top, rgba(0,0,0,0.9)"],
+html.light [style*="background: linear-gradient(to top, rgba(0,0,0,0.9)"] {
+  background: linear-gradient(to top, rgba(249,250,251,0.95) 70%, transparent) !important;
+}
+

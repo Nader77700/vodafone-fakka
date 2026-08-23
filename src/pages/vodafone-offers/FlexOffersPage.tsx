@@ -3,13 +3,12 @@ import VodafoneOffersShell from './VodafoneOffersShell';
 import OfferCard from './OfferCard';
 import VodafoneLoginGate from './VodafoneLoginGate';
 import { useVodafoneOffers, useSubscribeOffer } from './useVodafoneOffers';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 export default function FlexOffersPage() {
   const { offers, loading, error, reload } = useVodafoneOffers('flex');
   const { subscribe, loadingId, error: actionError, success, clearError, clearSuccess } = useSubscribeOffer();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <VodafoneOffersShell title="عروض فليكس" subtitle="باقات فليكس المتاحة من فودافون">

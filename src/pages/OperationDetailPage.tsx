@@ -20,7 +20,7 @@ import InvoiceReceipt from '@/components/invoice/InvoiceReceipt';
 import PrintButton from '@/components/invoice/PrintButton';
 import type { InvoiceData } from '@/lib/printer/types';
 import { toast } from 'sonner';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, useIsLight } from '@/contexts/ThemeContext';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function statusInfo(s: string) {
@@ -59,8 +59,8 @@ export default function OperationDetailPage() {
   const navigate           = useNavigate();
   const location           = useLocation();
   const { id }             = useParams<{ id: string }>();
-  const { isDark }         = useTheme();
-  const L                  = !isDark;
+  const L                  = useIsLight();
+  const isDark             = !L;
   const [op, setOp]        = useState<Operation | null>((location.state as { op?: Operation } | null)?.op ?? null);
   const [loading, setLoading] = useState(!op);
   const [showDebug, setShowDebug] = useState(false);

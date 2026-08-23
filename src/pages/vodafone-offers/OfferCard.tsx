@@ -1,7 +1,7 @@
 import { Loader2, Tag, Zap, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { VodafoneOffer } from './types';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 interface OfferCardProps {
   offer: VodafoneOffer;
@@ -11,8 +11,7 @@ interface OfferCardProps {
 
 export default function OfferCard({ offer, onSubscribe, loadingId }: OfferCardProps) {
   const isLoading = loadingId === offer.id;
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <div

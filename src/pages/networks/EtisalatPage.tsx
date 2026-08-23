@@ -4,7 +4,7 @@ import { ChevronRight, Radio, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppFooter from '@/components/common/AppFooter';
 import { COMING_SOON_SERVICES } from '@/pages/networks/_services';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 const NETWORK = {
   name: 'Etisalat',
@@ -16,8 +16,7 @@ const NETWORK = {
 
 export default function EtisalatPage() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   return (
     <div className="min-h-screen pb-6 page-enter" dir="rtl"
       style={{ background: L ? '#f5f7fa' : undefined }}>

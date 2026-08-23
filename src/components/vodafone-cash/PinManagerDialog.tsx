@@ -4,12 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Lock, CheckCircle2, Trash2, ShieldAlert, Eye } from 'lucide-react';
 import { useWalletPins } from '@/hooks/useWalletPins';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 export function PinManagerDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { savedPins, defaultPin, removePin, setAsDefault } = useWalletPins();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   const [authenticatedWith, setAuthenticatedWith] = useState<string | null>(null);
   const [authInput, setAuthInput] = useState('');
   const [authError, setAuthError] = useState(false);

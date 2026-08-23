@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { walletLinesService } from '@/services/walletLinesService';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 function validatePhone(v: string): string | null {
   if (!v) return 'رقم الهاتف مطلوب';
@@ -26,8 +26,7 @@ function validatePassword(v: string): string | null {
 
 export default function WalletLinesLoginPage() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');

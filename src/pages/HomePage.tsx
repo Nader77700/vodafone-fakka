@@ -7,7 +7,7 @@ import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 import { useAssets } from '@/hooks/use-assets';
-import { useTheme, useIsLight } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 import { supabase } from '@/db/supabase';
 import {
   getUserSubscription, getUserOperations, calcDaysRemaining, calcTimeRemaining,
@@ -76,8 +76,7 @@ import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
 
 function HomeServicesCard() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <div className="px-4 pt-3">
@@ -263,8 +262,7 @@ function DebugValueCard({
   subValue?: string;
   status: 'ok' | 'warn' | 'error' | 'info';
 }) {
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   const colors = {
     ok:    { border: '#22c55e33', bg: L ? '#f0fdf4' : '#0d1f0d', dot: '#22c55e', val: L ? '#15803d' : '#4ade80' },
     warn:  { border: '#f59e0b33', bg: L ? '#fffbeb' : '#1f160a', dot: '#f59e0b', val: L ? '#b45309' : '#fbbf24' },
@@ -296,8 +294,7 @@ function DebugValueCard({
 
 // ── Tiny row helper for RAW RESPONSE VIEWER ──
 function Row({ k, v, c }: { k: string; v: string; c?: string }) {
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   return (
     <div className="flex items-start justify-between gap-2">
       <span className="shrink-0" style={{ color: L ? 'rgba(0,0,0,0.35)' : '#ffffff30' }}>{k}:</span>
@@ -311,8 +308,7 @@ function NativeDebugPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const isNative = isNativeAndroid();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   const fetchInfo = useCallback(async () => {
     setLoading(true);
@@ -551,8 +547,7 @@ function ProductIcon({ type, className = 'w-4 h-4', style }: { type: string; cla
 function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect: (p: VodafoneProduct) => void }) {
   const isMared = product.category === 'mared';
   const validity = getValidity(product);
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <button
@@ -710,8 +705,7 @@ function OperationDetailsDialog({
   onClose: () => void;
   invoice: InvoiceData;
 }) {
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent
@@ -767,8 +761,7 @@ function ReceiptView({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { config } = useRuntimeConfig();
   const feedbackEnabled = config.feature_flags.ff_card_feedback_enabled;
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <div className="flex flex-col" dir="rtl">
@@ -849,8 +842,7 @@ function ExecuteModal({
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const navigate = useNavigate();
   const { config } = useRuntimeConfig();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
   const [sender, setSender] = useState(''); // مقروء تلقائياً من Native — لا يظهر للمستخدم

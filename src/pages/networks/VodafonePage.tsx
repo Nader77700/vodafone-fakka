@@ -13,7 +13,7 @@ import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   available:   { label: 'متاحة',    color: '#00C896', bg: 'rgba(0,200,150,0.12)' },
@@ -32,8 +32,7 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
   const statusMeta = STATUS_META[pkg.status] ?? STATUS_META.available;
   const cardColor  = pkg.card_color  || '#E60000';
   const darkColor  = pkg.color_secondary || '#B30000';
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   const sf = pkg.show_fields ?? { gb: true, minutes: true, duration: true, renewal: true, features: true };
 
@@ -185,8 +184,7 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
 export default function VodafonePage() {
   const navigate           = useNavigate();
   const { user, profile }  = useAuth();
-  const { isDark }         = useTheme();
-  const L                  = !isDark;
+  const L                  = useIsLight();
   const [packages, setPackages] = useState<RedPackage[]>([]);
   const [loading, setLoading]   = useState(true);
 

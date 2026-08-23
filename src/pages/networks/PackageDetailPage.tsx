@@ -14,7 +14,7 @@ import type { RedPackage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildRedWhatsAppUrl, buildRedWhatsAppQueryUrl } from '@/lib/redWhatsApp';
 import { toast } from 'sonner';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, useIsLight } from '@/contexts/ThemeContext';
 
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -28,8 +28,8 @@ export default function PackageDetailPage() {
   const { id }    = useParams<{ id: string }>();
   const navigate  = useNavigate();
   const { user, profile } = useAuth();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
+  const isDark = !L;
   const [pkg, setPkg]           = useState<RedPackage | null>(null);
   const [loading, setLoading]   = useState(true);
 

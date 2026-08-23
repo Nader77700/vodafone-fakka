@@ -13,7 +13,7 @@ import VodafoneLoginGate from './VodafoneLoginGate';
 import UpcomingSubscriptionsSection from './UpcomingSubscriptionsSection';
 import { useAnaVodafoneSession } from './useAnaVodafoneSession';
 import { useVodafoneNetworkStatus } from './useVodafoneNetworkStatus';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 import type { VodafoneSubscription } from '@/lib/api';
 
 function formatPhone(phone: string): string {
@@ -50,8 +50,7 @@ const menuItems = [
 function MenuCard({ item }: { item: typeof menuItems[0] }) {
   const navigate = useNavigate();
   const Icon = item.icon;
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <button
@@ -168,8 +167,7 @@ export default function VodafoneOffersPage() {
     session, loading: sessionLoading, logoutLoading, logout,
   } = useAnaVodafoneSession();
   const { ready: rechargeReady } = useVodafoneNetworkStatus();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   useEffect(() => {
     if (!sessionLoading && session?.is_valid) {

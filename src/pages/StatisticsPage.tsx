@@ -2,7 +2,7 @@
 // صفحة الإحصائيات
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 import { getUserStatistics } from '@/lib/api';
 import type { UserStatistics } from '@/types/types';
 import {
@@ -39,8 +39,7 @@ function StatCard({ icon: Icon, label, value, sub, accent }: StatCardProps) {
 
 export default function StatisticsPage() {
   const { user } = useAuth();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   const CHART_TOOLTIP_STYLE = {
     contentStyle: {

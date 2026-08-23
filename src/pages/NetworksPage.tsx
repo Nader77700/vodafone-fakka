@@ -5,7 +5,7 @@ import { Radio, ChevronLeft, Zap, Clock, Wifi } from 'lucide-react';
 import AppFooter from '@/components/common/AppFooter';
 import { getESimSettings } from '@/lib/esimApi';
 import type { ESimSettings } from '@/types/esim';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 const BLUE = '#1E6FFF';
 const BLUE_GLOW = 'rgba(30,111,255,0.22)';
@@ -13,8 +13,7 @@ const BLUE_GLOW = 'rgba(30,111,255,0.22)';
 // ── بطاقة eSIM ──────────────────────────────────────────────────────────────
 function ESimCard({ settings }: { settings: ESimSettings | null }) {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   // مخفي للمستخدمين العاديين فقط إذا status=hidden
   if (settings?.section_status === 'hidden') return null;
@@ -159,8 +158,7 @@ export const NETWORKS: NetworkConfig[] = [
 
 function NetworkCard({ network }: { network: NetworkConfig }) {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   return (
     <div
       onClick={() => navigate(network.route)}
@@ -221,8 +219,7 @@ function NetworkCard({ network }: { network: NetworkConfig }) {
 
 export default function NetworksPage() {
   const [esimSettings, setEsimSettings] = useState<ESimSettings | null>(null);
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   useEffect(() => {
     getESimSettings().then(s => setEsimSettings(s));

@@ -17,7 +17,7 @@ import { useState, type ReactNode } from 'react';
 import { useServicesControl } from '@/hooks/useServicesControl';
 import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 import SubscriptionRequiredDialog from '@/components/subscription/SubscriptionRequiredDialog';
 
 // ── أيقونة ديناميكية بحسب iconName ──────────────────────────────
@@ -37,8 +37,7 @@ function ServiceIcon({ name, className, style }: { name: string; className?: str
 function ServiceCard({ svc, onPress }: { svc: ServiceConfig; onPress: () => void }) {
   const isDisabled = svc.status === 'maintenance' || svc.status === 'disabled';
   const isComingSoon = svc.status === 'coming_soon';
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
 
   return (
     <div
@@ -167,8 +166,7 @@ function ServiceCard({ svc, onPress }: { svc: ServiceConfig; onPress: () => void
 export default function ServicesPage() {
   const navigate = useNavigate();
   const { isAccessible, loading: cfgLoading } = useServicesControl();
-  const { isDark } = useTheme();
-  const L = !isDark;
+  const L = useIsLight();
   const eng = useSubscriptionEngine();
   const { isPreview } = usePreviewMode();
   const hasActiveSub = eng.isAdmin || eng.isActive;
