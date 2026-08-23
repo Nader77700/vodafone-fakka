@@ -130,10 +130,10 @@ export default function WalletLinesRegisterPage() {
           <button onClick={() => navigate('/wallet-lines/login')}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95"
             disabled={isDisabled}>
-            <ArrowRight className="w-4 h-4 text-white" />
+            <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div>
-            <h1 className="text-base font-black text-white">إنشاء حساب My NTRA</h1>
+            <h1 className="text-base font-black text-foreground">إنشاء حساب My NTRA</h1>
             <p className="text-[10px] text-muted-foreground">حساب رسمي على منصة الجهاز القومي</p>
           </div>
         </div>

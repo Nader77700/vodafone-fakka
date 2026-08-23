@@ -9,13 +9,14 @@ import {
 import type { ESimOffer, ESimSettings } from '@/types/esim';
 import { getESimOffer, getESimSettings } from '@/lib/esimApi';
 import { fmtDateAr } from '@/lib/formatUtils';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 const BLUE = '#1E6FFF';
 
-function InfoRow({ label, value, icon: Icon, color }: { label: string; value: string; icon?: React.ElementType; color?: string }) {
+function InfoRow({ label, value, icon: Icon, color, L = false }: { label: string; value: string; icon?: React.ElementType; color?: string; L?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b"
-      style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+      style={{ borderColor: L ? 'hsl(var(--border))' : 'rgba(255,255,255,0.06)' }}>
       <div className="flex items-center gap-2">
         {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground" />}
         <span className="text-[12px] text-muted-foreground">{label}</span>
@@ -37,6 +38,7 @@ const ACTIVATION_STEPS = [
 export default function ESimDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const L = useIsLight();
   const [offer, setOffer] = useState<ESimOffer | null>(null);
   const [settings, setSettings] = useState<ESimSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,18 +162,18 @@ export default function ESimDetailPage() {
 
         {/* مواصفات الشريحة */}
         <div className="rounded-2xl p-4 space-y-1"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          style={{ background: L ? 'hsl(var(--card))' : 'rgba(255,255,255,0.02)', border: L ? '1px solid hsl(var(--border))' : '1px solid rgba(255,255,255,0.08)' }}>
           <p className="text-[11px] font-black text-muted-foreground uppercase tracking-wider mb-2">مواصفات الشريحة</p>
-          <InfoRow label="نوع الشريحة"       value="eSIM إلكترونية"           icon={Smartphone} color={BLUE} />
-          <InfoRow label="حجم البيانات"       value={offer.data_size}          icon={Wifi} color={BLUE} />
-          <InfoRow label="مدة الصلاحية"       value={offer.duration}           icon={Clock} />
-          <InfoRow label="الدولة"             value={offer.country}            icon={Globe} />
-          <InfoRow label="أعلى سرعة"         value={offer.speed}              icon={Zap} color={BLUE} />
-          <InfoRow label="يحتاج VPN"         value="لا — تعمل مباشرة"        icon={CheckCircle} color="#22c55e" />
-          <InfoRow label="التفعيل"            value="فوري بعد مسح QR Code"    icon={QrCode} />
-          <InfoRow label="تاريخ الإضافة"     value={fmtDateAr(offer.created_at)} />
+          <InfoRow label="نوع الشريحة"       value="eSIM إلكترونية"           icon={Smartphone} color={BLUE} L={L} />
+          <InfoRow label="حجم البيانات"       value={offer.data_size}          icon={Wifi} color={BLUE} L={L} />
+          <InfoRow label="مدة الصلاحية"       value={offer.duration}           icon={Clock} L={L} />
+          <InfoRow label="الدولة"             value={offer.country}            icon={Globe} L={L} />
+          <InfoRow label="أعلى سرعة"         value={offer.speed}              icon={Zap} color={BLUE} L={L} />
+          <InfoRow label="يحتاج VPN"         value="لا — تعمل مباشرة"        icon={CheckCircle} color="#22c55e" L={L} />
+          <InfoRow label="التفعيل"            value="فوري بعد مسح QR Code"    icon={QrCode} L={L} />
+          <InfoRow label="تاريخ الإضافة"     value={fmtDateAr(offer.created_at)} L={L} />
           {offer.supported_networks.length > 0 && (
-            <InfoRow label="الشبكات المدعومة" value={offer.supported_networks.join(' · ')} />
+            <InfoRow label="الشبكات المدعومة" value={offer.supported_networks.join(' · ')} L={L} />
           )}
         </div>
 
@@ -203,7 +205,7 @@ export default function ESimDetailPage() {
 
         {/* طريقة الاستلام */}
         <div className="rounded-2xl p-4 space-y-3"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          style={{ background: L ? 'hsl(var(--card))' : 'rgba(255,255,255,0.02)', border: L ? '1px solid hsl(var(--border))' : '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center gap-2">
             <QrCode className="w-4 h-4" style={{ color: BLUE }} />
             <p className="text-sm font-black text-foreground">طريقة الاستلام</p>
@@ -223,7 +225,7 @@ export default function ESimDetailPage() {
 
         {/* معلومات الجهاز */}
         <div className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          style={{ background: L ? 'hsl(var(--card))' : 'rgba(255,255,255,0.02)', border: L ? '1px solid hsl(var(--border))' : '1px solid rgba(255,255,255,0.08)' }}>
           <p className="text-[11px] font-black text-muted-foreground uppercase tracking-wider mb-2">الأجهزة المدعومة</p>
           <p className="text-[12px] text-muted-foreground text-pretty">
             تعمل على جميع الأجهزة الداعمة لـ eSIM مثل iPhone XS وأحدث، Samsung Galaxy S20 وأحدث،
@@ -235,7 +237,7 @@ export default function ESimDetailPage() {
       {/* زر واتساب ثابت */}
       {offer.whatsapp_enabled && (
         <div className="fixed bottom-0 left-0 right-0 p-4 z-40"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 70%, transparent)' }}>
+          style={{ background: L ? 'linear-gradient(to top, rgba(249,250,251,0.97) 70%, transparent)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 70%, transparent)' }}>
           <a href={waUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center justify-center gap-3 w-full py-3.5 rounded-2xl font-black text-base text-white transition-all active:scale-[0.98]"
             style={{

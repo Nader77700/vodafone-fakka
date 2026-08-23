@@ -1948,3 +1948,208 @@ html.light [style*="background: linear-gradient(to top, rgba(0,0,0,0.9)"] {
   background: linear-gradient(to top, rgba(249,250,251,0.95) 70%, transparent) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ⑳ PREMIUM LIGHT DESIGN SYSTEM — Full Audit Final Pass
+   All remaining hardcoded dark patterns — component-aware
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── bg-[#0A0A0A] pages (VodafoneCash 6 pages) ── */
+html.light .bg-\[\#0A0A0A\],
+html.light .bg-\[\#0a0a0a\] {
+  background-color: hsl(var(--background)) !important;
+}
+/* sticky nav inside those pages */
+html.light .bg-\[\#0A0A0A\]\/80,
+html.light .bg-\[\#0a0a0a\]\/80 {
+  background-color: rgba(245,247,250,0.92) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+/* all text-white inside bg-[#0A0A0A] pages */
+html.light .bg-\[\#0A0A0A\] .text-white,
+html.light .bg-\[\#0a0a0a\] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+html.light .bg-\[\#0A0A0A\] .text-white\/40,
+html.light .bg-\[\#0A0A0A\] .text-white\/50,
+html.light .bg-\[\#0A0A0A\] .text-white\/60,
+html.light .bg-\[\#0A0A0A\] .text-white\/70 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+html.light .bg-\[\#0A0A0A\] .border-white\/5,
+html.light .bg-\[\#0A0A0A\] .border-white\/10,
+html.light .bg-\[\#0A0A0A\] .border-white\/20 {
+  border-color: hsl(var(--border)) !important;
+}
+html.light .bg-\[\#0A0A0A\] .bg-white\/5,
+html.light .bg-\[\#0A0A0A\] .bg-white\/10 {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+
+/* ── bg-[#111] dark cards (BalanceCharge dialogs, inputs) ── */
+html.light .bg-\[\#111\] {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+html.light .bg-\[\#111\] .text-white { color: hsl(var(--foreground)) !important; }
+html.light .bg-\[\#111\] .text-white\/30 { color: rgba(26,26,46,0.35) !important; }
+html.light .bg-\[\#111\] .border-white\/10 { border-color: hsl(var(--border)) !important; }
+html.light .bg-\[\#111\] .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.05) !important; }
+
+/* ── inline style: background #120000 (UserOperationsPage sheet) ── */
+html.light [style*="background: '#120000'"],
+html.light [style*="background: #120000"],
+html.light [style*="background: 'rgb(18,0,0)'"] {
+  background: hsl(var(--card)) !important;
+  border-color: rgba(230,0,0,0.15) !important;
+}
+html.light [style*="background: '#120000'"] .text-white,
+html.light [style*="background: #120000"] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── inline style: rgba(8,0,0,0.95) header (UserOperationsPage) ── */
+html.light [style*="background: rgba(8,0,0,0.95)"],
+html.light [style*="background: rgba(8,0,0"] {
+  background: rgba(255,255,255,0.96) !important;
+  border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+html.light [style*="background: rgba(8,0,0"] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+html.light [style*="background: rgba(8,0,0"] [style*="color: rgba(255,255,255,0.4)"],
+html.light [style*="background: rgba(8,0,0"] [style*="color:rgba(255,255,255,0.4)"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* ── WalletLines text-white in sticky headers (CSS cannot override inline — handled via ⑲) ── */
+/* Additional: text-white inside divs with rgba(8,13,20) covered by ⑲, reinforce for children */
+html.light .sticky [style*="rgba(8,13,20"] h1,
+html.light .sticky [style*="rgba(8,13,20"] h2,
+html.light .sticky [style*="rgba(8,13,20"] span,
+html.light .sticky [style*="rgba(8,13,20"] p {
+  color: hsl(var(--foreground)) !important;
+}
+html.light .sticky [style*="rgba(8,13,20"] svg {
+  color: hsl(var(--foreground)) !important;
+}
+html.light .sticky [style*="rgba(255,255,255,0.96)"] h1,
+html.light .sticky [style*="rgba(255,255,255,0.96)"] h2,
+html.light .sticky [style*="rgba(255,255,255,0.96)"] span {
+  color: hsl(var(--foreground)) !important;
+}
+html.light .sticky [style*="rgba(255,255,255,0.96)"] svg {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── WalletLinesResults — page body content ── */
+html.light [style*="background: linear-gradient(180deg, #080d14"],
+html.light [style*="background: linear-gradient(180deg,#080d14"] {
+  background: hsl(var(--background)) !important;
+}
+html.light [style*="background: linear-gradient(180deg, #080d14"] .text-white,
+html.light [style*="background: linear-gradient(180deg,#080d14"] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── WalletLinesResults info cards (dark backgrounds) ── */
+html.light [style*="background: #0f1520"],
+html.light [style*="background: '#0f1520'"] {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+html.light [style*="background: #0f1520"] .text-white,
+html.light [style*="background: '#0f1520'"] .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── Network pages: text-white on primary buttons (ok as-is) ── */
+/* text-white on bg-primary buttons stays — don't override */
+/* Only override bare text-white NOT inside a bg-primary/bg-red context */
+
+/* ── PackageDetail badge text-white ── */
+html.light .rounded-full.text-white:not([style*="background: #E6"]):not([style*="background: linear"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── VodafoneCashCenter header text ── */
+html.light .drop-shadow-\[0_2px_4px_rgba\(0\,0\,0\,0\.8\)\] {
+  text-shadow: none !important;
+  color: hsl(var(--foreground)) !important;
+  filter: none !important;
+}
+
+/* ── BalanceChargePage full audit: all sub-components ── */
+/* Dialog/Sheet inner content */
+html.light [style*="background: '#111'"] input,
+html.light [style*="background: #111"] input {
+  background: hsl(var(--input)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+html.light [style*="background: '#111'"] p,
+html.light [style*="background: #111"] p,
+html.light [style*="background: '#111'"] span,
+html.light [style*="background: #111"] span,
+html.light [style*="background: '#111'"] h1,
+html.light [style*="background: '#111'"] h2 {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── OperationDetailPage / UserOperationsPage sheet header ── */
+html.light [style*="background: 'rgba(8,0,0"],
+html.light [style*="background: rgba(8,0,0"] {
+  background: rgba(255,255,255,0.96) !important;
+}
+
+/* ── Premium subscription badge — force gold in light mode ── */
+html.light .subscription-premium-card [style*="background: rgba(247,201,72"],
+html.light .subscription-premium-card [style*="background: rgba(247,201"] {
+  background: rgba(180, 120, 0, 0.12) !important;
+  border-color: rgba(180, 120, 0, 0.35) !important;
+}
+
+/* ── All remaining text-white that should be dark in light mode ── */
+/* Only applies to elements NOT inside known dark containers (primary buttons, badges with bg) */
+html.light p.text-white:not([class*="bg-"]),
+html.light h1.text-white:not([class*="bg-"]),
+html.light h2.text-white:not([class*="bg-"]),
+html.light h3.text-white:not([class*="bg-"]),
+html.light span.text-white:not([class*="bg-"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── TransactionHistoryPage item names ── */
+html.light .text-white.truncate { color: hsl(var(--foreground)) !important; }
+
+/* ── border-white patterns in light ── */
+html.light .border-white\/5  { border-color: rgba(0,0,0,0.06) !important; }
+html.light .border-white\/8  { border-color: rgba(0,0,0,0.08) !important; }
+html.light .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+html.light .border-white\/15 { border-color: rgba(0,0,0,0.12) !important; }
+html.light .border-white\/20 { border-color: rgba(0,0,0,0.14) !important; }
+html.light .border-white\/25 { border-color: rgba(0,0,0,0.18) !important; }
+html.light .border-white\/30 { border-color: rgba(0,0,0,0.20) !important; }
+
+/* ── bg-white/N patterns in light ── */
+html.light .bg-white\/3  { background-color: rgba(0,0,0,0.03) !important; }
+html.light .bg-white\/5  { background-color: rgba(0,0,0,0.04) !important; }
+html.light .bg-white\/8  { background-color: rgba(0,0,0,0.05) !important; }
+html.light .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
+html.light .bg-white\/15 { background-color: rgba(0,0,0,0.06) !important; }
+
+/* ── hover:bg-white/N ── */
+html.light .hover\:bg-white\/5:hover  { background-color: rgba(0,0,0,0.04) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.06) !important; }
+
+/* ── active:bg-white/N ── */
+html.light .active\:bg-white\/5  { background-color: rgba(0,0,0,0.04) !important; }
+html.light .active\:bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
+
+/* ── shadow overrides for dark shadows in light ── */
+html.light .shadow-\[0_4px_30px_rgba\(0\,0\,0\,0\.5\)\] {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+}
+html.light .shadow-\[0_8px_30px_rgba\(0\,0\,0\,0\.5\)\] {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+}
+

@@ -175,16 +175,16 @@ export default function MoneyTransferPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo selection:bg-[#E60000]/30 selection:text-white" dir="rtl">
+    <div className="min-h-screen bg-background pb-24 font-cairo" dir="rtl">
       {/* Top Nav */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 h-16">
-          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
+          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-muted active:bg-muted/70 transition-colors">
             <ArrowLeft className="w-6 h-6 rotate-180" />
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">تحويل الأموال</h1>
-            <p className="text-[10px] text-[#E60000] font-medium">Vodafone Cash</p>
+            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
           </div>
           <button onClick={() => navigate('/vodafone-cash-center/history/transfer')} className="p-2 -ml-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors text-white/70">
             <Clock className="w-5 h-5" />
@@ -197,7 +197,7 @@ export default function MoneyTransferPage() {
         <div className="bg-[#111] border border-white/10 rounded-2xl p-4 relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#E60000]" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               حالة النظام
             </h2>
             <button onClick={checkConnection} disabled={isCheckingConn} className="text-xs text-white/60 hover:text-white flex items-center gap-1">
@@ -230,7 +230,7 @@ export default function MoneyTransferPage() {
 
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/60">اخر فحص</span>
-              <span className="text-[10px] text-white/40" dir="ltr">
+              <span className="text-[10px] text-muted-foreground" dir="ltr">
                 {lastChecked ? lastChecked.toLocaleTimeString() : '--:--'}
               </span>
             </div>
@@ -257,7 +257,7 @@ export default function MoneyTransferPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-white/80">رقم المستفيد</label>
                   <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${receiver && (!isReceiverValid || !isReceiverLengthValid) ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
-                    <div className="pl-3 pr-2 text-white/40">
+                    <div className="pl-3 pr-2 text-muted-foreground">
                       <Phone className="w-5 h-5" />
                     </div>
                     <input
@@ -284,7 +284,7 @@ export default function MoneyTransferPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-white/80">المبلغ</label>
                   <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors ${amount !== '' && !isAmountValid ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
-                    <div className="pl-3 pr-2 text-white/40">
+                    <div className="pl-3 pr-2 text-muted-foreground">
                       <span className="text-sm font-bold">EGP</span>
                     </div>
                     <input
@@ -300,7 +300,7 @@ export default function MoneyTransferPage() {
                     {amount !== '' && !isAmountValid ? (
                       <p className="text-xs text-red-500 font-medium">خطأ: الحد الأدنى 2 جنيه</p>
                     ) : (
-                      <p className="text-[10px] text-white/40">الحد الأدنى للتحويل: 2 ج.م</p>
+                      <p className="text-[10px] text-muted-foreground">الحد الأدنى للتحويل: 2 ج.م</p>
                     )}
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export default function MoneyTransferPage() {
               className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
                 ${canSubmit 
                   ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]' 
-                  : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}
+                  : 'bg-white/5 text-muted-foreground/50 cursor-not-allowed border border-white/5'}`}
             >
               <Send className="w-5 h-5" />
               تحويل الآن
@@ -334,7 +334,7 @@ export default function MoneyTransferPage() {
               <div className="flex justify-center mb-4">
                 {execStatus === 'checking' || execStatus === 'executing' ? (
                   <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-[#E60000] animate-spin" />
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   </div>
                 ) : execStatus === 'success' ? (
                   <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -380,7 +380,7 @@ export default function MoneyTransferPage() {
                 <div className="space-y-2">
                   {execLogs.map((log, i) => (
                     <div key={i} className="flex gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-white/5">
-                      <div className="w-12 shrink-0 text-white/30 font-mono text-[10px] mt-0.5" dir="ltr">
+                      <div className="w-12 shrink-0 text-muted-foreground/50 font-mono text-[10px] mt-0.5" dir="ltr">
                         {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second:'2-digit' })}
                       </div>
                       <div className="flex-1 space-y-1">

@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { generateUUID } from "@/lib/uuid";
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsLight } from '@/contexts/ThemeContext';
 import { securityManager } from '@/lib/security';
 import { supabase } from '@/db/supabase';
 import {
@@ -128,8 +129,8 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
             <Wallet className="w-5 h-5" style={{ color: C.red }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-white">استعلام رصيد المحفظة</p>
-            <p className="text-[11px] text-white/40">Vodafone Cash</p>
+            <p className="text-sm font-black text-foreground">استعلام رصيد المحفظة</p>
+            <p className="text-[11px] text-muted-foreground">Vodafone Cash</p>
           </div>
         </div>
 
@@ -140,20 +141,20 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
               <div className="rounded-2xl p-4 text-center space-y-1"
                 style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
                 <CheckCircle2 className="w-6 h-6 mx-auto" style={{ color: '#4ade80' }} />
-                <p className="text-[11px] text-white/40">رصيد المحفظة الحالي</p>
+                <p className="text-[11px] text-muted-foreground">رصيد المحفظة الحالي</p>
                 <p className="text-2xl font-black" style={{ color: '#4ade80' }}>
-                  {balance} <span className="text-sm font-medium text-white/40">جنيه</span>
+                  {balance} <span className="text-sm font-medium text-muted-foreground">جنيه</span>
                 </p>
-                {msisdn && <p className="text-[11px] text-white/40 font-mono">{msisdn}</p>}
+                {msisdn && <p className="text-[11px] text-muted-foreground font-mono">{msisdn}</p>}
                 {queriedAt && (
-                  <p className="text-[10px] text-white/25 flex items-center justify-center gap-1">
+                  <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3" /> {formatQueriedAt(queriedAt)}
                   </p>
                 )}
               </div>
               <button
                 onClick={reset}
-                className="w-full py-2.5 rounded-xl text-sm font-bold border border-white/10 text-white/60 hover:text-white transition-colors"
+                className="w-full py-2.5 rounded-xl text-sm font-bold border border-border text-muted-foreground hover:text-foreground transition-colors"
               >
                 استعلام جديد
               </button>
@@ -163,17 +164,17 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
               <div className="rounded-2xl p-4 text-center space-y-1"
                 style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.2)' }}>
                 <XCircle className="w-6 h-6 mx-auto" style={{ color: C.red }} />
-                <p className="text-sm text-white/70 font-medium">{errorMsg}</p>
+                <p className="text-sm text-muted-foreground font-medium">{errorMsg}</p>
               </div>
               <button onClick={reset}
-                className="w-full py-2.5 rounded-xl text-sm font-bold border border-white/10 text-white/60 hover:text-white transition-colors">
+                className="w-full py-2.5 rounded-xl text-sm font-bold border border-border text-muted-foreground hover:text-foreground transition-colors">
                 المحاولة مجدداً
               </button>
             </div>
           ) : (
             <>
               {/* تعليمات */}
-              <p className="text-xs text-white/40 text-center">
+              <p className="text-xs text-muted-foreground text-center">
                 أدخل الرقم السري لمحفظتك لعرض رصيدك فوراً
               </p>
               {/* PIN */}
@@ -296,7 +297,7 @@ function SessionAccountCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-sm font-black font-mono text-white">{session.phone}</p>
+              <p className="text-sm font-black font-mono text-foreground">{session.phone}</p>
               {isActive && (
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
                   style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBd}` }}>
@@ -409,7 +410,7 @@ function AccountsPanel({
       <SheetContent
         side="right"
         className="w-[85vw] max-w-[340px] p-0 border-0 flex flex-col"
-        style={{ background: '#0a0000', borderLeft: `1px solid rgba(230,0,0,0.2)` }}
+        style={{ background: 'var(--accounts-panel-bg, #0a0000)', borderLeft: `1px solid rgba(230,0,0,0.2)` }}
       >
         {/* هيدر اللوحة */}
         <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
@@ -418,7 +419,7 @@ function AccountsPanel({
             <Users className="w-4 h-4" style={{ color: C.red }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-white">إدارة الحسابات</p>
+            <p className="text-sm font-black text-foreground">إدارة الحسابات</p>
             <p className="text-[10px]" style={{ color: C.muted }}>{sessions.length} حساب محفوظ · جلسات 24 ساعة</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -486,7 +487,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
         style={{ background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)' }}>
         <Phone className="w-4 h-4 shrink-0" style={{ color: '#60a5fa' }} />
         <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
-          هذا القسم يشحن من <span className="font-black text-white">رصيد الهاتف مباشرة</span> وليس من Vodafone Cash.
+          هذا القسم يشحن من <span className="font-black text-foreground">رصيد الهاتف مباشرة</span> وليس من Vodafone Cash.
           سيُخصَم مبلغ الكارت من رصيد الخط.
         </p>
       </div>
@@ -502,7 +503,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
             <Phone className="w-5 h-5" style={{ color: C.red }} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-black text-white">الشحن من رصيد الهاتف مباشرة</p>
+            <p className="text-sm font-black text-foreground">الشحن من رصيد الهاتف مباشرة</p>
             <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: C.muted }}>
               هذا القسم يخصم قيمة الكارت من رصيد الخط — <span className="font-bold" style={{ color: C.red }}>لا يستخدم Vodafone Cash</span>
             </p>
@@ -558,7 +559,7 @@ function VodafoneCashCard({ onNavigate }: { onNavigate: () => void }) {
           <Wallet className="w-5 h-5" style={{ color: C.red }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-black text-white">هل تريد الشحن بـ Vodafone Cash؟</p>
+          <p className="text-xs font-black text-foreground">هل تريد الشحن بـ Vodafone Cash؟</p>
           <p className="text-[10px] mt-0.5 leading-relaxed" style={{ color: C.muted }}>
             إذا كنت تفضل الشحن من المحفظة فهو أسرع وأسهل.
           </p>
@@ -609,7 +610,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
                 ● جلسة نشطة
               </span>
             </div>
-            <p className="text-[11px] mt-0.5 font-mono font-bold text-white">{session.phone}</p>
+            <p className="text-[11px] mt-0.5 font-mono font-bold text-foreground">{session.phone}</p>
           </div>
 
           {/* زر الحسابات */}
@@ -768,7 +769,7 @@ function BalanceLoginDialog({
               <LogIn className="w-5 h-5" style={{ color: C.red }} />
             </div>
             <div>
-              <p className="text-sm font-black text-white">تسجيل الدخول</p>
+              <p className="text-sm font-black text-foreground">تسجيل الدخول</p>
               <p className="text-[11px]" style={{ color: C.muted }}>أنا فودافون · جلسة 24 ساعة</p>
             </div>
           </div>
@@ -812,7 +813,7 @@ function BalanceLoginDialog({
               style={{ background: rememberMe ? C.red : 'rgba(255,255,255,0.06)', border: `1px solid ${rememberMe ? C.red : 'rgba(255,255,255,0.15)'}` }}
               onClick={() => setRememberMe(v => !v)}
             >
-              {rememberMe && <CheckCircle2 className="w-3 h-3 text-white" />}
+              {rememberMe && <CheckCircle2 className="w-3 h-3 text-foreground" />}
             </div>
             <span className="text-xs" style={{ color: C.muted }}>تذكر بياناتي (7 أيام)</span>
           </label>
@@ -1341,7 +1342,7 @@ function BalanceExecuteDialog({
                     : <Zap className="w-5 h-5" style={{ color: C.red }} />}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-black text-white truncate">{product.display_name}</p>
+                <p className="text-sm font-black text-foreground truncate">{product.display_name}</p>
                 <p className="text-[11px]" style={{ color: C.muted }}>
                   {step === 'error' ? 'فشلت عملية الشحن' : step === 'executing' ? 'جارٍ الشحن…' : 'تأكيد الشحن من رصيد الهاتف'}
                 </p>
@@ -1359,7 +1360,7 @@ function BalanceExecuteDialog({
                   style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)' }}>
                   <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#60a5fa' }} />
                   <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                    سيتم خصم قيمة الكارت مباشرةً من <span className="font-black text-white">رصيد الخط</span> وليس من محفظة Vodafone Cash.
+                    سيتم خصم قيمة الكارت مباشرةً من <span className="font-black text-foreground">رصيد الخط</span> وليس من محفظة Vodafone Cash.
                   </p>
                 </div>
 
@@ -1390,7 +1391,7 @@ function BalanceExecuteDialog({
                     <p className="text-xs font-black" style={{ color: C.warning }}>هل أنت متأكد من تنفيذ عملية الشحن؟</p>
                   </div>
                   <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                    سيتم خصم <span className="font-black text-white">{product.price} جنيه</span> من رصيد الخط الحالي.
+                    سيتم خصم <span className="font-black text-foreground">{product.price} جنيه</span> من رصيد الخط الحالي.
                   </p>
                   <ul className="space-y-1">
                     {['وجود رصيد كافٍ على الخط.', 'أن الخط الحالي هو نفس الخط المسجل.', 'أن الخدمة تعمل بشكل طبيعي.'].map((item, i) => (
@@ -1455,7 +1456,7 @@ function BalanceExecuteDialog({
                   <Loader2 className="w-8 h-8 animate-spin" style={{ color: C.red }} />
                 </div>
                 <div className="text-center space-y-1.5">
-                  <p className="text-sm font-black text-white">جارٍ الشحن من رصيد الهاتف…</p>
+                  <p className="text-sm font-black text-foreground">جارٍ الشحن من رصيد الهاتف…</p>
                   <p className="text-xs" style={{ color: C.muted }}>لا تغلق هذه النافذة</p>
                   <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
                     يتم خصم {product.price} جنيه من رصيد خط {receiverPhone}
@@ -1482,7 +1483,7 @@ function BalanceExecuteDialog({
                     <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.warning }} />
                     <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
                       لا يوجد رصيد كافٍ على خطك. يرجى شحن الخط أولاً ثم إعادة المحاولة.
-                      سيُتاح زر إعادة المحاولة خلال <span className="font-black text-white">{cooldownLeft}</span> ثانية.
+                      سيُتاح زر إعادة المحاولة خلال <span className="font-black text-foreground">{cooldownLeft}</span> ثانية.
                     </p>
                   </div>
                 )}
@@ -1653,7 +1654,7 @@ export default function BalanceChargePage() {
             onClick={() => navigate('/')}>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
-          <p className="text-sm font-black text-white">الشحن من الرصيد</p>
+          <p className="text-sm font-black text-foreground">الشحن من الرصيد</p>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-5">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -1661,7 +1662,7 @@ export default function BalanceChargePage() {
             <AlertTriangle className="w-8 h-8" style={{ color: C.red }} />
           </div>
           <div className="space-y-2">
-            <h2 className="text-base font-black text-white">لا يمكن تنفيذ عمليات الشحن</h2>
+            <h2 className="text-base font-black text-foreground">لا يمكن تنفيذ عمليات الشحن</h2>
             <p className="text-sm font-medium leading-relaxed" style={{ color: C.red }}>
               {subscriptionBlockReason || 'حسابك غير مفعل حالياً. يرجى التواصل مع التاجر الخاص بك لتفعيل الاشتراك.'}
             </p>
@@ -1697,7 +1698,7 @@ export default function BalanceChargePage() {
             <Phone className="w-4 h-4" style={{ color: C.red }} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-black text-white truncate">الشحن من الرصيد</p>
+            <p className="text-sm font-black text-foreground truncate">الشحن من الرصيد</p>
             <p className="text-[10px]" style={{ color: C.muted }}>أنا فودافون · رصيد مباشر</p>
           </div>
         </div>

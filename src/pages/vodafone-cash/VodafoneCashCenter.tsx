@@ -93,7 +93,7 @@ export default function VodafoneCashCenter() {
                   {svc.icon}
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="text-xl font-black tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-tight">
+                  <h3 className="text-xl font-black tracking-wide text-foreground leading-tight">
                     {svc.title}
                   </h3>
                   <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold">

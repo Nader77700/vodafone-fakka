@@ -168,10 +168,10 @@ export default function WalletLinesChangePasswordPage() {
         <div className="flex items-center gap-3 py-4">
           <button onClick={handleBackToLogin}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all">
-            <ArrowRight className="w-4 h-4 text-white" />
+            <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-black text-white">تغيير كلمة السر</h1>
+            <h1 className="text-base font-black text-foreground">تغيير كلمة السر</h1>
             <p className="text-[10px] text-muted-foreground">خدمات الخطوط والمحافظ</p>
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function WalletLinesChangePasswordPage() {
                   <Phone className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-white">أدخل رقم الهاتف</h2>
+                  <h2 className="text-sm font-black text-foreground">أدخل رقم الهاتف</h2>
                   <p className="text-[10px] text-white/50">سنرسل رمز التحقق إلى رقم الهاتف المسجل.</p>
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function WalletLinesChangePasswordPage() {
                   <KeyRound className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-white">التحقق من الرمز</h2>
+                  <h2 className="text-sm font-black text-foreground">التحقق من الرمز</h2>
                   <p className="text-[10px] text-white/50">تم إرسال رمز التحقق إلى الرقم التالي.</p>
                 </div>
               </div>
@@ -330,7 +330,7 @@ export default function WalletLinesChangePasswordPage() {
                   <Lock className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-white">إنشاء كلمة سر جديدة</h2>
+                  <h2 className="text-sm font-black text-foreground">إنشاء كلمة سر جديدة</h2>
                   <p className="text-[10px] text-white/50">كلمة السر يجب أن تكون 6 أحرف على الأقل.</p>
                 </div>
               </div>
@@ -393,7 +393,7 @@ export default function WalletLinesChangePasswordPage() {
               <CheckCircle2 className="w-8 h-8 text-green-400" />
             </div>
             <div className="space-y-1">
-              <h2 className="text-lg font-black text-white">تم تغيير كلمة السر بنجاح</h2>
+              <h2 className="text-lg font-black text-foreground">تم تغيير كلمة السر بنجاح</h2>
               <p className="text-xs text-white/60">يمكنك الآن تسجيل الدخول باستخدام كلمة السر الجديدة.</p>
             </div>
             <Button onClick={handleBackToLogin}

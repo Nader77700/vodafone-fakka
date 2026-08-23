@@ -129,7 +129,7 @@ export default function PackageDetailPage() {
         <div className="grid grid-cols-2 gap-3">
           {sf.gb !== false && (
             <div className="rounded-2xl p-4 text-center"
-              style={{ background: `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.60))`, border: `1.5px solid ${cardColor}47` }}>
+              style={{ background: L ? `linear-gradient(135deg,${cardColor}12,#f9fafb)` : `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.60))`, border: `1.5px solid ${cardColor}47` }}>
               <Wifi className="w-6 h-6 mx-auto mb-1" style={{ color: cardColor }} />
               <p className="text-2xl font-black text-foreground">{pkg.data_gb}</p>
               <p className="text-[10px] text-muted-foreground">جيجابايت</p>
@@ -138,7 +138,7 @@ export default function PackageDetailPage() {
           )}
           {sf.minutes !== false && (
             <div className="rounded-2xl p-4 text-center"
-              style={{ background: `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.60))`, border: `1.5px solid ${cardColor}47` }}>
+              style={{ background: L ? `linear-gradient(135deg,${cardColor}12,#f9fafb)` : `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.60))`, border: `1.5px solid ${cardColor}47` }}>
               <Phone className="w-6 h-6 mx-auto mb-1" style={{ color: cardColor }} />
               <p className="text-2xl font-black text-foreground">
                 {pkg.minutes >= 1000 ? `${(pkg.minutes/1000).toFixed(1)}K` : pkg.minutes}

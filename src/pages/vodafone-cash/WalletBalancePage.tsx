@@ -89,17 +89,17 @@ export default function WalletBalancePage() {
     d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo">
+    <div className="min-h-screen bg-background pb-24 font-cairo">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 h-16">
           <button onClick={() => navigate('/vodafone-cash-center')}
-            className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
-            <ArrowLeft className="w-6 h-6" />
+            className="p-2 -mr-2 rounded-full hover:bg-muted active:bg-muted/70 transition-colors">
+            <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">رصيد المحفظة وسجل العمليات</h1>
-            <p className="text-[10px] text-[#E60000] font-medium">Vodafone Cash</p>
+            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
           </div>
           <div className="w-10" />
         </div>
@@ -113,7 +113,7 @@ export default function WalletBalancePage() {
             : 'bg-[#1A0D0D] border-[#E60000]/30 shadow-[0_0_20px_rgba(230,0,0,0.08)]'}`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-[#E60000]'}`} />
+              <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-primary'}`} />
               <span className="text-xs font-bold text-white/80">حالة النظام</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
@@ -127,19 +127,19 @@ export default function WalletBalancePage() {
               <div className="flex items-center gap-2">
                 {isConnected
                   ? <Wifi className="w-4 h-4 text-green-400 shrink-0" />
-                  : <WifiOff className="w-4 h-4 text-[#E60000] shrink-0" />}
+                  : <WifiOff className="w-4 h-4 text-primary shrink-0" />}
                 <span className="text-sm font-bold truncate">{networkName}</span>
               </div>
               {lastChecked && (
-                <p className="text-[10px] text-white/40 mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
               )}
             </div>
-            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-[#E60000]/20 text-[#E60000]'}`}>
+            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-[#E60000]/20 text-primary'}`}>
               {isConnected ? 'جاهز' : 'غير جاهز'}
             </div>
           </div>
           {!isConnected && !isCheckingConn && (
-            <p className="text-xs text-[#E60000]/80 mt-3 flex items-start gap-1.5">
+            <p className="text-xs text-primary/80 mt-3 flex items-start gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               يجب تشغيل بيانات فودافون (Vodafone Mobile Data) لاستخدام هذه الخدمة. Wi-Fi وحده لا يكفي.
             </p>
@@ -157,14 +157,14 @@ export default function WalletBalancePage() {
                 ${isConnected
                   ? 'bg-[#111] border-white/10 hover:border-[#E60000]/50 hover:bg-[#1a0a0a] active:scale-[0.98] cursor-pointer'
                   : 'bg-[#111]/50 border-white/5 opacity-50 cursor-not-allowed'}`}>
-              <div className="w-12 h-12 rounded-xl bg-[#E60000]/10 border border-[#E60000]/20 flex items-center justify-center text-[#E60000] shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-[#E60000]/10 border border-[#E60000]/20 flex items-center justify-center text-primary shrink-0">
                 {svc.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white">{svc.title}</h3>
+                <h3 className="text-base font-bold text-foreground">{svc.title}</h3>
                 <p className="text-xs text-white/50 mt-0.5">{svc.desc}</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-white/30 shrink-0 rotate-180" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground/50 shrink-0 rotate-180" />
             </button>
           ))}
         </div>
@@ -172,9 +172,9 @@ export default function WalletBalancePage() {
         {/* ملاحظات */}
         <div className="bg-[#1A1A1A] border border-[#E60000]/20 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-[#E60000] shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1.5">
-              <h4 className="text-sm font-bold text-[#E60000]">ملاحظات هامة:</h4>
+              <h4 className="text-sm font-bold text-primary">ملاحظات هامة:</h4>
               <ul className="text-xs text-white/60 space-y-1 list-disc list-inside pr-1">
                 <li>يجب تشغيل بيانات فودافون (Vodafone Data) للاستخدام.</li>
                 <li>PIN المحفظة مطلوب لكل عملية ولا يُحفظ.</li>

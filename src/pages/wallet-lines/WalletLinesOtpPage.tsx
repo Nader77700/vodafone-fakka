@@ -91,10 +91,10 @@ export default function WalletLinesOtpPage() {
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate(-1)} disabled={isDisabled}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95">
-            <ArrowRight className="w-4 h-4 text-white" />
+            <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div>
-            <h1 className="text-base font-black text-white">رمز التحقق</h1>
+            <h1 className="text-base font-black text-foreground">رمز التحقق</h1>
             <p className="text-[10px] text-muted-foreground">تأكيد رقم الهاتف</p>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function WalletLinesOtpPage() {
         {/* إرشاد */}
         <div className="text-center space-y-1.5">
           <p className="text-sm text-white/70 font-medium">تم إرسال رمز التحقق إلى</p>
-          <p className="text-base font-black text-white font-mono" dir="ltr">
+          <p className="text-base font-black text-foreground font-mono" dir="ltr">
             {phone || 'رقمك المسجل'}
           </p>
           <p className="text-xs text-white/40">أدخل الرمز المكوّن من {OTP_LENGTH} أرقام — يمكنك لصقه مباشرة</p>

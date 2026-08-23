@@ -138,17 +138,17 @@ export default function WalletBalanceQueryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo">
+    <div className="min-h-screen bg-background pb-24 font-cairo">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 h-16">
           <button onClick={() => navigate('/vodafone-cash-center/wallet-balance')}
-            className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
-            <ArrowLeft className="w-6 h-6" />
+            className="p-2 -mr-2 rounded-full hover:bg-muted active:bg-muted/70 transition-colors">
+            <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">الاستعلام عن الرصيد</h1>
-            <p className="text-[10px] text-[#E60000] font-medium">Vodafone Cash Balance</p>
+            <p className="text-[10px] text-primary font-medium">Vodafone Cash Balance</p>
           </div>
           <div className="w-10" />
         </div>
@@ -162,7 +162,7 @@ export default function WalletBalanceQueryPage() {
             : 'bg-[#1A0D0D] border-[#E60000]/30'}`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-[#E60000]'}`} />
+              <ShieldCheck className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-primary'}`} />
               <span className="text-xs font-bold text-white/80">حالة الاتصال</span>
             </div>
             <button onClick={checkConnection} disabled={isCheckingConn}
@@ -176,14 +176,14 @@ export default function WalletBalanceQueryPage() {
               <div className="flex items-center gap-2">
                 {isConnected
                   ? <Wifi className="w-4 h-4 text-green-400 shrink-0" />
-                  : <WifiOff className="w-4 h-4 text-[#E60000] shrink-0" />}
+                  : <WifiOff className="w-4 h-4 text-primary shrink-0" />}
                 <span className="text-sm font-bold truncate">{networkName}</span>
               </div>
               {lastChecked && (
-                <p className="text-[10px] text-white/40 mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
               )}
             </div>
-            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-[#E60000]/20 text-[#E60000]'}`}>
+            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-[#E60000]/20 text-primary'}`}>
               {isConnected ? 'جاهز' : 'غير جاهز'}
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function WalletBalanceQueryPage() {
                 <div className="flex items-center justify-between py-2">
                   <span className="text-xs text-white/50">وقت الاستعلام</span>
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-white/40" />
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-xs text-white/60">{formatQueriedAt(queriedAt)}</span>
                   </div>
                 </div>
@@ -228,14 +228,14 @@ export default function WalletBalanceQueryPage() {
         {queryStatus === 'failed' && errorMsg && (
           <div className="bg-[#1A0D0D] border border-[#E60000]/40 rounded-2xl p-5">
             <div className="flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-[#E60000] shrink-0 mt-0.5" />
+              <XCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-bold text-[#E60000] mb-1">تعذر الحصول على الرصيد</h3>
+                <h3 className="text-sm font-bold text-primary mb-1">تعذر الحصول على الرصيد</h3>
                 <p className="text-xs text-white/60">{errorMsg}</p>
               </div>
             </div>
             <button onClick={handleReset}
-              className="mt-4 w-full py-3 rounded-xl bg-[#E60000]/10 border border-[#E60000]/30 text-sm font-bold text-[#E60000] hover:bg-[#E60000]/20 transition-colors">
+              className="mt-4 w-full py-3 rounded-xl bg-[#E60000]/10 border border-[#E60000]/30 text-sm font-bold text-primary hover:bg-[#E60000]/20 transition-colors">
               حاول مرة أخرى
             </button>
           </div>
@@ -262,7 +262,7 @@ export default function WalletBalanceQueryPage() {
             className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
               ${canSubmit && queryStatus === 'idle'
                 ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-                : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}>
+                : 'bg-white/5 text-muted-foreground/50 cursor-not-allowed border border-white/5'}`}>
             {queryStatus === 'checking' || queryStatus === 'querying'
               ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري الاستعلام...</>
               : <><Wallet className="w-5 h-5" /> استعلام عن الرصيد</>}
@@ -272,9 +272,9 @@ export default function WalletBalanceQueryPage() {
         {/* تحذير Wi-Fi */}
         {!isConnected && !isCheckingConn && queryStatus === 'idle' && (
           <div className="bg-[#1A0D0D] border border-[#E60000]/30 rounded-xl p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-[#E60000] shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <p className="text-xs text-white/60">
-              يجب تشغيل <span className="text-[#E60000] font-bold">بيانات فودافون</span> لاستخدام هذه الخدمة. Wi-Fi وحده غير كافٍ.
+              يجب تشغيل <span className="text-primary font-bold">بيانات فودافون</span> لاستخدام هذه الخدمة. Wi-Fi وحده غير كافٍ.
             </p>
           </div>
         )}

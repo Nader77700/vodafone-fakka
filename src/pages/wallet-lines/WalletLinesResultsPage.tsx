@@ -66,21 +66,21 @@ const WalletCard = memo(function WalletCard({ w }: { w: WalletInfo }) {
         <AvailabilityBadge avail={w.availability} />
       </div>
       {w.availability === 'loaded' && (
-        <div className="space-y-1.5 text-xs text-white/60 pr-2">
-          {w.registeredName && <div className="flex items-center justify-between"><span>الاسم المسجل</span><span className="text-white/85 font-semibold">{w.registeredName}</span></div>}
-          {w.walletCount !== undefined && <div className="flex items-center justify-between"><span>عدد المحافظ</span><span className="text-white/85 font-bold">{w.walletCount}</span></div>}
+        <div className="space-y-1.5 text-xs text-muted-foreground pr-2">
+          {w.registeredName && <div className="flex items-center justify-between"><span>الاسم المسجل</span><span className="text-foreground font-semibold">{w.registeredName}</span></div>}
+          {w.walletCount !== undefined && <div className="flex items-center justify-between"><span>عدد المحافظ</span><span className="text-foreground font-bold">{w.walletCount}</span></div>}
           {w.walletNumbers?.map(n => (
             <div key={n} className="flex items-center justify-between">
               <span>رقم المحفظة</span>
-              <span className="font-mono text-white/75" dir="ltr">{n}</span>
+              <span className="font-mono text-foreground/80" dir="ltr">{n}</span>
             </div>
           ))}
-          {w.registrationDate && <div className="flex items-center justify-between"><span>تاريخ التسجيل</span><span className="text-white/75">{w.registrationDate}</span></div>}
+          {w.registrationDate && <div className="flex items-center justify-between"><span>تاريخ التسجيل</span><span className="text-foreground/80">{w.registrationDate}</span></div>}
           {w.walletStatus && <div className="flex items-center justify-between"><span>الحالة</span><span className="text-green-400 font-semibold">{w.walletStatus}</span></div>}
         </div>
       )}
       {w.availability !== 'loaded' && w.availability !== 'loading' && (
-        <p className="text-[11px] text-white/35 pr-2">
+        <p className="text-[11px] text-muted-foreground/60 pr-2">
           {w.availability === 'empty' && 'لا توجد محافظ مسجلة لهذه الشركة.'}
           {w.availability === 'unavailable' && 'خدمة هذه الشركة غير متاحة حاليًا.'}
           {w.availability === 'no_response' && 'لم ترجع هذه الشركة أي بيانات.'}
@@ -104,19 +104,19 @@ const LineCard = memo(function LineCard({ l, fullNums }: { l: LineInfo; fullNums
         <AvailabilityBadge avail={l.availability} />
       </div>
       {l.availability === 'loaded' && (
-        <div className="space-y-1.5 text-xs text-white/60 pr-2">
-          {l.lineCount !== undefined && <div className="flex items-center justify-between"><span>عدد الخطوط</span><span className="text-white/85 font-bold">{l.lineCount}</span></div>}
+        <div className="space-y-1.5 text-xs text-muted-foreground pr-2">
+          {l.lineCount !== undefined && <div className="flex items-center justify-between"><span>عدد الخطوط</span><span className="text-foreground font-bold">{l.lineCount}</span></div>}
           {/* الأرقام المشفرة */}
           {l.lineNumbers?.map((n, i) => (
             <div key={n} className="flex items-center justify-between">
               <span>خط {i + 1}</span>
-              <span className="font-mono text-white/55" dir="ltr">{n}</span>
+              <span className="font-mono text-foreground/70" dir="ltr">{n}</span>
             </div>
           ))}
           {l.serviceStatus && <div className="flex items-center justify-between"><span>حالة الخدمة</span><span className="text-green-400 font-semibold">{l.serviceStatus}</span></div>}
           {/* الأرقام الكاملة بعد OTP */}
           {fullNums && fullNums.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+            <div className="mt-2 pt-2 border-t border-border space-y-1">
               <p className="text-[10px] font-bold text-amber-400/80 mb-1">الأرقام الكاملة (بعد التحقق)</p>
               {fullNums.map((n, i) => (
                 <div key={n} className="flex items-center justify-between">
@@ -128,10 +128,10 @@ const LineCard = memo(function LineCard({ l, fullNums }: { l: LineInfo; fullNums
           )}
         </div>
       )}
-      {l.availability === 'empty'       && <p className="text-[11px] text-white/35 pr-2">لا توجد خطوط مسجلة لهذه الشركة.</p>}
-      {l.availability === 'unavailable' && <p className="text-[11px] text-white/35 pr-2">خدمة هذه الشركة غير متاحة حاليًا.</p>}
-      {l.availability === 'no_response' && <p className="text-[11px] text-white/35 pr-2">لم ترجع هذه الشركة أي بيانات.</p>}
-      {l.availability === 'conn_error'  && <p className="text-[11px] text-white/35 pr-2">تعذّر الاتصال بهذه الشركة.</p>}
+      {l.availability === 'empty'       && <p className="text-[11px] text-muted-foreground/60 pr-2">لا توجد خطوط مسجلة لهذه الشركة.</p>}
+      {l.availability === 'unavailable' && <p className="text-[11px] text-muted-foreground/60 pr-2">خدمة هذه الشركة غير متاحة حاليًا.</p>}
+      {l.availability === 'no_response' && <p className="text-[11px] text-muted-foreground/60 pr-2">لم ترجع هذه الشركة أي بيانات.</p>}
+      {l.availability === 'conn_error'  && <p className="text-[11px] text-muted-foreground/60 pr-2">تعذّر الاتصال بهذه الشركة.</p>}
     </div>
   );
 });
@@ -190,19 +190,19 @@ const OtpDialog = memo(function OtpDialog({
               ? <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
               : <KeyRound className="w-6 h-6 text-amber-400" />}
           </div>
-          <h3 className="text-base font-black text-white">التحقق لإظهار الأرقام كاملة</h3>
-          <p className="text-xs text-white/70 leading-relaxed px-2">
+          <h3 className="text-base font-black text-foreground">التحقق لإظهار الأرقام كاملة</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed px-2">
             للتأكد من هويتك قبل إظهار الأرقام الكاملة، أدخل رمز التحقق المرسَل على هاتفك.
           </p>
-          <p className="text-[11px] text-white/45">
+          <p className="text-[11px] text-muted-foreground">
             {sending
               ? 'جاري إرسال رمز التحقق على هاتفك...'
               : 'أدخل الرمز أو الصقه إذا وصلك في رسالة.'}
           </p>
           {phone && (
-            <div className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 mt-2">
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-white/5 px-3 py-2 mt-2">
               <Phone className="w-3.5 h-3.5 text-indigo-400" />
-              <p className="text-sm font-mono text-white/90" dir="ltr">{phone}</p>
+              <p className="text-sm font-mono text-foreground" dir="ltr">{phone}</p>
             </div>
           )}
         </div>
@@ -260,7 +260,7 @@ const OtpDialog = memo(function OtpDialog({
           <button
             onClick={onClose}
             disabled={loading || sending}
-            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-white/10 text-white/50 hover:bg-white/5 transition-all"
+            className="flex-1 h-11 text-sm font-semibold rounded-xl border border-border text-muted-foreground hover:bg-white/5 transition-all"
           >
             إلغاء
           </button>
@@ -285,7 +285,7 @@ const OtpDialog = memo(function OtpDialog({
 
         {/* إعادة الإرسال مع التايمر */}
         {cooldown > 0 ? (
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/35">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/60">
             <Clock className="w-3 h-3" />
             <span>إعادة الإرسال بعد {cooldown} ثانية</span>
           </div>
@@ -421,11 +421,11 @@ export default function WalletLinesResultsPage() {
         style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate('/wallet-lines')}
-            className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95">
-            <ArrowRight className="w-4 h-4 text-white" />
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-white/5 hover:bg-white/10 active:scale-95">
+            <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-black text-white">بيانات الخطوط والمحافظ على My NTRA</h1>
+            <h1 className="text-base font-black text-foreground">بيانات الخطوط والمحافظ على My NTRA</h1>
             <p className="text-[10px] text-muted-foreground">نتائج الاستعلام</p>
           </div>
           <span className="text-[10px] font-bold px-2 py-1 rounded-full"
@@ -448,13 +448,13 @@ export default function WalletLinesResultsPage() {
           <p className="text-[10px] font-bold text-amber-300/70 uppercase tracking-wide">حساب My NTRA</p>
           <div className="flex items-center gap-2.5 text-sm">
             <User className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-white/55 text-[11px]">الاسم</span>
-            <span className="flex-1 text-white font-bold truncate text-left">{userFullName}</span>
+            <span className="text-foreground/70 text-[11px]">الاسم</span>
+            <span className="flex-1 text-foreground font-bold truncate text-left">{userFullName}</span>
           </div>
           <div className="flex items-center gap-2.5 text-sm">
             <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-white/55 text-[11px]">البريد</span>
-            <span className="flex-1 text-white font-bold truncate text-left" dir="ltr">{userEmail}</span>
+            <span className="text-foreground/70 text-[11px]">البريد</span>
+            <span className="flex-1 text-foreground font-bold truncate text-left" dir="ltr">{userEmail}</span>
           </div>
         </div>
 
@@ -462,13 +462,13 @@ export default function WalletLinesResultsPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-3 border border-indigo-500/20 bg-indigo-500/6 text-center">
             <Wallet className="w-5 h-5 text-indigo-400 mx-auto mb-1" />
-            <p className="text-lg font-black text-white">{totalWallets}</p>
-            <p className="text-[10px] text-white/45">محفظة مسجلة</p>
+            <p className="text-lg font-black text-foreground">{totalWallets}</p>
+            <p className="text-[10px] text-muted-foreground">محفظة مسجلة</p>
           </div>
           <div className="rounded-2xl p-3 border border-green-500/20 bg-green-500/6 text-center">
             <Phone className="w-5 h-5 text-green-400 mx-auto mb-1" />
-            <p className="text-lg font-black text-white">{totalLines}</p>
-            <p className="text-[10px] text-white/45">خط مسجل</p>
+            <p className="text-lg font-black text-foreground">{totalLines}</p>
+            <p className="text-[10px] text-muted-foreground">خط مسجل</p>
           </div>
         </div>
 
@@ -479,7 +479,7 @@ export default function WalletLinesResultsPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-black text-white">{fullNumbers ? 'تم التحقق بنجاح' : 'إظهار الأرقام كاملة'}</h3>
-            <p className="text-[10px] text-white/50 leading-relaxed">
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
               {fullNumbers
                 ? 'تم إظهار الأرقام الكاملة لكل الشركات أدناه.'
                 : 'للتأكد من هويتك قبل إظهار الأرقام الكاملة، يتطلب تحقق OTP.'}
@@ -517,7 +517,7 @@ export default function WalletLinesResultsPage() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Wallet className="w-4 h-4 text-indigo-400" />
-            <h2 className="text-sm font-black text-white">المحافظ المسجلة</h2>
+            <h2 className="text-sm font-black text-foreground">المحافظ المسجلة</h2>
           </div>
           <div className="space-y-2">
             {result.wallets.map(w => <WalletCard key={w.carrier} w={w} />)}
@@ -528,7 +528,7 @@ export default function WalletLinesResultsPage() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Phone className="w-4 h-4 text-green-400" />
-            <h2 className="text-sm font-black text-white">الخطوط المسجلة</h2>
+            <h2 className="text-sm font-black text-foreground">الخطوط المسجلة</h2>
             {fullNumbers && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)' }}>
@@ -559,7 +559,7 @@ export default function WalletLinesResultsPage() {
           ] as [DataAvailability, string][]).map(([a, label]) => (
             <div key={a} className="flex items-center justify-between">
               <AvailabilityBadge avail={a} />
-              <span className="text-[10px] text-white/35">{label}</span>
+              <span className="text-[10px] text-muted-foreground/60">{label}</span>
             </div>
           ))}
         </div>

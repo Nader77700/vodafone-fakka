@@ -221,17 +221,17 @@ export default function RechargeBalancePage() {
     : '—';
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-white font-cairo selection:bg-[#E60000]/30 selection:text-white">
+    <div className="min-h-screen bg-background pb-24 font-cairo">
 
       {/* ── Top Nav ─────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 h-16">
-          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-white/10 active:bg-white/5 transition-colors">
-            <ArrowLeft className="w-6 h-6" />
+          <button onClick={() => navigate(-1)} className="p-2 -mr-2 rounded-full hover:bg-muted active:bg-muted/70 transition-colors">
+            <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">شحن الرصيد</h1>
-            <p className="text-[10px] text-[#E60000] font-medium">Vodafone Cash</p>
+            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
           </div>
           <button
             onClick={() => navigate('/vodafone-cash-center/history/recharge')}
@@ -263,10 +263,10 @@ export default function RechargeBalancePage() {
             </button>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <div className="text-white/40 text-right">حالة الاتصال</div>
+            <div className="text-muted-foreground text-right">حالة الاتصال</div>
             <div className="flex items-center gap-1.5">
               {isCheckingConn ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-white/40" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
               ) : isConnected ? (
                 <>
                   <Wifi className="w-3.5 h-3.5 text-green-400" />
@@ -279,9 +279,9 @@ export default function RechargeBalancePage() {
                 </>
               )}
             </div>
-            <div className="text-white/40 text-right">الشبكة الحالية</div>
+            <div className="text-muted-foreground text-right">الشبكة الحالية</div>
             <div className="text-white/80 font-medium truncate">{networkName}</div>
-            <div className="text-white/40 text-right">آخر فحص</div>
+            <div className="text-muted-foreground text-right">آخر فحص</div>
             <div className="text-white/50">{lastCheckedStr}</div>
           </div>
         </div>
@@ -306,8 +306,8 @@ export default function RechargeBalancePage() {
                 {rechargeForSelf && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
               </div>
               <div className="flex items-center gap-2 flex-1">
-                <UserCheck className={`w-4 h-4 ${rechargeForSelf ? 'text-[#E60000]' : 'text-white/40'}`} />
-                <span className={`text-sm font-bold ${rechargeForSelf ? 'text-[#E60000]' : 'text-white/70'}`}>
+                <UserCheck className={`w-4 h-4 ${rechargeForSelf ? 'text-primary' : 'text-muted-foreground'}`} />
+                <span className={`text-sm font-bold ${rechargeForSelf ? 'text-primary' : 'text-white/70'}`}>
                   شحن رصيد لنفسي
                 </span>
               </div>
@@ -322,7 +322,7 @@ export default function RechargeBalancePage() {
               <div className={`flex items-center bg-[#1A1A1A] border rounded-xl overflow-hidden transition-colors
                 ${rechargeForSelf ? 'border-white/5 opacity-60' : activeReceiver && (!isReceiverValid || !isReceiverLengthValid)
                   ? 'border-red-500' : 'border-white/10 focus-within:border-[#E60000]'}`}>
-                <div className="pl-3 pr-2 text-white/40">
+                <div className="pl-3 pr-2 text-muted-foreground">
                   <Phone className="w-5 h-5" />
                 </div>
                 <input
@@ -372,7 +372,7 @@ export default function RechargeBalancePage() {
                       placeholder="0"
                       className="w-full bg-transparent border-none text-white text-base font-bold py-0 px-2 outline-none placeholder:text-white/20 text-center"
                     />
-                    <span className="text-[10px] font-bold text-white/30 pl-1.5 pr-1 shrink-0">ج</span>
+                    <span className="text-[10px] font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
                 </div>
 
@@ -407,7 +407,7 @@ export default function RechargeBalancePage() {
                       placeholder="0"
                       className="w-full bg-transparent border-none text-white text-base font-bold py-0 px-2 outline-none placeholder:text-white/20 text-center"
                     />
-                    <span className="text-[10px] font-bold text-white/30 pl-1.5 pr-1 shrink-0">ج</span>
+                    <span className="text-[10px] font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
                 </div>
               </div>
@@ -415,8 +415,8 @@ export default function RechargeBalancePage() {
               {/* تلميح حساب + رسالة خطأ */}
               {netAmount && totalAmount && Number(netAmount) >= 2 ? (
                 <div className="flex items-center justify-between text-[10px] px-1">
-                  <span className="text-white/30">30% ضريبة مشمولة</span>
-                  <span className="text-white/40 font-mono">{netAmount} + {Number(totalAmount) - Number(netAmount)} = {totalAmount} ج</span>
+                  <span className="text-muted-foreground/50">30% ضريبة مشمولة</span>
+                  <span className="text-muted-foreground font-mono">{netAmount} + {Number(totalAmount) - Number(netAmount)} = {totalAmount} ج</span>
                 </div>
               ) : totalAmount !== '' && Number(totalAmount) < 3 ? (
                 <p className="text-xs text-red-500 font-medium">الحد الأدنى 3 جنيه إجمالي</p>
@@ -433,7 +433,7 @@ export default function RechargeBalancePage() {
                       onClick={() => handleQuickPick(n)}
                       className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all duration-200 border
                         ${Number(netAmount) === n
-                          ? 'bg-[#E60000]/15 border-[#E60000]/60 text-[#E60000]'
+                          ? 'bg-[#E60000]/15 border-[#E60000]/60 text-primary'
                           : 'bg-[#1A1A1A] border-white/8 text-white/60 hover:border-white/20 active:scale-95'}`}
                     >
                       {n}
@@ -467,7 +467,7 @@ export default function RechargeBalancePage() {
               </p>
               {execLogs.length > 0 && (
                 <details className="mt-2">
-                  <summary className="text-xs text-white/40 cursor-pointer select-none">عرض السجلات التفصيلية</summary>
+                  <summary className="text-xs text-muted-foreground cursor-pointer select-none">عرض السجلات التفصيلية</summary>
                   <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                     {execLogs.map((log, i) => (
                       <div key={i} className={`text-xs font-mono px-2 py-1 rounded flex gap-2
@@ -486,9 +486,9 @@ export default function RechargeBalancePage() {
         {/* ── ملاحظات هامة ─────────────────────────────────────── */}
         <div className="bg-[#1A1A1A] border border-[#E60000]/20 rounded-xl p-4 shadow-[0_0_15px_rgba(230,0,0,0.05)]">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-[#E60000] shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <h4 className="text-sm font-bold text-[#E60000]">ملاحظات هامة:</h4>
+              <h4 className="text-sm font-bold text-primary">ملاحظات هامة:</h4>
               <ul className="text-xs text-white/70 space-y-1.5 list-disc list-inside pr-1">
                 <li>يجب تشغيل بيانات فودافون (Vodafone Data).</li>
                 <li>يجب أن تكون محفظتك مفعلة.</li>
@@ -507,7 +507,7 @@ export default function RechargeBalancePage() {
           className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-bold transition-all duration-300
             ${canSubmit
               ? 'bg-[#E60000] text-white shadow-[0_0_20px_rgba(230,0,0,0.4)] hover:bg-[#CC0000] active:scale-[0.98]'
-              : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'}`}
+              : 'bg-white/5 text-muted-foreground/50 cursor-not-allowed border border-white/5'}`}
         >
           {isSubmitting
             ? <Loader2 className="w-5 h-5 animate-spin" />

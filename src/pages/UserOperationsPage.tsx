@@ -82,9 +82,9 @@ function OpDetailSheet({ op, open, onClose }: { op: Operation | null; open: bool
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
       <SheetContent side="bottom"
         className="max-h-[88dvh] overflow-y-auto max-w-[calc(100%-2rem)] md:max-w-lg mx-auto rounded-t-2xl"
-        style={{ background: '#120000', border: '1px solid rgba(230,0,0,0.2)' }}>
+        style={{ background: 'hsl(var(--card))', border: '1px solid rgba(230,0,0,0.15)' }}>
         <SheetHeader className="pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.15)' }}>
-          <SheetTitle className="text-sm text-white">
+          <SheetTitle className="text-sm text-foreground">
             <span>{isSuccess ? '✅' : '❌'}</span> تفاصيل العملية
           </SheetTitle>
         </SheetHeader>
@@ -216,18 +216,18 @@ export default function UserOperationsPage() {
   const hasFilters = search || statusFilter !== 'all' || sourceFilter !== 'all' || dateFilter !== 'all' || amountFilter !== null;
 
   return (
-    <div className="min-h-screen pb-8" style={{ background: '#080000' }} dir="rtl">
+    <div className="min-h-screen pb-8 bg-background" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b"
-        style={{ background: 'rgba(8,0,0,0.95)', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
+        style={{ background: 'var(--ops-header-bg, rgba(8,0,0,0.95))', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
         <button onClick={() => navigate(-1)}
           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
           <ArrowRight className="w-4 h-4" style={{ color: '#E60000' }} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-black text-white truncate">سجل العمليات</h1>
-          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{stats.total} عملية إجمالاً</p>
+          <h1 className="text-sm font-black text-foreground truncate">سجل العمليات</h1>
+          <p className="text-[10px] text-muted-foreground">{stats.total} عملية إجمالاً</p>
         </div>
         <button onClick={() => loadOps(1)} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.15)' }}>
@@ -245,9 +245,9 @@ export default function UserOperationsPage() {
             { label: 'المبلغ',  value: `${stats.totalAmt.toFixed(0)}ج`,  color: '#E60000' },
           ].map(s => (
             <div key={s.label} className="rounded-xl p-2.5 text-center"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <p className="text-base font-black tabular-nums" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-[9px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.label}</p>
+              style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
+              <p className="text-base font-black tabular-nums" style={{ color: s.color === '#ffffff' ? 'hsl(var(--foreground))' : s.color }}>{s.value}</p>
+              <p className="text-[9px] mt-0.5 text-muted-foreground">{s.label}</p>
             </div>
           ))}
         </div>
@@ -261,13 +261,13 @@ export default function UserOperationsPage() {
 
         {/* بحث */}
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.3)' }} />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             placeholder="ابحث برقم الهاتف أو المنتج أو رقم العملية..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pr-9 pl-3 py-2 text-sm rounded-xl outline-none text-right"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', caretColor: '#E60000' }}
+            style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))', caretColor: '#E60000' }}
           />
         </div>
 
@@ -276,7 +276,7 @@ export default function UserOperationsPage() {
           {/* الحالة */}
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             className="h-8 text-xs rounded-lg px-2 outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>
+            style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
             <option value="all">كل الحالات</option>
             <option value="success">✅ ناجحة</option>
             <option value="failed">❌ فاشلة</option>
@@ -284,7 +284,7 @@ export default function UserOperationsPage() {
           {/* المصدر */}
           <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value as typeof sourceFilter)}
             className="h-8 text-xs rounded-lg px-2 outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>
+            style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
             <option value="all">كل المصادر</option>
             <option value="balance">🔴 رصيد أنا</option>
             <option value="vcash">💳 VCash</option>
@@ -292,7 +292,7 @@ export default function UserOperationsPage() {
           {/* التاريخ */}
           <select value={dateFilter} onChange={e => setDateFilter(e.target.value as typeof dateFilter)}
             className="h-8 text-xs rounded-lg px-2 outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>
+            style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
             <option value="all">كل الأوقات</option>
             <option value="today">اليوم</option>
             <option value="week">آخر 7 أيام</option>
@@ -318,7 +318,7 @@ export default function UserOperationsPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 space-y-2">
             <p className="text-2xl">📭</p>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>لا توجد عمليات</p>
+            <p className="text-sm text-muted-foreground">لا توجد عمليات</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -344,7 +344,7 @@ export default function UserOperationsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-xs font-bold text-white truncate">{op.card_type}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{op.card_type}</p>
                         {op.operation_number != null && (
                           <span className="text-[9px] font-mono px-1.5 py-0 rounded-full shrink-0"
                             style={{ background: 'rgba(230,0,0,0.1)', color: '#ff8888', border: '1px solid rgba(230,0,0,0.2)' }}>
@@ -352,7 +352,7 @@ export default function UserOperationsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-mono mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      <p className="text-[11px] font-mono mt-0.5 text-muted-foreground">
                         {op.phone_number}
                       </p>
                     </div>
@@ -378,7 +378,7 @@ export default function UserOperationsPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      <p className="text-[9px] text-muted-foreground">
                         {opDateStr}
                       </p>
                       <button
