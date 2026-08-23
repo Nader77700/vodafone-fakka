@@ -1795,19 +1795,21 @@ html.light .subscription-premium-card::before {
   pointer-events: none;
 }
 
-/* Light: نصوص داخل الكارت */
-html.light .subscription-premium-card,
-html.light .subscription-premium-card p,
-html.light .subscription-premium-card h1,
-html.light .subscription-premium-card h2,
-html.light .subscription-premium-card h3,
-html.light .subscription-premium-card span {
+/* Light: نصوص داخل الكارت — فقط العناصر بدون inline style */
+html.light .subscription-premium-card {
+  color: #1a1a2e;
+}
+html.light .subscription-premium-card p:not([style]),
+html.light .subscription-premium-card h1:not([style]),
+html.light .subscription-premium-card h2:not([style]),
+html.light .subscription-premium-card h3:not([style]),
+html.light .subscription-premium-card span:not([style]) {
   color: #1a1a2e;
 }
 
 /* Light: text-foreground داخل الكارت */
 html.light .subscription-premium-card .text-foreground { color: #1a1a2e !important; }
-html.light .subscription-premium-card .text-muted-foreground { color: rgba(26,26,46,0.55) !important; }
+html.light .subscription-premium-card .text-muted-foreground { color: #6b7280 !important; }
 
 /* Light: الخلايا الداخلية */
 html.light .subscription-premium-card [style*="background: rgba(255,255,255,0.03)"],

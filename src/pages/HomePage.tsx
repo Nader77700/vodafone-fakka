@@ -2442,15 +2442,15 @@ function HomePage() {
   // P3: badge نوع الاشتراك — يعرض الاسم الحقيقي للخطة من planLabel + PHASE 12 كل الحالات
   const subBadge: { label: string; color: string; bg: string } = (() => {
     // PHASE 12: حالات خاصة قبل الفحص العام
-    if (isSuspendedSub)                               return { label: '⏸ معلق',   color: '#F7C948', bg: 'rgba(247,201,72,0.12)' };
-    if (subscription?.status === 'cancelled')         return { label: '🚫 ملغي',  color: '#ef4444', bg: 'rgba(239,68,68,0.10)' };
-    if (!subActive)                                    return { label: '❌ منتهي', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
+    if (isSuspendedSub)                               return { label: '⏸ Suspended', color: L ? '#b45309' : '#F7C948', bg: L ? 'rgba(180,83,9,0.10)' : 'rgba(247,201,72,0.12)' };
+    if (subscription?.status === 'cancelled')         return { label: '🚫 Cancelled', color: '#dc2626',               bg: L ? 'rgba(220,38,38,0.10)' : 'rgba(239,68,68,0.10)' };
+    if (!subActive)                                   return { label: '❌ Expired',   color: '#dc2626',               bg: L ? 'rgba(220,38,38,0.10)' : 'rgba(239,68,68,0.12)' };
     const ct = opsInfo?.codeType;
     const planName = opsInfo?.planLabel;
-    if (ct === 'trial') return { label: `⚡ ${planName ?? 'تجريبي'}`, color: '#F7C948', bg: 'rgba(247,201,72,0.12)' };
-    if (ct === 'gift')  return { label: `🎁 ${planName ?? 'هدية'}`,   color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' };
-    if (ct === 'paid')  return { label: `📅 ${planName ?? 'شهري'}`,   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' };
-    return { label: `💎 ${planName ?? 'Premium'}`, color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' };
+    if (ct === 'trial') return { label: `⚡ ${planName ?? 'Trial'}`,   color: L ? '#b45309' : '#F7C948', bg: L ? 'rgba(180,83,9,0.10)' : 'rgba(247,201,72,0.12)' };
+    if (ct === 'gift')  return { label: `🎁 ${planName ?? 'Gift'}`,    color: L ? '#7c3aed' : '#a78bfa', bg: L ? 'rgba(124,58,237,0.10)' : 'rgba(167,139,250,0.12)' };
+    if (ct === 'paid')  return { label: `📅 ${planName ?? 'Monthly'}`, color: L ? '#1d4ed8' : '#60a5fa', bg: L ? 'rgba(29,78,216,0.10)' : 'rgba(96,165,250,0.12)' };
+    return { label: `💎 ${planName ?? 'PREMIUM VIP'}`, color: L ? '#92400e' : '#D4AF37', bg: L ? 'rgba(146,64,14,0.10)' : 'rgba(212,175,55,0.12)' };
   })();
 
   const displayName = profile?.full_name ?? profile?.username ?? 'المستخدم';
@@ -2726,14 +2726,14 @@ function HomePage() {
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: subBadge.color }} />
                   {subBadge.label}
                 </span>
-                {/* Username — white + gold + red shimmer gradient (both Light & Dark) */}
+                {/* Username — Light: dark crimson-gold gradient (readable on white), Dark: white shimmer */}
                 <h2
                   className="text-2xl font-black leading-tight"
                   style={L ? {
-                    background: 'linear-gradient(100deg, #ffffff 0%, #fde68a 28%, #E60000 58%, #f5f5f5 100%)',
+                    background: 'linear-gradient(100deg, #1a0a00 0%, #7c2d12 35%, #dc2626 65%, #92400e 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 1px 4px rgba(230,0,0,0.20)) drop-shadow(0 0 10px rgba(212,175,55,0.15))',
+                    filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.15))',
                   } : {
                     background: 'linear-gradient(100deg, #ffffff 0%, #fde68a 30%, #E60000 62%, #ffffff 100%)',
                     WebkitBackgroundClip: 'text',

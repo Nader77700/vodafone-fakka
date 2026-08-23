@@ -71,10 +71,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
   const progress    = isAdmin ? 0
     : fmtProgress(subscription?.activated_at ?? null, subscription?.expires_at ?? null);
 
-  // ألوان الحالة
+  // ألوان الحالة — Light: ألوان داكنة حقيقية مرئية على أبيض
   const statusColor =
-    isAdmin         ? (L ? '#0077aa' : '#00E5FF')
-    : !subActive    ? '#ef4444'
+    isAdmin         ? (L ? '#b45309' : '#00E5FF')
+    : !subActive    ? '#dc2626'
     : timeLeft.status === 'critical' || timeLeft.status === 'expiring' ? (L ? '#b45309' : '#F7C948')
     : (L ? '#059669' : '#22c55e');
 
@@ -144,43 +144,41 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
 
-            {/* PREMIUM VIP Gold Badge — same style in both Light & Dark, unified gold-red palette */}
+            {/* PREMIUM VIP Gold Badge */}
             <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
               style={L ? {
-                background: 'linear-gradient(135deg, #fffff8 0%, #fdf8ec 60%, #faf0d0 100%)',
-                border: '1.5px solid rgba(212,175,55,0.55)',
-                boxShadow: '0 2px 10px rgba(212,175,55,0.22), 0 1px 0 rgba(255,255,255,0.95) inset',
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                border: '1.5px solid rgba(180,83,9,0.55)',
+                boxShadow: '0 2px 8px rgba(180,83,9,0.20), 0 1px 0 rgba(255,255,255,0.90) inset',
               } : {
                 background: 'linear-gradient(135deg, rgba(247,201,72,0.14), rgba(230,0,0,0.06))',
                 border: '1px solid rgba(247,201,72,0.40)',
                 boxShadow: '0 0 14px rgba(247,201,72,0.12)',
               }}>
-              <Sparkles className="w-3 h-3" style={{ color: L ? '#c9921a' : '#F7C948' }} />
+              <Sparkles className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
+              {/* Light: solid dark amber — perfectly readable on yellow bg */}
               <span className="text-[10px] font-black tracking-[0.12em] uppercase"
-                style={L ? {
-                  background: 'linear-gradient(90deg, #b45309 0%, #d97706 50%, #b45309 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                } : {
-                  background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                style={{ color: L ? '#78350f' : undefined,
+                  ...(L ? {} : {
+                    background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  })
                 }}>PREMIUM</span>
               <span className="text-[9px] font-black tracking-widest"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #c2410c, #b45309)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  border: '1px solid rgba(194,65,12,0.35)',
+                  color: '#7c2d12',
+                  border: '1px solid rgba(124,45,18,0.40)',
                   borderRadius: '4px',
                   padding: '0 5px',
+                  background: 'rgba(255,255,255,0.55)',
                 } : {
                   color: '#fbbf24',
                   border: '1px solid rgba(247,201,72,0.35)',
                   borderRadius: '4px',
                   padding: '0 5px',
                 }}>VIP</span>
-              <Gem className="w-2.5 h-2.5" style={{ color: L ? '#b45309' : '#F7C948', opacity: 0.85 }} />
+              <Gem className="w-2.5 h-2.5" style={{ color: L ? '#92400e' : '#F7C948', opacity: 0.85 }} />
             </div>
 
             {/* Status badge */}
@@ -193,14 +191,14 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
-            {/* Plan name — white + gold + red shimmer gradient in both modes */}
+            {/* Plan name — Light: dark crimson-gold readable, Dark: bright shimmer */}
             {subActive && (
               <p className="text-xl font-black leading-tight"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 30%, #E60000 60%, #f0f0f0 100%)',
+                  background: 'linear-gradient(90deg, #1a0a00 0%, #7c2d12 35%, #dc2626 65%, #92400e 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 1px 3px rgba(230,0,0,0.22)) drop-shadow(0 0 8px rgba(212,175,55,0.18))',
+                  filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.15))',
                 } : {
                   background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 35%, #E60000 65%, #ffffff 100%)',
                   WebkitBackgroundClip: 'text',
@@ -259,12 +257,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 }} />
             </div>
             <div className="min-w-0 flex-1">
-              {/* "مسؤول النظام" — gold-red gradient text */}
+            {/* "مسؤول النظام" — Light: solid dark readable, Dark: gold-red gradient */}
               <p className="text-xs font-black"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #b45309 0%, #c2410c 50%, #b45309 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: '#78350f',
                 } : {
                   background: 'linear-gradient(90deg, #F7C948 0%, #fde68a 40%, #E60000 100%)',
                   WebkitBackgroundClip: 'text',
@@ -272,7 +268,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 }}>
                 مسؤول النظام
               </p>
-              {/* subtitle — warm amber, no blue */}
+              {/* subtitle */}
               <p className="text-[10px] font-medium leading-snug mt-0.5"
                 style={{ color: L ? '#92400e' : 'rgba(247,201,72,0.70)' }}>
                 صلاحيات كاملة — استخدام غير محدود ♾️
@@ -289,10 +285,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 icon: Calendar,
                 label: 'تاريخ التفعيل',
                 value: fmtDateAr(subscription?.activated_at),
-                accent: L ? '#92400e' : '#94a3b8',
-                bg: L ? 'linear-gradient(135deg,#fffbeb,#fef3c7)' : 'hsl(var(--card))',
-                border: L ? 'rgba(212,175,55,0.30)' : 'hsl(var(--muted))',
-                shadow: L ? '0 2px 6px rgba(212,175,55,0.15)' : 'none',
+                accent: L ? '#78350f' : '#94a3b8',
+                bg: L ? 'linear-gradient(135deg,#fef9ee,#fef3c7)' : 'hsl(var(--card))',
+                border: L ? 'rgba(180,83,9,0.30)' : 'hsl(var(--muted))',
+                shadow: L ? '0 2px 6px rgba(180,83,9,0.12)' : 'none',
               },
               {
                 icon: Clock,
@@ -300,20 +296,26 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 value: subscription?.expires_at
                   ? fmtDateAr(subscription.expires_at)
                   : (subActive ? 'غير محدود ♾️' : '—'),
-                accent: statusColor,
-                bg: L ? `linear-gradient(135deg,#ffffff,${statusColor}08)` : 'hsl(var(--card))',
-                border: L ? `${statusColor}28` : 'hsl(var(--muted))',
-                shadow: L ? `0 2px 6px ${statusColor}12` : 'none',
+                accent: L ? (
+                  statusColor === '#059669' ? '#059669'
+                  : statusColor === '#b45309' ? '#b45309'
+                  : '#dc2626'
+                ) : statusColor,
+                bg: L ? 'linear-gradient(135deg,#ffffff,rgba(220,38,38,0.05))' : 'hsl(var(--card))',
+                border: L ? 'rgba(220,38,38,0.20)' : 'hsl(var(--muted))',
+                shadow: L ? '0 2px 6px rgba(220,38,38,0.08)' : 'none',
               },
             ].map(({ icon: Icon, label, value, accent, bg, border, shadow }) => (
               <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
                 style={{ background: bg, border: `1px solid ${border}`, boxShadow: shadow }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${accent}18`, color: accent }}>
+                  style={{ background: L ? `${accent}22` : `${accent}18`, color: accent }}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px]" style={{ color: L ? '#9ca3af' : 'hsl(var(--muted-foreground))' }}>{label}</p>
+                  {/* Light: مرئي — رمادي داكن كافٍ */}
+                  <p className="text-[9px] font-medium" style={{ color: L ? '#6b7280' : 'hsl(var(--muted-foreground))' }}>{label}</p>
+                  {/* Light: لون داكن واضح */}
                   <p className="text-[12px] font-black tabular-nums" style={{ color: accent }}>{value}</p>
                 </div>
               </div>
