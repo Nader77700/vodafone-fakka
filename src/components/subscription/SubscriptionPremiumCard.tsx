@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CreditCard, Calendar, Clock, Crown,
-  ChevronRight, BarChart3, Zap, Star,
-  Activity, ShieldCheck,
+  ChevronRight, BarChart3, Gem,
+  Activity, ShieldCheck, Sparkles,
 } from 'lucide-react';
 import type { Subscription } from '@/types/types';
 import type { SubscriptionOpsInfo } from '@/lib/api';
@@ -103,9 +103,15 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
 
   // ── Light Mode card styles ──────────────────────────────────────────────────
   const cardStyle = L ? {
-    background: 'linear-gradient(145deg, #ffffff 0%, #fafafa 60%, #fff8f0 100%)',
-    border: '1.5px solid rgba(0,0,0,0.10)',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)',
+    background: 'linear-gradient(160deg, #ffffff 0%, #fffdf7 40%, #fff9e8 80%, #fffbef 100%)',
+    border: '1.5px solid rgba(212,175,55,0.30)',
+    boxShadow: [
+      '0 2px 0 rgba(255,255,255,0.95) inset',
+      '0 -1px 0 rgba(212,175,55,0.15) inset',
+      '0 8px 32px rgba(212,175,55,0.12)',
+      '0 2px 8px rgba(0,0,0,0.06)',
+      '0 1px 2px rgba(0,0,0,0.04)',
+    ].join(', '),
   } : {
     border: `1.5px solid ${statusColor}35`,
     boxShadow: `0 4px 32px ${statusColor}18, 0 1px 0 rgba(255,255,255,0.04) inset`,
@@ -114,10 +120,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
   return (
     <div className="subscription-premium-card relative rounded-2xl overflow-hidden select-none" style={cardStyle}>
 
-      {/* ── Light: Top accent stripe ── */}
+      {/* ── Light: Premium gold top stripe ── */}
       {L && (
         <div className="h-[3px] w-full"
-          style={{ background: 'linear-gradient(90deg, #E60000 0%, #F7C948 50%, #E60000 100%)' }} />
+          style={{ background: 'linear-gradient(90deg, #b8860b 0%, #F7C948 30%, #fffacd 50%, #F7C948 70%, #b8860b 100%)' }} />
       )}
 
       {/* ── Dark: Glow top line ── */}
@@ -138,19 +144,39 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
 
-            {/* Premium Gold Badge */}
-            <div className="flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full"
+            {/* PREMIUM PRO Gold Badge */}
+            <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
               style={L ? {
-                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                border: '1.5px solid #F7C948',
-                boxShadow: '0 1px 4px rgba(247,201,72,0.25)',
+                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%)',
+                border: '1.5px solid #d4af37',
+                boxShadow: '0 2px 8px rgba(212,175,55,0.35), 0 1px 0 rgba(255,255,255,0.9) inset',
               } : {
-                background: 'rgba(247,201,72,0.12)',
-                border: '1px solid rgba(247,201,72,0.35)',
+                background: 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(247,201,72,0.08))',
+                border: '1px solid rgba(247,201,72,0.45)',
+                boxShadow: '0 0 12px rgba(247,201,72,0.15)',
               }}>
-              <Star className="w-3 h-3 fill-current" style={{ color: L ? '#92400e' : '#F7C948' }} />
-              <span className="text-[10px] font-black tracking-widest uppercase"
-                style={{ color: L ? '#78350f' : '#F7C948' }}>Premium</span>
+              <Gem className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
+              <span className="text-[10px] font-black tracking-[0.15em] uppercase"
+                style={L ? {
+                  background: 'linear-gradient(90deg, #92400e 0%, #b45309 40%, #78350f 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                } : { color: '#F7C948' }}>PREMIUM</span>
+              <span className="text-[9px] font-black tracking-widest"
+                style={L ? {
+                  background: 'linear-gradient(90deg, #d97706, #92400e)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  border: '1px solid rgba(180,83,9,0.4)',
+                  borderRadius: '4px',
+                  padding: '0 4px',
+                } : {
+                  color: '#F7C948',
+                  border: '1px solid rgba(247,201,72,0.4)',
+                  borderRadius: '4px',
+                  padding: '0 4px',
+                }}>PRO</span>
+              <Sparkles className="w-2.5 h-2.5" style={{ color: L ? '#b45309' : '#F7C948', opacity: 0.8 }} />
             </div>
 
             {/* Status badge */}
@@ -163,10 +189,16 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
-            {/* Plan name */}
+            {/* Plan name — golden gradient in Light, bright in Dark */}
             {subActive && (
               <p className="text-lg font-black"
-                style={{ color: L ? '#111827' : 'hsl(var(--foreground))' }}>{planName}</p>
+                style={L ? {
+                  background: 'linear-gradient(90deg, #1a1a1a 0%, #111827 60%, #292524 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: 'none',
+                  filter: 'drop-shadow(0 1px 2px rgba(212,175,55,0.18))',
+                } : { color: 'hsl(var(--foreground))' }}>{planName}</p>
             )}
           </div>
 
@@ -222,9 +254,10 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 icon: Calendar,
                 label: 'تاريخ التفعيل',
                 value: fmtDateAr(subscription?.activated_at),
-                accent: L ? '#4b5563' : '#94a3b8',
-                bg: L ? '#f9fafb' : 'hsl(var(--card))',
-                border: L ? 'rgba(0,0,0,0.08)' : 'hsl(var(--muted))',
+                accent: L ? '#92400e' : '#94a3b8',
+                bg: L ? 'linear-gradient(135deg,#fffbeb,#fef3c7)' : 'hsl(var(--card))',
+                border: L ? 'rgba(212,175,55,0.30)' : 'hsl(var(--muted))',
+                shadow: L ? '0 2px 6px rgba(212,175,55,0.15)' : 'none',
               },
               {
                 icon: Clock,
@@ -233,12 +266,13 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                   ? fmtDateAr(subscription.expires_at)
                   : (subActive ? 'غير محدود ♾️' : '—'),
                 accent: statusColor,
-                bg: L ? `${statusColor}08` : 'hsl(var(--card))',
-                border: L ? `${statusColor}20` : 'hsl(var(--muted))',
+                bg: L ? `linear-gradient(135deg,#ffffff,${statusColor}08)` : 'hsl(var(--card))',
+                border: L ? `${statusColor}28` : 'hsl(var(--muted))',
+                shadow: L ? `0 2px 6px ${statusColor}12` : 'none',
               },
-            ].map(({ icon: Icon, label, value, accent, bg, border }) => (
+            ].map(({ icon: Icon, label, value, accent, bg, border, shadow }) => (
               <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
-                style={{ background: bg, border: `1px solid ${border}`, boxShadow: L ? '0 1px 3px rgba(0,0,0,0.04)' : 'none' }}>
+                style={{ background: bg, border: `1px solid ${border}`, boxShadow: shadow }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${accent}18`, color: accent }}>
                   <Icon className="w-3.5 h-3.5" />
