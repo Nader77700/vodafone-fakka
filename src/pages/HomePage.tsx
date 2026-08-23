@@ -45,7 +45,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Loader2,
   Shield, CreditCard, Users, ChevronLeft, ShieldAlert,
   Database, Sparkles, Gift, Wifi, Signal, RefreshCw,
-  Smartphone, Copy, Info, Home, RotateCcw, Tag,
+  Smartphone, Copy, Info, Home, RotateCcw, Tag, Gem,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -2721,25 +2721,50 @@ function HomePage() {
             {/* ── Header row ── */}
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1.5 flex-1 min-w-0">
-                {/* Badge: منتهي فقط عند الانتهاء — لا تكرار نوع الخطة */}
-                <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-black tracking-wider"
-                  style={{ borderColor: `${subBadge.color}40`, background: subBadge.bg, color: subBadge.color }}
-                >
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: subBadge.color }} />
-                  {subBadge.label}
-                </span>
-                {/* Username — Light: shimmer gold-white metallic (luxury feel), Dark: white-gold-red shimmer */}
+                {/* Badge: نفس تصميم PREMIUM VIP من SubscriptionPremiumCard — الكارت السفلي */}
+                <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
+                  style={L ? {
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    border: '1.5px solid rgba(180,83,9,0.55)',
+                    boxShadow: '0 2px 8px rgba(180,83,9,0.20), 0 1px 0 rgba(255,255,255,0.90) inset',
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(247,201,72,0.14), rgba(230,0,0,0.06))',
+                    border: '1px solid rgba(247,201,72,0.40)',
+                    boxShadow: '0 0 14px rgba(247,201,72,0.12)',
+                  }}>
+                  <Sparkles className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
+                  <span className="text-[10px] font-black tracking-[0.12em] uppercase"
+                    style={L ? { color: '#78350f' } : {
+                      background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}>PREMIUM</span>
+                  <span className="text-[9px] font-black tracking-widest"
+                    style={L ? {
+                      color: '#7c2d12',
+                      border: '1px solid rgba(124,45,18,0.40)',
+                      borderRadius: '4px',
+                      padding: '0 5px',
+                      background: 'rgba(255,255,255,0.55)',
+                    } : {
+                      color: '#fbbf24',
+                      border: '1px solid rgba(247,201,72,0.35)',
+                      borderRadius: '4px',
+                      padding: '0 5px',
+                    }}>VIP</span>
+                  <Gem className="w-2.5 h-2.5" style={{ color: L ? '#92400e' : '#F7C948', opacity: 0.85 }} />
+                </div>
+                {/* Username — Light: slow angled gold shimmer (professional), Dark: white-gold-red shimmer */}
                 <h2
                   className="text-2xl font-black leading-tight tracking-tight"
                   style={L ? {
-                    // ذهبي-أبيض-ذهبي — تأثير معدني لامع فاخر على الخلفية الفاتحة
-                    background: 'linear-gradient(105deg, #78350f 0%, #b45309 18%, #fef3c7 35%, #d97706 50%, #fef9c3 65%, #b45309 80%, #78350f 100%)',
+                    // ذهبي معدني لامع — زاوية مائلة + حركة بطيئة احترافية
+                    background: 'linear-gradient(118deg, #78350f 0%, #92400e 15%, #c9921a 28%, #fef9c3 42%, #f5d060 50%, #fef3c7 58%, #c9921a 72%, #92400e 85%, #78350f 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    backgroundSize: '200% auto',
-                    filter: 'drop-shadow(0 1px 3px rgba(180,83,9,0.30)) drop-shadow(0 0 8px rgba(212,175,55,0.20))',
-                    animation: 'goldShimmer 3s linear infinite',
+                    backgroundSize: '250% auto',
+                    filter: 'drop-shadow(0 1px 3px rgba(180,83,9,0.28)) drop-shadow(0 0 10px rgba(212,175,55,0.22))',
+                    animation: 'goldShimmer 6s ease-in-out infinite',
                   } : {
                     background: 'linear-gradient(100deg, #ffffff 0%, #fde68a 30%, #E60000 62%, #ffffff 100%)',
                     WebkitBackgroundClip: 'text',

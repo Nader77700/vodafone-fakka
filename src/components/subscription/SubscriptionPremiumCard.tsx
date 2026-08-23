@@ -193,16 +193,16 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
-            {/* Plan name — Light: gold shimmer metallic (luxury), Dark: bright white-gold-red shimmer */}
+            {/* Plan name — Light: slow angled gold shimmer (professional metallic), Dark: bright shimmer */}
             {subActive && (
               <p className="text-xl font-black leading-tight tracking-tight"
                 style={L ? {
-                  background: 'linear-gradient(105deg, #78350f 0%, #b45309 18%, #fef3c7 35%, #d97706 50%, #fef9c3 65%, #b45309 80%, #78350f 100%)',
+                  background: 'linear-gradient(118deg, #78350f 0%, #92400e 15%, #c9921a 28%, #fef9c3 42%, #f5d060 50%, #fef3c7 58%, #c9921a 72%, #92400e 85%, #78350f 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundSize: '200% auto',
+                  backgroundSize: '250% auto',
                   filter: 'drop-shadow(0 1px 3px rgba(180,83,9,0.28)) drop-shadow(0 0 8px rgba(212,175,55,0.18))',
-                  animation: 'goldShimmer 3s linear infinite',
+                  animation: 'goldShimmer 6s ease-in-out infinite',
                 } : {
                   background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 35%, #E60000 65%, #ffffff 100%)',
                   WebkitBackgroundClip: 'text',
