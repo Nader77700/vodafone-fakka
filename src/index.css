@@ -1764,31 +1764,32 @@ html.light .selection\:text-white::selection {
   background: linear-gradient(135deg, #0a0000 0%, #1a0000 40%, #0d0d0d 100%);
 }
 
-/* ── SubscriptionPremiumCard Light Mode — luxury gold-trim premium design ── */
+/* ── SubscriptionPremiumCard Light Mode — subtle white-gold luxury design ── */
 html.light .subscription-premium-card {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(160deg, #fffdf7 0%, #fffbef 50%, #fff9e0 100%) !important;
-  border: 1.5px solid rgba(212,175,55,0.35) !important;
+  background: linear-gradient(160deg, #ffffff 0%, #fefdf8 40%, #fdfaee 80%, #fdfbf2 100%) !important;
+  border: 1.5px solid rgba(212,175,55,0.28) !important;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.95) inset,
-    0 -1px 0 rgba(212,175,55,0.18) inset,
-    0 12px 40px rgba(212,175,55,0.14),
-    0 4px 12px rgba(0,0,0,0.07),
-    0 1px 3px rgba(0,0,0,0.05) !important;
+    0 1px 0 rgba(255,255,255,1.00) inset,
+    0 -1px 0 rgba(212,175,55,0.12) inset,
+    0 10px 36px rgba(212,175,55,0.10),
+    0 3px 10px rgba(0,0,0,0.055),
+    0 1px 2px rgba(0,0,0,0.04) !important;
 }
 
-/* Gold outer glow halo */
+/* Soft gold halo ring around card */
 html.light .subscription-premium-card::before {
   content: '';
   position: absolute;
-  inset: -2px;
+  inset: -1.5px;
   border-radius: inherit;
   background: linear-gradient(160deg,
-    rgba(212,175,55,0.50) 0%,
-    rgba(255,235,150,0.35) 30%,
-    rgba(212,175,55,0.20) 60%,
-    rgba(184,134,11,0.45) 100%
+    rgba(212,175,55,0.40) 0%,
+    rgba(255,248,200,0.30) 25%,
+    rgba(255,255,255,0.55) 50%,
+    rgba(212,175,55,0.18) 75%,
+    rgba(184,134,11,0.38) 100%
   );
   z-index: -1;
   pointer-events: none;
@@ -1808,62 +1809,59 @@ html.light .subscription-premium-card span {
 html.light .subscription-premium-card .text-foreground { color: #1a1a2e !important; }
 html.light .subscription-premium-card .text-muted-foreground { color: rgba(26,26,46,0.55) !important; }
 
-/* Light: الخلايا الداخلية (info grid cells) — raised gold tiles */
+/* Light: الخلايا الداخلية */
 html.light .subscription-premium-card [style*="background: rgba(255,255,255,0.03)"],
 html.light .subscription-premium-card [style*="background:rgba(255,255,255,0.03)"],
 html.light .subscription-premium-card [style*="background: rgba(255,255,255,0.06)"],
 html.light .subscription-premium-card [style*="background:rgba(255,255,255,0.06)"] {
-  background: rgba(0,0,0,0.04) !important;
+  background: rgba(0,0,0,0.03) !important;
 }
 html.light .subscription-premium-card [style*="border: 1px solid rgba(255,255,255,0.06)"],
 html.light .subscription-premium-card [style*="border: 1px solid rgba(255,255,255,0.08)"],
 html.light .subscription-premium-card [style*="borderColor: rgba(255,255,255,0.06)"],
 html.light .subscription-premium-card [style*="borderColor: rgba(255,255,255,0.08)"] {
-  border-color: rgba(0,0,0,0.09) !important;
+  border-color: rgba(212,175,55,0.18) !important;
 }
 
-/* Light: mini stat cards — raised gold tile effect */
+/* Light: mini stat cards — raised white-gold tile */
 html.light .subscription-premium-card .grid > div {
   box-shadow:
-    0 2px 0 rgba(255,255,255,0.90) inset,
-    0 -1px 0 rgba(212,175,55,0.20) inset,
-    0 3px 10px rgba(212,175,55,0.12),
-    0 1px 3px rgba(0,0,0,0.05) !important;
+    0 2px 0 rgba(255,255,255,1.00) inset,
+    0 -1px 0 rgba(212,175,55,0.15) inset,
+    0 3px 10px rgba(212,175,55,0.10),
+    0 1px 3px rgba(0,0,0,0.04) !important;
 }
 
 /* Light: progress bar track */
 html.light .subscription-premium-card .spc-bar-track {
-  background: rgba(0,0,0,0.08) !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06) inset;
+  background: rgba(0,0,0,0.07) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset;
 }
 
-/* Light: admin info box */
-html.light .subscription-premium-card [style*="background: rgba(0,160,200,0.08)"] {
-  background: rgba(0,160,200,0.10) !important;
-  border-color: rgba(0,160,200,0.25) !important;
-}
-
-/* Light: admin info box (cyan variant) */
-html.light .subscription-premium-card [style*="background: rgba(0,229,255,0.06)"] {
-  background: rgba(0,160,200,0.08) !important;
-  border-color: rgba(0,160,200,0.22) !important;
+/* Light: admin info box — gold-red palette, override old blue */
+html.light .subscription-premium-card [style*="background: rgba(0,160,200"],
+html.light .subscription-premium-card [style*="background: rgba(0,229,255"],
+html.light .subscription-premium-card [style*="background:rgba(0,160,200"],
+html.light .subscription-premium-card [style*="background:rgba(0,229,255"] {
+  background: linear-gradient(135deg, #fffff8 0%, #fdf8ec 60%, #faf0d0 100%) !important;
+  border-color: rgba(212,175,55,0.40) !important;
 }
 
 /* Light: زر تفاصيل الاشتراك */
 html.light .subscription-premium-card .spc-detail-btn {
-  background: rgba(230,0,0,0.07) !important;
-  border-color: rgba(230,0,0,0.22) !important;
+  background: rgba(230,0,0,0.06) !important;
+  border-color: rgba(230,0,0,0.20) !important;
   color: #cc0000 !important;
 }
 html.light .subscription-premium-card .spc-detail-btn:hover {
-  background: rgba(230,0,0,0.12) !important;
-  border-color: rgba(230,0,0,0.35) !important;
+  background: rgba(230,0,0,0.10) !important;
+  border-color: rgba(230,0,0,0.30) !important;
 }
 
-/* Light: border-top dividers */
+/* Light: dividers — subtle gold */
 html.light .subscription-premium-card [style*="borderColor: rgba(255,255,255,0.06)"],
 html.light .subscription-premium-card .border-t {
-  border-color: rgba(212,175,55,0.20) !important;
+  border-color: rgba(212,175,55,0.18) !important;
 }
 
 /* ── HomeNetworksCard gradient overlay — Light Mode warm golden ── */

@@ -144,39 +144,43 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
 
-            {/* PREMIUM PRO Gold Badge */}
+            {/* PREMIUM VIP Gold Badge — same style in both Light & Dark, unified gold-red palette */}
             <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
               style={L ? {
-                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%)',
-                border: '1.5px solid #d4af37',
-                boxShadow: '0 2px 8px rgba(212,175,55,0.35), 0 1px 0 rgba(255,255,255,0.9) inset',
+                background: 'linear-gradient(135deg, #fffff8 0%, #fdf8ec 60%, #faf0d0 100%)',
+                border: '1.5px solid rgba(212,175,55,0.55)',
+                boxShadow: '0 2px 10px rgba(212,175,55,0.22), 0 1px 0 rgba(255,255,255,0.95) inset',
               } : {
-                background: 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(247,201,72,0.08))',
-                border: '1px solid rgba(247,201,72,0.45)',
-                boxShadow: '0 0 12px rgba(247,201,72,0.15)',
+                background: 'linear-gradient(135deg, rgba(247,201,72,0.14), rgba(230,0,0,0.06))',
+                border: '1px solid rgba(247,201,72,0.40)',
+                boxShadow: '0 0 14px rgba(247,201,72,0.12)',
               }}>
-              <Gem className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
-              <span className="text-[10px] font-black tracking-[0.15em] uppercase"
+              <Sparkles className="w-3 h-3" style={{ color: L ? '#c9921a' : '#F7C948' }} />
+              <span className="text-[10px] font-black tracking-[0.12em] uppercase"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #92400e 0%, #b45309 40%, #78350f 100%)',
+                  background: 'linear-gradient(90deg, #b45309 0%, #d97706 50%, #b45309 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                } : { color: '#F7C948' }}>PREMIUM</span>
+                } : {
+                  background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>PREMIUM</span>
               <span className="text-[9px] font-black tracking-widest"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #d97706, #92400e)',
+                  background: 'linear-gradient(90deg, #c2410c, #b45309)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  border: '1px solid rgba(180,83,9,0.4)',
+                  border: '1px solid rgba(194,65,12,0.35)',
                   borderRadius: '4px',
-                  padding: '0 4px',
+                  padding: '0 5px',
                 } : {
-                  color: '#F7C948',
-                  border: '1px solid rgba(247,201,72,0.4)',
+                  color: '#fbbf24',
+                  border: '1px solid rgba(247,201,72,0.35)',
                   borderRadius: '4px',
-                  padding: '0 4px',
-                }}>PRO</span>
-              <Sparkles className="w-2.5 h-2.5" style={{ color: L ? '#b45309' : '#F7C948', opacity: 0.8 }} />
+                  padding: '0 5px',
+                }}>VIP</span>
+              <Gem className="w-2.5 h-2.5" style={{ color: L ? '#b45309' : '#F7C948', opacity: 0.85 }} />
             </div>
 
             {/* Status badge */}
@@ -189,16 +193,20 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
-            {/* Plan name — golden gradient in Light, bright in Dark */}
+            {/* Plan name — white + gold + red shimmer gradient in both modes */}
             {subActive && (
-              <p className="text-lg font-black"
+              <p className="text-xl font-black leading-tight"
                 style={L ? {
-                  background: 'linear-gradient(90deg, #1a1a1a 0%, #111827 60%, #292524 100%)',
+                  background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 30%, #E60000 60%, #f0f0f0 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  textShadow: 'none',
-                  filter: 'drop-shadow(0 1px 2px rgba(212,175,55,0.18))',
-                } : { color: 'hsl(var(--foreground))' }}>{planName}</p>
+                  filter: 'drop-shadow(0 1px 3px rgba(230,0,0,0.22)) drop-shadow(0 0 8px rgba(212,175,55,0.18))',
+                } : {
+                  background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 35%, #E60000 65%, #ffffff 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0 0 10px rgba(230,0,0,0.45)) drop-shadow(0 0 20px rgba(212,175,55,0.25))',
+                }}>{planName}</p>
             )}
           </div>
 
@@ -218,33 +226,60 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
           </div>
         </div>
 
-        {/* ── Admin Card ── */}
+        {/* ── Admin Card ── gold-red premium palette, no blue ── */}
         {isAdmin ? (
           <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all active:scale-[0.98]"
             style={L ? {
-              background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
-              border: '1.5px solid rgba(0,160,200,0.25)',
-              boxShadow: '0 2px 10px rgba(0,160,200,0.10)',
+              background: 'linear-gradient(135deg, #fffff8 0%, #fdf8ec 60%, #faf0d0 100%)',
+              border: '1.5px solid rgba(212,175,55,0.45)',
+              boxShadow: '0 2px 12px rgba(212,175,55,0.18), 0 1px 0 rgba(255,255,255,0.95) inset',
             } : {
-              background: 'rgba(0,229,255,0.06)',
-              border: '1px solid rgba(0,229,255,0.18)',
+              background: 'linear-gradient(135deg, rgba(247,201,72,0.09), rgba(230,0,0,0.05))',
+              border: '1px solid rgba(247,201,72,0.25)',
+              boxShadow: '0 0 16px rgba(212,175,55,0.10)',
             }}
             onClick={() => navigate('/admin')}
           >
+            {/* Crown icon — gold gradient */}
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: L ? 'rgba(0,119,170,0.12)' : 'rgba(0,229,255,0.10)' }}>
-              <ShieldCheck className="w-5 h-5" style={{ color: L ? '#0077aa' : '#00E5FF' }} />
+              style={L ? {
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                border: '1px solid rgba(212,175,55,0.40)',
+              } : {
+                background: 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(230,0,0,0.08))',
+                border: '1px solid rgba(247,201,72,0.20)',
+              }}>
+              <Crown className="w-5 h-5"
+                style={L ? {
+                  color: '#b45309',
+                  filter: 'drop-shadow(0 1px 2px rgba(212,175,55,0.40))',
+                } : {
+                  color: '#F7C948',
+                  filter: 'drop-shadow(0 0 6px rgba(247,201,72,0.60))',
+                }} />
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-black" style={{ color: L ? '#0c4a6e' : '#00E5FF' }}>
+            <div className="min-w-0 flex-1">
+              {/* "مسؤول النظام" — gold-red gradient text */}
+              <p className="text-xs font-black"
+                style={L ? {
+                  background: 'linear-gradient(90deg, #b45309 0%, #c2410c 50%, #b45309 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                } : {
+                  background: 'linear-gradient(90deg, #F7C948 0%, #fde68a 40%, #E60000 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
                 مسؤول النظام
               </p>
+              {/* subtitle — warm amber, no blue */}
               <p className="text-[10px] font-medium leading-snug mt-0.5"
-                style={{ color: L ? '#0369a1' : 'rgba(0,229,255,0.75)' }}>
+                style={{ color: L ? '#92400e' : 'rgba(247,201,72,0.70)' }}>
                 صلاحيات كاملة — استخدام غير محدود ♾️
               </p>
             </div>
-            <ChevronRight className="w-4 h-4 shrink-0 mr-auto" style={{ color: L ? '#0077aa' : '#00E5FF' }} />
+            <ChevronRight className="w-4 h-4 shrink-0 mr-auto"
+              style={{ color: L ? '#b45309' : '#F7C948' }} />
           </div>
         ) : (
           /* ── Stats Grid ── */
@@ -329,15 +364,20 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
           </div>
         )}
 
-        {/* ── Subscription Number ── */}
+        {/* ── Subscription Number ── gold-tinted ── */}
         {subscription && (
           <div className="flex items-center justify-between pt-1 border-t"
-            style={{ borderColor: L ? 'rgba(0,0,0,0.08)' : 'hsl(var(--muted))' }}>
-            <span className="text-[9px] uppercase tracking-widest" style={{ color: L ? '#9ca3af' : 'hsl(var(--muted-foreground))' }}>
+            style={{ borderColor: L ? 'rgba(212,175,55,0.20)' : 'hsl(var(--muted))' }}>
+            <span className="text-[9px] uppercase tracking-widest font-semibold"
+              style={{ color: L ? '#b45309' : 'rgba(247,201,72,0.55)' }}>
               رقم الاشتراك
             </span>
-            <span className="text-[11px] font-mono font-bold tabular-nums"
-              style={{ color: L ? '#374151' : '#94a3b8' }}>
+            <span className="text-[11px] font-mono font-black tabular-nums"
+              style={L ? {
+                background: 'linear-gradient(90deg, #b45309, #d97706)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              } : { color: 'rgba(247,201,72,0.80)' }}>
               {subscription.serial_number ?? subscription.id.slice(0, 8).toUpperCase()}
             </span>
           </div>

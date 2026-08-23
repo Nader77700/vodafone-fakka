@@ -2261,6 +2261,7 @@ function HomePage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const L = useIsLight();
   // وضع التصحيح: للمسؤول فقط أو عند وجود ?debug=true في الرابط
   const debugMode = isAdmin || new URLSearchParams(location.search).get('debug') === 'true';
   const headerLogoUrl = getUrl('header_logo');
@@ -2725,11 +2726,19 @@ function HomePage() {
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: subBadge.color }} />
                   {subBadge.label}
                 </span>
-                {/* Username — white bold + red glow */}
+                {/* Username — white + gold + red shimmer gradient (both Light & Dark) */}
                 <h2
-                  className="text-2xl font-black leading-tight text-foreground"
-                  style={{
-                    textShadow: '0 0 12px rgba(230,0,0,0.55), 0 0 24px rgba(230,0,0,0.25)',
+                  className="text-2xl font-black leading-tight"
+                  style={L ? {
+                    background: 'linear-gradient(100deg, #ffffff 0%, #fde68a 28%, #E60000 58%, #f5f5f5 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 1px 4px rgba(230,0,0,0.20)) drop-shadow(0 0 10px rgba(212,175,55,0.15))',
+                  } : {
+                    background: 'linear-gradient(100deg, #ffffff 0%, #fde68a 30%, #E60000 62%, #ffffff 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 0 12px rgba(230,0,0,0.55)) drop-shadow(0 0 24px rgba(212,175,55,0.25))',
                   }}
                 >
                   {displayName}
