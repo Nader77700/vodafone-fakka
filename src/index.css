@@ -394,8 +394,22 @@ html, body, #root {
   }
 
   @keyframes goldShimmer {
-    0%   { background-position: 0% center; }
+    0%   { background-position: 200% center; }
+    50%  { background-position: 0% center; }
     100% { background-position: 200% center; }
+  }
+
+  /* Professional angled name shimmer — slow sweep */
+  @keyframes nameShimmerLight {
+    0%   { background-position: 200% 50%; }
+    50%  { background-position: -200% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  @keyframes nameShimmerDark {
+    0%   { background-position: 200% 50%; }
+    50%  { background-position: -200% 50%; }
+    100% { background-position: 200% 50%; }
   }
 
   .page-enter {

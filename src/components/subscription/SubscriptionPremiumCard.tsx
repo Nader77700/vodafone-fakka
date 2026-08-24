@@ -197,17 +197,25 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
             {subActive && (
               <p className="text-xl font-black leading-tight tracking-tight"
                 style={L ? {
-                  background: 'linear-gradient(118deg, #78350f 0%, #92400e 15%, #c9921a 28%, #fef9c3 42%, #f5d060 50%, #fef3c7 58%, #c9921a 72%, #92400e 85%, #78350f 100%)',
+                  background: 'linear-gradient(118deg, #78350f 0%, #b45309 12%, #d97706 24%, #fef3c7 38%, #fde68a 44%, #ffffff 50%, #fde68a 56%, #fef3c7 62%, #d97706 76%, #b45309 88%, #78350f 100%)',
                   WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundSize: '250% auto',
-                  filter: 'drop-shadow(0 1px 3px rgba(180,83,9,0.28)) drop-shadow(0 0 8px rgba(212,175,55,0.18))',
-                  animation: 'goldShimmer 6s ease-in-out infinite',
+                  color: 'transparent',
+                  backgroundSize: '400% 100%',
+                  animation: 'nameShimmerLight 8s ease-in-out infinite',
+                  display: 'inline-block',
+                  filter: 'drop-shadow(0 1px 2px rgba(120,53,15,0.25))',
                 } : {
-                  background: 'linear-gradient(90deg, #ffffff 0%, #fde68a 35%, #E60000 65%, #ffffff 100%)',
+                  background: 'linear-gradient(118deg, #e5e7eb 0%, #f5d060 20%, #fbbf24 35%, #E60000 52%, #fbbf24 68%, #f5d060 82%, #e5e7eb 100%)',
                   WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 10px rgba(230,0,0,0.45)) drop-shadow(0 0 20px rgba(212,175,55,0.25))',
+                  color: 'transparent',
+                  backgroundSize: '400% 100%',
+                  animation: 'nameShimmerDark 8s ease-in-out infinite',
+                  display: 'inline-block',
+                  filter: 'drop-shadow(0 0 8px rgba(230,0,0,0.35))',
                 }}>{planName}</p>
             )}
           </div>
@@ -261,14 +269,19 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 }} />
             </div>
             <div className="min-w-0 flex-1">
-            {/* "مسؤول النظام" — Light: solid dark readable, Dark: gold-red gradient */}
+            {/* "مسؤول النظام" — Light: solid dark readable, Dark: slow shimmer */}
               <p className="text-xs font-black"
                 style={L ? {
                   color: '#78350f',
                 } : {
-                  background: 'linear-gradient(90deg, #F7C948 0%, #fde68a 40%, #E60000 100%)',
+                  background: 'linear-gradient(118deg, #fde68a 0%, #F7C948 30%, #E60000 55%, #F7C948 80%, #fde68a 100%)',
                   WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
+                  color: 'transparent',
+                  backgroundSize: '400% 100%',
+                  animation: 'nameShimmerDark 8s ease-in-out infinite',
+                  display: 'inline-block',
                 }}>
                 مسؤول النظام
               </p>
