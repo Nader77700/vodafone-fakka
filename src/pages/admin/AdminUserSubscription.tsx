@@ -19,6 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import AdminShell, { SectionCard, InfoRow, ConfirmDialog } from '@/components/admin/AdminShell';
+import CodeActivationPreviewModal from '@/components/admin/CodeActivationPreviewModal';
 import {
   getUserDetail, type UserDetail,
   getSubscriptionHistory, type SubscriptionHistoryEntry,
@@ -30,6 +31,9 @@ import {
   renewSubscriptionPro, extendSubscriptionPro,
   activateLicenseKey,
   getSubscriptionStatsMap,
+  logAdminOverride,
+  logAdminAction,
+  insertSystemLog,
 } from '@/lib/api';
 import type { Subscription } from '@/types/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -270,7 +274,7 @@ export default function AdminUserSubscription() {
   const [ops,      setOps]      = useState<SubscriptionOperation[]>([]);
   const [archived, setArchived] = useState<Subscription[]>([]);
   const [allSubs,  setAllSubs]  = useState<Subscription[]>([]);
-  const [subStatsMap, setSubStatsMap] = useState<Record<string, { total: number; success: number; failed: number }>>({});
+  const [subStatsMap, setSubStatsMap] = useState<Record<string, { total: number; success: number; failed: number; revenue: number }>>({});
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [renewDays,  setRenewDays]  = useState('30');
@@ -279,6 +283,8 @@ export default function AdminUserSubscription() {
   const [reactivateDays, setReactivateDays] = useState('30');
   const [showOps,  setShowOps]  = useState(false);
   const [showAllSubs, setShowAllSubs] = useState(false);
+  // مودال معاينة الكود الجديد
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   // dialogs
   const [suspendOpen,  setSuspendOpen]  = useState(false);
@@ -547,29 +553,20 @@ export default function AdminUserSubscription() {
               </div>
             </div>
 
-            {/* تفعيل كود مباشر (تخطي القيود) */}
+            {/* تفعيل كود مباشر (تخطي القيود) — مع معاينة قبل التأكيد */}
             <div className="p-4 rounded-xl border border-border bg-muted/10 space-y-3">
               <div className="flex items-center gap-2">
                 <Key className="w-4 h-4 text-warning shrink-0" />
                 <p className="text-sm font-semibold">تفعيل كود (تخطي القيود)</p>
               </div>
-              <div className="flex gap-2 items-center flex-wrap">
-                <Input value={overrideCode} onChange={e => setOverrideCode(e.target.value.toUpperCase())} className="text-sm flex-1" placeholder="أدخل كود التفعيل..." />
-                <Button size="sm" variant="default" className="h-9 text-xs gap-1 shrink-0 bg-warning hover:bg-warning/90 text-warning-foreground"
-                  disabled={saving || !overrideCode.trim()}
-                  onClick={() => runConfirm(
-                    'تأكيد التفعيل',
-                    `تفعيل الكود ${overrideCode} للمستخدم ${username} متجاوزاً أي قيود سابقة.`,
-                    async () => {
-                      const res = await activateLicenseKey(id!, overrideCode.trim(), { adminOverride: true });
-                      if (!res.success) throw new Error(res.error || 'فشل التفعيل');
-                      return { success: true };
-                    },
-                    'تم تفعيل الكود وتخطي القيود بنجاح'
-                  )}>
-                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} تفعيل إجباري
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                variant="default"
+                className="h-9 w-full text-xs gap-1.5 bg-warning hover:bg-warning/90 text-warning-foreground"
+                onClick={() => setPreviewModalOpen(true)}
+              >
+                <Key className="w-3.5 h-3.5" /> فتح مودال التفعيل الإجباري
+              </Button>
             </div>
 
             {/* تمديد */}
@@ -702,13 +699,16 @@ export default function AdminUserSubscription() {
                       {h.cancel_reason && <div><p className="text-[10px] text-muted-foreground">سبب الإلغاء</p><p className="text-xs font-medium text-destructive">{h.cancel_reason}</p></div>}
                       {h.performed_by_name && <div><p className="text-[10px] text-muted-foreground">نفّذ بواسطة</p><p className="text-xs font-medium">{h.performed_by_name}</p></div>}
                     </div>
-                    {/* ── إحصائيات العمليات لهذا الاشتراك ── */}
+                    {/* ── إحصائيات العمليات لهذا الاشتراك مع revenue ── */}
                     {stats !== undefined && (
                       <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-3 flex-wrap">
                         <span className="text-[10px] text-muted-foreground">العمليات:</span>
                         <span className="text-[10px] font-bold text-foreground">{stats.total} إجمالي</span>
                         <span className="text-[10px] font-semibold text-success">✅ {stats.success}</span>
                         <span className="text-[10px] font-semibold text-destructive">❌ {stats.failed}</span>
+                        {stats.revenue > 0 && (
+                          <span className="text-[10px] font-semibold text-primary">💰 {stats.revenue} جنيه</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -812,13 +812,16 @@ export default function AdminUserSubscription() {
                           )}
                         </div>
                       </div>
-                      {/* إحصائيات العمليات لهذا الاشتراك */}
+                      {/* إحصائيات العمليات لهذا الاشتراك مع revenue */}
                       {subStatsMap[s.id] && (
                         <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-3 flex-wrap">
                           <span className="text-[10px] text-muted-foreground">العمليات:</span>
                           <span className="text-[10px] font-bold">{subStatsMap[s.id].total} إجمالي</span>
                           <span className="text-[10px] text-success font-semibold">✅ {subStatsMap[s.id].success}</span>
                           <span className="text-[10px] text-destructive font-semibold">❌ {subStatsMap[s.id].failed}</span>
+                          {subStatsMap[s.id].revenue > 0 && (
+                            <span className="text-[10px] text-primary font-semibold">💰 {subStatsMap[s.id].revenue} جنيه</span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -868,6 +871,55 @@ export default function AdminUserSubscription() {
         description={confirmData.desc}
         variant={confirmData.variant}
         onConfirm={confirmData.action}
+      />
+
+      {/* مودال معاينة الكود الإجباري مع Audit Log */}
+      <CodeActivationPreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        userId={id!}
+        targetUsername={detail?.profile ? (detail.profile.full_name || detail.profile.username || detail.profile.email || 'مستخدم') : 'مستخدم'}
+        onConfirm={async (code, overrideReason) => {
+          setSaving(true);
+          try {
+            const res = await activateLicenseKey(id!, code, { adminOverride: true });
+            if (!res.success) throw new Error(res.error || 'فشل التفعيل');
+
+            // سجّل في admin_override_logs + audit_logs + system_logs
+            if (adminProfile?.id) {
+              const targetUser = detail?.profile;
+              await logAdminOverride({
+                adminId:             adminProfile.id,
+                adminUsername:       adminName,
+                targetUserId:        id!,
+                targetUsername:      targetUser?.full_name || targetUser?.username || targetUser?.email || id!,
+                subscriptionCode:    code,
+                bypassReasons:       ['admin_override'],
+                overrideReason,
+              });
+
+              await logAdminAction({
+                adminId:      adminProfile.id,
+                action:       'admin_override_activation',
+                targetUserId: id!,
+                details:      { code, override_reason: overrideReason },
+                success:      true,
+              });
+
+              await insertSystemLog({
+                user_id:  id!,
+                level:    'warning',
+                action:   'admin_override_activation',
+                message:  `تفعيل إجباري للكود ${code} بواسطة ${adminName} — السبب: ${overrideReason}`,
+                metadata: { admin_id: adminProfile.id, admin_username: adminName, code, override_reason: overrideReason },
+              });
+            }
+
+            await load();
+          } finally {
+            setSaving(false);
+          }
+        }}
       />
     </AdminShell>
   );

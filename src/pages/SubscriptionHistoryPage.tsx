@@ -6,12 +6,16 @@ import { useNavigate } from 'react-router-dom';
 import { staleWhileRevalidate, CACHE_KEYS } from '@/lib/appCache';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/db/supabase';
-import { getSubscriptionHistory, getActivityTimeline, syncHistoryOnLoad } from '@/lib/api';
+import {
+  getSubscriptionHistory, getActivityTimeline, syncHistoryOnLoad,
+  getSubscriptionUsageAnalytics, type SubscriptionUsageAnalytics,
+} from '@/lib/api';
 import { useSubscriptionEngine } from '@/hooks/useSubscriptionEngine';
 import type { SubscriptionHistoryEntry, ActivityEntry } from '@/lib/api';
 import {
   ArrowRight, Key, CheckCircle, AlertTriangle, Zap,
   Activity, Clock, Calendar, Plus, RefreshCw, Ban, Repeat2,
+  TrendingUp, BarChart2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -103,6 +107,10 @@ export default function SubscriptionHistoryPage() {
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState<'history' | 'timeline'>('history');
+  // Usage analytics per subscription (lazy loaded on expand)
+  const [usageMap,   setUsageMap]   = useState<Record<string, SubscriptionUsageAnalytics>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [usageLoading, setUsageLoading] = useState<string | null>(null);
 
   const loadData = useCallback(async (background = false) => {
     if (!user) return;
@@ -128,6 +136,20 @@ export default function SubscriptionHistoryPage() {
     if (!background) setLoading(false);
     else setLoading(false);
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // تحميل usage analytics لاشتراك محدد (lazy)
+  const loadUsage = useCallback(async (subscriptionId: string) => {
+    if (usageMap[subscriptionId]) {
+      // toggle collapse
+      setExpandedId(prev => prev === subscriptionId ? null : subscriptionId);
+      return;
+    }
+    setExpandedId(subscriptionId);
+    setUsageLoading(subscriptionId);
+    const data = await getSubscriptionUsageAnalytics(subscriptionId);
+    setUsageMap(prev => ({ ...prev, [subscriptionId]: data }));
+    setUsageLoading(null);
+  }, [usageMap]);
 
   useEffect(() => {
     loadData();
@@ -291,6 +313,81 @@ export default function SubscriptionHistoryPage() {
 
                 {h.notes && (
                   <p className="text-[10px] text-muted-foreground bg-muted/20 rounded px-2 py-1">{h.notes}</p>
+                )}
+
+                {/* Usage Summary — lazy loaded on demand */}
+                {h.id && (
+                  <button
+                    onClick={() => loadUsage(h.id)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-muted/10 hover:bg-muted/20 transition-colors text-xs text-muted-foreground"
+                  >
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <BarChart2 className="w-3.5 h-3.5 text-primary" />
+                      إحصائيات الاستخدام
+                    </span>
+                    {usageLoading === h.id
+                      ? <RefreshCw className="w-3 h-3 animate-spin text-primary" />
+                      : expandedId === h.id
+                        ? <ChevronUp className="w-3.5 h-3.5" />
+                        : <ChevronDown className="w-3.5 h-3.5" />
+                    }
+                  </button>
+                )}
+
+                {/* Usage analytics panel */}
+                {expandedId === h.id && usageMap[h.id] && (
+                  <div className="space-y-2 pt-1">
+                    {/* Summary row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-muted/20 rounded-lg p-2 text-center">
+                        <p className="text-sm font-black tabular-nums">{usageMap[h.id].total}</p>
+                        <p className="text-[9px] text-muted-foreground">إجمالي</p>
+                      </div>
+                      <div className="bg-success/8 rounded-lg p-2 text-center">
+                        <p className="text-sm font-black tabular-nums text-success">{usageMap[h.id].success}</p>
+                        <p className="text-[9px] text-muted-foreground">ناجح</p>
+                      </div>
+                      <div className="bg-destructive/8 rounded-lg p-2 text-center">
+                        <p className="text-sm font-black tabular-nums text-destructive">{usageMap[h.id].failed}</p>
+                        <p className="text-[9px] text-muted-foreground">فاشل</p>
+                      </div>
+                    </div>
+                    {/* Revenue + phones */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-primary/5 border border-primary/15 rounded-lg p-2 text-center">
+                        <p className="text-sm font-black tabular-nums text-primary">
+                          {usageMap[h.id].revenue} <span className="text-[9px] font-normal">جنيه</span>
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">إجمالي الإيراد</p>
+                      </div>
+                      <div className="bg-muted/20 rounded-lg p-2 text-center">
+                        <p className="text-sm font-black tabular-nums">{usageMap[h.id].unique_phones}</p>
+                        <p className="text-[9px] text-muted-foreground">أرقام فريدة</p>
+                      </div>
+                    </div>
+                    {/* Daily chart — simple bar */}
+                    {usageMap[h.id].daily_usage && usageMap[h.id].daily_usage!.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3" /> الاستخدام اليومي
+                        </p>
+                        <div className="flex items-end gap-0.5 h-10 overflow-x-auto">
+                          {(() => {
+                            const daily = usageMap[h.id].daily_usage!;
+                            const max = Math.max(...daily.map(d => d.total), 1);
+                            return daily.map(d => (
+                              <div
+                                key={d.day}
+                                title={`${d.day}: ${d.success} ناجح / ${d.failed} فاشل`}
+                                className="flex-1 min-w-[6px] bg-primary/60 rounded-t-sm transition-all hover:bg-primary"
+                                style={{ height: `${Math.round((d.total / max) * 100)}%` }}
+                              />
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))

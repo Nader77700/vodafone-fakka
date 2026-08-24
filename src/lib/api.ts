@@ -1927,7 +1927,7 @@ export async function getAllOperations(page = 1, search = ''): Promise<Paginated
 export interface OperationsFilter {
   user_id?: string;
   phone?: string;
-  search?: string;
+  search?: string;      // بحث شامل: phone, username, user_id, operation_id, card_type, amount
   card_type?: string;
   status?: string;
   date_from?: string;
@@ -1949,28 +1949,46 @@ export async function getAllOperationsFiltered(
   filters: OperationsFilter = {}
 ): Promise<PaginatedResult<Operation & { profile?: { username?: string; email?: string } }>> {
   const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  const to   = from + PAGE_SIZE - 1;
+
+  // بناء الاستعلام الأساسي
   let q = supabase
     .from('operations')
     .select('*, profiles!user_id(username, email)', { count: 'exact' })
     .order('performed_at', { ascending: false })
     .range(from, to);
 
-  if (filters.user_id)  q = q.eq('user_id', filters.user_id);
-  
+  // فلتر user_id دائماً يُطبَّق أولاً
+  if (filters.user_id) q = q.eq('user_id', filters.user_id);
+
   if (filters.search) {
     const s = filters.search.trim();
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    const isUUID    = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    const isNumeric = /^[0-9]+$/.test(s);
+
     if (isUUID) {
-      q = q.eq('id', s);
-    } else if (/^[0-9]+$/.test(s)) {
-      q = q.ilike('phone_number', `%${s}%`);
+      // UUID: قد يكون operation.id أو user_id
+      if (!filters.user_id) {
+        q = q.or(`id.eq.${s},user_id.eq.${s}`);
+      } else {
+        q = q.eq('id', s);
+      }
+    } else if (isNumeric) {
+      // رقم: رقم الهاتف أو رقم العملية أو المبلغ
+      const numVal = parseInt(s, 10);
+      const orParts = [`phone_number.ilike.%${s}%`];
+      if (!isNaN(numVal)) {
+        orParts.push(`operation_number.eq.${numVal}`);
+        // لا نضيف amount هنا لأنه سيتعارض مع فلتر المبالغ المنفصل
+      }
+      q = q.or(orParts.join(','));
     } else {
-      // للبحث عن طريق username، نحتاج لعمل inner join مع جدول profiles
+      // نص: username أو card_type أو correlation_id
+      // نستخدم ilike على card_type مباشرة + inner join للـ username
       q = supabase
         .from('operations')
         .select('*, profiles!inner(username, email)', { count: 'exact' })
-        .ilike('profiles.username', `%${s}%`)
+        .or(`card_type.ilike.%${s}%,profiles.username.ilike.%${s}%`)
         .order('performed_at', { ascending: false })
         .range(from, to);
       if (filters.user_id) q = q.eq('user_id', filters.user_id);
@@ -1979,15 +1997,27 @@ export async function getAllOperationsFiltered(
     q = q.ilike('phone_number', `%${filters.phone}%`);
   }
 
-  if (filters.card_type && filters.card_type !== 'all') q = q.ilike('card_type', `%${filters.card_type}%`);
-  if (filters.status && filters.status !== 'all')       q = q.eq('status', filters.status);
-  if (filters.date_from) q = q.gte('performed_at', filters.date_from);
-  if (filters.date_to)   q = q.lte('performed_at', filters.date_to + 'T23:59:59');
-  if (filters.amount)    q = q.eq('amount', filters.amount);
+  if (filters.card_type && filters.card_type !== 'all')
+    q = q.ilike('card_type', `%${filters.card_type}%`);
+  if (filters.status && filters.status !== 'all')
+    q = q.eq('status', filters.status);
+  if (filters.date_from)
+    q = q.gte('performed_at', filters.date_from);
+  if (filters.date_to)
+    q = q.lte('performed_at', filters.date_to + 'T23:59:59');
+  if (filters.amount)
+    q = q.eq('amount', filters.amount);
   if (filters.operation_source && filters.operation_source !== 'all')
     q = q.eq('operation_source', filters.operation_source);
-  if (filters.operation_id)
-    q = q.or(`id.eq.${filters.operation_id},operation_number.eq.${parseInt(filters.operation_id) || 0}`);
+  if (filters.operation_id) {
+    const numId = parseInt(filters.operation_id, 10);
+    const isUUIDFilter = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.operation_id);
+    if (isUUIDFilter) {
+      q = q.eq('id', filters.operation_id);
+    } else {
+      q = q.or(`operation_number.eq.${isNaN(numId) ? 0 : numId}`);
+    }
+  }
 
   const { data, count } = await q;
   return { data: Array.isArray(data) ? data : [], count: count ?? 0, page, pageSize: PAGE_SIZE };
@@ -2861,7 +2891,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
 
   const v2 = v2Res.data;
   const lifetimeStats = lifetimeRes.data as {
-    total: number; success: number; failed: number; last_op_at: string | null;
+    total: number; success: number; failed: number; last_op_at: string | null; revenue: number;
   } | null;
 
   // ── الحصول على profile + subscription
@@ -2927,6 +2957,8 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
   const lifetime_success = lifetimeStats?.success  ?? 0;
   const lifetime_failed  = lifetimeStats?.failed   ?? 0;
   const lifetime_last_op = lifetimeStats?.last_op_at ?? null;
+  // revenue حقيقي من DB — يشمل كل العمليات الناجحة (مش 5 فقط)
+  const lifetime_revenue = lifetimeStats?.revenue  ?? 0;
 
   // ── إحصائيات الاشتراك الحالي: من subscription.ops_count (صحيح — server-side)
   const current_ops_count = subscription?.ops_count ?? 0;
@@ -2941,11 +2973,8 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
   const topPhone   = Object.entries(phoneCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
-  // ── إجمالي المبالغ من lifetime stats (لا نحسبها يدوياً من 5 عمليات)
-  // نستخدم sum من DB عبر lifetime RPC (stats لا تشمل amount بعد — نحسبها من recent للآن)
-  const lifetime_amount = recent_ops
-    .filter(o => o.status === 'success')
-    .reduce((s, o) => s + (o.amount ?? 0), 0);
+  // ── إجمالي المبالغ من DB عبر lifetime RPC (كل العمليات الناجحة)
+  const lifetime_amount = lifetime_revenue;
 
   return {
     profile,
@@ -2985,7 +3014,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
 // يُعيد Map من subscription_id → { total, success, failed }
 export async function getSubscriptionStatsMap(
   subscriptionIds: string[],
-): Promise<Record<string, { total: number; success: number; failed: number }>> {
+): Promise<Record<string, { total: number; success: number; failed: number; revenue: number }>> {
   if (!subscriptionIds.length) return {};
   const results = await Promise.all(
     subscriptionIds.map(sid =>
@@ -2993,11 +3022,33 @@ export async function getSubscriptionStatsMap(
         .rpc('get_subscription_stats', { p_subscription_id: sid })
         .then(({ data }) => ({
           id: sid,
-          stats: (data as { total: number; success: number; failed: number } | null) ?? { total: 0, success: 0, failed: 0 },
+          stats: (data as { total: number; success: number; failed: number; revenue: number } | null)
+            ?? { total: 0, success: 0, failed: 0, revenue: 0 },
         })),
     ),
   );
   return Object.fromEntries(results.map(r => [r.id, r.stats]));
+}
+
+// جلب تحليل تفصيلي يومي لاشتراك
+export interface SubscriptionUsageAnalytics {
+  total: number;
+  success: number;
+  failed: number;
+  revenue: number;
+  unique_phones: number;
+  first_op_at: string | null;
+  last_op_at: string | null;
+  daily_usage: { day: string; total: number; success: number; failed: number; revenue: number }[] | null;
+}
+
+export async function getSubscriptionUsageAnalytics(
+  subscriptionId: string,
+): Promise<SubscriptionUsageAnalytics> {
+  const { data } = await supabase
+    .rpc('get_subscription_usage_analytics', { p_subscription_id: subscriptionId });
+  const d = data as SubscriptionUsageAnalytics | null;
+  return d ?? { total: 0, success: 0, failed: 0, revenue: 0, unique_phones: 0, first_op_at: null, last_op_at: null, daily_usage: null };
 }
 
 // ── جلب عمليات المستخدم مع pagination (للصفحة المنفصلة viewAll)
@@ -5918,6 +5969,189 @@ export async function adminGetMerchantDetail(merchantId: string): Promise<{
     operations:    Array.isArray(opsRes.data) ? opsRes.data : [],
     subscriptions: Array.isArray(subsRes.data) ? subsRes.data : [],
     codes:         Array.isArray(codesRes.data) ? codesRes.data : [],
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Admin Override Logs — سجل عمليات التفعيل الإجباري
+// ══════════════════════════════════════════════════════════════
+export interface AdminOverrideLog {
+  id: string;
+  admin_id: string | null;
+  admin_username: string | null;
+  target_user_id: string | null;
+  target_username: string | null;
+  subscription_code: string;
+  prev_code_status: string | null;
+  prev_activation_user_id: string | null;
+  prev_activation_username: string | null;
+  prev_activation_date: string | null;
+  prev_subscription_id: string | null;
+  new_subscription_id: string | null;
+  new_subscription_start: string | null;
+  new_subscription_expiry: string | null;
+  bypass_reasons: string[] | null;
+  activation_type: string;
+  override_reason: string | null;
+  created_at: string;
+}
+
+export async function logAdminOverride(params: {
+  adminId: string;
+  adminUsername: string;
+  targetUserId: string;
+  targetUsername: string;
+  subscriptionCode: string;
+  prevCodeStatus?: string | null;
+  prevActivationUserId?: string | null;
+  prevActivationUsername?: string | null;
+  prevActivationDate?: string | null;
+  prevSubscriptionId?: string | null;
+  newSubscriptionId?: string | null;
+  newSubscriptionStart?: string | null;
+  newSubscriptionExpiry?: string | null;
+  bypassReasons?: string[];
+  overrideReason?: string | null;
+}): Promise<void> {
+  await supabase.rpc('log_admin_override', {
+    p_admin_id:                  params.adminId,
+    p_admin_username:            params.adminUsername,
+    p_target_user_id:            params.targetUserId,
+    p_target_username:           params.targetUsername,
+    p_subscription_code:         params.subscriptionCode,
+    p_prev_code_status:          params.prevCodeStatus ?? null,
+    p_prev_activation_user_id:   params.prevActivationUserId ?? null,
+    p_prev_activation_username:  params.prevActivationUsername ?? null,
+    p_prev_activation_date:      params.prevActivationDate ?? null,
+    p_prev_subscription_id:      params.prevSubscriptionId ?? null,
+    p_new_subscription_id:       params.newSubscriptionId ?? null,
+    p_new_subscription_start:    params.newSubscriptionStart ?? null,
+    p_new_subscription_expiry:   params.newSubscriptionExpiry ?? null,
+    p_bypass_reasons:            params.bypassReasons ?? [],
+    p_override_reason:           params.overrideReason ?? null,
+  });
+}
+
+export async function getAdminOverrideLogs(page = 1): Promise<PaginatedResult<AdminOverrideLog>> {
+  const from = (page - 1) * PAGE_SIZE;
+  const to   = from + PAGE_SIZE - 1;
+  const { data, count } = await supabase
+    .from('admin_override_logs')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to);
+  return { data: Array.isArray(data) ? data as AdminOverrideLog[] : [], count: count ?? 0, page, pageSize: PAGE_SIZE };
+}
+
+// جلب معلومات الكود قبل التفعيل الإجباري (للـ Preview)
+export interface CodeActivationInfo {
+  valid: boolean;
+  error?: string;
+  errorCode?: string;
+  // بيانات الكود
+  codeType: string;
+  status: string;
+  durationDays: number;
+  opsLimit: number | null;
+  allowedUsers: number | null;
+  usedCount: number;
+  notes: string | null;
+  expiryDate: string | null;
+  // بيانات التفعيل السابق (إذا كان الكود مستخدماً)
+  prevActivation: {
+    userId: string;
+    username: string | null;
+    email: string | null;
+    activatedAt: string | null;
+    subscriptionId: string | null;
+    subscriptionStatus: string | null;
+    subscriptionExpiry: string | null;
+  } | null;
+  // معاينة التفعيل الجديد
+  currentDays: number;
+  newDays: number;
+  totalDays: number;
+  newExpiry: string;
+}
+
+export async function getCodeActivationInfo(
+  userId: string,
+  code: string,
+): Promise<CodeActivationInfo> {
+  const empty: CodeActivationInfo = {
+    valid: false, codeType: 'paid', status: 'unknown', durationDays: 0,
+    opsLimit: null, allowedUsers: null, usedCount: 0, notes: null, expiryDate: null,
+    prevActivation: null, currentDays: 0, newDays: 0, totalDays: 0, newExpiry: '',
+  };
+
+  const { data: key } = await supabase
+    .from('license_keys')
+    .select('*, used_by_profile:profiles!used_by(id, username, email)')
+    .eq('code', code.toUpperCase())
+    .maybeSingle();
+
+  if (!key) return { ...empty, error: 'كود التفعيل غير صحيح', errorCode: 'INVALID' };
+
+  const maxAllowed   = key.allowed_users ?? key.max_users ?? null;
+  const opsLimit     = key.operations_per_user ?? key.max_ops_per_user ?? null;
+  const effectiveDays = key.custom_duration_days ?? key.duration_days ?? 30;
+
+  // بيانات التفعيل السابق
+  let prevActivation: CodeActivationInfo['prevActivation'] = null;
+  if (key.used_by) {
+    const { data: prevSub } = await supabase
+      .from('subscriptions')
+      .select('id, status, expires_at')
+      .eq('user_id', key.used_by)
+      .eq('license_key_id', key.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const profile = (key as { used_by_profile?: { id?: string; username?: string | null; email?: string | null } | null }).used_by_profile;
+    prevActivation = {
+      userId:             key.used_by,
+      username:           profile?.username ?? null,
+      email:              profile?.email ?? null,
+      activatedAt:        key.used_at ?? null,
+      subscriptionId:     prevSub?.id ?? null,
+      subscriptionStatus: prevSub?.status ?? null,
+      subscriptionExpiry: prevSub?.expires_at ?? null,
+    };
+  }
+
+  // معاينة التفعيل الجديد
+  const { data: sub } = await supabase
+    .from('subscriptions').select('expires_at, status').eq('user_id', userId).eq('status', 'active').maybeSingle();
+  const now = new Date();
+  const currentDays = sub?.expires_at
+    ? Math.max(0, Math.ceil((new Date(sub.expires_at).getTime() - now.getTime()) / 86400000))
+    : 0;
+  const baseDate   = currentDays > 0 && sub?.expires_at ? new Date(sub.expires_at) : now;
+  const rawExpiry  = new Date(baseDate);
+  rawExpiry.setDate(rawExpiry.getDate() + Math.max(0, effectiveDays - 1));
+  rawExpiry.setHours(23, 59, 59, 999);
+  let newExpiry = rawExpiry;
+  if (key.expiration_mode === 'BY_DATE' && key.expiry_date)
+    newExpiry = new Date(key.expiry_date);
+  else if (key.expiration_mode === 'EARLIEST' && key.expiry_date)
+    newExpiry = rawExpiry < new Date(key.expiry_date) ? rawExpiry : new Date(key.expiry_date);
+
+  return {
+    valid:        true,
+    codeType:     key.code_type ?? 'paid',
+    status:       key.status ?? 'active',
+    durationDays: effectiveDays,
+    opsLimit,
+    allowedUsers: maxAllowed,
+    usedCount:    key.used_count ?? 0,
+    notes:        key.notes ?? null,
+    expiryDate:   key.expiry_date ?? null,
+    prevActivation,
+    currentDays,
+    newDays:      effectiveDays,
+    totalDays:    currentDays + effectiveDays,
+    newExpiry:    newExpiry.toISOString(),
   };
 }
 

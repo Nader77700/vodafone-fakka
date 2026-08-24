@@ -4,9 +4,11 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// الشكل الجديد يتضمن label حقيقي من RPC
 interface AmountStat {
   amount: number;
   count: number;
+  label?: string;
 }
 
 interface OperationsAmountsFilterProps {
@@ -36,22 +38,22 @@ export function OperationsAmountsFilter({ userId, selectedAmount, onSelectAmount
   if (loading) {
     return (
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <Skeleton className="h-8 w-16 shrink-0 rounded-full" />
-        <Skeleton className="h-8 w-16 shrink-0 rounded-full" />
-        <Skeleton className="h-8 w-16 shrink-0 rounded-full" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-20 shrink-0 rounded-full" />
+        ))}
       </div>
     );
   }
 
   if (stats.length === 0) return null;
 
-  const totalCount = stats.reduce((sum, s) => sum + s.count, 0);
+  const totalCount = stats.reduce((sum, s) => sum + Number(s.count), 0);
 
   return (
     <ScrollArea className="w-full whitespace-nowrap pb-2 -mb-2">
       <div className="flex w-max space-x-2 space-x-reverse p-1">
         <Badge
-          variant={selectedAmount === null ? "default" : "outline"}
+          variant={selectedAmount === null ? 'default' : 'outline'}
           className="cursor-pointer px-4 py-1.5 text-sm transition-colors hover:bg-primary/90"
           onClick={() => onSelectAmount(null)}
         >
@@ -60,11 +62,11 @@ export function OperationsAmountsFilter({ userId, selectedAmount, onSelectAmount
         {stats.map((stat) => (
           <Badge
             key={stat.amount}
-            variant={selectedAmount === stat.amount ? "default" : "outline"}
+            variant={selectedAmount === stat.amount ? 'default' : 'outline'}
             className="cursor-pointer px-4 py-1.5 text-sm transition-colors hover:bg-primary/90"
             onClick={() => onSelectAmount(stat.amount)}
           >
-            فكة {stat.amount} ({stat.count})
+            {stat.label ?? `${stat.amount} جنيه`} ({stat.count})
           </Badge>
         ))}
       </div>
