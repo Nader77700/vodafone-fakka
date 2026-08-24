@@ -2754,32 +2754,9 @@ function HomePage() {
                     }}>VIP</span>
                   <Gem className="w-2.5 h-2.5" style={{ color: L ? '#92400e' : '#F7C948', opacity: 0.85 }} />
                 </div>
-                {/* Username — Light: slow angled gold shimmer (professional), Dark: white-gold-red shimmer */}
+                {/* Username — CSS class shimmer (theme-switch safe) */}
                 <h2
-                  className="text-2xl font-black leading-tight tracking-tight"
-                  style={L ? {
-                    // Light: ذهبي معدني مائل — حركة بطيئة جداً ذهاباً وإياباً
-                    background: 'linear-gradient(118deg, #78350f 0%, #b45309 12%, #d97706 24%, #fef3c7 38%, #fde68a 44%, #ffffff 50%, #fde68a 56%, #fef3c7 62%, #d97706 76%, #b45309 88%, #78350f 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    color: 'transparent',
-                    backgroundSize: '400% 100%',
-                    animation: 'nameShimmerLight 8s ease-in-out infinite',
-                    display: 'inline-block',
-                    filter: 'drop-shadow(0 1px 2px rgba(120,53,15,0.3))',
-                  } : {
-                    // Dark: أبيض—ذهبي—أحمر بطيء — زاوية مائلة
-                    background: 'linear-gradient(118deg, #e5e7eb 0%, #f5d060 20%, #fbbf24 35%, #E60000 52%, #fbbf24 68%, #f5d060 82%, #e5e7eb 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    color: 'transparent',
-                    backgroundSize: '400% 100%',
-                    animation: 'nameShimmerDark 8s ease-in-out infinite',
-                    display: 'inline-block',
-                    filter: 'drop-shadow(0 0 8px rgba(230,0,0,0.4))',
-                  }}
+                  className={`text-2xl font-black leading-tight tracking-tight ${L ? 'shimmer-name-light' : 'shimmer-name-dark'}`}
                 >
                   {displayName}
                 </h2>
@@ -3083,17 +3060,7 @@ function HomePage() {
         <div className="relative rounded-2xl overflow-hidden border border-white/6 p-4 text-center space-y-2"
           style={{ background: 'linear-gradient(135deg,rgba(0,229,255,0.04),rgba(247,201,72,0.03))' }}>
           <div className="h-px w-full mb-3" style={{ background: 'linear-gradient(90deg,transparent,rgba(0,229,255,0.25),rgba(247,201,72,0.20),transparent)' }} />
-          <p className="text-sm font-black"
-            style={{
-              background: 'linear-gradient(118deg, #00c8e0 0%, #00E5FF 35%, #F7C948 65%, #fde68a 100%)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              color: 'transparent',
-              backgroundSize: '400% 100%',
-              animation: 'nameShimmerDark 10s ease-in-out infinite',
-              display: 'inline-block',
-            }}>
+          <p className="text-sm font-black shimmer-footer-title">
             Vodafone Fakka Premium
           </p>
           <p className="text-[11px] text-muted-foreground">

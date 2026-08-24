@@ -193,30 +193,11 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
               <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
-            {/* Plan name — Light: slow angled gold shimmer (professional metallic), Dark: bright shimmer */}
+            {/* Plan name — CSS class shimmer (theme-switch safe) */}
             {subActive && (
-              <p className="text-xl font-black leading-tight tracking-tight"
-                style={L ? {
-                  background: 'linear-gradient(118deg, #78350f 0%, #b45309 12%, #d97706 24%, #fef3c7 38%, #fde68a 44%, #ffffff 50%, #fde68a 56%, #fef3c7 62%, #d97706 76%, #b45309 88%, #78350f 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  color: 'transparent',
-                  backgroundSize: '400% 100%',
-                  animation: 'nameShimmerLight 8s ease-in-out infinite',
-                  display: 'inline-block',
-                  filter: 'drop-shadow(0 1px 2px rgba(120,53,15,0.25))',
-                } : {
-                  background: 'linear-gradient(118deg, #e5e7eb 0%, #f5d060 20%, #fbbf24 35%, #E60000 52%, #fbbf24 68%, #f5d060 82%, #e5e7eb 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  color: 'transparent',
-                  backgroundSize: '400% 100%',
-                  animation: 'nameShimmerDark 8s ease-in-out infinite',
-                  display: 'inline-block',
-                  filter: 'drop-shadow(0 0 8px rgba(230,0,0,0.35))',
-                }}>{planName}</p>
+              <p className={`text-xl font-black leading-tight tracking-tight ${L ? 'shimmer-name-light' : 'shimmer-name-dark'}`}>
+                {planName}
+              </p>
             )}
           </div>
 
@@ -269,20 +250,9 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 }} />
             </div>
             <div className="min-w-0 flex-1">
-            {/* "مسؤول النظام" — Light: solid dark readable, Dark: slow shimmer */}
-              <p className="text-xs font-black"
-                style={L ? {
-                  color: '#78350f',
-                } : {
-                  background: 'linear-gradient(118deg, #fde68a 0%, #F7C948 30%, #E60000 55%, #F7C948 80%, #fde68a 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  color: 'transparent',
-                  backgroundSize: '400% 100%',
-                  animation: 'nameShimmerDark 8s ease-in-out infinite',
-                  display: 'inline-block',
-                }}>
+            {/* "مسؤول النظام" — Light: solid amber, Dark: CSS shimmer */}
+              <p className={`text-xs font-black ${L ? '' : 'shimmer-admin-dark'}`}
+                style={L ? { color: '#78350f' } : undefined}>
                 مسؤول النظام
               </p>
               {/* subtitle */}
