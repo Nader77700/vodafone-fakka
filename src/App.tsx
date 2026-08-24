@@ -547,7 +547,6 @@ function AppInner() {
 
           <Routes>
         {/* SplashScreen و LoginPage بدون PageErrorBoundary كانا يرسلان الأخطاء مباشرة لـ Sentry */}
-        <Route path="/" element={<PageErrorBoundary pageName="splash"><SplashScreen /></PageErrorBoundary>} />
         <Route path="/login" element={<PageErrorBoundary pageName="login"><LoginPage /></PageErrorBoundary>} />
         <Route path="/join/:code"    element={<PageErrorBoundary pageName="join"><S><JoinPage /></S></PageErrorBoundary>} />
         <Route path="/invite/:token" element={<PageErrorBoundary pageName="invite"><S><InvitePage /></S></PageErrorBoundary>} />

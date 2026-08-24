@@ -3011,20 +3011,36 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
 }
 
 // ── جلب إحصائيات عدة اشتراكات دفعة واحدة (لعرضها في سجل الاشتراكات)
-// يُعيد Map من subscription_id → { total, success, failed }
+// يُعيد Map من subscription_id → إحصائيات كاملة per-subscription
 export async function getSubscriptionStatsMap(
   subscriptionIds: string[],
-): Promise<Record<string, { total: number; success: number; failed: number; revenue: number }>> {
+): Promise<Record<string, {
+  total: number; success: number; failed: number; revenue: number;
+  allowed_operations: number | null; used_operations: number;
+  remaining_operations: number | null; subscription_type: 'limited' | 'unlimited';
+  start_date: string | null; end_date: string | null; plan: string;
+}>> {
   if (!subscriptionIds.length) return {};
   const results = await Promise.all(
     subscriptionIds.map(sid =>
       supabase
         .rpc('get_subscription_stats', { p_subscription_id: sid })
-        .then(({ data }) => ({
-          id: sid,
-          stats: (data as { total: number; success: number; failed: number; revenue: number } | null)
-            ?? { total: 0, success: 0, failed: 0, revenue: 0 },
-        })),
+        .then(({ data }) => {
+          const d = data as {
+            total: number; success: number; failed: number; revenue: number;
+            allowed_operations: number | null; used_operations: number;
+            remaining_operations: number | null; subscription_type: 'limited' | 'unlimited';
+            start_date: string | null; end_date: string | null; plan: string;
+          } | null;
+          return {
+            id: sid,
+            stats: d ?? {
+              total: 0, success: 0, failed: 0, revenue: 0,
+              allowed_operations: null, used_operations: 0, remaining_operations: null,
+              subscription_type: 'unlimited' as const, start_date: null, end_date: null, plan: '',
+            },
+          };
+        }),
     ),
   );
   return Object.fromEntries(results.map(r => [r.id, r.stats]));
@@ -3040,6 +3056,14 @@ export interface SubscriptionUsageAnalytics {
   first_op_at: string | null;
   last_op_at: string | null;
   daily_usage: { day: string; total: number; success: number; failed: number; revenue: number }[] | null;
+  // حقول per-subscription (P0)
+  allowed_operations: number | null;   // null = unlimited
+  used_operations: number;             // successful فقط
+  remaining_operations: number | null; // null = unlimited
+  subscription_type: 'limited' | 'unlimited';
+  start_date: string | null;
+  end_date: string | null;
+  plan: string;
 }
 
 export async function getSubscriptionUsageAnalytics(
@@ -3048,7 +3072,12 @@ export async function getSubscriptionUsageAnalytics(
   const { data } = await supabase
     .rpc('get_subscription_usage_analytics', { p_subscription_id: subscriptionId });
   const d = data as SubscriptionUsageAnalytics | null;
-  return d ?? { total: 0, success: 0, failed: 0, revenue: 0, unique_phones: 0, first_op_at: null, last_op_at: null, daily_usage: null };
+  return d ?? {
+    total: 0, success: 0, failed: 0, revenue: 0,
+    unique_phones: 0, first_op_at: null, last_op_at: null, daily_usage: null,
+    allowed_operations: null, used_operations: 0, remaining_operations: null,
+    subscription_type: 'unlimited', start_date: null, end_date: null, plan: '',
+  };
 }
 
 // ── جلب عمليات المستخدم مع pagination (للصفحة المنفصلة viewAll)
