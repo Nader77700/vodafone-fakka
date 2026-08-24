@@ -964,6 +964,7 @@ export async function toggleUserActive(userId: string, is_active: boolean) {
 export interface SubscriptionHistoryEntry {
   id: string;
   user_id: string;
+  subscription_id: string | null;   // P0: ربط مباشر بجدول subscriptions
   license_key_id: string | null;
   code: string | null;
   code_type: string;
@@ -974,7 +975,7 @@ export interface SubscriptionHistoryEntry {
   expires_at: string;
   notes: string | null;
   created_at: string;
-  // حقول الحالة الجديدة
+  // حقول الحالة
   status: 'active' | 'expired' | 'cancelled' | 'replaced' | 'pending' | 'suspended';
   end_reason: 'operations_finished' | 'duration_finished' | 'cancelled_by_admin' | 'replaced_by_new_subscription' | 'manual_cancel' | 'trial_finished' | null;
   // PHASE 32: حقول العمليات الاحترافية
@@ -990,7 +991,7 @@ export interface SubscriptionHistoryEntry {
 export async function getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryEntry[]> {
   const { data } = await supabase
     .from('subscription_history')
-    .select('*')
+    .select('*, subscription_id')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50);

@@ -274,7 +274,12 @@ export default function AdminUserSubscription() {
   const [ops,      setOps]      = useState<SubscriptionOperation[]>([]);
   const [archived, setArchived] = useState<Subscription[]>([]);
   const [allSubs,  setAllSubs]  = useState<Subscription[]>([]);
-  const [subStatsMap, setSubStatsMap] = useState<Record<string, { total: number; success: number; failed: number; revenue: number }>>({});
+  const [subStatsMap, setSubStatsMap] = useState<Record<string, {
+    total: number; success: number; failed: number; revenue: number;
+    allowed_operations: number | null; used_operations: number;
+    remaining_operations: number | null; subscription_type: 'limited' | 'unlimited';
+    plan: string;
+  }>>({});
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [renewDays,  setRenewDays]  = useState('30');
@@ -310,10 +315,15 @@ export default function AdminUserSubscription() {
       ]);
       setDetail(d); setHistory(h); setOps(o); setArchived(arch); setAllSubs(all);
       if (d.subscription?.expires_at) setExtendDate(d.subscription.expires_at.slice(0, 10));
-      // جلب إحصائيات العمليات لكل اشتراك في سجل التاريخ
-      const subIds = all.map(s => s.id).filter(Boolean);
-      if (subIds.length) {
-        const statsMap = await getSubscriptionStatsMap(subIds);
+      // P0 FIX: جلب stats لكل اشتراك عبر subscription_id المباشر من subscription_history
+      // لا مطابقة بالكود — كل اشتراك يحصل على بياناته الصحيحة فقط
+      const subIds = [
+        ...h.map((x: SubscriptionHistoryEntry) => x.subscription_id).filter(Boolean) as string[],
+        ...all.map((s: Subscription) => s.id).filter(Boolean),
+      ];
+      const uniqueIds = [...new Set(subIds)];
+      if (uniqueIds.length) {
+        const statsMap = await getSubscriptionStatsMap(uniqueIds);
         setSubStatsMap(statsMap);
       }
     } catch { toast.error('فشل تحميل بيانات الاشتراك'); }
@@ -667,12 +677,9 @@ export default function AdminUserSubscription() {
           ) : (
             <div className="space-y-2">
               {history.slice(0, 5).map((h, i) => {
-                // مطابقة سجل التاريخ بالاشتراك الفعلي عبر الكود للحصول على subscription_id
-                const matchedSub = allSubs.find(s =>
-                  (s as Subscription & { code_used?: string }).code_used === h.code ||
-                  s.license_key_id === h.license_key_id
-                );
-                const stats = matchedSub ? subStatsMap[matchedSub.id] : undefined;
+                // P0 FIX: استخدام subscription_id المباشر — لا مطابقة بالكود
+                const stats = h.subscription_id ? subStatsMap[h.subscription_id] : undefined;
+                const isUnlimited = stats?.subscription_type === 'unlimited';
                 return (
                   <div key={h.id} className={`p-3 rounded-xl border transition-colors ${i === 0 ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/10'}`}>
                     <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
@@ -699,18 +706,44 @@ export default function AdminUserSubscription() {
                       {h.cancel_reason && <div><p className="text-[10px] text-muted-foreground">سبب الإلغاء</p><p className="text-xs font-medium text-destructive">{h.cancel_reason}</p></div>}
                       {h.performed_by_name && <div><p className="text-[10px] text-muted-foreground">نفّذ بواسطة</p><p className="text-xs font-medium">{h.performed_by_name}</p></div>}
                     </div>
-                    {/* ── إحصائيات العمليات لهذا الاشتراك مع revenue ── */}
-                    {stats !== undefined && (
-                      <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-3 flex-wrap">
-                        <span className="text-[10px] text-muted-foreground">العمليات:</span>
-                        <span className="text-[10px] font-bold text-foreground">{stats.total} إجمالي</span>
-                        <span className="text-[10px] font-semibold text-success">✅ {stats.success}</span>
-                        <span className="text-[10px] font-semibold text-destructive">❌ {stats.failed}</span>
-                        {stats.revenue > 0 && (
-                          <span className="text-[10px] font-semibold text-primary">💰 {stats.revenue} جنيه</span>
-                        )}
+                    {/* P0: إحصائيات هذا الاشتراك فقط — مستقلة تماماً */}
+                    {stats !== undefined ? (
+                      <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5">
+                        {/* صف: إجمالي / ناجح / فاشل / إيراد */}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground">العمليات:</span>
+                          <span className="text-[10px] font-bold text-foreground">{stats.total} إجمالي</span>
+                          <span className="text-[10px] font-semibold text-success">✅ {stats.success}</span>
+                          <span className="text-[10px] font-semibold text-destructive">❌ {stats.failed}</span>
+                          {stats.revenue > 0 && (
+                            <span className="text-[10px] font-semibold text-primary">💰 {stats.revenue} جنيه</span>
+                          )}
+                        </div>
+                        {/* صف: Limit / Used / Remaining */}
+                        {isUnlimited ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">∞ غير محدود</span>
+                            <span className="text-[10px] text-muted-foreground">استُخدم {stats.used_operations} عملية ناجحة</span>
+                          </div>
+                        ) : stats.allowed_operations != null ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] text-muted-foreground">
+                              الحد: <strong className="text-foreground">{stats.allowed_operations}</strong>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              مستخدم: <strong className="text-foreground">{stats.used_operations}</strong>
+                            </span>
+                            <span className={`text-[10px] font-bold ${(stats.remaining_operations ?? 0) === 0 ? 'text-destructive' : 'text-success'}`}>
+                              متبقي: {stats.remaining_operations ?? 0}
+                            </span>
+                          </div>
+                        ) : null}
                       </div>
-                    )}
+                    ) : h.subscription_id ? (
+                      <div className="mt-2 pt-2 border-t border-border/40">
+                        <span className="text-[10px] text-muted-foreground">جاري تحميل الإحصائيات...</span>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
@@ -812,18 +845,38 @@ export default function AdminUserSubscription() {
                           )}
                         </div>
                       </div>
-                      {/* إحصائيات العمليات لهذا الاشتراك مع revenue */}
-                      {subStatsMap[s.id] && (
-                        <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-3 flex-wrap">
-                          <span className="text-[10px] text-muted-foreground">العمليات:</span>
-                          <span className="text-[10px] font-bold">{subStatsMap[s.id].total} إجمالي</span>
-                          <span className="text-[10px] text-success font-semibold">✅ {subStatsMap[s.id].success}</span>
-                          <span className="text-[10px] text-destructive font-semibold">❌ {subStatsMap[s.id].failed}</span>
-                          {subStatsMap[s.id].revenue > 0 && (
-                            <span className="text-[10px] text-primary font-semibold">💰 {subStatsMap[s.id].revenue} جنيه</span>
-                          )}
-                        </div>
-                      )}
+                      {/* P0: إحصائيات هذا الاشتراك فقط — عبر s.id المباشر */}
+                      {subStatsMap[s.id] && (() => {
+                        const st = subStatsMap[s.id];
+                        const isUnlim = st.subscription_type === 'unlimited';
+                        return (
+                          <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <span className="text-[10px] text-muted-foreground">العمليات:</span>
+                              <span className="text-[10px] font-bold">{st.total} إجمالي</span>
+                              <span className="text-[10px] text-success font-semibold">✅ {st.success}</span>
+                              <span className="text-[10px] text-destructive font-semibold">❌ {st.failed}</span>
+                              {st.revenue > 0 && (
+                                <span className="text-[10px] text-primary font-semibold">💰 {st.revenue} جنيه</span>
+                              )}
+                            </div>
+                            {isUnlim ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">∞ غير محدود</span>
+                                <span className="text-[10px] text-muted-foreground">استُخدم {st.used_operations} عملية</span>
+                              </div>
+                            ) : st.allowed_operations != null ? (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] text-muted-foreground">الحد: <strong className="text-foreground">{st.allowed_operations}</strong></span>
+                                <span className="text-[10px] text-muted-foreground">مستخدم: <strong className="text-foreground">{st.used_operations}</strong></span>
+                                <span className={`text-[10px] font-bold ${(st.remaining_operations ?? 0) === 0 ? 'text-destructive' : 'text-success'}`}>
+                                  متبقي: {st.remaining_operations ?? 0}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
