@@ -991,7 +991,7 @@ export interface SubscriptionHistoryEntry {
 export async function getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryEntry[]> {
   const { data } = await supabase
     .from('subscription_history')
-    .select('*, subscription_id')
+    .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50);
