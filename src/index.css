@@ -2461,3 +2461,99 @@ html.light [style*="border-color: rgba(255,255,255,0.0"] {
 }
 
 /* ── END Section ㉒ Extension ── */
+
+/* ════════════════════════════════════════════════════════
+   Section ㉓ — Light Mode: Card & Box Border Elevation
+   هدف: كل الكروت والمربعات تكون حوافها واضحة وبارزة
+   ════════════════════════════════════════════════════════ */
+
+/* ── 1. shadcn Card → حد واضح + ظل بارز ── */
+html.light .rounded-xl,
+html.light .rounded-2xl,
+html.light .rounded-3xl,
+html.light .rounded-lg {
+  --light-card-border: rgba(0,0,0,0.10);
+  --light-card-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.06);
+}
+
+/* ── 2. كل بطاقة Card component (shadcn) ── */
+html.light [data-radix-card],
+html.light .bg-card,
+html.light .bg-\[hsl\(var\(--card\)\)\] {
+  border-color: rgba(0,0,0,0.10) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 0 0 1.5px rgba(0,0,0,0.07) !important;
+}
+
+/* ── 3. Tailwind border classes → تقوية الحد ── */
+html.light .border {
+  border-color: rgba(0,0,0,0.13) !important;
+}
+html.light .border-2 {
+  border-color: rgba(0,0,0,0.16) !important;
+}
+
+/* ── 4. المربعات الداخلية (mini-cards / stat tiles) ── */
+html.light .rounded-xl.border,
+html.light .rounded-2xl.border,
+html.light .rounded-lg.border,
+html.light .rounded-xl.border-0,
+html.light .rounded-2xl.border-0,
+html.light .rounded-lg.border-0 {
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.07) !important;
+}
+
+/* ── 5. بطاقات بخلفية card/muted → ring خفيف + shadow ── */
+html.light .bg-muted,
+html.light .bg-muted\/50,
+html.light .bg-muted\/30 {
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+
+/* ── 6. debug panel boxes وأي div يشبه الكارت ── */
+html.light [style*="border-radius: 12px"],
+html.light [style*="border-radius:12px"],
+html.light [style*="border-radius: 16px"],
+html.light [style*="border-radius:16px"],
+html.light [style*="border-radius: 8px"],
+html.light [style*="border-radius:8px"] {
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.07) !important;
+}
+
+/* ── 7. الكروت اللي عندها border خفيف (rgba white) → استبدال حقيقي ── */
+html.light [style*="border: 1px solid rgba(255,255,255,0.1"],
+html.light [style*="border:1px solid rgba(255,255,255,0.1"],
+html.light [style*="border: 1.5px solid rgba(255,255,255,0.1"],
+html.light [style*="border:1.5px solid rgba(255,255,255,0.1"] {
+  border-color: rgba(0,0,0,0.12) !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.06) !important;
+}
+
+/* ── 8. كروت subscription premium ── */
+html.light .subscription-premium-card {
+  box-shadow:
+    0 4px 20px rgba(180,83,9,0.14),
+    0 0 0 1.5px rgba(180,83,9,0.28),
+    0 1px 0 rgba(255,255,255,0.95) inset !important;
+}
+html.light .spc-stat-card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.08) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── 9. Debug panel tiles ── */
+html.light .native-debug-panel .rounded-xl,
+html.light .native-debug-panel .rounded-lg {
+  box-shadow: 0 1px 5px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.08) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── 10. Focus ring على الكروت القابلة للتفاعل ── */
+html.light button.rounded-xl:focus-visible,
+html.light button.rounded-2xl:focus-visible,
+html.light button.rounded-lg:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* ── END Section ㉓ ── */
