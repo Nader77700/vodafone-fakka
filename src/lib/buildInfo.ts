@@ -4,14 +4,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.8',
-  versionCode:    487,
+  appVersion:      '3.5.11',
+  versionCode:    491,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_8_1786547470',
-  bundleFile:     'VodafoneFakka-v3.5.8.apk',
-  bundleHash:     'apk_v3_5_8_code487',
-  apkHash:        'apk_v3_5_8_code487',
-  dbVersion:      'v3.5.8',
+  sourceHash:     'build_v3_5_11_1786547470',
+  bundleFile:     'VodafoneFakka-v3.5.11.apk',
+  bundleHash:     'apk_v3_5_11_code491',
+  apkHash:        'apk_v3_5_11_code491',
+  dbVersion:      'v3.5.11',
   releaseNotes: [
     'v3.5.8: إصلاح جذري لمشكلة عدم إرسال OTP لإظهار الأرقام الكاملة — مطابقة كاملة للـ headers والـ endpoint في السكريبت المرجعي',
     'v3.5.8: إضافة تدفق "تغيير كلمة السر" المستقل داخل My NTRA (Phone → OTP → New Password → Success) مع محاولات محدودة وقفل مؤقت',
