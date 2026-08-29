@@ -20,10 +20,17 @@ export function getNativeDeviceId(): string | null {
   } catch { return null; }
 }
 
-// ── حساب hardware_hash من خصائص الجهاز الثابتة ───────────────────────
-export function computeHardwareHash(): string {
+// ── حساب hardware_hash من خصائص الجهاز + device_fp فريد ────────────────
+// المشكلة القديمة: الـ hash مبني على Screen/CPU/OS فقط → أجهزة متشابهة
+//   تعطي نفس الـ hash → النظام يعتقد أنها جهاز واحد → حظر خاطئ
+// الحل: ندمج device_fp (UUID فريد لكل تثبيت) مع خصائص الجهاز
+export function computeHardwareHash(seedFp?: string): string {
   try {
     const parts: string[] = [];
+
+    // 0. UUID فريد للتثبيت (seed) — يضمن التفرد حتى على أجهزة متشابهة
+    const fp = seedFp ?? localStorage.getItem(FP_KEY) ?? '';
+    if (fp) parts.push(fp.slice(0, 18)); // نأخذ جزءاً منه فقط للاستقرار
 
     // 1. Screen resolution + color depth
     parts.push(`${screen.width}x${screen.height}x${screen.colorDepth}`);
@@ -40,8 +47,6 @@ export function computeHardwareHash(): string {
     // 5. Platform (OS)
     parts.push(navigator.platform ?? '');
 
-    // إزالة User-Agent لأنه يتغير مع تحديثات المتصفح ويسبب عدم استقرار البصمة
-
     // 6. Canvas fingerprint
     try {
       const canvas = document.createElement('canvas');
@@ -56,7 +61,7 @@ export function computeHardwareHash(): string {
       }
     } catch { /* ignore */ }
 
-    // 8. WebGL renderer
+    // 7. WebGL renderer
     try {
       const gl = document.createElement('canvas').getContext('webgl');
       if (gl) {
@@ -77,7 +82,7 @@ export function computeHardwareHash(): string {
     }
     return h.toString(16).padStart(8, '0');
   } catch {
-    // Fallback: لا تستخدم قيمة ثابتة مشتركة بين الأجهزة — يولد UUID فريد للجهاز
+    // Fallback: UUID فريد لكل جهاز
     return generateUUID();
   }
 }
@@ -112,7 +117,8 @@ export function getHardwareHash(): string {
     const cached = localStorage.getItem(HW_KEY);
     // إذا كان المخزّن قيمة قديمة ثابتة أو فارغة، نتجاهله وننتج قيمة فريدة
     if (cached && cached.length >= 6 && cached !== 'hw-fallback') return cached;
-    const hw = computeHardwareHash();
+    // نمرر device_fp كـ seed لضمان التفرد بين التثبيتات
+    const hw = computeHardwareHash(getDeviceFingerprint());
     localStorage.setItem(HW_KEY, hw);
     return hw;
   } catch {
