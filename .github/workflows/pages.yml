@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build Web App
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npx vite build --outDir dist
       - name: Copy invite page
         run: cp docs/invite.html dist/invite.html || true
