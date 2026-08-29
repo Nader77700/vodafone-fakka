@@ -34,6 +34,20 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action || req.headers.get('x-action');
 
+    // ── فحص username قبل التسجيل (مفتوح، بدون auth) ─────────────────────────────
+    if (action === 'check_username') {
+      const { username } = body as { username?: string };
+      if (!username || username.trim().length < 2) {
+        return json({ available: false, reason: 'اسم مستخدم غير صالح' });
+      }
+      const { data: existing } = await supabaseAdmin
+        .from('core_profiles')
+        .select('id')
+        .ilike('username', username.trim())
+        .maybeSingle();
+      return json({ available: !existing });
+    }
+
     // ── مسار فحص الحظر (مفتوح للجميع ولا يتطلب صلاحيات) ──────────────────────────
     if (action === 'check_device_ban') {
       const { device_fp, device_id, hardware_hash } = body as Record<string, string | undefined>;

@@ -227,6 +227,19 @@ export default function LoginPage() {
     }
     setLoading(true);
 
+    // ── فحص username مكرر قبل إنشاء auth user (يمنع "Database error saving new user") ──
+    try {
+      const { data: checkRes } = await supabase.functions.invoke<{ available: boolean }>(
+        'admin-user-actions',
+        { body: { action: 'check_username', username: username.trim() }, headers: SECURITY_HEADERS },
+      );
+      if (checkRes && !checkRes.available) {
+        setLoading(false);
+        toast.error('اسم المستخدم مستخدم مسبقاً — جرّب اسماً آخر');
+        return;
+      }
+    } catch { /* تجاهل خطأ الشبكة والمتابعة */ }
+
     const regEmail = `${username.trim().toLowerCase()}@miaoda.com`;
     const { data, error } = await supabase.auth.signUp({
       email: regEmail, password,
@@ -234,19 +247,21 @@ export default function LoginPage() {
     });
     if (error) {
       setLoading(false);
-      if (error.message.includes('already') || error.message.includes('User already registered')) {
+      if (error.message.includes('already') || error.message.includes('User already registered')
+          || error.message.includes('Database error')) {
         toast.error('اسم المستخدم مستخدم مسبقاً — جرّب اسماً آخر');
       } else if (error.message.includes('password') || error.message.includes('weak')) {
         toast.error('كلمة المرور ضعيفة — يرجى اختيار كلمة مرور أقوى');
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
         toast.error('فشل الاتصال بالسيرفر — تحقق من الإنترنت وأعد المحاولة');
       } else {
-        toast.error(error.message?.trim() || 'فشل إنشاء الحساب — يرجى المحاولة مجدداً');
+        toast.error('فشل إنشاء الحساب — يرجى المحاولة مجدداً');
       }
       return;
     }
     if (data.user) {
-      await supabase.from('profiles').update({
+      // تحديث profile (الـ trigger يكتب core_profiles مباشرة، هذا للتأكيد فقط)
+      await supabase.from('core_profiles').update({
         username: username.trim(),
         phone: phone.trim()
       }).eq('id', data.user.id);
