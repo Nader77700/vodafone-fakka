@@ -28,6 +28,15 @@ type Mode = 'login' | 'register';
 
 
 import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
+import { BUILD_INFO } from '@/lib/buildInfo';
+
+// الـ headers الأمنية المطلوبة لطلبات check_device_ban
+const SECURITY_HEADERS = {
+  'x-app-build': BUILD_INFO.versionCode.toString(),
+  'x-app-version': BUILD_INFO.appVersion,
+  'x-app-secure-token': 'vfp_secure_356_kill_switch',
+  'x-app-package': 'com.naderakram.vodafonefakka',
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -121,6 +130,7 @@ export default function LoginPage() {
     try {
       const { data: banCheck } = await supabase.functions.invoke<{banned:boolean;reason?:string}>('admin-user-actions', {
         body: { action: 'check_device_ban', device_fp: device_fp || deviceId, device_id: native_id || deviceId, hardware_hash },
+        headers: SECURITY_HEADERS,
       });
       if ((banCheck as {banned?:boolean}|null)?.banned) {
         toast.error(`🚫 جهازك محظور نهائياً.\nالسبب: ${(banCheck as {reason?:string}).reason ?? 'غير محدد'}`);
@@ -164,6 +174,7 @@ export default function LoginPage() {
     {
       const { data: banCheck } = await supabase.functions.invoke<{banned:boolean;reason?:string}>('admin-user-actions', {
         body: { action: 'check_device_ban', device_fp: device_fp || deviceId, device_id: native_id || deviceId, hardware_hash },
+        headers: SECURITY_HEADERS,
       });
       if ((banCheck as {banned?:boolean}|null)?.banned) {
         toast.error(`🚫 هذا الجهاز محظور من إنشاء حسابات جديدة.\nالسبب: ${(banCheck as {reason?:string}).reason ?? 'تعدد الحسابات'}`);
