@@ -28,7 +28,7 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
       - name: Install dependencies
-        run: pnpm install --approve-builds
+        run: pnpm install --config.dangerouslyAllowAllBuilds=true
       - name: Build Web App
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
