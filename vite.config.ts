@@ -6,17 +6,16 @@ import JavaScriptObfuscator from 'javascript-obfuscator';
 
 // ── الـ chunks التي يجب استثناؤها من controlFlowFlattening ──────────────────
 // Sentry + React-DOM internals تنكسر مع controlFlowFlattening — تُعامَل بـ obfuscation خفيف
-const SENSITIVE_PATTERNS = [
-  'sentry', '@sentry',        // Sentry SDK — _handleVisibilityChange في replay
-  'react-dom', 'scheduler',   // React DOM internals
-  'supabase', 'GoTrueClient', // @supabase/auth-js — _handleVisibilityChange في GoTrueClient
-  'gotrue', 'auth-js',        // GoTrue auth client
-  'visibilitychange',         // أي chunk يتعامل مع visibility API
+// الـ chunks الحساسة تُحدَّد بالاسم (manualChunks) — ليس بفحص المحتوى
+// فحص المحتوى غير موثوق لأن الأسماء تُغيَّر بعد minification
+const SENSITIVE_CHUNK_NAMES = [
+  'vendor-supabase',  // @supabase/supabase-js + auth-js — GoTrueClient._handleVisibilityChange
+  'vendor-sentry',    // @sentry/react + replay — _handleVisibilityChange
+  'vendor-react',     // react-dom + scheduler — internals
 ];
 
-function isSensitiveChunk(code) {
-  const lower = code.slice(0, 800).toLowerCase();
-  return SENSITIVE_PATTERNS.some(p => lower.includes(p));
+function isSensitiveChunk(fileName) {
+  return SENSITIVE_CHUNK_NAMES.some(name => fileName.includes(name));
 }
 
 const COMMON_RESERVED = [
@@ -62,7 +61,7 @@ const customObfuscatorPlugin = () => {
         const chunk = bundle[fileName];
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
           try {
-            const sensitive = isSensitiveChunk(chunk.code);
+            const sensitive = isSensitiveChunk(fileName);
             const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
               // Sentry/React-DOM يستثنيان من controlFlowFlattening — internal closures تنكسر
@@ -154,9 +153,27 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         entryFileNames: "assets/[hash].js",
-        chunkFileNames: "assets/[hash].js",
+        // vendor-* chunks تحتفظ بأسمائها حتى يعمل isSensitiveChunk بشكل صحيح
+        chunkFileNames: (chunkInfo) => {
+          if (chunkInfo.name && chunkInfo.name.startsWith('vendor-')) {
+            return `assets/${chunkInfo.name}-[hash].js`;
+          }
+          return 'assets/[hash].js';
+        },
         assetFileNames: "assets/[hash].[ext]",
-        manualChunks: undefined,
+        manualChunks(id) {
+          // عزل المكتبات الحساسة في chunks بأسماء ثابتة معروفة
+          // isSensitiveChunk ستتعرف عليها بالاسم وتُعطّل controlFlowFlattening عليها
+          if (id.includes('@supabase') || id.includes('supabase-js') || id.includes('auth-js') || id.includes('gotrue')) {
+            return 'vendor-supabase';
+          }
+          if (id.includes('@sentry') || id.includes('sentry-internal')) {
+            return 'vendor-sentry';
+          }
+          if (id.includes('react-dom') || id.includes('scheduler')) {
+            return 'vendor-react';
+          }
+        },
       },
     },
   },
