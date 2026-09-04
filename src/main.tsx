@@ -381,13 +381,78 @@ const styles = {
 
 window.__STARTUP_STEP__ = 'Loading Home/Router';
 console.log('[Startup]', window.__STARTUP_STEP__);
-createRoot(document.getElementById("root")!).render(
-  <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
-    <AppWrapper>
-      <App />
-    </AppWrapper>
-  </Sentry.ErrorBoundary>
-);
+
+// ── Early Force-Update Guard ─────────────────────────────────────────────────
+// يتحقق من الإصدار قبل أي render لـ React — يمنع الـ crash قبل ما يوصل للـ App
+// لو الجهاز على إصدار قديم → يعرض شاشة تحديث مباشرة بدون mount أي component
+async function earlyVersionCheck(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return; // ويب فقط — لا فحص
+  try {
+    const { data: minRow } = await supabase
+      .from('core_app_config')
+      .select('value')
+      .eq('key', 'version_min_supported')
+      .maybeSingle();
+    const minCode = parseInt(minRow?.value ?? '0', 10);
+    if (!minCode || minCode <= 0) return;
+
+    const { data: latestRow } = await supabase
+      .from('app_versions')
+      .select('version, version_code, apk_url')
+      .eq('is_latest', true)
+      .maybeSingle();
+
+    const currentCode = BUILD_INFO.versionCode;
+    if (currentCode >= minCode) return; // الإصدار حديث — لا حاجة للتحديث
+
+    // ── الإصدار قديم → اعرض شاشة تحديث مباشرة ──────────────────────────
+    const apkUrl = latestRow?.apk_url ?? '';
+    const latestVer = latestRow?.version ?? '';
+    const root = document.getElementById('root')!;
+    root.innerHTML = `
+      <div dir="rtl" style="min-height:100dvh;background:#0a0000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;color:#fff;text-align:center;gap:16px;">
+        <div style="width:80px;height:80px;border-radius:20px;background:rgba(230,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:40px;">🔄</div>
+        <h1 style="font-size:20px;font-weight:700;margin:0;color:#ff4444;">تحديث إجباري مطلوب</h1>
+        <p style="font-size:14px;color:rgba(255,255,255,0.7);margin:0;line-height:1.7;max-width:300px;">
+          إصدارك الحالي قديم ولا يمكن تشغيله.<br/>
+          يرجى تثبيت الإصدار ${latestVer} للاستمرار.
+        </p>
+        ${apkUrl ? `<a href="${apkUrl}" style="margin-top:8px;padding:14px 40px;border-radius:12px;background:#E60000;color:#fff;text-decoration:none;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(230,0,0,0.5);">⬇️ تحديث الآن</a>` : ''}
+      </div>`;
+    // أخفِ الـ boot-loader وأظهر شاشة التحديث
+    const bl = document.getElementById('boot-loader');
+    if (bl) bl.style.display = 'none';
+    CapSplashScreen.hide().catch(() => {});
+    throw new Error('FORCE_UPDATE_REQUIRED'); // أوقف التنفيذ
+  } catch (e: any) {
+    if (e?.message === 'FORCE_UPDATE_REQUIRED') throw e;
+    // تجاهل أي خطأ آخر — التطبيق يكمل طبيعي
+  }
+}
+
+earlyVersionCheck()
+  .then(() => {
+    createRoot(document.getElementById("root")!).render(
+      <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
+        <AppWrapper>
+          <App />
+        </AppWrapper>
+      </Sentry.ErrorBoundary>
+    );
+  })
+  .catch((e) => {
+    if (e?.message !== 'FORCE_UPDATE_REQUIRED') {
+      // خطأ غير متوقع — شغّل التطبيق طبيعي
+      createRoot(document.getElementById("root")!).render(
+        <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
+          <AppWrapper>
+            <App />
+          </AppWrapper>
+        </Sentry.ErrorBoundary>
+      );
+    }
+    // FORCE_UPDATE_REQUIRED → لا تعمل createRoot — الـ HTML مُحدَّث مباشرة
+  });
 
 // ── إخفاء boot-loader الفوري بعد أن يبدأ React في الرسم ──────────────────
 // يُزيل الـ spinner الأبيض ويُظهر React DOM
