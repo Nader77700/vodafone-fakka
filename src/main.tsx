@@ -100,7 +100,7 @@ if (typeof window !== 'undefined' && window.history) {
 // مفتاح عدّاد الكراشات — في sessionStorage لأنه يُبقى بعد localStorage.clear()
 // ويُمسح تلقائياً عند إغلاق التطبيق كلياً (Android kill process)
 const CRASH_COUNT_KEY = 'vfp_crash_count';
-const MAX_CRASHES     = 2; // بعد 2 كراش متتالي → مسح كامل + خروج
+const MAX_CRASHES     = 5; // بعد 5 كراشات متتالية → مسح كامل + خروج
 
 (function clearStaleStateOnUpdate() {
   try {
@@ -108,6 +108,8 @@ const MAX_CRASHES     = 2; // بعد 2 كراش متتالي → مسح كامل
     if (stored !== CURRENT_VERSION) {
       // تحديث جديد — مسح كل شيء مع الحفاظ على auth
       const authData = localStorage.getItem(AUTH_KEY);
+      // مسح crash count عند التحديث لمنع exitApp المبكر
+      sessionStorage.removeItem(CRASH_COUNT_KEY);
       sessionStorage.clear();
       localStorage.clear();
       if (authData) localStorage.setItem(AUTH_KEY, authData);
@@ -266,7 +268,7 @@ function CrashFallback({ error, componentStack }: any) {
       return () => clearTimeout(t);
     }
 
-    // سجل الكراش في Supabase إذا أمكن
+    // سجل الكراش في Supabase دائماً — حتى عند crash loop
     try {
       import('@/db/supabase').then(({ supabase }) => {
         const sendCrash = async () => {
@@ -280,6 +282,7 @@ function CrashFallback({ error, componentStack }: any) {
               app_version: CURRENT_VERSION,
               additional_data: { 
                 crashCount: count,
+                startupStep: window.__STARTUP_STEP__ || 'unknown',
                 componentStack,
                 last_action: GlobalCrashContext.lastAction,
                 last_api_request: GlobalCrashContext.lastApiRequest,
@@ -309,8 +312,8 @@ function CrashFallback({ error, componentStack }: any) {
       setCountdown(c => {
         if (c <= 1) {
           clearInterval(interval);
-          // استخدم replace بدلاً من reload لتجنب مشاكل WebView
-          window.location.replace('/');
+          // في Capacitor WebView نستخدم reload() فقط — replace('/') يسبب loop
+          try { window.location.reload(); } catch { window.location.href = window.location.href; }
           return 0;
         }
         return c - 1;
