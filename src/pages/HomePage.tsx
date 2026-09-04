@@ -67,6 +67,8 @@ import { Radio, ArrowLeft, Wallet, Eye, Star } from 'lucide-react';
 import PromotionBanner from '@/components/common/PromotionBanner';
 import { formatError } from '@/lib/formatError';
 import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
+import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
+import { PhoneSuggestionsInput } from '@/components/vodafone-cash/PhoneSuggestionsInput';
 
 
 // ══════════════════════════════════════════════════════════
@@ -1720,61 +1722,15 @@ function ExecuteModal({
                 {/* ── حقل رقم المستفيد ── */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium" style={{ color: L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>رقم الهاتف المستفيد</Label>
-                  <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{
-                      borderColor: L ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
-                      background: L ? '#ffffff' : 'rgba(255,255,255,0.04)',
-                    }}>
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10"
-                      style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)' }} />
-                    <Input type="tel" inputMode="numeric" maxLength={11}
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent placeholder:opacity-40"
-                      style={{ color: L ? '#1a1a2e' : '#ffffff' }}
-                      placeholder="01xxxxxxxxx" value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} dir="ltr"
-                      disabled={submitting} />
-                  </div>
+                  <PhoneSuggestionsInput
+                    value={phone}
+                    onChange={setPhone}
+                    disabled={submitting}
+                  />
                 </div>
 
                 {/* ── حقل الرقم السري ── */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium" style={{ color: L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>الرقم السري للمحفظة</Label>
-                  <div className="relative rounded-xl overflow-hidden border h-12"
-                    style={{
-                      borderColor: L ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
-                      background: L ? '#ffffff' : 'rgba(255,255,255,0.04)',
-                    }}>
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10"
-                      style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)' }} />
-                    <Input type="password" inputMode="numeric"
-                      className="border-0 focus-visible:ring-0 pr-9 text-right h-full text-base bg-transparent placeholder:opacity-40"
-                      style={{ color: L ? '#1a1a2e' : '#ffffff' }}
-                      placeholder="أدخل الرقم السري" value={pin}
-                      onChange={e => setPin(e.target.value)} disabled={submitting} />
-                  </div>
-                  {/* تحذير قفل الحساب + خيار الحفظ */}
-                  <div className="flex flex-col gap-2 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer w-max">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-white/20 bg-white/5 accent-[#E60000] w-4 h-4"
-                        checked={localStorage.getItem('vcc_saved_pin') === pin && pin.length > 0} 
-                        onChange={(e) => {
-                          if (e.target.checked && pin.length >= 4) {
-                            localStorage.setItem('vcc_saved_pin', pin);
-                          } else {
-                            localStorage.removeItem('vcc_saved_pin');
-                          }
-                        }} 
-                      />
-                      <span className="text-xs text-white/70">حفظ الرقم السري لتسهيل العمليات القادمة</span>
-                    </label>
-                    <p className="text-[11px] pr-1 flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
-                      <span>⚠️</span>
-                      <span>رقم سري Vodafone Cash المكوّن من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
-                    </p>
-                  </div>
-                </div>
+                <PinInputBlock pin={pin} setPin={setPin} submitting={submitting} />
 
                 {/* ── بطاقة الخطأ — السبب والحل بشكل واضح ── */}
                 {lastError && !submitting && (() => {
