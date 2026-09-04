@@ -4,15 +4,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.13',
-  versionCode:    493,
+  appVersion:      '3.5.14',
+  versionCode:    494,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_13_1786548000',
-  bundleFile:     'VodafoneFakka-v3.5.13.apk',
-  bundleHash:     'apk_v3_5_13_code493',
-  apkHash:        'apk_v3_5_13_code493',
-  dbVersion:      'v3.5.13',
+  sourceHash:     'build_v3_5_14_1786548500',
+  bundleFile:     'VodafoneFakka-v3.5.14.apk',
+  bundleHash:     'apk_v3_5_14_code494',
+  apkHash:        'apk_v3_5_14_code494',
+  dbVersion:      'v3.5.14',
   releaseNotes: [
+    'v3.5.14: إصلاح مشكلة البناء ERR_PNPM_IGNORED_BUILDS في GitHub Actions — تشغيل مستقر بدون crash',
+    'v3.5.14: إصلاح شاشة "حدث خطأ غير متوقع" التي ظهرت بعد تحديث v3.5.13',
     'v3.5.13: اقتراحات رقم المستفيد تلقائياً من سجل العمليات السابقة',
     'v3.5.13: نظام Password Box جديد لحفظ الأرقام السرية مع حماية والتحقق عند التعديل',
     'v3.5.13: الكارت الرئيسي يُخفى تلقائياً عند انتهاء الاشتراك وتظهر بدلاً منه شارة FREE',

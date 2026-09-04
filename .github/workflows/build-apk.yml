@@ -59,7 +59,7 @@ jobs:
       # ─── [1] BUILD ─────────────────────────────────────────────────────────
       - name: Install dependencies & build Vite
         run: |
-          pnpm install --frozen-lockfile
+          pnpm install --frozen-lockfile --approve-builds
           npx vite build --minify true --outDir dist
           echo "✅ Vite build OK"
 
@@ -142,7 +142,7 @@ jobs:
 
       - name: Capacitor sync
         run: |
-          pnpm install --frozen-lockfile
+          pnpm install --frozen-lockfile --approve-builds
           npx vite build
           pnpm exec cap sync android
 
