@@ -9,6 +9,7 @@ window.__STARTUP_STEP__ = 'Loading Config';
 console.log('[Startup]', window.__STARTUP_STEP__);
 
 import * as Sentry from "@sentry/react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
 window.__STARTUP_STEP__ = 'Loading Assets (React/DOM)';
@@ -384,12 +385,36 @@ const styles = {
 
 window.__STARTUP_STEP__ = 'Loading Home/Router';
 console.log('[Startup]', window.__STARTUP_STEP__);
+
+// ── React Error Boundary بسيط وموثوق بدون dependency خارجي ──
+class RootErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null; componentStack: string | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null, componentStack: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    this.setState({ componentStack: info.componentStack ?? null });
+  }
+  render() {
+    if (this.state.hasError) {
+      return <CrashFallback error={this.state.error} componentStack={this.state.componentStack} />;
+    }
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById("root")!).render(
-  <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
+  <RootErrorBoundary>
     <AppWrapper>
       <App />
     </AppWrapper>
-  </Sentry.ErrorBoundary>
+  </RootErrorBoundary>
 );
 
 // ── إخفاء boot-loader الفوري بعد أن يبدأ React في الرسم ──────────────────
