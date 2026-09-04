@@ -9,7 +9,6 @@ window.__STARTUP_STEP__ = 'Loading Config';
 console.log('[Startup]', window.__STARTUP_STEP__);
 
 import * as Sentry from "@sentry/react";
-import React from "react";
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
 window.__STARTUP_STEP__ = 'Loading Assets (React/DOM)';
@@ -101,7 +100,7 @@ if (typeof window !== 'undefined' && window.history) {
 // مفتاح عدّاد الكراشات — في sessionStorage لأنه يُبقى بعد localStorage.clear()
 // ويُمسح تلقائياً عند إغلاق التطبيق كلياً (Android kill process)
 const CRASH_COUNT_KEY = 'vfp_crash_count';
-const MAX_CRASHES     = 5; // بعد 5 كراشات متتالية → مسح كامل + خروج
+const MAX_CRASHES     = 2; // بعد 2 كراش متتالي → مسح كامل + خروج
 
 (function clearStaleStateOnUpdate() {
   try {
@@ -109,8 +108,6 @@ const MAX_CRASHES     = 5; // بعد 5 كراشات متتالية → مسح ك
     if (stored !== CURRENT_VERSION) {
       // تحديث جديد — مسح كل شيء مع الحفاظ على auth
       const authData = localStorage.getItem(AUTH_KEY);
-      // مسح crash count عند التحديث لمنع exitApp المبكر
-      sessionStorage.removeItem(CRASH_COUNT_KEY);
       sessionStorage.clear();
       localStorage.clear();
       if (authData) localStorage.setItem(AUTH_KEY, authData);
@@ -269,7 +266,7 @@ function CrashFallback({ error, componentStack }: any) {
       return () => clearTimeout(t);
     }
 
-    // سجل الكراش في Supabase دائماً — حتى عند crash loop
+    // سجل الكراش في Supabase إذا أمكن
     try {
       import('@/db/supabase').then(({ supabase }) => {
         const sendCrash = async () => {
@@ -283,7 +280,6 @@ function CrashFallback({ error, componentStack }: any) {
               app_version: CURRENT_VERSION,
               additional_data: { 
                 crashCount: count,
-                startupStep: window.__STARTUP_STEP__ || 'unknown',
                 componentStack,
                 last_action: GlobalCrashContext.lastAction,
                 last_api_request: GlobalCrashContext.lastApiRequest,
@@ -313,8 +309,8 @@ function CrashFallback({ error, componentStack }: any) {
       setCountdown(c => {
         if (c <= 1) {
           clearInterval(interval);
-          // في Capacitor WebView نستخدم reload() فقط — replace('/') يسبب loop
-          try { window.location.reload(); } catch { window.location.href = window.location.href; }
+          // استخدم replace بدلاً من reload لتجنب مشاكل WebView
+          window.location.replace('/');
           return 0;
         }
         return c - 1;
@@ -385,36 +381,12 @@ const styles = {
 
 window.__STARTUP_STEP__ = 'Loading Home/Router';
 console.log('[Startup]', window.__STARTUP_STEP__);
-
-// ── React Error Boundary بسيط وموثوق بدون dependency خارجي ──
-class RootErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null; componentStack: string | null }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null, componentStack: null };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    this.setState({ componentStack: info.componentStack ?? null });
-  }
-  render() {
-    if (this.state.hasError) {
-      return <CrashFallback error={this.state.error} componentStack={this.state.componentStack} />;
-    }
-    return this.props.children;
-  }
-}
-
 createRoot(document.getElementById("root")!).render(
-  <RootErrorBoundary>
+  <Sentry.ErrorBoundary fallback={(errorData) => <CrashFallback error={errorData.error} componentStack={errorData.componentStack} />}>
     <AppWrapper>
       <App />
     </AppWrapper>
-  </RootErrorBoundary>
+  </Sentry.ErrorBoundary>
 );
 
 // ── إخفاء boot-loader الفوري بعد أن يبدأ React في الرسم ──────────────────

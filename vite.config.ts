@@ -16,17 +16,18 @@ const customObfuscatorPlugin = () => {
           try {
         const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
-              controlFlowFlattening: false, // REACT FIX: يكسر useRef/useState hooks
-              // controlFlowFlatteningThreshold: 1, // disabled
-              deadCodeInjection: false, // REACT FIX: يُربك ترتيب hooks
-              // deadCodeInjectionThreshold: 0.4, // disabled
+              controlFlowFlattening: true,
+              controlFlowFlatteningThreshold: 1,
+              deadCodeInjection: true,
+              deadCodeInjectionThreshold: 0.4,
               debugProtection: false, // تعطيل حتى لا يسبب مشاكل في المتصفح أو التطبيق
               disableConsoleOutput: true,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: false, // REACT FIX: يعتمد على controlFlowFlattening
+              selfDefending: true,
               reservedStrings: [
+                // ── Capacitor & Native Plugins (لا تُشفَّر) ──
                 'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
                 'getNetworkInfo', 'requestPhonePermission', 'addListener',
                 'Capacitor', 'registerPlugin', 'CapacitorHttp', 'web',
@@ -39,15 +40,27 @@ const customObfuscatorPlugin = () => {
                 'VodafoneDetectorWeb', 'getPlatform', 'ApkInstallerPlugin', 'PrintPlugin',
                 'com.naderakram.vodafonefakka', 'MainActivity',
                 'loadScheduled', 'loadNotifs', 'isExpired', 'isSuspendedSub',
-                'BUILD_INFO', 'versionCode', 'isCrackedVersion'
+                'BUILD_INFO', 'versionCode', 'isCrackedVersion',
+                // ── React Hooks Internal Names (مهم جداً — منع كسر ترتيب الـ hooks) ──
+                // controlFlowFlattening يُعيد ترتيب الكود — هذه الأسماء يجب أن تبقى كما هي
+                'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo',
+                'useContext', 'useReducer', 'useLayoutEffect', 'useImperativeHandle',
+                'useDebugValue', 'useDeferredValue', 'useTransition', 'useId',
+                'useInsertionEffect', 'useSyncExternalStore',
+                'createContext', 'forwardRef', 'memo', 'createRef',
+                // ── React Fiber Internal ──
+                '__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED',
+                'ReactCurrentDispatcher', 'ReactCurrentBatchConfig', 'ReactCurrentOwner',
+                // ── DOM refs (منع undefined.current) ──
+                'current', 'contains', 'blur', 'focus', 'addEventListener', 'removeEventListener'
               ],
               splitStrings: true,
               stringArray: true,
               stringArrayCallsTransform: true,
-              stringArrayEncoding: ['base64'], // تنويع التشفير لزيادة الصعوبة مع تجنب مشاكل الأداء
+              stringArrayEncoding: ['base64', 'rc4'], // تنويع التشفير لزيادة الصعوبة مع تجنب مشاكل الأداء
               stringArrayThreshold: 0.5, 
               transformObjectKeys: false, 
-              unicodeEscapeSequence: false, // تفعيل لتحويل الحروف إلى Unicode
+              unicodeEscapeSequence: true, // تفعيل لتحويل الحروف إلى Unicode
               renameVariables: true, 
               identifierNamesCache: null
             });
