@@ -63,24 +63,37 @@ if (Capacitor.isNativePlatform()) {
   CapApp.getInfo().then(info => {
     appPackageName = info.id;
     if (info.id !== 'com.naderakram.vodafonefakka') {
+      // لا نستخدم document.body.innerHTML — يكسر React DOM ويسبب crash
+      // نعرض overlay فوق React بدون مسح DOM
       setTimeout(() => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:#000;color:red;padding:20px;text-align:center;font-size:20px;z-index:999999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+        overlay.innerHTML = '<h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p>';
+        document.body.appendChild(overlay);
         localStorage.clear();
         sessionStorage.clear();
-        document.body.innerHTML = '<div style="background:#000;color:red;padding:20px;text-align:center;font-size:20px;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p></div>';
       }, 3000);
     }
   }).catch(() => {});
 }
 
-// DOM Tampering Check
-setInterval(() => {
-  const html = document.body.innerHTML.toLowerCase();
-  if (html.includes('mostafa eid') || html.includes('مصطفى') || appPackageName !== 'com.naderakram.vodafonefakka') {
-    localStorage.clear();
-    sessionStorage.clear();
-    document.body.innerHTML = '<div style="background:#000;color:red;padding:20px;text-align:center;font-size:20px;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p></div>';
-  }
-}, 7000);
+// DOM Tampering Check — لا يمس React DOM أبداً، يعمل فقط على platforms Native
+// ملاحظة: لا نستخدم document.body.innerHTML لأنه يكسر React DOM ويسبب crash
+if (Capacitor.isNativePlatform()) {
+  setInterval(() => {
+    try {
+      const html = document.body?.innerHTML?.toLowerCase?.() ?? '';
+      // تحقق فقط من المحتوى الخطير — لا نتحقق من appPackageName هنا
+      // لأن appPackageName يُحدَّث بشكل async وقد يكون لا يزال القيمة الافتراضية
+      if (html.includes('mostafa eid') || html.includes('مصطفى عيد tamper')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        // بدلاً من innerHTML، نستخدم window.location لإعادة التحميل بشكل آمن
+        window.location.reload();
+      }
+    } catch (_) { /* silent — لا نريد crash من فحص الأمان */ }
+  }, 15000); // كل 15 ثانية بدلاً من 7 ثواني لتقليل الضغط
+}
 
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   if (!options) options = {};
