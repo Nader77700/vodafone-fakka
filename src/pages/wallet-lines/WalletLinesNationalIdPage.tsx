@@ -6,11 +6,12 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, IdCard, ShieldCheck, XCircle, CheckCircle2, Loader2, LogOut, User, Mail } from 'lucide-react';
+import { ArrowRight, IdCard, XCircle, CheckCircle2, Loader2, LogOut, User, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { walletLinesService } from '@/services/walletLinesService';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 function validateNationalId(v: string): string | null {
   if (!v) return 'الرقم القومي مطلوب';
@@ -22,6 +23,7 @@ function validateNationalId(v: string): string | null {
 export default function WalletLinesNationalIdPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const L = useIsLight();
   const token: string = (location.state as { token?: string })?.token ?? '';
 
   const [value, setValue] = useState('');
@@ -78,11 +80,15 @@ export default function WalletLinesNationalIdPage() {
 
   return (
     <div className="min-h-screen pb-28 flex flex-col" dir="rtl"
-      style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
+      style={{ background: L ? '#f8f9fa' : 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
+        style={{
+          background: L ? 'rgba(248,249,250,0.95)' : 'rgba(8,13,20,0.92)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: L ? '1px solid rgba(0,0,0,0.10)' : '1px solid hsl(var(--muted-foreground) / 0.4)',
+        }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate(-1)} disabled={isDisabled}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95">
@@ -180,7 +186,7 @@ export default function WalletLinesNationalIdPage() {
         </Button>
 
         <div className="flex items-start gap-2 p-3 rounded-xl border border-border bg-muted/50">
-          <ShieldCheck className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+          <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             رقمك القومي لا يُحفظ ولا يُرسل لأي طرف ثالث — يُستخدم فقط للاستعلام الآمن.
           </p>

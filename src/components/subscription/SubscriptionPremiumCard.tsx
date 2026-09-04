@@ -146,42 +146,58 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
 
-            {/* PREMIUM VIP Gold Badge */}
-            <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
-              style={L ? {
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                border: '1.5px solid rgba(180,83,9,0.55)',
-                boxShadow: '0 2px 8px rgba(180,83,9,0.20), 0 1px 0 rgba(255,255,255,0.90) inset',
-              } : {
-                background: 'linear-gradient(135deg, rgba(247,201,72,0.14), rgba(230,0,0,0.06))',
-                border: '1px solid rgba(247,201,72,0.40)',
-                boxShadow: '0 0 14px rgba(247,201,72,0.12)',
-              }}>
-              <Sparkles className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
-              {/* Light: solid dark amber — perfectly readable on yellow bg */}
-              <span className="text-[10px] font-black tracking-[0.12em] uppercase"
-                style={{ color: L ? '#78350f' : undefined,
-                  ...(L ? {} : {
-                    background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  })
-                }}>PREMIUM</span>
-              <span className="text-[9px] font-black tracking-widest"
+            {/* Badge: PREMIUM VIP عند الاشتراك النشط — FREE عند انتهائه */}
+            {subActive ? (
+              /* ── PREMIUM VIP Gold Badge ── */
+              <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
                 style={L ? {
-                  color: '#7c2d12',
-                  border: '1px solid rgba(124,45,18,0.40)',
-                  borderRadius: '4px',
-                  padding: '0 5px',
-                  background: 'rgba(255,255,255,0.55)',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  border: '1.5px solid rgba(180,83,9,0.55)',
+                  boxShadow: '0 2px 8px rgba(180,83,9,0.20), 0 1px 0 rgba(255,255,255,0.90) inset',
                 } : {
-                  color: '#fbbf24',
-                  border: '1px solid rgba(247,201,72,0.35)',
-                  borderRadius: '4px',
-                  padding: '0 5px',
-                }}>VIP</span>
-              <Gem className="w-2.5 h-2.5" style={{ color: L ? '#92400e' : '#F7C948', opacity: 0.85 }} />
-            </div>
+                  background: 'linear-gradient(135deg, rgba(247,201,72,0.14), rgba(230,0,0,0.06))',
+                  border: '1px solid rgba(247,201,72,0.40)',
+                  boxShadow: '0 0 14px rgba(247,201,72,0.12)',
+                }}>
+                <Sparkles className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
+                <span className="text-[10px] font-black tracking-[0.12em] uppercase"
+                  style={{ color: L ? '#78350f' : undefined,
+                    ...(L ? {} : {
+                      background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    })
+                  }}>PREMIUM</span>
+                <span className="text-[9px] font-black tracking-widest"
+                  style={L ? {
+                    color: '#7c2d12',
+                    border: '1px solid rgba(124,45,18,0.40)',
+                    borderRadius: '4px',
+                    padding: '0 5px',
+                    background: 'rgba(255,255,255,0.55)',
+                  } : {
+                    color: '#fbbf24',
+                    border: '1px solid rgba(247,201,72,0.35)',
+                    borderRadius: '4px',
+                    padding: '0 5px',
+                  }}>VIP</span>
+                <Gem className="w-2.5 h-2.5" style={{ color: L ? '#92400e' : '#F7C948', opacity: 0.85 }} />
+              </div>
+            ) : (
+              /* ── FREE Badge (بدون اشتراك / منتهي) ── */
+              <div className="flex items-center gap-1.5 w-fit px-3 py-1.5 rounded-full"
+                style={L ? {
+                  background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                  border: '1.5px solid rgba(107,114,128,0.40)',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                } : {
+                  background: 'rgba(107,114,128,0.12)',
+                  border: '1px solid rgba(156,163,175,0.25)',
+                }}>
+                <span className="text-[10px] font-black tracking-[0.15em] uppercase"
+                  style={{ color: L ? '#374151' : '#9ca3af' }}>FREE</span>
+              </div>
+            )}
 
             {/* Status badge */}
             <div className="flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full"

@@ -16,6 +16,7 @@ import type { WalletLinesResult, WalletInfo, LineInfo, TelecomCarrier } from '@/
 import type { DataAvailability } from '@/lib/walletLinesErrors';
 import { walletLinesService } from '@/services/walletLinesService';
 import type { FullNumbersData } from '@/services/walletLinesService';
+import { useIsLight } from '@/contexts/ThemeContext';
 
 const CARRIERS = ['vodafone', 'orange', 'etisalat', 'we'] as const;
 type CarrierKey = typeof CARRIERS[number];
@@ -307,6 +308,7 @@ const OtpDialog = memo(function OtpDialog({
 export default function WalletLinesResultsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const L = useIsLight();
 
   // استعادة النتيجة من location.state أولاً، ثم من localStorage
   const result: WalletLinesResult = (() => {
@@ -414,11 +416,15 @@ export default function WalletLinesResultsPage() {
 
   return (
     <div className="min-h-screen pb-28" dir="rtl"
-      style={{ background: 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
+      style={{ background: L ? '#f8f9fa' : 'linear-gradient(180deg, #080d14 0%, #0a0a12 100%)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-30 px-4 pt-safe-top"
-        style={{ background: 'rgba(8,13,20,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
+        style={{
+          background: L ? 'rgba(248,249,250,0.95)' : 'rgba(8,13,20,0.92)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: L ? '1px solid rgba(0,0,0,0.10)' : '1px solid hsl(var(--muted-foreground) / 0.4)',
+        }}>
         <div className="flex items-center gap-3 py-4">
           <button onClick={() => navigate('/wallet-lines')}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted/50 hover:bg-muted active:scale-95">
