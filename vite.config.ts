@@ -16,16 +16,16 @@ const customObfuscatorPlugin = () => {
           try {
         const obfuscated = JavaScriptObfuscator.obfuscate(chunk.code, {
               compact: true,
-              controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 1,
-              deadCodeInjection: true,
-              deadCodeInjectionThreshold: 0.4,
+              controlFlowFlattening: false, // REACT FIX: يكسر useRef/useState hooks
+              // controlFlowFlatteningThreshold: 1, // disabled
+              deadCodeInjection: false, // REACT FIX: يُربك ترتيب hooks
+              // deadCodeInjectionThreshold: 0.4, // disabled
               debugProtection: false, // تعطيل حتى لا يسبب مشاكل في المتصفح أو التطبيق
               disableConsoleOutput: true,
               identifierNamesGenerator: 'hexadecimal',
               log: false,
               renameGlobals: false,
-              selfDefending: true,
+              selfDefending: false, // REACT FIX: يعتمد على controlFlowFlattening
               reservedStrings: [
                 'VodafoneDetector', 'networkStateChanged', 'VodafoneDetectorPlugin', 
                 'getNetworkInfo', 'requestPhonePermission', 'addListener',
@@ -44,10 +44,10 @@ const customObfuscatorPlugin = () => {
               splitStrings: true,
               stringArray: true,
               stringArrayCallsTransform: true,
-              stringArrayEncoding: ['base64', 'rc4'], // تنويع التشفير لزيادة الصعوبة مع تجنب مشاكل الأداء
+              stringArrayEncoding: ['base64'], // تنويع التشفير لزيادة الصعوبة مع تجنب مشاكل الأداء
               stringArrayThreshold: 0.5, 
               transformObjectKeys: false, 
-              unicodeEscapeSequence: true, // تفعيل لتحويل الحروف إلى Unicode
+              unicodeEscapeSequence: false, // تفعيل لتحويل الحروف إلى Unicode
               renameVariables: true, 
               identifierNamesCache: null
             });

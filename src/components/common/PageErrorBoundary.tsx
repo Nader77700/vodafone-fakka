@@ -18,6 +18,20 @@ export class PageErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[PageErrorBoundary]', this.props.pageName ?? 'page', error, info);
+    // ── إرسال الخطأ لـ Supabase لتشخيص المشكلة ──
+    try {
+      import('@/db/supabase').then(({ supabase }) => {
+        supabase.from('crash_logs').insert({
+          exception_message: `[PAGE:${this.props.pageName ?? 'unknown'}] ${error?.message ?? String(error)}`,
+          stack_trace: (error?.stack ?? '') + '\n\n--- ComponentStack ---\n' + (info?.componentStack ?? ''),
+          additional_data: {
+            pageName: this.props.pageName,
+            componentStack: info?.componentStack?.slice(0, 800),
+            appVersion: (window as any).__APP_VERSION__ ?? 'unknown',
+          }
+        }).then(() => {}).catch(() => {});
+      }).catch(() => {});
+    } catch (_) { /* silent */ }
   }
 
   handleRetry = () => {
