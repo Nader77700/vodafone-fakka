@@ -4,15 +4,20 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.12',
-  versionCode:    492,
+  appVersion:      '3.5.13',
+  versionCode:    493,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_12_1786547999',
-  bundleFile:     'VodafoneFakka-v3.5.12.apk',
-  bundleHash:     'apk_v3_5_12_code492',
-  apkHash:        'apk_v3_5_12_code492',
-  dbVersion:      'v3.5.12',
+  sourceHash:     'build_v3_5_13_1786548000',
+  bundleFile:     'VodafoneFakka-v3.5.13.apk',
+  bundleHash:     'apk_v3_5_13_code493',
+  apkHash:        'apk_v3_5_13_code493',
+  dbVersion:      'v3.5.13',
   releaseNotes: [
+    'v3.5.13: اقتراحات رقم المستفيد تلقائياً من سجل العمليات السابقة',
+    'v3.5.13: نظام Password Box جديد لحفظ الأرقام السرية مع حماية والتحقق عند التعديل',
+    'v3.5.13: الكارت الرئيسي يُخفى تلقائياً عند انتهاء الاشتراك وتظهر بدلاً منه شارة FREE',
+    'v3.5.13: إشعارات تذكير تلقائية قبل انتهاء الاشتراك بـ 48 ساعة و 24 ساعة',
+    'v3.5.13: دعم الوضع الفاتح (Light Mode) في صفحتَي بيانات الخطوط والمحافظ',
     'v3.5.8: إصلاح جذري لمشكلة عدم إرسال OTP لإظهار الأرقام الكاملة — مطابقة كاملة للـ headers والـ endpoint في السكريبت المرجعي',
     'v3.5.8: إضافة تدفق "تغيير كلمة السر" المستقل داخل My NTRA (Phone → OTP → New Password → Success) مع محاولات محدودة وقفل مؤقت',
     'v3.5.8: تحسين عرض قسم خدمات الخطوط والمحافظ وإصلاحات في واجهة Vodafone Offers',
