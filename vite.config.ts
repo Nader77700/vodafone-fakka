@@ -6,7 +6,13 @@ import JavaScriptObfuscator from 'javascript-obfuscator';
 
 // ── الـ chunks التي يجب استثناؤها من controlFlowFlattening ──────────────────
 // Sentry + React-DOM internals تنكسر مع controlFlowFlattening — تُعامَل بـ obfuscation خفيف
-const SENSITIVE_PATTERNS = ['sentry', '@sentry', 'react-dom', 'scheduler'];
+const SENSITIVE_PATTERNS = [
+  'sentry', '@sentry',        // Sentry SDK — _handleVisibilityChange في replay
+  'react-dom', 'scheduler',   // React DOM internals
+  'supabase', 'GoTrueClient', // @supabase/auth-js — _handleVisibilityChange في GoTrueClient
+  'gotrue', 'auth-js',        // GoTrue auth client
+  'visibilitychange',         // أي chunk يتعامل مع visibility API
+];
 
 function isSensitiveChunk(code) {
   const lower = code.slice(0, 800).toLowerCase();
