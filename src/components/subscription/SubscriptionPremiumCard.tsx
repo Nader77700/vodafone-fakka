@@ -338,7 +338,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 </span>
               </div>
               {!subActive ? (
-                <span className="text-sm font-black" style={{ color: '#ef4444' }}>لا توجد عمليات متاحة</span>
+                <span className="text-sm font-black" style={{ color: L ? '#6b7280' : '#9ca3af' }}>FREE</span>
               ) : opsLimit === null ? (
                 <span className="text-sm font-black" style={{ color: L ? '#059669' : '#00C896' }}>♾️ غير محدود</span>
               ) : (

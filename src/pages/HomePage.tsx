@@ -2137,6 +2137,7 @@ function ExecuteModal({
 // ── شريط تنبيه فترة السماح ──
 function GracePeriodBanner({ graceEndsAt, onRenew }: { graceEndsAt: string; onRenew: () => void }) {
   const [remaining, setRemaining] = useState('');
+  const L = useIsLight();
 
   useEffect(() => {
     const tick = () => {
@@ -2152,16 +2153,24 @@ function GracePeriodBanner({ graceEndsAt, onRenew }: { graceEndsAt: string; onRe
   }, [graceEndsAt]);
 
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-warning/15 border-b border-warning/30">
+    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b"
+      style={{
+        background: L ? 'rgba(251,191,36,0.12)' : 'rgba(251,191,36,0.10)',
+        borderColor: L ? 'rgba(180,83,9,0.30)' : 'rgba(251,191,36,0.25)',
+      }}>
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-warning text-lg shrink-0">⚠️</span>
         <div className="min-w-0">
-          <p className="text-xs font-bold text-warning-foreground text-balance">انتهى الاشتراك</p>
-          <p className="text-[11px] text-muted-foreground">فترة السماح تنتهي خلال {remaining}</p>
+          <p className="text-xs font-bold text-balance" style={{ color: L ? '#92400e' : 'hsl(var(--warning-foreground))' }}>انتهى الاشتراك</p>
+          <p className="text-[11px]" style={{ color: L ? '#78350f' : 'hsl(var(--muted-foreground))' }}>فترة السماح تنتهي خلال {remaining}</p>
         </div>
       </div>
       <button onClick={onRenew}
-        className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-warning text-warning-foreground hover:bg-warning/90 transition-all">
+        className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+        style={{
+          background: L ? '#b45309' : 'hsl(var(--warning))',
+          color: '#ffffff',
+        }}>
         جدد الآن
       </button>
     </div>
@@ -2832,8 +2841,9 @@ function HomePage() {
       </div>
 
       {/* ══════════════════════════════════════
-          2.3. SUBSCRIPTION PREMIUM CARD
+          2.3. SUBSCRIPTION PREMIUM CARD — يظهر فقط لما الاشتراك نشط أو مسؤول
          ══════════════════════════════════════ */}
+      {(subActive || isAdmin) && (
       <div className="px-4 pt-3">
         <SubscriptionPremiumCard
           subscription={subscription}
@@ -2842,6 +2852,7 @@ function HomePage() {
           onRenew={() => setActivationOpen(true)}
         />
       </div>
+      )}
 
       {/* ══════════════════════════════════════
           2.5. NATIVE DEBUG PANEL — Admin أو ?debug=true فقط
