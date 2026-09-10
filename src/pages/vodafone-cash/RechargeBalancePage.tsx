@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Phone, Lock, AlertTriangle, Zap, Clock, Loader2,
-  Wifi, WifiOff, RefreshCw, CheckCircle2, XCircle, UserCheck,
+  Wifi, WifiOff, RefreshCw, CheckCircle2, XCircle, UserCheck, Info,
 } from 'lucide-react';
 import { VodafoneCashService } from '../../services/vodafone-cash/VodafoneCashService';
 import { fetchSeamlessToken } from '../../lib/seamless';
@@ -12,6 +12,45 @@ import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { VodafoneDetector } from '@/lib/vodafoneDetector';
+import LineInfoModal from '@/components/line-info/LineInfoModal';
+
+// ── Shortcut: معلومات الخط (يُعرض فوق ملاحظات هامة) ─────────────
+function LineInfoShortcut({ receiverPhone }: { receiverPhone: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
+        style={{
+          background: 'rgba(230,0,0,0.07)',
+          border: '1px solid rgba(230,0,0,0.20)',
+        }}
+      >
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.25)' }}
+        >
+          <Info className="w-4 h-4" style={{ color: '#E60000' }} />
+        </div>
+        <div className="flex-1 min-w-0 text-right">
+          <p className="text-sm font-black" style={{ color: '#E60000' }}>معلومات الخط</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            اعرف النظام والرصيد والكروت قبل الشحن
+          </p>
+        </div>
+        <Info className="w-4 h-4 shrink-0 text-muted-foreground" />
+      </button>
+
+      <LineInfoModal
+        open={open}
+        onOpenChange={setOpen}
+        initialPhone={receiverPhone}
+      />
+    </>
+  );
+}
 
 export default function RechargeBalancePage() {
   const navigate = useNavigate();
@@ -482,6 +521,9 @@ export default function RechargeBalancePage() {
             </div>
           </div>
         )}
+
+        {/* ── شورت كت: معلومات الخط ────────────────────────────── */}
+        <LineInfoShortcut receiverPhone={activeReceiver} />
 
         {/* ── ملاحظات هامة ─────────────────────────────────────── */}
         <div className="bg-card border border-[#E60000]/20 rounded-xl p-4 shadow-[0_0_15px_rgba(230,0,0,0.05)]">

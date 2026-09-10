@@ -69,6 +69,8 @@ import { formatError } from '@/lib/formatError';
 import { PinManagerDialog } from '@/components/vodafone-cash/PinManagerDialog';
 import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 import { PhoneSuggestionsInput } from '@/components/vodafone-cash/PhoneSuggestionsInput';
+import LineInfoModal from '@/components/line-info/LineInfoModal';
+import { useWalletPins } from '@/hooks/useWalletPins';
 
 
 // ══════════════════════════════════════════════════════════
@@ -913,6 +915,9 @@ function ExecuteModal({
   const navigate = useNavigate();
   const { config } = useRuntimeConfig();
   const L = useIsLight();
+  const { savePin } = useWalletPins();
+  const [lineInfoOpen, setLineInfoOpen] = useState(false);
+  const [chargeForSelf, setChargeForSelf] = useState(false);
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
   const [sender, setSender] = useState(''); // مقروء تلقائياً من Native — لا يظهر للمستخدم
@@ -1050,11 +1055,11 @@ function ExecuteModal({
       }
       executingRef.current = true;
 
-    const trimPhone  = phone.trim();
+    const trimPhone  = chargeForSelf ? '' : phone.trim(); // عند شحن رقمي: الرقم يأتي من sMsisdn لاحقاً
     const trimPin    = pin.trim();
     const trimSender = sender.trim(); // يُقرأ تلقائياً من Native — يُمرَّر للـ API فارغاً إذا لم يُتاح
-    if (!trimPhone) { executingRef.current = false; toast.error('يرجى إدخال رقم الهاتف المستفيد'); return; }
-    if (!trimPhone.startsWith('01') || trimPhone.length !== 11) {
+    if (!chargeForSelf && !trimPhone) { executingRef.current = false; toast.error('يرجى إدخال رقم الهاتف المستفيد'); return; }
+    if (!chargeForSelf && (!trimPhone.startsWith('01') || trimPhone.length !== 11)) {
       executingRef.current = false; toast.error('رقم الهاتف غير صحيح — 11 رقم يبدأ بـ 01'); return;
     }
     if (!trimPin) { executingRef.current = false; toast.error('يرجى إدخال الرقم السري'); return; }
@@ -1161,8 +1166,18 @@ function ExecuteModal({
     }
 
     if (trace) trace.addStep('Sending To Server', 'HomePage.tsx', 'executeVodafoneOrder', 'Edge Function', 'Started');
+
+    // عند "شحن لرقمي": استخدم sMsisdn كـ receiver، وإذا لم يتوفر أظهر خطأ
+    const finalReceiver = chargeForSelf ? (sMsisdn ?? '') : trimPhone;
+    if (chargeForSelf && !finalReceiver) {
+      executingRef.current = false;
+      setSubmitting(false);
+      toast.error('تعذّر قراءة رقمك من الشبكة — تأكد من تفعيل بيانات فودافون وأعد المحاولة');
+      return;
+    }
+
     const result = await executeVodafoneOrder({
-      product_id: product.id, receiver: trimPhone, pin: trimPin, sender: sMsisdn || trimSender,
+      product_id: product.id, receiver: finalReceiver, pin: trimPin, sender: sMsisdn || trimSender,
       seamless_token: sToken, msisdn: sMsisdn,
       idempotencyKey, correlationId,
       traceId: trace?.traceId // تمرير كود التتبع للسيرفر
@@ -1181,12 +1196,9 @@ function ExecuteModal({
 
     // ✅ حفظ الباسورد فقط عند نجاح العملية وتحديد المستخدم للحفظ مسبقاً
     if (result.success && localStorage.getItem('vcc_pending_save_pin') === trimPin) {
-      const pins = JSON.parse(localStorage.getItem('vcc_saved_pins') || '[]');
-      if (!pins.includes(trimPin)) {
-        pins.push(trimPin);
-        localStorage.setItem('vcc_saved_pins', JSON.stringify(pins));
-      }
-      localStorage.removeItem('vcc_pending_save_pin'); // تنظيف التخزين المؤقت
+      // استخدام savePin() الرسمي: يحدّث vcc_saved_pins + vcc_default_pin + React state معاً
+      savePin(trimPin);
+      localStorage.removeItem('vcc_pending_save_pin');
     }
 
     const performedAt = new Date().toISOString();
@@ -1722,15 +1734,91 @@ function ExecuteModal({
                 {/* ── حقل رقم المستفيد ── */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium" style={{ color: L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>رقم الهاتف المستفيد</Label>
-                  <PhoneSuggestionsInput
-                    value={phone}
-                    onChange={setPhone}
-                    disabled={submitting}
-                  />
+                  {!chargeForSelf && (
+                    <PhoneSuggestionsInput
+                      value={phone}
+                      onChange={setPhone}
+                      disabled={submitting}
+                    />
+                  )}
+                  {/* ── Checkbox شحن لرقمي ── */}
+                  <label
+                    className="flex items-center gap-2.5 cursor-pointer select-none w-max"
+                    onClick={() => !submitting && setChargeForSelf(v => !v)}
+                  >
+                    <div
+                      className="w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors"
+                      style={{
+                        borderColor: chargeForSelf ? '#E60000' : L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)',
+                        background:  chargeForSelf ? '#E60000' : 'transparent',
+                      }}
+                    >
+                      {chargeForSelf && (
+                        <svg viewBox="0 0 10 8" fill="none" className="w-3 h-3">
+                          <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-sm font-black" style={{ color: chargeForSelf ? '#E60000' : L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>
+                        شحن لرقمي
+                      </span>
+                      <span className="block text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)' }}>
+                        سيتم شحن الرقم المتصل بالشبكة تلقائياً
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* بانر توضيحي عند تفعيل شحن لرقمي */}
+                  {chargeForSelf && (
+                    <div
+                      className="flex items-start gap-2 p-2.5 rounded-xl"
+                      style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.18)' }}
+                    >
+                      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#E60000' }} />
+                      <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
+                        سيتم التعرف على رقمك تلقائياً من شبكة فودافون عند التنفيذ. تأكد من تشغيل بيانات فودافون.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* ── حقل الرقم السري ── */}
                 <PinInputBlock pin={pin} setPin={setPin} submitting={submitting} />
+
+                {/* ── شورت كت: استعلام عن الرقم ── */}
+                {!submitting && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setLineInfoOpen(true)}
+                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
+                      style={{
+                        background: 'rgba(230,0,0,0.06)',
+                        border: '1px solid rgba(230,0,0,0.18)',
+                      }}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(230,0,0,0.14)', border: '1px solid rgba(230,0,0,0.25)' }}
+                      >
+                        <Info className="w-4 h-4" style={{ color: '#E60000' }} />
+                      </div>
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام عن الرقم</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                          اعرف النظام والرصيد والكروت قبل الشحن
+                        </p>
+                      </div>
+                      <Info className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
+                    </button>
+                    <LineInfoModal
+                      open={lineInfoOpen}
+                      onOpenChange={setLineInfoOpen}
+                      initialPhone={phone}
+                    />
+                  </>
+                )}
 
                 {/* ── بطاقة الخطأ — السبب والحل بشكل واضح ── */}
                 {lastError && !submitting && (() => {

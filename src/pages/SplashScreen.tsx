@@ -3,6 +3,7 @@
 // اللوجو: /vfp-logo.png محلي داخل APK
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { SplashScreen as CapSplashScreen } from '@capacitor/splash-screen';
 import { supabase } from '@/db/supabase';
 
 export const OFFICIAL_LOGO = '/vfp-logo.png';
@@ -260,8 +261,9 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
   const tryLeave = useCallback(() => {
     if (initDoneRef.current && minDoneRef.current && !leavingRef.current) {
       leavingRef.current = true;
-      // لا نستخدم setTimeout طويلة هنا بل نعطي وقت لـ setLeaving فقط
       setLeaving(true);
+      // إخفاء Capacitor Native Splash بعد اكتمال SplashOverlay
+      CapSplashScreen.hide().catch(() => {});
       setTimeout(onDone, 300); // تقليل الوقت لتجنب الشاشة السوداء
     }
   }, [onDone]);
@@ -409,7 +411,7 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
           <CrownIcon size={20} />
         </div>
 
-        {/* "Vodafone Fakka" — Vodafone أحمر، Fakka أبيض */}
+        {/* "Vodafone Fakka" — Vodafone أحمر، Fakka أبيض في الداكن / داكن في الفاتح */}
         <h1 style={{
           margin: '4px 0 0 0', padding: 0,
           textAlign: 'center',
@@ -417,10 +419,16 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
           fontWeight: 900, lineHeight: 1.1,
           letterSpacing: '-0.01em',
           whiteSpace: 'nowrap',
+          fontFamily: "'Cairo', 'Segoe UI', system-ui, sans-serif",
         }}>
           <span style={{ color: '#E60000', textShadow: '0 0 20px rgba(230,0,0,0.55)' }}>Vodafone</span>
           {' '}
-          <span style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>Fakka</span>
+          <span style={{
+            color: '#FFFFFF',
+            textShadow: '0 1px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)',
+            fontWeight: 900,
+            letterSpacing: '-0.01em',
+          }}>Fakka</span>
         </h1>
 
         {/* "— PREMIUM —" ذهبي معدني مع خطوط ديكورية */}

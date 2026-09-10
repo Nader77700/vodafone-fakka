@@ -29,7 +29,8 @@ export class PageErrorBoundary extends Component<Props, State> {
             componentStack: info?.componentStack?.slice(0, 800),
             appVersion: (window as any).__APP_VERSION__ ?? 'unknown',
           }
-        }).then(() => {}).catch(() => {});
+        })
+        .then(() => {}, () => {});
       }).catch(() => {});
     } catch (_) { /* silent */ }
   }

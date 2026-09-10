@@ -19,6 +19,7 @@ import type { OpsCheckResult } from '@/lib/api';
 import {
   saveBalanceSession, getBalanceSession, clearBalanceSession,
   saveRememberedCredentials, getRememberedCredentials, clearRememberedCredentials,
+  saveVaultPin, getVaultPin, hasVaultPin, updateVaultPin, clearVaultPin,
   signOutBalance, sessionRemainingMinutes, sessionExpiryLabel, isBalanceSessionActive,
   getAllSessions, switchToSession, removeSession,
   sessionExpiryFullLabel, sessionProgressPercent, sessionRemainingLabel,
@@ -33,6 +34,7 @@ import {
   Zap, Loader2, CheckCircle2, XCircle, AlertTriangle,
   ChevronRight, RefreshCw, Clock, Shield, User, Info,
   Users, Plus, Trash2, ChevronLeft, SwitchCamera,
+  KeyRound, Pencil, Copy, CheckCheck,
 } from 'lucide-react';
 import { fetchSeamlessToken } from '@/lib/seamless';
 import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
@@ -45,24 +47,423 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 
-// ── ألوان هوية التطبيق الأحمر/الأسود ──
+// ── ألوان هوية التطبيق الأحمر/الأسود — bg يتكيف مع الوضع ──
 const C = {
   red:         '#E60000',
   redLight:    'rgba(230,0,0,0.15)',
   redBorder:   'rgba(230,0,0,0.25)',
   redGlow:     'rgba(230,0,0,0.35)',
   redDeep:     '#c00000',
-  bg:          '#080000',
-  bgCard:      'hsl(var(--muted-foreground) / 0.4)',
-  bgCardBorder:'hsl(var(--muted-foreground) / 0.4)',
-  muted:       'hsl(var(--muted-foreground) / 0.6)',
+  bg:          'hsl(var(--background))',   // متكيف مع الوضع الفاتح/الداكن
+  bgCard:      'hsl(var(--card))',
+  bgCardBorder:'hsl(var(--border))',
+  muted:       'hsl(var(--muted-foreground))',
   warning:     '#fbbf24',
   warningBg:   'rgba(251,191,36,0.08)',
   warningBd:   'rgba(251,191,36,0.25)',
-  green:       '#4ade80',
-  greenBg:     'rgba(74,222,128,0.10)',
-  greenBd:     'rgba(74,222,128,0.22)',
+  green:       '#22c55e',
+  greenBg:     'rgba(34,197,94,0.10)',
+  greenBd:     'rgba(34,197,94,0.22)',
 };
+
+// ══════════════════════════════════════════════════════════
+// مكوّن: خزنة الرقم السري للمحفظة (PinVaultMini)
+// toggle صغير تحت PIN input + panel مؤمَّن بكلمة السر
+// ══════════════════════════════════════════════════════════
+function PinVaultMini({
+  currentPin,
+  onUseSaved,
+}: {
+  currentPin: string;           // PIN المكتوب حالياً في الـ input
+  onUseSaved: (pin: string) => void; // callback لملء الـ input بالمحفوظ
+}) {
+  // hasSaved كـ state حتى يتحدث تلقائياً عند الحفظ/الحذف
+  const [hasSaved, setHasSaved] = useState(() => hasVaultPin());
+
+  // حالة الـ toggle
+  const [checked, setChecked] = useState(() => hasVaultPin());
+
+  // panel الخزنة (مفتوح/مغلق)
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  // داخل الـ panel: مرحلة "unlock" ثم "view"
+  const [panelStep, setPanelStep] = useState<'unlock' | 'view' | 'edit'>('unlock');
+  const [unlockInput, setUnlockInput] = useState('');
+  const [unlockError, setUnlockError] = useState('');
+  const [showSaved, setShowSaved]   = useState(false);
+  const [editPin, setEditPin]       = useState('');
+  const [copied, setCopied]         = useState(false);
+
+  // مزامنة hasSaved + checked عند فتح/إغلاق الـ panel
+  useEffect(() => {
+    const v = hasVaultPin();
+    setHasSaved(v);
+    setChecked(v);
+  }, [panelOpen]);
+
+  const resetPanel = () => {
+    setPanelStep('unlock');
+    setUnlockInput('');
+    setUnlockError('');
+    setShowSaved(false);
+    setEditPin('');
+    setCopied(false);
+  };
+
+  const handleOpenPanel = () => { resetPanel(); setPanelOpen(true); };
+  const handleClosePanel = () => {
+    setPanelOpen(false);
+    resetPanel();
+    // إعادة مزامنة hasSaved بعد إغلاق panel
+    const v = hasVaultPin();
+    setHasSaved(v);
+    setChecked(v);
+  };
+
+  // فتح الخزنة: مطابقة PIN المدخل مع المحفوظ
+  const handleUnlock = () => {
+    const saved = getVaultPin();
+    if (!saved) { setUnlockError('لا يوجد رقم سري محفوظ'); return; }
+    if (unlockInput.trim() === saved) {
+      setUnlockError('');
+      setPanelStep('view');
+    } else {
+      setUnlockError('رقم سري غير صحيح');
+    }
+  };
+
+  // نسخ الرقم السري
+  const handleCopy = () => {
+    const saved = getVaultPin();
+    if (!saved) return;
+    navigator.clipboard?.writeText(saved).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // استخدام المحفوظ (ملء الـ input)
+  const handleUse = () => {
+    const saved = getVaultPin();
+    if (saved) { onUseSaved(saved); handleClosePanel(); }
+  };
+
+  // حفظ رقم جديد (تعديل)
+  const handleSaveEdit = () => {
+    if (editPin.length < 4) return;
+    updateVaultPin(editPin);
+    setHasSaved(true);
+    setChecked(true);
+    setPanelStep('view');
+    setEditPin('');
+  };
+
+  // حذف الخزنة
+  const handleDelete = () => {
+    clearVaultPin();
+    setHasSaved(false);
+    setChecked(false);
+    handleClosePanel();
+  };
+
+  // حفظ currentPin في الخزنة من الـ toggle
+  const handleSaveFromToggle = () => {
+    if (currentPin.length >= 4) {
+      saveVaultPin(currentPin);
+      setHasSaved(true);
+      setChecked(true);
+    }
+  };
+
+  // toggle: "حفظ" أو "استخدام المحفوظ"
+  const handleToggle = () => {
+    if (hasSaved) {
+      // يوجد محفوظ → toggle يعني "استخدام من الخزنة"
+      const newChecked = !checked;
+      setChecked(newChecked);
+      if (newChecked) {
+        const saved = getVaultPin();
+        if (saved) onUseSaved(saved);
+      }
+    } else {
+      // لا يوجد محفوظ → toggle "حفظ" (يحفظ currentPin إذا كان صالحاً)
+      if (!checked && currentPin.length >= 4) {
+        handleSaveFromToggle();
+      } else {
+        setChecked(v => !v);
+      }
+    }
+  };
+
+  const savedPin = getVaultPin();
+
+  return (
+    <>
+      {/* ── Toggle صغير ── */}
+      <div className="flex items-center justify-between px-1 py-0.5">
+        <button
+          type="button"
+          className="flex items-center gap-2 flex-1 min-w-0"
+          onClick={handleToggle}
+        >
+          {/* Checkbox مخصص */}
+          <div
+            className="w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all"
+            style={{
+              background: checked ? C.red : 'hsl(var(--muted))',
+              border: `1px solid ${checked ? C.red : 'hsl(var(--border))'}`,
+            }}
+          >
+            {checked && <CheckCheck className="w-2.5 h-2.5 text-white" />}
+          </div>
+          <span className="text-[11px] font-semibold truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {hasSaved ? 'استخدام الرقم السري المحفوظ' : 'حفظ الرقم السري في الخزنة'}
+          </span>
+        </button>
+
+        {/* زر فتح الخزنة (يظهر دائماً) */}
+        <button
+          type="button"
+          onClick={handleOpenPanel}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all active:scale-95 shrink-0"
+          style={{
+            background: 'rgba(230,0,0,0.08)',
+            border: '1px solid rgba(230,0,0,0.18)',
+          }}
+          title="فتح الخزنة"
+        >
+          <KeyRound className="w-3 h-3" style={{ color: C.red }} />
+          <span className="text-[10px] font-bold" style={{ color: C.red }}>الخزنة</span>
+        </button>
+      </div>
+
+      {/* ── Panel الخزنة (Sheet) ── */}
+      <Sheet open={panelOpen} onOpenChange={v => { if (!v) handleClosePanel(); }}>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl p-0 max-h-[85dvh] overflow-y-auto"
+          style={{ background: 'hsl(var(--background))', border: `1px solid rgba(230,0,0,0.2)` }}
+        >
+          {/* هيدر الـ Sheet */}
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-border" dir="rtl">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
+              <KeyRound className="w-5 h-5" style={{ color: C.red }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-foreground">خزنة الرقم السري</p>
+              <p className="text-[11px] text-muted-foreground">Vodafone Cash PIN Vault</p>
+            </div>
+          </div>
+
+          <div className="px-5 pb-8 pt-4 space-y-4" dir="rtl">
+
+            {/* ─ مرحلة: لا يوجد محفوظ + حفظ جديد ─ */}
+            {!savedPin && panelStep !== 'edit' && (
+              <div className="space-y-4">
+                <div className="rounded-2xl p-4 text-center space-y-2"
+                  style={{ background: 'rgba(230,0,0,0.05)', border: '1px solid rgba(230,0,0,0.12)' }}>
+                  <KeyRound className="w-8 h-8 mx-auto" style={{ color: 'rgba(230,0,0,0.4)' }} />
+                  <p className="text-sm font-bold text-foreground">لا يوجد رقم سري محفوظ</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    {currentPin.length >= 4
+                      ? 'اضغط "حفظ" لتخزين الرقم السري المُدخل في الخزنة'
+                      : 'أكمل عملية استعلام أو شحن ناجحة لحفظ الرقم السري تلقائياً، أو أدخله يدوياً ثم احفظه'}
+                  </p>
+                </div>
+                {currentPin.length >= 4 ? (
+                  <div className="space-y-3">
+                    <div className="rounded-xl p-3 flex items-center gap-3"
+                      style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
+                      <Lock className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 font-mono text-sm text-foreground tracking-widest">
+                        {'•'.repeat(currentPin.length)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{currentPin.length} أرقام</span>
+                    </div>
+                    <button
+                      className="w-full py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                      style={{
+                        background: `linear-gradient(135deg,${C.red},${C.redDeep})`,
+                        color: '#fff',
+                        boxShadow: `0 4px 16px ${C.redGlow}`,
+                      }}
+                      onClick={() => {
+                        saveVaultPin(currentPin);
+                        setHasSaved(true);
+                        setChecked(true);
+                        handleClosePanel();
+                      }}
+                    >
+                      <KeyRound className="w-4 h-4" />حفظ الرقم السري في الخزنة
+                    </button>
+                  </div>
+                ) : (
+                  /* زر حفظ يدوي عبر التعديل */
+                  <button
+                    className="w-full py-2.5 rounded-xl text-xs font-bold border border-border text-muted-foreground flex items-center justify-center gap-2 transition-all active:scale-95"
+                    onClick={() => { setEditPin(''); setPanelStep('edit'); }}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />إدخال رقم سري جديد يدوياً
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ─ مرحلة: فتح الخزنة (إدخال PIN للتحقق) ─ */}
+            {savedPin && panelStep === 'unlock' && (
+              <div className="space-y-4">
+                <div className="rounded-2xl p-3 flex items-center gap-3"
+                  style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.15)' }}>
+                  <Shield className="w-4 h-4 shrink-0" style={{ color: C.red }} />
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    أدخل الرقم السري المحفوظ للتحقق من هويتك وفتح الخزنة
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground">الرقم السري للتحقق</label>
+                  <div className="relative">
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type={showSaved ? 'text' : 'password'}
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={unlockInput}
+                      onChange={e => { setUnlockInput(e.target.value.replace(/\D/g,'')); setUnlockError(''); }}
+                      className="w-full h-11 rounded-xl pr-10 pl-10 text-sm font-mono outline-none"
+                      style={{ background: 'hsl(var(--card))', border: `1px solid ${unlockError ? C.red : 'hsl(var(--border))'}`, color: 'hsl(var(--foreground))' }}
+                      placeholder="أدخل الرقم السري"
+                      dir="ltr"
+                    />
+                    <button type="button" className="absolute left-3 top-1/2 -translate-y-1/2"
+                      onClick={() => setShowSaved(v => !v)}>
+                      {showSaved
+                        ? <EyeOff className="w-4 h-4 text-muted-foreground" />
+                        : <Eye    className="w-4 h-4 text-muted-foreground" />}
+                    </button>
+                  </div>
+                  {unlockError && (
+                    <p className="text-[11px] flex items-center gap-1" style={{ color: C.red }}>
+                      <XCircle className="w-3 h-3 shrink-0" />{unlockError}
+                    </p>
+                  )}
+                </div>
+                <button
+                  className="w-full py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                  disabled={unlockInput.length < 4}
+                  style={{
+                    background: unlockInput.length >= 4 ? `linear-gradient(135deg,${C.red},${C.redDeep})` : 'hsl(var(--muted))',
+                    color: unlockInput.length >= 4 ? '#fff' : 'hsl(var(--muted-foreground))',
+                    boxShadow: unlockInput.length >= 4 ? `0 4px 16px ${C.redGlow}` : 'none',
+                  }}
+                  onClick={handleUnlock}
+                >
+                  <KeyRound className="w-4 h-4" />فتح الخزنة
+                </button>
+              </div>
+            )}
+
+            {/* ─ مرحلة: عرض الرقم المحفوظ ─ */}
+            {savedPin && panelStep === 'view' && (
+              <div className="space-y-3">
+                {/* عرض الرقم */}
+                <div className="rounded-xl p-4 space-y-2"
+                  style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground font-semibold">الرقم السري المحفوظ</span>
+                    <button type="button" onClick={() => setShowSaved(v => !v)}
+                      className="p-1 rounded-lg" style={{ color: C.muted }}>
+                      {showSaved ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <p className="text-xl font-black font-mono tracking-[0.3em] text-foreground text-center py-1">
+                    {showSaved ? savedPin : '•'.repeat(savedPin.length)}
+                  </p>
+                </div>
+
+                {/* أزرار الإجراءات */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                    onClick={handleUse}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#4ade80' }} />
+                    استخدام
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                    onClick={handleCopy}
+                  >
+                    {copied
+                      ? <><CheckCheck className="w-3.5 h-3.5" style={{ color: '#4ade80' }} />تم النسخ</>
+                      : <><Copy className="w-3.5 h-3.5" style={{ color: C.muted }} />نسخ</>
+                    }
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                    onClick={() => { setEditPin(''); setPanelStep('edit'); }}
+                  >
+                    <Pencil className="w-3.5 h-3.5" style={{ color: C.muted }} />تعديل
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                    style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.18)', color: C.red }}
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />حذف
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─ مرحلة: تعديل الرقم السري ─ */}
+            {panelStep === 'edit' && (
+              <div className="space-y-4">
+                <p className="text-sm font-black text-foreground">
+                  {savedPin ? 'تعديل الرقم السري' : 'إضافة رقم سري جديد'}
+                </p>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground">الرقم السري الجديد</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={editPin}
+                    onChange={e => setEditPin(e.target.value.replace(/\D/g,''))}
+                    className="w-full h-11 rounded-xl px-4 text-sm font-mono outline-none tracking-widest"
+                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                    placeholder="أدخل الرقم الجديد (4-6 أرقام)"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold border border-border text-muted-foreground transition-all"
+                    onClick={() => setPanelStep(savedPin ? 'view' : 'unlock')}
+                  >إلغاء</button>
+                  <button
+                    className="flex-[2] py-2.5 rounded-xl text-sm font-black transition-all active:scale-[0.97] flex items-center justify-center gap-1.5"
+                    disabled={editPin.length < 4}
+                    style={{
+                      background: editPin.length >= 4 ? `linear-gradient(135deg,${C.red},${C.redDeep})` : 'hsl(var(--muted))',
+                      color: editPin.length >= 4 ? '#fff' : 'hsl(var(--muted-foreground))',
+                    }}
+                    onClick={handleSaveEdit}
+                  >
+                    <KeyRound className="w-4 h-4" />حفظ الرقم الجديد
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
 
 // ══════════════════════════════════════════════════════════
 // مكوّن: استعلام سريع عن رصيد المحفظة (Modal مدمج)
@@ -98,6 +499,8 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
         setMsisdn(res.msisdn ?? null);
         setQueriedAt(res.queried_at ?? null);
         setStatus('success');
+        // ── حفظ تلقائي في الخزنة بعد أول استعلام ناجح ──
+        saveVaultPin(pin);
       } else {
         setErrorMsg(res.message ?? 'تعذر الحصول على الرصيد');
         setStatus('failed');
@@ -185,14 +588,19 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
                 <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                 <span>رقم سري Vodafone Cash من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
               </p>
+              {/* ── خزنة الرقم السري ── */}
+              <PinVaultMini
+                currentPin={pin}
+                onUseSaved={(saved) => setPin(saved)}
+              />
               {/* زر الاستعلام */}
               <button
                 onClick={handleQuery}
                 disabled={pin.length < 4 || status === 'loading'}
                 className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all"
                 style={{
-                  background: pin.length >= 4 && status !== 'loading' ? C.red : 'hsl(var(--muted-foreground) / 0.4)',
-                  color: pin.length >= 4 && status !== 'loading' ? '#fff' : 'hsl(var(--muted-foreground) / 0.4)',
+                  background: pin.length >= 4 && status !== 'loading' ? C.red : 'hsl(var(--muted))',
+                  color: pin.length >= 4 && status !== 'loading' ? '#fff' : 'hsl(var(--muted-foreground))',
                   boxShadow: pin.length >= 4 && status !== 'loading' ? `0 0 16px ${C.redGlow}` : 'none',
                 }}
               >
@@ -282,8 +690,8 @@ function SessionAccountCard({
     <div
       className="rounded-2xl overflow-hidden transition-all"
       style={{
-        border: isActive ? `1.5px solid ${C.red}` : `1px solid hsl(var(--muted-foreground) / 0.4)`,
-        background: isActive ? 'rgba(230,0,0,0.06)' : 'hsl(var(--muted-foreground) / 0.4)',
+        border: isActive ? `1.5px solid ${C.red}` : `1px solid hsl(var(--border))`,
+        background: isActive ? 'rgba(230,0,0,0.06)' : 'hsl(var(--card))',
       }}
     >
       {/* معلومات الحساب */}
@@ -291,7 +699,7 @@ function SessionAccountCard({
         <div className="flex items-center gap-3">
           {/* أيقونة الحساب */}
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: isActive ? C.redLight : 'hsl(var(--muted-foreground) / 0.4)', border: `1px solid ${isActive ? C.redBorder : 'hsl(var(--muted-foreground) / 0.4)'}` }}>
+            style={{ background: isActive ? C.redLight : 'hsl(var(--card))', border: `1px solid ${isActive ? C.redBorder : 'hsl(var(--border))'}` }}>
             <User className="w-4 h-4" style={{ color: isActive ? C.red : C.muted }} />
           </div>
 
@@ -330,7 +738,7 @@ function SessionAccountCard({
               {100 - progress}% متبقي
             </span>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted-foreground) / 0.4)' }}>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'hsl(var(--card))' }}>
             <div
               className="h-full rounded-full transition-all"
               style={{
@@ -423,7 +831,7 @@ function AccountsPanel({
             <p className="text-[10px]" style={{ color: C.muted }}>{sessions.length} حساب محفوظ · جلسات 24 ساعة</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: 'hsl(var(--muted-foreground) / 0.4)' }}>
+            style={{ background: 'hsl(var(--card))' }}>
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -464,7 +872,7 @@ function AccountsPanel({
           {sessions.length > 0 && (
             <button
               className="w-full h-9 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all"
-              style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.15)', color: '#ff9999' }}
+              style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.15)', color: C.red }}
               onClick={() => { signOutBalance(); setSessions([]); onSignOutAll(); onClose(); }}
             >
               <LogOut className="w-3.5 h-3.5" />خروج من جميع الحسابات
@@ -484,7 +892,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
   if (hasSession) {
     return (
       <div className="mx-4 mt-3 flex items-center gap-2.5 p-3 rounded-xl"
-        style={{ background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)' }}>
+        style={{ background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)', color: 'hsl(var(--foreground))' }}>
         <Phone className="w-4 h-4 shrink-0" style={{ color: '#60a5fa' }} />
         <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
           هذا القسم يشحن من <span className="font-black text-foreground">رصيد الهاتف مباشرة</span> وليس من Vodafone Cash.
@@ -495,7 +903,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
   }
   return (
     <div className="mx-4 mt-4 rounded-2xl overflow-hidden"
-      style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: `1px solid rgba(230,0,0,0.2)` }}>
+      style={{ background: 'hsl(var(--card))', border: `1px solid rgba(230,0,0,0.2)` }}>
       <div className="p-4 space-y-3">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -516,7 +924,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
             { icon: <Users className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />, text: 'حسابات متعددة' },
           ].map((f, i) => (
             <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl"
-              style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
+              style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
               {f.icon}
               <span className="text-[9px] font-bold text-center" style={{ color: C.muted }}>{f.text}</span>
             </div>
@@ -552,7 +960,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
 function VodafoneCashCard({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="mx-4 mb-4 rounded-2xl overflow-hidden"
-      style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)' }}>
+      style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
       <div className="p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
@@ -593,7 +1001,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
 
   return (
     <div className="mx-4 mt-4 rounded-2xl overflow-hidden"
-      style={{ border: `1.5px solid rgba(230,0,0,0.3)`, background: 'hsl(var(--muted-foreground) / 0.4)' }}>
+      style={{ border: `1.5px solid rgba(230,0,0,0.3)`, background: 'hsl(var(--card))' }}>
 
       {/* رأس: الحساب النشط */}
       <div className="p-4 border-b" style={{ borderColor: 'rgba(230,0,0,0.10)' }}>
@@ -616,7 +1024,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
           {/* زر الحسابات */}
           <button
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold shrink-0 transition-all"
-            style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--muted-foreground))' }}
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
             onClick={onManageAccounts}
           >
             <Users className="w-3 h-3" />
@@ -642,7 +1050,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
             </div>
             <span className="text-[10px]" style={{ color: C.muted }}>{100 - progress}%</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted-foreground) / 0.4)' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'hsl(var(--card))' }}>
             <div className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${progress}%`,
@@ -782,7 +1190,7 @@ function BalanceLoginDialog({
               <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.muted }} />
               <input
                 className="w-full h-11 rounded-xl pr-9 pl-3 text-sm font-medium outline-none"
-                style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: '#fff' }}
+                style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                 placeholder="01XXXXXXXXX" type="tel" inputMode="numeric" maxLength={11}
                 value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                 disabled={loading} dir="ltr"
@@ -796,7 +1204,7 @@ function BalanceLoginDialog({
               <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.muted }} />
               <input
                 className="w-full h-11 rounded-xl pr-9 pl-10 text-sm font-medium outline-none"
-                style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: '#fff' }}
+                style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                 placeholder="••••••••" type={showPass ? 'text' : 'password'}
                 value={password} onChange={e => setPassword(e.target.value)}
                 disabled={loading}
@@ -810,7 +1218,7 @@ function BalanceLoginDialog({
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <div
               className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all"
-              style={{ background: rememberMe ? C.red : 'hsl(var(--muted-foreground) / 0.4)', border: `1px solid ${rememberMe ? C.red : 'hsl(var(--muted-foreground) / 0.4)'}` }}
+              style={{ background: rememberMe ? C.red : 'hsl(var(--muted))', border: `1px solid ${rememberMe ? C.red : 'hsl(var(--border))'}` }}
               onClick={() => setRememberMe(v => !v)}
             >
               {rememberMe && <CheckCircle2 className="w-3 h-3 text-foreground" />}
@@ -822,7 +1230,7 @@ function BalanceLoginDialog({
             <div className="flex items-start gap-2 p-3 rounded-xl"
               style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.2)' }}>
               <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.red }} />
-              <p className="text-xs leading-relaxed" style={{ color: '#ff8888' }}>{error}</p>
+              <p className="text-xs leading-relaxed" style={{ color: C.red }}>{error}</p>
             </div>
           )}
 
@@ -932,7 +1340,7 @@ function ErrorDetailCard({
   const info = mapServerError(errorRaw);
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid rgba(230,0,0,0.25)`, background: 'rgba(20,0,0,0.6)' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid rgba(230,0,0,0.25)`, background: 'hsl(var(--card))' }}>
       {/* رأس البطاقة */}
       <div className="flex items-center gap-3 p-4 border-b" style={{ borderColor: 'rgba(230,0,0,0.12)', background: 'rgba(230,0,0,0.06)' }}>
         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -940,7 +1348,7 @@ function ErrorDetailCard({
           <XCircle className="w-5 h-5" style={{ color: C.red }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black" style={{ color: '#ff6666' }}>{info.title}</p>
+          <p className="text-sm font-black" style={{ color: C.red }}>{info.title}</p>
           <p className="text-[10px]" style={{ color: C.muted }}>فشلت عملية الشحن من الرصيد</p>
         </div>
         <span className="text-[9px] font-black px-2 py-1 rounded-full"
@@ -980,8 +1388,8 @@ function ErrorDetailCard({
           <button
             className="w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
             style={{
-              background: cooldownLeft > 0 || submitting ? 'hsl(var(--muted-foreground) / 0.4)' : C.redLight,
-              border: `1px solid ${cooldownLeft > 0 || submitting ? 'hsl(var(--muted-foreground) / 0.4)' : C.redBorder}`,
+              background: cooldownLeft > 0 || submitting ? 'hsl(var(--muted))' : C.redLight,
+              border: `1px solid ${cooldownLeft > 0 || submitting ? 'hsl(var(--border))' : C.redBorder}`,
               color: cooldownLeft > 0 || submitting ? C.muted : C.red,
             }}
             disabled={cooldownLeft > 0 || submitting}
@@ -1357,7 +1765,7 @@ function BalanceExecuteDialog({
               <>
                 {/* PHASE 10: بانر توضيحي مصغّر داخل الـ Dialog */}
                 <div className="flex items-start gap-2.5 p-3 rounded-xl"
-                  style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)' }}>
+                  style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', color: 'hsl(var(--foreground))' }}>
                   <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#60a5fa' }} />
                   <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     سيتم خصم قيمة الكارت مباشرةً من <span className="font-black text-foreground">رصيد الخط</span> وليس من محفظة Vodafone Cash.
@@ -1407,7 +1815,7 @@ function BalanceExecuteDialog({
                 <div className="flex gap-2.5">
                   <button
                     className="flex-1 h-11 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                    style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--muted-foreground))' }}
+                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
                     onClick={handleClose}
                   >
                     إلغاء
@@ -1445,6 +1853,25 @@ function BalanceExecuteDialog({
                   open={walletShortcutOpen}
                   onClose={() => setWalletShortcutOpen(false)}
                 />
+
+                {/* ── خزنة الرقم السري للمحفظة (ظاهر دائماً، يُفعَّل بعد أول شحن ناجح) ── */}
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(230,0,0,0.12)', background: 'rgba(230,0,0,0.03)' }}>
+                  <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+                    <KeyRound className="w-3 h-3 shrink-0" style={{ color: C.red }} />
+                    <span className="text-[10px] font-bold" style={{ color: 'rgba(230,0,0,0.7)' }}>خزنة الرقم السري للمحفظة</span>
+                  </div>
+                  <div className="px-2 pb-2.5">
+                    <PinVaultMini
+                      currentPin=""
+                      onUseSaved={() => {}}
+                    />
+                  </div>
+                  {!hasVaultPin() && (
+                    <p className="text-[10px] text-center pb-2.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
+                      سيتم تفعيل الحفظ تلقائياً بعد أول استعلام ناجح
+                    </p>
+                  )}
+                </div>
               </>
             )}
 
@@ -1491,7 +1918,7 @@ function BalanceExecuteDialog({
             )}
 
             {step !== 'executing' && (
-              <p className="text-[10px] text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
+              <p className="text-[10px] text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
                 <Shield className="w-3 h-3 inline ml-1" />
                 الشحن يتم من رصيد رقم {receiverPhone} مباشرة — لا علاقة لـ Vodafone Cash
               </p>
@@ -1669,7 +2096,7 @@ export default function BalanceChargePage() {
           </div>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
-            style={{ background: 'hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--muted-foreground))' }}
+            style={{ background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))' }}
             onClick={() => window.location.reload()}
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1709,7 +2136,7 @@ export default function BalanceChargePage() {
             {/* زر إدارة الحسابات */}
             <button
               className="relative flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all"
-              style={{ background: 'hsl(var(--muted-foreground) / 0.4)', border: '1px solid hsl(var(--muted-foreground) / 0.4)', color: 'hsl(var(--foreground))' }}
+              style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
               onClick={() => setAccountsOpen(true)}
             >
               <Users className="w-3.5 h-3.5" />
@@ -1722,7 +2149,7 @@ export default function BalanceChargePage() {
             {/* زر خروج */}
             <button
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all"
-              style={{ background: C.redLight, border: `1px solid ${C.redBorder}`, color: '#ff8888' }}
+              style={{ background: C.redLight, border: `1px solid ${C.redBorder}`, color: C.red }}
               onClick={handleSignOut}
             >
               <LogOut className="w-3.5 h-3.5" />خروج
@@ -1787,8 +2214,8 @@ export default function BalanceChargePage() {
               key={tab.value}
               className="flex-1 h-9 rounded-xl text-xs font-bold transition-all"
               style={{
-                background: activeCategory === tab.value ? C.redLight : 'hsl(var(--muted-foreground) / 0.4)',
-                border: activeCategory === tab.value ? `1px solid ${C.redBorder}` : '1px solid hsl(var(--muted-foreground) / 0.4)',
+                background: activeCategory === tab.value ? C.redLight : 'hsl(var(--muted))',
+                border: activeCategory === tab.value ? `1px solid ${C.redBorder}` : '1px solid hsl(var(--border))',
                 color: activeCategory === tab.value ? C.red : 'hsl(var(--muted-foreground))',
               }}
               onClick={() => setActiveCategory(tab.value)}

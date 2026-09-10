@@ -243,3 +243,50 @@ export function clearRememberedCredentials(): void {
 export function hasRememberedCredentials(): boolean {
   return getRememberedCredentials() !== null;
 }
+
+// ══════════════════════════════════════════════════════════
+// خزنة الرقم السري للمحفظة (Wallet PIN Vault)
+// يُحفظ PIN محفظة Vodafone Cash مشفَّراً XOR
+// ══════════════════════════════════════════════════════════
+
+const VAULT_KEY = 'avb_vault_pin_v1'; // مفتاح الخزنة في localStorage
+
+export interface VaultPin {
+  pin: string;      // مشفَّر XOR
+  saved_at: number; // Unix ms
+}
+
+/** حفظ الرقم السري في الخزنة */
+export function saveVaultPin(pin: string): void {
+  try {
+    localStorage.setItem(VAULT_KEY, JSON.stringify({
+      pin: xorEncode(pin, ENCODE_KEY),
+      saved_at: Date.now(),
+    } as VaultPin));
+  } catch { /* ignore */ }
+}
+
+/** استرجاع الرقم السري من الخزنة (null إذا لم يوجد) */
+export function getVaultPin(): string | null {
+  try {
+    const raw = localStorage.getItem(VAULT_KEY);
+    if (!raw) return null;
+    const v: VaultPin = JSON.parse(raw);
+    return xorDecode(v.pin, ENCODE_KEY) || null;
+  } catch { return null; }
+}
+
+/** هل يوجد رقم سري محفوظ في الخزنة؟ */
+export function hasVaultPin(): boolean {
+  return getVaultPin() !== null;
+}
+
+/** تحديث الرقم السري في الخزنة */
+export function updateVaultPin(newPin: string): void {
+  saveVaultPin(newPin);
+}
+
+/** حذف الرقم السري من الخزنة */
+export function clearVaultPin(): void {
+  try { localStorage.removeItem(VAULT_KEY); } catch { /* ignore */ }
+}

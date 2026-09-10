@@ -6,6 +6,7 @@ import IntersectObserver from '@/components/common/IntersectObserver';
 import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';
 
 import OfflineBanner from '@/components/common/OfflineBanner';
+import OfflineGate from '@/components/common/OfflineGate';
 import ForceUpdateScreen from '@/components/common/ForceUpdateScreen';
 import AnnouncementBanner from '@/components/common/AnnouncementBanner';
 import MaintenanceScreen from '@/components/common/MaintenanceScreen';
@@ -137,6 +138,7 @@ const OtherOffersPage              = lazyImport(() => import('./pages/vodafone-o
 const UpcomingSubscriptionsPage    = lazyImport(() => import('./pages/vodafone-offers/UpcomingSubscriptionsPage'));
 const BalanceRechargeShortcutPage  = lazyImport(() => import('./pages/vodafone-offers/BalanceRechargeShortcutPage'));
 const AdminServicesControlPage     = lazyImport(() => import('./pages/admin/AdminServicesControlPage'));
+const LineInfoPage                 = lazyImport(() => import('./pages/line-info/LineInfoPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
 const WalletLinesNationalIdPage = lazyImport(() => import('./pages/wallet-lines/WalletLinesNationalIdPage'));
@@ -604,6 +606,8 @@ function AppInner() {
           <Route path="vodafone-offers/subscriptions" element={<PageErrorBoundary pageName="vodafone-offers-subscriptions"><S><UpcomingSubscriptionsPage /></S></PageErrorBoundary>} />
           <Route path="vodafone-offers/recharge"      element={<PageErrorBoundary pageName="vodafone-offers-recharge"><S><BalanceRechargeShortcutPage /></S></PageErrorBoundary>} />
 
+          <Route path="line-info"                    element={<PageErrorBoundary pageName="line-info"><S><LineInfoPage /></S></PageErrorBoundary>} />
+
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
 
@@ -638,7 +642,8 @@ function AppInner() {
         </>
       )}
 
-      <OfflineBanner />
+      {/* OfflineBanner — يظهر فقط بعد انتهاء SplashOverlay */}
+      {!showSplash && <OfflineBanner />}
       <SecurityHeartbeat />
       {/* AnnouncementBanner — رسائل الإدارة الفورية */}
       <AnnouncementBanner />
@@ -854,14 +859,13 @@ const App: React.FC = () => {
 function AppWithGuard() {
   const { profile, loading } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-  // تعليق الفحص أثناء التحميل لتجنب وميض الشاشة السوداء (Stutter) للأدمن
   const devToolsOpen = useDevToolsGuard(isAdmin || loading);
 
   return (
-    <>
+    <OfflineGate>
       {devToolsOpen && !isAdmin && !loading && <DevToolsWarningOverlay />}
       <AppInner />
-    </>
+    </OfflineGate>
   );
 }
 

@@ -1,22 +1,31 @@
-// P6: بانر وضع Offline — يظهر شريط علوي ثابت عند انقطاع الإنترنت
+// OfflineBanner — شريط خفيف وشفاف يناسب الوضع الفاتح والداكن
 import { WifiOff, Wifi } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useState, useEffect } from 'react';
 
 export default function OfflineBanner() {
   const isOnline = useOnlineStatus();
-  // نُظهر "عاد الاتصال" لمدة قصيرة ثم نختفي تماماً
   const [justReconnected, setJustReconnected] = useState(false);
   const [wasOffline, setWasOffline] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!isOnline) {
       setWasOffline(true);
       setJustReconnected(false);
+      // تأخير بسيط لـ animation entrance
+      const t = setTimeout(() => setVisible(true), 50);
+      return () => clearTimeout(t);
     } else if (wasOffline) {
       setJustReconnected(true);
-      const t = setTimeout(() => { setJustReconnected(false); setWasOffline(false); }, 2500);
+      setVisible(true);
+      const t = setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => { setJustReconnected(false); setWasOffline(false); }, 300);
+      }, 2000);
       return () => clearTimeout(t);
+    } else {
+      setVisible(false);
     }
   }, [isOnline, wasOffline]);
 
@@ -25,21 +34,26 @@ export default function OfflineBanner() {
   return (
     <div
       dir="rtl"
-      className="fixed top-0 left-0 right-0 z-[9998] flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-[9998] flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold transition-all duration-300"
       style={{
+        // شفاف ومتوافق مع كلا الوضعين — لا hardcoded داكن
         background: isOnline
-          ? 'linear-gradient(90deg, #00512b, #006633)'
-          : 'linear-gradient(90deg, #1a0000, #3d0000)',
-        color: '#fff',
-        boxShadow: isOnline
-          ? '0 2px 12px rgba(0,200,100,0.3)'
-          : '0 2px 12px rgba(230,0,0,0.3)',
+          ? 'rgba(22, 163, 74, 0.15)'
+          : 'rgba(220, 38, 38, 0.12)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: isOnline
+          ? '1px solid rgba(22, 163, 74, 0.25)'
+          : '1px solid rgba(220, 38, 38, 0.2)',
+        color: isOnline ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(-100%)',
       }}
     >
       {isOnline ? (
-        <><Wifi className="w-3.5 h-3.5" /> عاد الاتصال بالإنترنت</>
+        <><Wifi className="w-3 h-3 shrink-0" /><span>عاد الاتصال بالإنترنت</span></>
       ) : (
-        <><WifiOff className="w-3.5 h-3.5" /> لا يوجد اتصال بالإنترنت — وضع عدم الاتصال</>
+        <><WifiOff className="w-3 h-3 shrink-0" /><span>لا يوجد اتصال بالإنترنت</span></>
       )}
     </div>
   );

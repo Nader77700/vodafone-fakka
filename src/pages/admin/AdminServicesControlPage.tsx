@@ -11,7 +11,7 @@ import {
   Eye, EyeOff, Wrench, Power, PowerOff, Users, Globe,
   RefreshCw, Loader2, CheckCircle, AlertTriangle, Info,
   ScanLine, RotateCcw, Wallet, CreditCard, ChevronDown,
-  Banknote,
+  Banknote, Tag,
 } from 'lucide-react';
 import type { PreviewServiceAccess } from '@/types/types';
 import { Button } from '@/components/ui/button';
@@ -41,11 +41,13 @@ interface ServiceControl {
 
 // أيقونات ثابتة لكل خدمة
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
-  services_section:    <Globe className="w-4 h-4" />,
-  'legacy-flex':       <RotateCcw className="w-4 h-4" />,
-  'balance-charge':    <Wallet className="w-4 h-4" />,
+  services_section:       <Globe className="w-4 h-4" />,
+  'legacy-flex':          <RotateCcw className="w-4 h-4" />,
+  'balance-charge':       <Wallet className="w-4 h-4" />,
   'vodafone-cash-center': <CreditCard className="w-4 h-4" />,
-  'wallet-lines':      <ScanLine className="w-4 h-4" />,
+  'wallet-lines':         <ScanLine className="w-4 h-4" />,
+  'vodafone-offers':      <Tag className="w-4 h-4" />,
+  'line-info':            <Info className="w-4 h-4" />,
 };
 
 // ألوان الحالة

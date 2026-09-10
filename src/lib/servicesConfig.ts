@@ -114,6 +114,18 @@ export const SERVICES_CONFIG: ServiceConfig[] = [
     order: 6,
     visible: true,
   },
+  {
+    id: 'line-info',
+    path: '/line-info',
+    name: 'معلومات الخط',
+    description: 'استعلم عن بيانات خط فودافون واعرف النظام والرصيد والكروت المتبقية وتاريخ الانتهاء.',
+    iconName: 'Info',
+    accentColor: '#E60000',
+    badge: 'جديد',
+    status: 'active',
+    order: 7,
+    visible: true,
+  },
 ];
 
 /** يُرجع خدمة بـ ID محدد */
