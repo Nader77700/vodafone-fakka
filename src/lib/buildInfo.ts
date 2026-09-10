@@ -4,15 +4,21 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.21',
-  versionCode:    501,
+  appVersion:      '3.5.22',
+  versionCode:    502,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_14_1786548500',
-  bundleFile:     'VodafoneFakka-v3.5.14.apk',
-  bundleHash:     'apk_v3_5_14_code494',
-  apkHash:        'apk_v3_5_14_code494',
-  dbVersion:      'v3.5.14',
+  sourceHash:     'build_v3_5_22_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.5.22.apk',
+  bundleHash:     'apk_v3_5_22_code502',
+  apkHash:        'apk_v3_5_22_code502',
+  dbVersion:      'v3.5.22',
   releaseNotes: [
+    'v3.5.22: نظام خزنة الرقم السري PinVaultMini — حفظ PIN محفظة Vodafone Cash محلياً بأمان مع حفظ تلقائي بعد أول استعلام ناجح',
+    'v3.5.22: OfflineGate احترافي — شاشة حجب كاملة عند انقطاع الإنترنت مع شعار ونصائح وأنيميشن',
+    'v3.5.22: إصلاح كشف الاتصال — Web يستخدم navigator.onLine فقط (بدون CORS) والـ Native يستخدم ping حقيقي',
+    'v3.5.22: إصلاح الوضع الفاتح Light Mode — كل الألوان المشفرة تحولت لـ CSS variables في صفحة الشحن',
+    'v3.5.22: تصحيح نص SplashScreen من فـَكّة إلى Fakka (English)',
+    'v3.5.22: صفحة معلومات الخط LineInfoPage — استعلام بيانات الخط والمحفظة',
     'v3.5.14: إصلاح مشكلة البناء ERR_PNPM_IGNORED_BUILDS في GitHub Actions — تشغيل مستقر بدون crash',
     'v3.5.14: إصلاح شاشة "حدث خطأ غير متوقع" التي ظهرت بعد تحديث v3.5.13',
     'v3.5.13: اقتراحات رقم المستفيد تلقائياً من سجل العمليات السابقة',
