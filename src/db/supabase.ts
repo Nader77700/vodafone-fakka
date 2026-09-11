@@ -133,7 +133,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       'x-app-build': BUILD_INFO.versionCode.toString(),
       'x-app-version': BUILD_INFO.appVersion,
-      'x-app-secure-token': 'vfp_secure_355_kill_switch',
+      'x-app-secure-token': 'vfp_secure_356_kill_switch',
       'x-app-package': 'com.naderakram.vodafonefakka'
     },
     fetch: customFetch

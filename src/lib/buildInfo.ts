@@ -4,15 +4,19 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.23',
-  versionCode:    503,
+  appVersion:      '3.5.24',
+  versionCode:    504,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_23_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.5.23.apk',
-  bundleHash:     'apk_v3_5_23_code503',
-  apkHash:        'apk_v3_5_23_code503',
-  dbVersion:      'v3.5.23',
+  sourceHash:     'build_v3_5_24_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.5.24.apk',
+  bundleHash:     'apk_v3_5_24_code504',
+  apkHash:        'apk_v3_5_24_code504',
+  dbVersion:      'v3.5.24',
   releaseNotes: [
+    'v3.5.24: إصلاح جذري نهائي — حذف نسخة atomic_consume_operation القديمة التي كانت ترفض كل العمليات بسبب verify_request_signature',
+    'v3.5.24: إصلاح "استنفذت الحد الأقصى" الوهمي — الاشتراك الفعال لم يكن يُستهلك بشكل صحيح بسبب تعارض الـ DB functions',
+    'v3.5.24: إصلاح معلومات الخط — timeout يدوي 35s بدل AbortController غير المدعوم في supabase-js v2',
+    'v3.5.24: تحديث x-app-secure-token إلى vfp_secure_356_kill_switch لضمان القبول في zero-trust',
     'v3.5.23: إصلاح سجل العمليات — vcc-recharge يُرجع الآن via:server + registered:true فتُسجَّل العمليات مرة واحدة فقط بدون تكرار أو ضياع',
     'v3.5.23: إصلاح ana-balance-charge — إضافة via:server لكل responses (ناجحة/فاشلة/idempotent) لضمان التسجيل الصحيح',
     'v3.5.23: إصلاح معلومات الخط — timeout 35 ثانية + معالجة صحيحة لـ FunctionsHttpError + رسالة timeout واضحة بدل "خطأ غير متوقع"',
