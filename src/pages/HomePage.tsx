@@ -21,7 +21,7 @@ import { staleWhileRevalidate, cacheGetStale, cacheSet } from '@/lib/appCache';
 import type { ActivityEntry, SubscriptionOpsInfo, OpsCheckResult } from '@/lib/api';
 import { CapacitorHttp, Capacitor } from '@capacitor/core';
 import DefaultLogo from '@/assets/logo.png';
-import { fetchSeamlessToken } from '@/lib/seamless';
+import { fetchSeamlessToken, normalizeMsisdn } from '@/lib/seamless';
 import { DiagnosticTrace } from '@/lib/DiagnosticTrace';
 import { BUILD_INFO } from '@/lib/buildInfo';
 
@@ -1227,8 +1227,10 @@ function ExecuteModal({
 
     if (trace) trace.addStep('Sending To Server', 'HomePage.tsx', 'executeVodafoneOrder', 'Edge Function', 'Started');
 
-    // عند "شحن لرقمي": استخدم sMsisdn كـ receiver، وإذا لم يتوفر أظهر خطأ
-    const finalReceiver = chargeForSelf ? (sMsisdn ?? '') : trimPhone;
+    // عند "شحن لرقمي": استخدم sMsisdn كـ receiver بعد التطبيع إلى 01XXXXXXXXX
+    // sMsisdn قد يأتي بصيغ مختلفة من Vodafone (2010... / +2010... / 010...)
+    const normalizedSelf = sMsisdn ? normalizeMsisdn(sMsisdn) : null;
+    const finalReceiver  = chargeForSelf ? (normalizedSelf ?? '') : trimPhone;
     if (chargeForSelf && !finalReceiver) {
       executingRef.current = false;
       setSubmitting(false);

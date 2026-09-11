@@ -24,6 +24,29 @@ const SEAMLESS_CLIENT_IDS = [
 const SEAMLESS_URL =
   "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth";
 
+// ══════════════════════════════════════════════════════════════
+//  normalizeMsisdn — يحوّل أي صيغة لـ msisdn إلى 01XXXXXXXXX
+//  يدعم: 2010XXXXXXX / +2010XXXXXXX / 010XXXXXXX / 10XXXXXXX
+// ══════════════════════════════════════════════════════════════
+function normalizeMsisdn(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = String(raw).trim().replace(/\s+/g, "");
+
+  // أزل +20 أو 20 في البداية
+  if (s.startsWith("+20")) s = s.slice(3);
+  else if (s.startsWith("20") && s.length === 12) s = s.slice(2);
+
+  // أضف الصفر إذا كان 10 أرقام يبدأ بـ 1 (مثلاً 10XXXXXXXX)
+  if (s.length === 10 && s.startsWith("1")) s = "0" + s;
+
+  // تحقق نهائي
+  if (s.length === 11 && s.startsWith("01")) return s;
+
+  // لم نتمكن من التطبيع — أعد null
+  console.log(`[seamless-proxy] normalizeMsisdn: لم نتمكن من تطبيع "${raw}" → "${s}"`);
+  return null;
+}
+
 const SEAMLESS_HEADERS: Record<string, string> = {
   "User-Agent":              "okhttp/4.12.0",
   "Connection":              "Keep-Alive",
@@ -78,8 +101,10 @@ async function tryClientId(clientId: string, customUrl?: string): Promise<Seamle
       return null;
     }
 
-    console.log(`[seamless-proxy] ✅ client_id=${clientId} → token OK, msisdn=${msisdn ?? "null"}`);
-    return { seamlessToken: token, msisdn: msisdn ?? null, clientIdUsed: clientId };
+    // طبّع msisdn إلى 01XXXXXXXXX قبل الإرجاع
+    const normalizedMsisdn = normalizeMsisdn(msisdn ?? null);
+    console.log(`[seamless-proxy] ✅ client_id=${clientId} → token OK, msisdn_raw=${msisdn ?? "null"} → normalized=${normalizedMsisdn ?? "null"}`);
+    return { seamlessToken: token, msisdn: normalizedMsisdn, clientIdUsed: clientId };
 
   } catch (e) {
     console.log(`[seamless-proxy] client_id=${clientId} → exception:`, e);

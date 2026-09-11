@@ -1,5 +1,26 @@
 import { supabase } from '@/db/supabase';
 
+// ══════════════════════════════════════════════════════════════
+//  normalizeMsisdn — يحوّل أي صيغة لـ msisdn إلى 01XXXXXXXXX
+//  يدعم: 2010XXXXXXX / +2010XXXXXXX / 010XXXXXXX / 10XXXXXXX
+// ══════════════════════════════════════════════════════════════
+export function normalizeMsisdn(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = String(raw).trim().replace(/\s+/g, '');
+
+  // أزل +20 أو 20 في البداية
+  if (s.startsWith('+20')) s = s.slice(3);
+  else if (s.startsWith('20') && s.length === 12) s = s.slice(2);
+
+  // أضف الصفر إذا كان 10 أرقام يبدأ بـ 1 (مثلاً 10XXXXXXXX)
+  if (s.length === 10 && s.startsWith('1')) s = '0' + s;
+
+  // تحقق نهائي: 11 رقم يبدأ بـ 01
+  if (s.length === 11 && s.startsWith('01')) return s;
+
+  return null;
+}
+
 /**
  * fetchSeamlessToken
  * يجلب Seamless Token عبر seamless-proxy Edge Function (سيرفر-سايد)
@@ -46,7 +67,10 @@ export async function fetchSeamlessToken(
     catch { return { token: null, msisdn: null, error: `Parse error: ${txt.slice(0, 60)}` }; }
 
     if (data.success && data.seamlessToken) {
-      return { token: data.seamlessToken, msisdn: data.msisdn ?? null };
+      // طبّع msisdn على جانب العميل أيضاً كطبقة ثانية من الأمان
+      const rawMsisdn = data.msisdn ?? null;
+      const msisdnNormalized = normalizeMsisdn(rawMsisdn);
+      return { token: data.seamlessToken, msisdn: msisdnNormalized };
     }
     return { token: null, msisdn: null, error: data.error ?? 'لم يُعثر على Token' };
 
