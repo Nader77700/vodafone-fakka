@@ -1003,7 +1003,9 @@ function ExecuteModal({
   const RETRY_COOLDOWN_MS = 15_000; // 15 ثانية بين المحاولات بعد الفشل
 
   const isNativeAPK = isNativeAndroid();
-  const isVpnOn      = isNativeAPK && (networkInfo?.isVpnActive ?? false);
+  // isVpnOn: صحيح فقط إذا كان networkInfo محمّلاً فعلاً (networkInfo !== null)
+  // إذا networkInfo لا يزال null (جاري التحميل) → لا نُظهر تحذير VPN
+  const isVpnOn = isNativeAPK && networkInfo !== null && (networkInfo?.isVpnActive === true);
   const isVodafoneReady = isNativeAPK && (networkInfo?.isVodafoneMobile ?? false) && (networkInfo?.isMobileDataActive ?? false) && !isVpnOn;
 
   // تحديث حالة الأزرار والـ UI لتشمل حالة عدم استخدام Native App (web)
@@ -1030,7 +1032,7 @@ function ExecuteModal({
       ]);
       setNetworkInfo(result);
     } catch (e) {
-      setNetworkInfo({ canExecuteNative: true, isVodafoneSim: true, activeNetwork: 'error_fallback', activeDataSimOperatorName: 'Vodafone (Fallback)' } as any);
+      setNetworkInfo({ canExecuteNative: true, isVodafoneMobile: true, isMobileDataActive: true, isVpnActive: false, isVodafoneSim: true, activeNetwork: 'error_fallback', activeDataSimOperatorName: 'Vodafone (Fallback)' } as any);
       if (import.meta.env.DEV) console.warn('[Dialog] fetchNetworkInfo error:', e);
     }
   }, [isNativeAPK]);
@@ -2152,7 +2154,9 @@ function ExecuteModal({
                 {(() => {
                   const accountLocked = isPinLocked(lastErrorType);
                   const isRetry = !!lastError && !accountLocked;
-                  const isDisabled = submitting || !phone || !pin || !canExecute || accountLocked;
+                  // عند chargeForSelf: الرقم يأتي من seamless تلقائياً → لا نشترط phone
+                  const phoneOk = chargeForSelf || (!!phone && phone.trim().length === 11);
+                  const isDisabled = submitting || !phoneOk || !pin || !canExecute || accountLocked;
                   return (
                     <button
                       className="w-full h-14 rounded-2xl font-black text-base text-white flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
