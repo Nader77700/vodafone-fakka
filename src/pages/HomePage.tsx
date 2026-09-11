@@ -1006,10 +1006,16 @@ function ExecuteModal({
   // isVpnOn: صحيح فقط إذا كان networkInfo محمّلاً فعلاً (networkInfo !== null)
   // إذا networkInfo لا يزال null (جاري التحميل) → لا نُظهر تحذير VPN
   const isVpnOn = isNativeAPK && networkInfo !== null && (networkInfo?.isVpnActive === true);
-  const isVodafoneReady = isNativeAPK && (networkInfo?.isVodafoneMobile ?? false) && (networkInfo?.isMobileDataActive ?? false) && !isVpnOn;
+  const isVodafoneReady = isNativeAPK && networkInfo !== null
+    && (networkInfo?.isVodafoneMobile ?? false)
+    && (networkInfo?.isMobileDataActive ?? false)
+    && !isVpnOn;
 
-  // تحديث حالة الأزرار والـ UI لتشمل حالة عدم استخدام Native App (web)
-  const canExecute = isVodafoneReady || !isNativeAPK;
+  // canExecute:
+  // - web (غير APK): دائماً true
+  // - APK + networkInfo لم يُحمَّل بعد (null): true مؤقتاً — لا نحجب الزر أثناء التحميل
+  // - APK + networkInfo محمَّل: يعتمد على isVodafoneReady
+  const canExecute = !isNativeAPK || networkInfo === null || isVodafoneReady;
 
   // ── جلب معلومات الشبكة ──────────────────────────────────────────────────
   const fetchNetworkInfo = useCallback(async () => {
@@ -1025,6 +1031,9 @@ function ExecuteModal({
         })(),
         new Promise<any>((resolve) => setTimeout(() => resolve({
           canExecuteNative: true,
+          isVodafoneMobile: true,
+          isMobileDataActive: true,
+          isVpnActive: false,
           isVodafoneSim: true,
           activeNetwork: 'timeout_fallback',
           activeDataSimOperatorName: 'Vodafone (Fallback)'
