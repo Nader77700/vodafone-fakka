@@ -1803,18 +1803,25 @@ function ExecuteModal({
                 )}
 
                 {/* ── بانر التعليمات المضغوط ── */}
-                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl border"
+                <div className="flex items-start gap-2 px-3 py-2 rounded-xl border"
                   style={{ background: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.18)' }}>
-                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#4ade80' }} />
-                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                    شغّل بيانات <span className="font-black text-green-400">Vodafone</span> من نفس الخط المرتبط بالمحفظة.
-                    تأكد من صحة الرقم السري قبل التنفيذ.
-                  </p>
+                  <Info className="w-3 h-3 shrink-0 mt-0.5" style={{ color: '#4ade80' }} />
+                  <div className="space-y-0.5">
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                      شغّل بيانات <span className="font-black text-green-400">Vodafone</span> من نفس الخط المرتبط بالمحفظة. تأكد من صحة الرقم السري قبل التنفيذ.
+                    </p>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.40)' }}>
+                      ⚠️ بعد 3 محاولات خاطئة سيتم تجميد الحساب — أدخل الرقم السري بدقة.
+                    </p>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      🔒 أوقف الـ VPN إن كان مفعّلاً. استخدم خط فودافون مرتبط بمحفظة فعّالة.
+                    </p>
+                  </div>
                 </div>
 
                 {/* ── حقل رقم المستفيد ── */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium" style={{ color: L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>رقم الهاتف المستفيد</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium" style={{ color: L ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)' }}>رقم الهاتف المستفيد</Label>
                   {!chargeForSelf && (
                     <PhoneSuggestionsInput
                       value={phone}
@@ -1824,27 +1831,27 @@ function ExecuteModal({
                   )}
                   {/* ── Checkbox شحن لرقمي ── */}
                   <label
-                    className="flex items-center gap-2.5 cursor-pointer select-none w-max"
+                    className="flex items-center gap-2 cursor-pointer select-none w-max py-0.5"
                     onClick={() => !submitting && setChargeForSelf(v => !v)}
                   >
                     <div
-                      className="w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors"
+                      className="w-4 h-4 rounded flex items-center justify-center border-2 shrink-0 transition-colors"
                       style={{
                         borderColor: chargeForSelf ? '#E60000' : L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)',
                         background:  chargeForSelf ? '#E60000' : 'transparent',
                       }}
                     >
                       {chargeForSelf && (
-                        <svg viewBox="0 0 10 8" fill="none" className="w-3 h-3">
+                        <svg viewBox="0 0 10 8" fill="none" className="w-2.5 h-2.5">
                           <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       )}
                     </div>
                     <div>
-                      <span className="text-sm font-black" style={{ color: chargeForSelf ? '#E60000' : L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>
+                      <span className="text-xs font-black" style={{ color: chargeForSelf ? '#E60000' : L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>
                         شحن لرقمي
                       </span>
-                      <span className="block text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)' }}>
+                      <span className="block text-[10px] leading-tight mt-0" style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)' }}>
                         سيتم شحن الرقم المتصل بالشبكة تلقائياً
                       </span>
                     </div>
@@ -1853,11 +1860,11 @@ function ExecuteModal({
                   {/* بانر توضيحي عند تفعيل شحن لرقمي */}
                   {chargeForSelf && (
                     <div
-                      className="flex items-start gap-2 p-2.5 rounded-xl"
+                      className="flex items-start gap-2 p-2 rounded-xl"
                       style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.18)' }}
                     >
-                      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#E60000' }} />
-                      <p className="text-xs leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" style={{ color: '#E60000' }} />
+                      <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
                         سيتم التعرف على رقمك تلقائياً من شبكة فودافون عند التنفيذ. تأكد من تشغيل بيانات فودافون.
                       </p>
                     </div>
@@ -1873,25 +1880,25 @@ function ExecuteModal({
                     <button
                       type="button"
                       onClick={() => setLineInfoOpen(true)}
-                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
+                      className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all active:scale-[0.98]"
                       style={{
                         background: 'rgba(230,0,0,0.06)',
                         border: '1px solid rgba(230,0,0,0.18)',
                       }}
                     >
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                         style={{ background: 'rgba(230,0,0,0.14)', border: '1px solid rgba(230,0,0,0.25)' }}
                       >
-                        <Info className="w-4 h-4" style={{ color: '#E60000' }} />
+                        <Info className="w-3.5 h-3.5" style={{ color: '#E60000' }} />
                       </div>
                       <div className="flex-1 min-w-0 text-right">
-                        <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام عن الرقم</p>
-                        <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                        <p className="text-xs font-black" style={{ color: '#E60000' }}>استعلام عن الرقم</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.38)' }}>
                           اعرف النظام والرصيد والكروت قبل الشحن
                         </p>
                       </div>
-                      <Info className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
+                      <Info className="w-3 h-3 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.20)' }} />
                     </button>
                     <LineInfoModal
                       open={lineInfoOpen}
@@ -1902,20 +1909,20 @@ function ExecuteModal({
                     <button
                       type="button"
                       onClick={() => setWalletModalOpen(true)}
-                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
+                      className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all active:scale-[0.98]"
                       style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.18)' }}
                     >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                         style={{ background: 'rgba(230,0,0,0.14)', border: '1px solid rgba(230,0,0,0.25)' }}>
-                        <Wallet className="w-4 h-4" style={{ color: '#E60000' }} />
+                        <Wallet className="w-3.5 h-3.5" style={{ color: '#E60000' }} />
                       </div>
                       <div className="flex-1 min-w-0 text-right">
-                        <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام رصيد المحفظة</p>
-                        <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                        <p className="text-xs font-black" style={{ color: '#E60000' }}>استعلام رصيد المحفظة</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.38)' }}>
                           Vodafone Cash — اعرف رصيدك قبل الشحن
                         </p>
                       </div>
-                      <ChevronLeft className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
+                      <ChevronLeft className="w-3 h-3 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.20)' }} />
                     </button>
                   </>
                 )}
@@ -2190,87 +2197,87 @@ function ExecuteModal({
                   إلغاء
                 </button>
 
-                {/* ── نافذة تأكيد التنفيذ ── */}
+                {/* ── نافذة تأكيد التنفيذ — منبثقة في المنتصف ── */}
                 {confirmOpen && product && (
                   <div
-                    className="fixed inset-0 z-50 flex items-end justify-center p-4"
-                    style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+                    className="fixed inset-0 z-50 flex items-center justify-center px-5"
+                    style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(6px)' }}
                     onClick={() => setConfirmOpen(false)}
                   >
                     <div
-                      className="w-full max-w-sm rounded-2xl overflow-hidden"
-                      style={{ background: '#0d0000', border: '1px solid rgba(230,0,0,0.35)' }}
+                      className="w-full max-w-[340px] rounded-2xl overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(160deg,#110000,#0d0000)',
+                        border: '1px solid rgba(230,0,0,0.35)',
+                        boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(230,0,0,0.1)',
+                      }}
                       onClick={e => e.stopPropagation()}
                     >
+                      {/* شريط علوي أحمر */}
+                      <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg,#E60000,#ff4444,#E60000)' }} />
+
                       {/* هيدر */}
-                      <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.15)' }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.3)' }}>
-                            <Zap className="w-5 h-5" style={{ color: '#E60000' }} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-black" style={{ color: '#ffffff' }}>تأكيد تنفيذ الشحن</p>
-                            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>راجع التفاصيل قبل المتابعة</p>
-                          </div>
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.3)' }}>
+                          <Zap className="w-4 h-4" style={{ color: '#E60000' }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black" style={{ color: '#ffffff' }}>تأكيد تنفيذ الشحن</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.38)' }}>راجع التفاصيل قبل المتابعة</p>
                         </div>
                       </div>
 
                       {/* تفاصيل العملية */}
-                      <div className="px-5 py-4 space-y-3">
-                        {/* نوع الكارت */}
-                        <div className="flex items-center justify-between py-2.5 px-3 rounded-xl"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>نوع الكارت</span>
-                          <span className="text-sm font-black" style={{ color: '#ffffff' }}>{product.name}</span>
-                        </div>
-                        {/* السعر */}
-                        <div className="flex items-center justify-between py-2.5 px-3 rounded-xl"
-                          style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.18)' }}>
-                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>قيمة الشحن</span>
-                          <span className="text-base font-black tabular-nums" style={{ color: '#E60000' }}>{product.priceLabel}</span>
-                        </div>
-                        {/* الرقم */}
-                        <div className="flex items-center justify-between py-2.5 px-3 rounded-xl"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>رقم الشحن</span>
+                      <div className="px-4 pt-3 pb-4 space-y-2">
+                        {/* صفوف التفاصيل */}
+                        {[
+                          { label: 'نوع الكارت', value: product.name,       color: '#ffffff',  mono: false },
+                          { label: 'قيمة الشحن', value: product.priceLabel, color: '#E60000',  mono: false },
+                        ].map(row => (
+                          <div key={row.label}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg"
+                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>{row.label}</span>
+                            <span className={`text-sm font-black ${row.mono ? 'font-mono' : ''}`} style={{ color: row.color }}>{row.value}</span>
+                          </div>
+                        ))}
+
+                        {/* رقم الشحن */}
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>رقم الشحن</span>
                           {chargeForSelf ? (
-                            <div className="flex items-center gap-1.5">
-                              {walletMsisdn ? (
-                                <span className="text-sm font-black font-mono" style={{ color: '#4ade80' }}>
-                                  {walletMsisdn}
-                                </span>
-                              ) : (
-                                <span className="text-xs font-medium" style={{ color: '#4ade80' }}>
-                                  سيُقرأ تلقائياً من الشبكة
-                                </span>
-                              )}
-                            </div>
+                            walletMsisdn ? (
+                              <span className="text-sm font-black font-mono" style={{ color: '#4ade80' }}>{walletMsisdn}</span>
+                            ) : (
+                              <span className="text-xs font-semibold" style={{ color: '#4ade80' }}>سيُقرأ من الشبكة تلقائياً</span>
+                            )
                           ) : (
                             <span className="text-sm font-black font-mono" style={{ color: '#ffffff' }}>{phone}</span>
                           )}
                         </div>
 
                         {/* أزرار */}
-                        <div className="flex gap-2.5 pt-1">
+                        <div className="flex gap-2 pt-1">
                           <button
-                            className="flex-1 h-11 rounded-xl font-medium text-sm transition-all active:scale-[0.97]"
-                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.55)' }}
+                            className="flex-1 h-10 rounded-xl font-medium text-sm transition-all active:scale-[0.97]"
+                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.50)' }}
                             onClick={() => setConfirmOpen(false)}
                           >
                             إلغاء
                           </button>
                           <button
-                            className="flex-[2] h-11 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                            className="flex-[2] h-10 rounded-xl font-black text-sm flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
                             style={{
                               background: 'linear-gradient(135deg,#E60000,#cc0000)',
-                              boxShadow: '0 0 20px rgba(230,0,0,0.4)',
+                              boxShadow: '0 0 16px rgba(230,0,0,0.45)',
                               color: '#fff',
-                              border: '1px solid rgba(230,0,0,0.4)',
+                              border: '1px solid rgba(230,0,0,0.5)',
                             }}
                             onClick={() => { setConfirmOpen(false); handleExecute(); }}
                           >
-                            <Zap className="w-4 h-4" />تأكيد وتنفيذ
+                            <Zap className="w-3.5 h-3.5" />تأكيد وتنفيذ
                           </button>
                         </div>
                       </div>
