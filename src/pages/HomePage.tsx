@@ -1227,11 +1227,14 @@ function ExecuteModal({
       executingRef.current = false;
       setSubmitting(false);
       setLoadingStep(0);
-      // ── تحديد سبب الفشل بدقة ──
-      const isVpn = networkInfo?.isVpnActive ?? false;
-      const errMsg = isVpn
-        ? '🔒 تم اكتشاف VPN نشط\n\nالـ VPN يمنع التعرف التلقائي على رقم محفظتك.\nأوقف الـ VPN ثم أعد المحاولة.'
-        : `فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`;
+      // ── تحديد سبب الفشل بدقة ← VPN فقط إذا مُكتشَف فعلاً ──
+      const isVpnDetected = networkInfo !== null && networkInfo?.isVpnActive === true;
+      const isWifiOnly    = networkInfo !== null && networkInfo?.isWifiActive === true && !networkInfo?.isMobileDataActive;
+      const errMsg = isVpnDetected
+        ? '🔒 VPN نشط — أوقف الـ VPN وتأكد من تشغيل بيانات فودافون ثم أعد المحاولة.'
+        : isWifiOnly
+        ? '📶 الشبكة الحالية WiFi — شغّل بيانات فودافون الجوال وأوقف الـ WiFi ثم أعد المحاولة.'
+        : `تعذّر قراءة رقم المحفظة تلقائياً — ${sError || 'تأكد من تشغيل بيانات فودافون وأعد المحاولة'}`;
       toast.error(errMsg, { duration: 7000 });
       return;
     }
@@ -1550,39 +1553,41 @@ function ExecuteModal({
                     
                     return (
                       <div className="space-y-2">
+                        {/* بانر الحالة: يظهر فقط عند وجود مشكلة واضحة — لا نُخيف المستخدم بدون سبب */}
                         {isVodafoneReady ? (
                           <div className="flex items-center gap-2.5 p-3 rounded-xl border"
                             style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.25)' }}>
                             <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
                             <p className="text-xs font-bold text-green-400">فودافون Native — جاهز للتنفيذ المباشر</p>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
-                            style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
-                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                            <p className="text-xs font-bold text-red-400">
-                              {networkInfo?.isWifiActive 
-                                ? 'يجب إيقاف الـ WiFi واستخدام بيانات فودافون'
-                                : networkInfo?.isVpnActive
-                                ? '🔒 VPN نشط — أوقف الـ VPN قبل تنفيذ العملية'
-                                : 'يجب تفعيل اتصال بيانات فودافون'}
-                            </p>
-                          </div>
-                        )}
-                        {networkInfo?.isWifiActive && isVodafoneReady && (
-                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
-                            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
-                            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                            <p className="text-xs text-amber-400">⚠️ الـ WiFi مفعّل — إذا فشل الشحن أوقفه وأعد المحاولة</p>
-                          </div>
-                        )}
-                        {isVpnOn && (
+                        ) : networkInfo?.isVpnActive ? (
+                          // VPN مكتشف فعلاً → تحذير حقيقي
                           <div className="flex items-center gap-2.5 p-3 rounded-xl border"
                             style={{ background: 'rgba(168,85,247,0.06)', borderColor: 'rgba(168,85,247,0.30)' }}>
                             <ShieldAlert className="w-4 h-4 shrink-0" style={{ color: '#a855f7' }} />
-                            <p className="text-xs font-bold" style={{ color: '#a855f7' }}>
-                              🔒 VPN نشط — يمنع التعرف على رقمك\nأوقف الـ VPN قبل تنفيذ العملية
-                            </p>
+                            <p className="text-xs font-bold" style={{ color: '#a855f7' }}>🔒 VPN نشط — أوقفه قبل تنفيذ العملية</p>
+                          </div>
+                        ) : networkInfo?.isWifiActive && !networkInfo?.isMobileDataActive ? (
+                          // WiFi فقط بدون بيانات جوال
+                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
+                            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
+                            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                            <p className="text-xs font-bold text-amber-400">شغّل بيانات فودافون وأوقف الـ WiFi</p>
+                          </div>
+                        ) : networkInfo !== null && !networkInfo?.isVodafoneMobile && !networkInfo?.isMobileDataActive ? (
+                          // لا بيانات جوال نهائياً
+                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
+                            style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                            <p className="text-xs font-bold text-red-400">يجب تفعيل بيانات فودافون الجوال</p>
+                          </div>
+                        ) : (
+                          // شبكة نشطة لكن isVodafoneMobile=false (قد يكون خطأ في قراءة الـ operator)
+                          // → نُظهر بانر أصفر تحذيري بدون إيقاف الزر
+                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
+                            style={{ background: 'rgba(34,197,94,0.04)', borderColor: 'rgba(34,197,94,0.15)' }}>
+                            <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: 'rgba(34,197,94,0.6)' }} />
+                            <p className="text-xs" style={{ color: 'rgba(34,197,94,0.7)' }}>متصل — سيتم التعرف على رقمك عند التنفيذ</p>
                           </div>
                         )}
                         {isAdmin && (
