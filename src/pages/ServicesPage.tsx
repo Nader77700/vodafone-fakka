@@ -132,7 +132,7 @@ function ServiceCard({ svc, onPress }: { svc: ServiceConfig; onPress: () => void
             </h3>
           </div>
           {svc.badge && (
-            <span className="text-[9px] font-black tracking-widest px-2 py-0.5 rounded-full uppercase shrink-0 backdrop-blur-md"
+            <span className="text-xs font-black tracking-widest px-2 py-0.5 rounded-full uppercase shrink-0 backdrop-blur-md"
               style={{
                 background: L ? `${svc.accentColor}12` : 'rgba(0,0,0,0.50)',
                 border: `1px solid ${L ? `${svc.accentColor}22` : 'rgba(255,255,255,0.10)'}`,
@@ -144,7 +144,7 @@ function ServiceCard({ svc, onPress }: { svc: ServiceConfig; onPress: () => void
         </div>
 
         <div className="flex items-end justify-between gap-3 mt-0.5">
-          <p className="text-[11px] font-medium leading-relaxed flex-1"
+          <p className="text-xs font-medium leading-relaxed flex-1"
             style={{ color: L ? 'rgba(0,0,0,0.52)' : 'rgba(255,255,255,0.55)' }}>
             {svc.description}
           </p>
@@ -243,12 +243,12 @@ export default function ServicesPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black leading-tight" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>الخدمات</h1>
-            <p className="text-[10px] text-muted-foreground">جميع خدمات التطبيق</p>
+            <p className="text-xs text-muted-foreground">جميع خدمات التطبيق</p>
           </div>
           {cfgLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" style={{ color: L ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.30)' }} />
           ) : (
-            <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+            <span className="text-xs font-bold px-2 py-1 rounded-full"
               style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.25)' }}>
               {services.length} خدمات
             </span>

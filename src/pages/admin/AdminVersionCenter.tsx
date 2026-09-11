@@ -173,7 +173,7 @@ export default function AdminVersionCenter() {
                 </div>
                 <div className="min-w-0">
                   <p className={`text-xl font-black tabular-nums ${s.color}`}>{s.value}</p>
-                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
                 </div>
               </div>
             ))}
@@ -235,7 +235,7 @@ export default function AdminVersionCenter() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-destructive">{vb.version_name}</span>
-                        {!vb.is_active && <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">معطل</span>}
+                        {!vb.is_active && <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">معطل</span>}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1 truncate">{vb.ban_reason}</p>
                     </div>
@@ -298,7 +298,7 @@ export default function AdminVersionCenter() {
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'حفظ'}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 أي مستخدم بكود أقل من هذا الرقم سيُجبَر على التحديث. <strong>0</strong> = لا إجبار.
               </p>
             </div>
@@ -333,7 +333,7 @@ export default function AdminVersionCenter() {
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-semibold">{version}</span>
-                          {isLatest && <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full border border-success/20">أحدث</span>}
+                          {isLatest && <span className="text-xs bg-success/10 text-success px-1.5 py-0.5 rounded-full border border-success/20">أحدث</span>}
                         </div>
                         <span className="text-muted-foreground tabular-nums">{count} مستخدم ({pct}%)</span>
                       </div>
@@ -363,20 +363,20 @@ export default function AdminVersionCenter() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm">{v.version}</span>
-                      <span className="text-[10px] text-muted-foreground font-mono">code: {v.version_code}</span>
-                      {v.is_latest && <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full border border-success/20">أحدث</span>}
+                      <span className="text-xs text-muted-foreground font-mono">code: {v.version_code}</span>
+                      {v.is_latest && <span className="text-xs bg-success/10 text-success px-1.5 py-0.5 rounded-full border border-success/20">أحدث</span>}
                       {blockedList.split(',').includes(String(v.version_code)) && (
-                        <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full border border-destructive/20">محظور</span>
+                        <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full border border-destructive/20">محظور</span>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(v.created_at)}</p>
-                    {v.release_notes && <p className="text-[10px] text-muted-foreground truncate">{v.release_notes}</p>}
+                    <p className="text-xs text-muted-foreground mt-0.5">{fmt(v.created_at)}</p>
+                    {v.release_notes && <p className="text-xs text-muted-foreground truncate">{v.release_notes}</p>}
                   </div>
                   <div className="text-center shrink-0">
                     <p className="text-lg font-black tabular-nums text-primary">
                       {userDist[v.version] ?? 0}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">مستخدم</p>
+                    <p className="text-xs text-muted-foreground">مستخدم</p>
                   </div>
                 </div>
               ))}

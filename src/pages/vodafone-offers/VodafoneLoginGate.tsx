@@ -62,13 +62,13 @@ export default function VodafoneLoginGate({ children, onLogin }: VodafoneLoginGa
           </div>
           <div>
             <h2 className="text-sm font-black text-foreground">سجّل دخولك</h2>
-            <p className="text-[11px] text-white/45 leading-relaxed">أدخل بيانات أنا فودافون لعرض الاشتراكات والعروض</p>
+            <p className="text-xs text-white/45 leading-relaxed">أدخل بيانات أنا فودافون لعرض الاشتراكات والعروض</p>
           </div>
         </div>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="login-phone" className="text-[11px] font-medium text-white/70">رقم الهاتف</Label>
+            <Label htmlFor="login-phone" className="text-xs font-medium text-white/70">رقم الهاتف</Label>
             <div className="relative">
               <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
               <Input
@@ -84,7 +84,7 @@ export default function VodafoneLoginGate({ children, onLogin }: VodafoneLoginGa
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="login-password" className="text-[11px] font-medium text-white/70">كلمة المرور</Label>
+            <Label htmlFor="login-password" className="text-xs font-medium text-white/70">كلمة المرور</Label>
             <div className="relative">
               <Input
                 id="login-password"
@@ -108,10 +108,10 @@ export default function VodafoneLoginGate({ children, onLogin }: VodafoneLoginGa
           </div>
 
           {loginError && (
-            <p className="text-[11px] font-medium text-red-300 bg-red-500/10 rounded-lg px-3 py-2">{loginError}</p>
+            <p className="text-xs font-medium text-red-300 bg-red-500/10 rounded-lg px-3 py-2">{loginError}</p>
           )}
           {loginSuccess && (
-            <p className="text-[11px] font-bold text-green-300 bg-green-500/10 rounded-lg px-3 py-2 flex items-center gap-2">
+            <p className="text-xs font-bold text-green-300 bg-green-500/10 rounded-lg px-3 py-2 flex items-center gap-2">
               <Loader2 className="w-3 h-3 animate-spin" /> جاري تسجيل الدخول...
             </p>
           )}
@@ -128,7 +128,7 @@ export default function VodafoneLoginGate({ children, onLogin }: VodafoneLoginGa
         </div>
       </div>
 
-      <p className="text-[10px] text-white/30 text-center leading-relaxed px-4">
+      <p className="text-xs text-white/30 text-center leading-relaxed px-4">
         بيانات الدخول لا تُخزن في الجهاز. تُستخدم فقط لإنشاء جلسة Server-Side.
       </p>
     </div>

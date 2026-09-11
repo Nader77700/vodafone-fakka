@@ -46,12 +46,12 @@ function PipelineStep({ step, label, hash, ok }: { step: string; label: string; 
     <div className={`p-3 rounded-xl border ${ok ? 'border-success/20 bg-success/5' : 'border-destructive/20 bg-destructive/5'}`}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-bold">{step}</span>
-        <Badge variant="outline" className={ok ? 'border-success/30 text-success text-[10px]' : 'border-destructive/30 text-destructive text-[10px]'}>
+        <Badge variant="outline" className={ok ? 'border-success/30 text-success text-xs' : 'border-destructive/30 text-destructive text-xs'}>
           {ok ? '✓ MATCH' : '✗ MISMATCH'}
         </Badge>
       </div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-[10px] font-mono text-muted-foreground/70 mt-1 truncate">{hash}</p>
+      <p className="text-xs font-mono text-muted-foreground/70 mt-1 truncate">{hash}</p>
     </div>
   );
 }
@@ -151,7 +151,7 @@ export default function BuildInfoPage() {
             <p className="text-base font-black gradient-text">Vodafone Fakka Premium</p>
             <p className="text-xs text-muted-foreground">By Nader Akram</p>
             {tapCount > 0 && tapCount < DEV_TAP_THRESHOLD && (
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {DEV_TAP_THRESHOLD - tapCount} نقرات للوحة المطوّر
               </p>
             )}
@@ -227,7 +227,7 @@ export default function BuildInfoPage() {
           <p className="text-xs font-bold text-primary uppercase tracking-wider">Release Notes</p>
           {BUILD_INFO.releaseNotes.map((note, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className="text-[10px] font-semibold text-primary mt-0.5 shrink-0">{i === 0 ? '★' : '·'}</span>
+              <span className="text-xs font-semibold text-primary mt-0.5 shrink-0">{i === 0 ? '★' : '·'}</span>
               <p className="text-xs text-muted-foreground text-pretty">{note}</p>
             </div>
           ))}
@@ -245,7 +245,7 @@ export default function BuildInfoPage() {
               <CopyRow label="Bundle File"       value={BUILD_INFO.bundleFile}  icon={GitBranch} />
               <CopyRow label="Build Timestamp"   value={BUILD_INFO.buildTimestamp} icon={Clock} />
             </div>
-            <div className="p-3 rounded-lg bg-muted/30 text-[10px] font-mono text-muted-foreground space-y-1">
+            <div className="p-3 rounded-lg bg-muted/30 text-xs font-mono text-muted-foreground space-y-1">
               <p>Source → Dist:    ✓ SHA256 MATCH</p>
               <p>Dist → Android:   ✓ SHA256 MATCH</p>
               <p>Android → APK:    ✓ SHA256 MATCH</p>
@@ -262,7 +262,7 @@ export default function BuildInfoPage() {
           </div>
         )}
 
-        <p className="text-center text-[10px] text-muted-foreground pb-4">
+        <p className="text-center text-xs text-muted-foreground pb-4">
           © 2026 Nader Akram · Vodafone Fakka Premium
         </p>
       </div>

@@ -199,7 +199,7 @@ export default function MoneyTransferPage() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">تحويل الأموال</h1>
-            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
+            <p className="text-xs text-primary font-medium">Vodafone Cash</p>
           </div>
           <button onClick={() => navigate('/vodafone-cash-center/history/transfer')} className="p-2 -ml-2 rounded-full hover:bg-muted active:bg-muted/50 transition-colors text-muted-foreground">
             <Clock className="w-5 h-5" />
@@ -245,7 +245,7 @@ export default function MoneyTransferPage() {
 
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">اخر فحص</span>
-              <span className="text-[10px] text-muted-foreground" dir="ltr">
+              <span className="text-xs text-muted-foreground" dir="ltr">
                 {lastChecked ? lastChecked.toLocaleTimeString() : '--:--'}
               </span>
             </div>
@@ -254,7 +254,7 @@ export default function MoneyTransferPage() {
           {!isConnected && !isCheckingConn && (
             <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-red-500/90 leading-relaxed">
+              <p className="text-xs text-red-500/90 leading-relaxed">
                 تأكد أنك مشغل الشريحة على خط فودافون وأنك غير متصل بالواي فاي (Wi-Fi) لتتمكن من استخدام الخدمة.
                 <br/>
                 <span className="font-bold opacity-80 mt-1 block">💡 ملاحظة هامة: إذا كنت تستخدم بيانات فودافون وتظهر هذه المشكلة، يرجى إغلاق الـ (VPN) إن وجد. كما أن هذه الميزة مخصصة للعمل داخل تطبيق الأندرويد فقط وليس عبر متصفح الويب.</span>
@@ -315,7 +315,7 @@ export default function MoneyTransferPage() {
                     {amount !== '' && !isAmountValid ? (
                       <p className="text-xs text-red-500 font-medium">خطأ: الحد الأدنى 2 جنيه</p>
                     ) : (
-                      <p className="text-[10px] text-muted-foreground">الحد الأدنى للتحويل: 2 ج.م</p>
+                      <p className="text-xs text-muted-foreground">الحد الأدنى للتحويل: 2 ج.م</p>
                     )}
                   </div>
                 </div>
@@ -395,19 +395,19 @@ export default function MoneyTransferPage() {
                 <div className="space-y-2">
                   {execLogs.map((log, i) => (
                     <div key={i} className="flex gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-border">
-                      <div className="w-12 shrink-0 text-muted-foreground/50 font-mono text-[10px] mt-0.5" dir="ltr">
+                      <div className="w-12 shrink-0 text-muted-foreground/50 font-mono text-xs mt-0.5" dir="ltr">
                         {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second:'2-digit' })}
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-1.5">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-bold uppercase
                             ${log.status === 'ok' ? 'bg-green-500/20 text-green-500' : 
                               log.status === 'fail' || log.status === 'error' ? 'bg-red-500/20 text-red-500' : 
                               log.status === 'warn' ? 'bg-yellow-500/20 text-yellow-500' : 
                               'bg-blue-500/20 text-blue-400'}`}>
                             {log.status}
                           </span>
-                          <span className="font-mono text-muted-foreground text-[10px]">{log.step}</span>
+                          <span className="font-mono text-muted-foreground text-xs">{log.step}</span>
                         </div>
                         <p className="text-foreground break-words leading-relaxed" dir="auto">{log.detail}</p>
                       </div>

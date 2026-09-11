@@ -112,7 +112,7 @@ export default function WalletLinesRegisterPage() {
         {rightEl}
       </div>
       {errs[field] && (
-        <p className="text-[11px] text-red-400 flex items-center gap-1">
+        <p className="text-xs text-red-400 flex items-center gap-1">
           <XCircle className="w-3 h-3" />{errs[field]}
         </p>
       )}
@@ -134,7 +134,7 @@ export default function WalletLinesRegisterPage() {
           </button>
           <div>
             <h1 className="text-base font-black text-foreground">إنشاء حساب My NTRA</h1>
-            <p className="text-[10px] text-muted-foreground">حساب رسمي على منصة الجهاز القومي</p>
+            <p className="text-xs text-muted-foreground">حساب رسمي على منصة الجهاز القومي</p>
           </div>
         </div>
       </div>
@@ -146,10 +146,10 @@ export default function WalletLinesRegisterPage() {
           <div className="flex items-start gap-2.5">
             <Info className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 الحساب الذي يتم إنشاؤه هنا هو حساب <span className="font-bold text-foreground">My NTRA الرسمي</span>، وليس حسابًا خاصًا بالتطبيق.
               </p>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 أدخل بياناتك لإنشاء حسابك على My NTRA والوصول إلى خدمة الاستعلام عن الخطوط والمحافظ.
               </p>
             </div>
@@ -187,7 +187,7 @@ export default function WalletLinesRegisterPage() {
               {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          {errs.password && <p className="text-[11px] text-red-400 flex items-center gap-1"><XCircle className="w-3 h-3" />{errs.password}</p>}
+          {errs.password && <p className="text-xs text-red-400 flex items-center gap-1"><XCircle className="w-3 h-3" />{errs.password}</p>}
         </div>
 
         {/* تأكيد كلمة المرور */}
@@ -204,7 +204,7 @@ export default function WalletLinesRegisterPage() {
               {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          {errs.confirm && <p className="text-[11px] text-red-400 flex items-center gap-1"><XCircle className="w-3 h-3" />{errs.confirm}</p>}
+          {errs.confirm && <p className="text-xs text-red-400 flex items-center gap-1"><XCircle className="w-3 h-3" />{errs.confirm}</p>}
         </div>
 
         <Button type="submit" disabled={isDisabled} className="w-full h-12 text-sm font-black rounded-xl mt-1"

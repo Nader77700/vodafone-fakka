@@ -32,7 +32,7 @@ function StatCard({ icon: Icon, label, value, sub, accent }: StatCardProps) {
       </div>
       <p className="text-2xl font-black text-balance">{value}</p>
       <p className="text-xs text-muted-foreground text-pretty flex-1">{label}</p>
-      {sub && <p className="text-[11px] text-primary font-medium">{sub}</p>}
+      {sub && <p className="text-xs text-primary font-medium">{sub}</p>}
     </div>
   );
 }

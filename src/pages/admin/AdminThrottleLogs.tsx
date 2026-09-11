@@ -154,11 +154,11 @@ export default function AdminThrottleLogs() {
         {/* ── ملخص ── */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-card border border-border/40 p-4 flex flex-col gap-1">
-            <p className="text-[10px] text-muted-foreground">إجمالي التقييدات</p>
+            <p className="text-xs text-muted-foreground">إجمالي التقييدات</p>
             <p className="text-2xl font-black tabular-nums text-foreground">{total}</p>
           </div>
           <div className={`rounded-xl border p-4 flex flex-col gap-1 ${activeCount > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-card border-border/40'}`}>
-            <p className="text-[10px] text-muted-foreground">تقييدات نشطة الآن</p>
+            <p className="text-xs text-muted-foreground">تقييدات نشطة الآن</p>
             <p className={`text-2xl font-black tabular-nums ${activeCount > 0 ? 'text-destructive' : 'text-foreground'}`}>{activeCount}</p>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function AdminThrottleLogs() {
           </div>
           <button
             onClick={() => { setShowActive(v => !v); setPage(1); }}
-            className={`text-[11px] flex items-center gap-1 transition-colors ${showActive ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`text-xs flex items-center gap-1 transition-colors ${showActive ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <AlertTriangle className="w-3 h-3" />
             {showActive ? 'عرض الكل' : 'عرض النشطة فقط'}
@@ -218,17 +218,17 @@ export default function AdminThrottleLogs() {
                           <p className="text-sm font-bold truncate">
                             {rec.profile?.username ?? '—'}
                           </p>
-                          <p className="text-[10px] text-muted-foreground">{rec.profile?.phone ?? '—'}</p>
+                          <p className="text-xs text-muted-foreground">{rec.profile?.phone ?? '—'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isStillActive && (
-                          <Badge variant="destructive" className="text-[10px] gap-1">
+                          <Badge variant="destructive" className="text-xs gap-1">
                             <Clock className="w-2.5 h-2.5" /> {minsLeft} د
                           </Badge>
                         )}
                         {!isStillActive && (
-                          <Badge className="text-[10px] bg-success/20 text-success border-success/30">
+                          <Badge className="text-xs bg-success/20 text-success border-success/30">
                             مرفوع
                           </Badge>
                         )}
@@ -236,18 +236,18 @@ export default function AdminThrottleLogs() {
                     </div>
 
                     {/* تفاصيل */}
-                    <div className="text-[11px] text-muted-foreground space-y-1 pr-6">
+                    <div className="text-xs text-muted-foreground space-y-1 pr-6">
                       <p><span className="text-foreground font-medium">السبب: </span>{rec.reason}</p>
                       <p><span className="text-foreground font-medium">وقت التقييد: </span>{fmt(rec.throttled_at)}</p>
                       <p><span className="text-foreground font-medium">ينتهي في: </span>{fmt(rec.expires_at)}</p>
                       {rec.device1_fp && (
-                        <p className="font-mono text-[10px] truncate">
+                        <p className="font-mono text-xs truncate">
                           <span className="text-foreground font-medium not-italic">جهاز 1: </span>
                           {rec.device1_fp.slice(0, 16)}…
                         </p>
                       )}
                       {rec.device2_fp && (
-                        <p className="font-mono text-[10px] truncate">
+                        <p className="font-mono text-xs truncate">
                           <span className="text-foreground font-medium not-italic">جهاز 2: </span>
                           {rec.device2_fp.slice(0, 16)}…
                         </p>

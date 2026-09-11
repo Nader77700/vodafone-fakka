@@ -71,7 +71,7 @@ export default function DeviceBannedScreen({ reason, bannedAt }: Props) {
       </div>
 
       {/* كود خطأ صغير في الأسفل */}
-      <p className="mt-8 text-[10px] text-muted-foreground/40 font-mono">
+      <p className="mt-8 text-xs text-muted-foreground/40 font-mono">
         ERR_DEVICE_BANNED
       </p>
     </div>

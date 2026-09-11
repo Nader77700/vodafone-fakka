@@ -81,7 +81,7 @@ function CardRow({ card, accentColor }: { card: CardItem; accentColor: string })
           { Icon: CalendarClock, label: 'التجديد', val: card.resetDate || '—' },
         ].map(({ Icon, label, val }) => (
           <div key={label} className="rounded-lg p-1.5 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-[9px] text-white/40 mb-0.5 flex items-center justify-center gap-0.5">
+            <p className="text-xs text-white/40 mb-0.5 flex items-center justify-center gap-0.5">
               <Icon className="w-2.5 h-2.5" /> {label}
             </p>
             <p className="text-xs font-black text-white" dir="ltr">{val}</p>
@@ -100,7 +100,7 @@ function CardSection({ title, cards, accentColor }: { title: string; cards: Card
         <div className="flex items-center gap-2">
           <ClipboardList className="w-3.5 h-3.5" style={{ color: accentColor }} />
           <span className="text-xs font-black text-white">{title}</span>
-          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+          <span className="text-xs font-black px-1.5 py-0.5 rounded-full"
             style={{ background: `${accentColor}18`, color: accentColor, border: `1px solid ${accentColor}33` }}>
             {cards.length}
           </span>
@@ -154,7 +154,7 @@ function HistoryPanel({ onSelect }: { onSelect: (e: LineInfoHistoryEntry) => voi
       <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <History className="w-3.5 h-3.5 shrink-0" style={{ color: '#E60000' }} />
         <span className="text-xs font-black text-white">سجل الفحوصات</span>
-        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(230,0,0,0.12)', color: '#E60000', border: '1px solid rgba(230,0,0,0.22)' }}>
+        <span className="text-xs font-black px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(230,0,0,0.12)', color: '#E60000', border: '1px solid rgba(230,0,0,0.22)' }}>
           {entries.length}
         </span>
       </div>
@@ -164,11 +164,11 @@ function HistoryPanel({ onSelect }: { onSelect: (e: LineInfoHistoryEntry) => voi
             className="w-full flex items-center justify-between px-3 py-2.5 text-right border-b border-white/[0.04] last:border-0 active:bg-white/5 transition-colors">
             <div className="min-w-0">
               <p className="text-sm font-black text-white" dir="ltr">{e.phone}</p>
-              <p className="text-[10px] text-white/40 mt-0.5">{e.result.system ?? '—'}</p>
+              <p className="text-xs text-white/40 mt-0.5">{e.result.system ?? '—'}</p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 mr-2">
               {e.result.balance && (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.20)' }}>
+                <span className="text-xs font-black px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.20)' }}>
                   {e.result.balance}
                 </span>
               )}

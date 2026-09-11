@@ -26,7 +26,7 @@ export default function BalanceRechargeShortcutPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-black text-foreground mb-0.5">شحن الرصيد</h2>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 هذا الاختصار يفتح نظام شحن الرصيد الأساسي الموجود في التطبيق. لا يوجد نظام شحن جديد هنا.
               </p>
             </div>
@@ -63,7 +63,7 @@ export default function BalanceRechargeShortcutPage() {
           <ArrowRight className="w-4 h-4 rotate-180" />
         </button>
 
-        <p className="text-[10px] text-muted-foreground text-center px-4 leading-relaxed">
+        <p className="text-xs text-muted-foreground text-center px-4 leading-relaxed">
           الضغط على الزر ينقلك إلى صفحة الشحن الرئيسية ضمن نفس التطبيق.
         </p>
       </div>
@@ -85,7 +85,7 @@ function FeatureRow({ icon: Icon, title, desc }: { icon: typeof Wallet; title: s
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-black text-foreground mb-0.5">{title}</p>
-        <p className="text-[10px] text-muted-foreground leading-relaxed">{desc}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
       </div>
     </div>
   );

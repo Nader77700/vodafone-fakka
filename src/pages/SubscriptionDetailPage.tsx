@@ -87,7 +87,7 @@ function InfoRow({ label, value, color, mono = false, isDark = true }: {
   return (
     <div className="flex items-center justify-between gap-3 py-2"
       style={{ borderBottom: `1px solid ${isDark ? 'hsl(var(--card))' : 'rgba(0,0,0,0.06)'}` }}>
-      <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
       <span className={`text-[12px] font-bold truncate text-right ${mono ? 'font-mono' : ''}`}
         style={{ color: color ?? defaultColor }}>{value}</span>
     </div>
@@ -185,7 +185,7 @@ export default function SubscriptionDetailPage() {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black text-balance">تفاصيل الاشتراك</h1>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold"
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
             style={{ background: `${statusColor}18`, border: `1px solid ${statusColor}35`, color: statusColor }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: statusColor }} />
             {subActive ? 'نشط' : 'منتهي'}
@@ -219,7 +219,7 @@ export default function SubscriptionDetailPage() {
           {/* Time Progress */}
           {!isUnlimited && subscription?.expires_at && (
             <div className="mt-3 space-y-1.5">
-              <div className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">الوقت المنقضي</span>
                 <span className="font-bold tabular-nums" style={{ color: statusColor }}>
                   {subActive ? `${progress}%` : '100%'}
@@ -245,7 +245,7 @@ export default function SubscriptionDetailPage() {
                 ].map(({ label, value, color, anim, raw }) => (
                   <div key={label} className="p-3 rounded-xl text-center"
                     style={{ background: `${color}${L ? '08' : '10'}`, border: `1px solid ${color}${L ? '20' : '25'}` }}>
-                    <p className="text-[9px] text-muted-foreground mb-1">{label}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{label}</p>
                     <p className="text-base font-black tabular-nums" style={{ color }}>
                       {anim && raw !== undefined ? <AnimNum value={raw as number} /> : value}
                     </p>
@@ -255,7 +255,7 @@ export default function SubscriptionDetailPage() {
 
               {opsLimit !== null && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px]">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
                       {opsUsed} مستخدم / {opsLimit} إجمالي
                     </span>
@@ -295,7 +295,7 @@ export default function SubscriptionDetailPage() {
             ].map(({ label, value, color }) => (
               <div key={label} className="p-3 rounded-xl text-center"
                 style={{ background: `${color}${L ? '08' : '10'}`, border: `1px solid ${color}${L ? '20' : '25'}` }}>
-                <p className="text-[9px] text-muted-foreground mb-1">{label}</p>
+                <p className="text-xs text-muted-foreground mb-1">{label}</p>
                 <p className="text-2xl font-black tabular-nums" style={{ color }}>
                   <AnimNum value={value} />
                 </p>
@@ -309,7 +309,7 @@ export default function SubscriptionDetailPage() {
             }}>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" style={{ color: '#22c55e' }} />
-              <span className="text-[11px] font-bold text-foreground/80">معدل النجاح</span>
+              <span className="text-xs font-bold text-foreground/80">معدل النجاح</span>
             </div>
             <span className="text-lg font-black tabular-nums" style={{ color: '#22c55e' }}>
               <AnimNum value={successRate} />%
@@ -348,9 +348,9 @@ export default function SubscriptionDetailPage() {
                           style={{ background: `${hColor}18`, color: hColor }}>
                           <CreditCard className="w-3 h-3" />
                         </div>
-                        <span className="text-[11px] font-bold" style={{ color: hColor }}>{typeLabel}</span>
+                        <span className="text-xs font-bold" style={{ color: hColor }}>{typeLabel}</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                      <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                         style={{ background: `${hColor}15`, color: hColor }}>
                         {isExp ? 'منتهي' : 'نشط'}
                       </span>
@@ -363,16 +363,16 @@ export default function SubscriptionDetailPage() {
                         { k: 'العمليات',       v: String(h.days_after ?? '—') },
                       ].map(({ k, v }) => (
                         <div key={k}>
-                          <p className="text-[9px] text-muted-foreground">{k}</p>
-                          <p className="text-[11px] font-bold tabular-nums text-foreground/80">{v}</p>
+                          <p className="text-xs text-muted-foreground">{k}</p>
+                          <p className="text-xs font-bold tabular-nums text-foreground/80">{v}</p>
                         </div>
                       ))}
                     </div>
                     {h.code && (
                       <div className="flex items-center gap-1 pt-1 border-t"
                         style={{ borderColor: L ? 'rgba(0,0,0,0.06)' : 'hsl(var(--card))' }}>
-                        <span className="text-[9px] text-muted-foreground">الكود:</span>
-                        <span className="text-[10px] font-mono" style={{ color: L ? '#6b7280' : 'rgba(255,255,255,0.40)' }}>{h.code}</span>
+                        <span className="text-xs text-muted-foreground">الكود:</span>
+                        <span className="text-xs font-mono" style={{ color: L ? '#6b7280' : 'rgba(255,255,255,0.40)' }}>{h.code}</span>
                       </div>
                     )}
                   </div>

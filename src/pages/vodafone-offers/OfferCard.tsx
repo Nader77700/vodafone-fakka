@@ -40,12 +40,12 @@ export default function OfferCard({ offer, onSubscribe, loadingId }: OfferCardPr
           <h3 className="text-[13px] font-black truncate" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{offer.name}</h3>
           <div className="flex items-center gap-2 flex-wrap">
             {offer.price && (
-              <span className="text-[11px] font-bold" style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.60)' }}>
+              <span className="text-xs font-bold" style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.60)' }}>
                 {offer.price} جنيه
               </span>
             )}
             {offer.code && (
-              <span className="text-[10px] font-bold font-mospace" style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.40)' }}>{offer.code}</span>
+              <span className="text-xs font-bold font-mospace" style={{ color: L ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.40)' }}>{offer.code}</span>
             )}
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function OfferCard({ offer, onSubscribe, loadingId }: OfferCardPr
             {offer.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full"
+                className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full"
                 style={{
                   background: L ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
                   color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.55)',

@@ -59,10 +59,10 @@ function OpCard({ op, onView }: { op: Operation; onView: (op: Operation) => void
         </div>
         <div className="text-left shrink-0 space-y-1">
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full border block text-center ${s.cls}`}>{s.label}</span>
-          <p className="text-[10px] text-muted-foreground text-center tabular-nums">
+          <p className="text-xs text-muted-foreground text-center tabular-nums">
             {formatEgyptDate(op.performed_at)}
           </p>
-          <p className="text-[10px] text-muted-foreground text-center tabular-nums">
+          <p className="text-xs text-muted-foreground text-center tabular-nums">
             {formatEgyptTime(op.performed_at)}
           </p>
         </div>
@@ -71,32 +71,32 @@ function OpCard({ op, onView }: { op: Operation; onView: (op: Operation) => void
       {/* الصف الثاني: بادجات */}
       <div className="flex items-center gap-2 pt-2 border-t border-border/40 flex-wrap">
         {op.operation_number != null && (
-          <div className="flex items-center gap-1 text-[11px] text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
             <Hash className="w-3 h-3 shrink-0" />
             <span className="font-mono font-bold">#{op.operation_number}</span>
           </div>
         )}
         {/* مصدر العملية */}
         {src ? (
-          <div className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg shrink-0"
+          <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg shrink-0"
             style={{ background: src.bg, color: src.color, border: `1px solid ${src.border}` }}>
             <Wallet className="w-3 h-3 shrink-0" />
             <span className="font-bold">{src.text}</span>
           </div>
         ) : op.category ? (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/40 px-2 py-1 rounded-lg">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/40 px-2 py-1 rounded-lg">
             <Tag className="w-3 h-3 shrink-0" />
             <span>{op.category}</span>
           </div>
         ) : null}
         {op.amount != null && op.amount > 0 && (
-          <div className="flex items-center gap-1 text-[11px] text-primary bg-primary/10 px-2 py-1 rounded-lg mr-auto">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-lg mr-auto">
             <Banknote className="w-3 h-3 shrink-0" />
             <span className="font-bold">{op.amount} ج.م</span>
           </div>
         )}
         {dm != null && (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/40 px-2 py-1 rounded-lg">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/40 px-2 py-1 rounded-lg">
             <Timer className="w-3 h-3 shrink-0" />
             <span>{dm < 1000 ? `${dm}ms` : `${(dm / 1000).toFixed(1)}s`}</span>
           </div>
@@ -106,7 +106,7 @@ function OpCard({ op, onView }: { op: Operation; onView: (op: Operation) => void
       {/* سبب الفشل */}
       {op.status === 'failed' && op.error_message && (
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl px-3 py-2">
-          <p className="text-[11px] text-destructive break-words">
+          <p className="text-xs text-destructive break-words">
             {parseApiError(op.error_message).arabicMessage.split('\n')[0]}
           </p>
         </div>
@@ -114,7 +114,7 @@ function OpCard({ op, onView }: { op: Operation; onView: (op: Operation) => void
 
       {/* زر تفاصيل */}
       <div className="flex justify-end pt-1">
-        <Button size="sm" className="h-6 text-[10px] px-2.5 gap-1"
+        <Button size="sm" className="h-6 text-xs px-2.5 gap-1"
           style={{ background: 'rgba(230,0,0,0.08)', color: '#ff6666', border: '1px solid rgba(230,0,0,0.2)' }}
           onClick={() => onView(op)}>
           <Eye className="w-3 h-3" /> تفاصيل
@@ -218,7 +218,7 @@ export default function OperationsPage() {
             </div>
             <div>
               <h2 className="text-sm font-black">آخر العمليات</h2>
-              <p className="text-[10px] text-muted-foreground">أحدث 10 عمليات — تحديث تلقائي</p>
+              <p className="text-xs text-muted-foreground">أحدث 10 عمليات — تحديث تلقائي</p>
             </div>
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function OperationsPage() {
             </div>
             <div>
               <h2 className="text-sm font-black">سجل العمليات الكامل</h2>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {result ? `${result.count} عملية — كل عملية كسجل مستقل` : 'جاري التحميل...'}
               </p>
             </div>

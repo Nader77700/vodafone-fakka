@@ -88,7 +88,7 @@ export default function AdminLegacyFlexPage() {
           </Button>
           <div className="flex-1">
             <h1 className="text-lg font-black text-foreground">إدارة أنظمة فليكس القديمة</h1>
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" /> متصل بقاعدة البيانات
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function AdminLegacyFlexPage() {
       <div className="flex-1 p-4">
         <div className="flex items-center justify-between mb-4 px-1">
           <h2 className="text-sm font-bold text-foreground">قائمة الأنظمة ({filteredSystems.length})</h2>
-          <span className="text-[10px] text-muted-foreground">الترتيب حسب الأولوية</span>
+          <span className="text-xs text-muted-foreground">الترتيب حسب الأولوية</span>
         </div>
 
         {isLoading ? (
@@ -141,7 +141,7 @@ export default function AdminLegacyFlexPage() {
                         {sys.name}
                         {sys.status === 'hidden' && <EyeOff className="w-3 h-3 text-muted-foreground" />}
                       </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 font-mono bg-muted/50 inline-block px-1.5 rounded">{sys.product_id}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 font-mono bg-muted/50 inline-block px-1.5 rounded">{sys.product_id}</p>
                     </div>
                   </div>
 
@@ -176,15 +176,15 @@ export default function AdminLegacyFlexPage() {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-muted/40 rounded-lg p-2 flex flex-col justify-center border border-border/30">
-                    <span className="text-[9px] text-muted-foreground font-bold mb-0.5">السعر</span>
-                    <span className="text-xs font-black text-foreground">{sys.price} <span className="text-[9px] font-normal">ج.م</span></span>
+                    <span className="text-xs text-muted-foreground font-bold mb-0.5">السعر</span>
+                    <span className="text-xs font-black text-foreground">{sys.price} <span className="text-xs font-normal">ج.م</span></span>
                   </div>
                   <div className="bg-muted/40 rounded-lg p-2 flex flex-col justify-center border border-border/30">
-                    <span className="text-[9px] text-muted-foreground font-bold mb-0.5">الفليكسات</span>
+                    <span className="text-xs text-muted-foreground font-bold mb-0.5">الفليكسات</span>
                     <span className="text-xs font-black text-foreground">{sys.flex_count?.toLocaleString()}</span>
                   </div>
                   <div className="bg-muted/40 rounded-lg p-2 flex flex-col justify-center border border-border/30">
-                    <span className="text-[9px] text-muted-foreground font-bold mb-0.5">الحالة</span>
+                    <span className="text-xs text-muted-foreground font-bold mb-0.5">الحالة</span>
                     <AdminStatusBadge status={sys.status} />
                   </div>
                 </div>
@@ -280,7 +280,7 @@ function AdminStatusBadge({ status }: { status: string }) {
   const c = configs[status] || configs['disabled'];
 
   return (
-    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${c.color} truncate max-w-full inline-block text-center`}>
+    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md border ${c.color} truncate max-w-full inline-block text-center`}>
       {c.label}
     </span>
   );

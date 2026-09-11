@@ -131,7 +131,7 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black text-foreground">استعلام رصيد المحفظة</p>
-            <p className="text-[11px] text-muted-foreground">Vodafone Cash</p>
+            <p className="text-xs text-muted-foreground">Vodafone Cash</p>
           </div>
         </div>
 
@@ -142,13 +142,13 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
               <div className="rounded-2xl p-4 text-center space-y-1"
                 style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
                 <CheckCircle2 className="w-6 h-6 mx-auto" style={{ color: '#4ade80' }} />
-                <p className="text-[11px] text-muted-foreground">رصيد المحفظة الحالي</p>
+                <p className="text-xs text-muted-foreground">رصيد المحفظة الحالي</p>
                 <p className="text-2xl font-black" style={{ color: '#4ade80' }}>
                   {balance} <span className="text-sm font-medium text-muted-foreground">جنيه</span>
                 </p>
-                {msisdn && <p className="text-[11px] text-muted-foreground font-mono">{msisdn}</p>}
+                {msisdn && <p className="text-xs text-muted-foreground font-mono">{msisdn}</p>}
                 {queriedAt && (
-                  <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
+                  <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3" /> {formatQueriedAt(queriedAt)}
                   </p>
                 )}
@@ -182,7 +182,7 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
               <div className="bg-[#1A1A1A] rounded-2xl p-3 border border-border">
                 <PinInputBlock pin={pin} setPin={setPin} submitting={status === 'loading'} />
               </div>
-              <p className="text-[10px] text-amber-400/70 flex items-start gap-1.5">
+              <p className="text-xs text-amber-400/70 flex items-start gap-1.5">
                 <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                 <span>رقم سري Vodafone Cash من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
               </p>
@@ -232,23 +232,23 @@ function BalanceProductCard({ product, onSelect }: { product: BalanceProduct; on
       onClick={() => !isDisabled && onSelect(product)}
     >
       <div className="flex items-start justify-between gap-1 mb-2">
-        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+        <span className="text-xs font-black px-1.5 py-0.5 rounded-full"
           style={{ background: C.redLight, color: cardColor }}>
           {isMared ? '🔥 مارد' : '⚡ فكة'}
         </span>
         {isDisabled && (
-          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive">متوقف</span>
+          <span className="text-xs font-black px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive">متوقف</span>
         )}
       </div>
       <p className="text-base font-black leading-tight" style={{ color: C.red }}>
-        {product.price} <span className="text-[10px] font-medium" style={{ color: C.muted }}>جنيه</span>
+        {product.price} <span className="text-xs font-medium" style={{ color: C.muted }}>جنيه</span>
       </p>
-      <p className="text-[11px] font-bold text-foreground/80 mt-0.5">
+      <p className="text-xs font-bold text-foreground/80 mt-0.5">
         {product.units_label ?? `${product.units} ${product.product_type}`}
       </p>
-      <p className="text-[10px] mt-1" style={{ color: C.muted }}>{product.validity}</p>
+      <p className="text-xs mt-1" style={{ color: C.muted }}>{product.validity}</p>
       {product.net_charge_label && (
-        <p className="text-[9px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
+        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
           صافي: {product.net_charge_label === 'غير محدد' ? 'غير محدد' : `${product.net_charge_label} ج`}
         </p>
       )}
@@ -301,14 +301,14 @@ function SessionAccountCard({
             <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-sm font-black font-mono text-foreground">{session.phone}</p>
               {isActive && (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                <span className="text-xs font-black px-1.5 py-0.5 rounded-full"
                   style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBd}` }}>
                   ● نشط
                 </span>
               )}
             </div>
             {/* وقت الانتهاء */}
-            <p className="text-[10px] mt-0.5" style={{ color: isExpiringSoon ? C.warning : C.muted }}>
+            <p className="text-xs mt-0.5" style={{ color: isExpiringSoon ? C.warning : C.muted }}>
               {isExpiringSoon ? '⚠️ ' : ''}ينتهي {expiryFull} · باقي {remaining}
             </p>
           </div>
@@ -326,8 +326,8 @@ function SessionAccountCard({
         {/* شريط التقدم (مدة الجلسة) */}
         <div className="mt-3 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[9px]" style={{ color: C.muted }}>مدة الجلسة (24 ساعة)</span>
-            <span className="text-[9px] font-bold"
+            <span className="text-xs" style={{ color: C.muted }}>مدة الجلسة (24 ساعة)</span>
+            <span className="text-xs font-bold"
               style={{ color: isExpiringSoon ? C.warning : (progress > 75 ? '#f87171' : C.muted) }}>
               {100 - progress}% متبقي
             </span>
@@ -422,7 +422,7 @@ function AccountsPanel({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black text-foreground">إدارة الحسابات</p>
-            <p className="text-[10px]" style={{ color: C.muted }}>{sessions.length} حساب محفوظ · جلسات 24 ساعة</p>
+            <p className="text-xs" style={{ color: C.muted }}>{sessions.length} حساب محفوظ · جلسات 24 ساعة</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{ background: 'hsl(var(--card))' }}>
@@ -488,7 +488,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
       <div className="mx-4 mt-3 flex items-center gap-2.5 p-3 rounded-xl"
         style={{ background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)', color: 'hsl(var(--foreground))' }}>
         <Phone className="w-4 h-4 shrink-0" style={{ color: '#60a5fa' }} />
-        <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
           هذا القسم يشحن من <span className="font-black text-foreground">رصيد الهاتف مباشرة</span> وليس من Vodafone Cash.
           سيُخصَم مبلغ الكارت من رصيد الخط.
         </p>
@@ -506,7 +506,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-black text-foreground">الشحن من رصيد الهاتف مباشرة</p>
-            <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: C.muted }}>
+            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: C.muted }}>
               هذا القسم يخصم قيمة الكارت من رصيد الخط — <span className="font-bold" style={{ color: C.red }}>لا يستخدم Vodafone Cash</span>
             </p>
           </div>
@@ -520,7 +520,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
             <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl"
               style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
               {f.icon}
-              <span className="text-[9px] font-bold text-center" style={{ color: C.muted }}>{f.text}</span>
+              <span className="text-xs font-bold text-center" style={{ color: C.muted }}>{f.text}</span>
             </div>
           ))}
         </div>
@@ -528,7 +528,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
           style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
           <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.warning }} />
           <div className="space-y-1">
-            <p className="text-[10px] font-black" style={{ color: C.warning }}>قبل البدء تأكد من:</p>
+            <p className="text-xs font-black" style={{ color: C.warning }}>قبل البدء تأكد من:</p>
             <ul className="space-y-0.5">
               {[
                 'امتلاك حساب أنا فودافون نشط',
@@ -537,7 +537,7 @@ function SectionInfoBanner({ hasSession }: { hasSession: boolean }) {
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-1.5">
                   <span className="text-[8px] font-black" style={{ color: C.warning }}>•</span>
-                  <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{item}</span>
+                  <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{item}</span>
                 </li>
               ))}
             </ul>
@@ -562,12 +562,12 @@ function VodafoneCashCard({ onNavigate }: { onNavigate: () => void }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-black text-foreground">هل تريد الشحن بـ Vodafone Cash؟</p>
-          <p className="text-[10px] mt-0.5 leading-relaxed" style={{ color: C.muted }}>
+          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: C.muted }}>
             إذا كنت تفضل الشحن من المحفظة فهو أسرع وأسهل.
           </p>
         </div>
         <button
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-[0.96]"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.96]"
           style={{ background: C.redLight, border: `1px solid ${C.redBorder}`, color: C.red }}
           onClick={onNavigate}
         >
@@ -607,17 +607,17 @@ function SessionCard({ session, allCount, onManageAccounts }: {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-black" style={{ color: C.red }}>الشحن من رصيد أنا فودافون</p>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full"
+              <span className="text-xs font-black px-2 py-0.5 rounded-full"
                 style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBd}` }}>
                 ● جلسة نشطة
               </span>
             </div>
-            <p className="text-[11px] mt-0.5 font-mono font-bold text-foreground">{session.phone}</p>
+            <p className="text-xs mt-0.5 font-mono font-bold text-foreground">{session.phone}</p>
           </div>
 
           {/* زر الحسابات */}
           <button
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold shrink-0 transition-all"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all"
             style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
             onClick={onManageAccounts}
           >
@@ -638,11 +638,11 @@ function SessionCard({ session, allCount, onManageAccounts }: {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" style={{ color: isWarn ? C.warning : C.muted }} />
-              <span className="text-[11px] font-bold" style={{ color: isWarn ? C.warning : 'hsl(var(--foreground))' }}>
+              <span className="text-xs font-bold" style={{ color: isWarn ? C.warning : 'hsl(var(--foreground))' }}>
                 {isWarn ? `⚠️ تنتهي خلال ${remaining}` : `باقي على الجلسة ${remaining}`}
               </span>
             </div>
-            <span className="text-[10px]" style={{ color: C.muted }}>{100 - progress}%</span>
+            <span className="text-xs" style={{ color: C.muted }}>{100 - progress}%</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'hsl(var(--card))' }}>
             <div className="h-full rounded-full transition-all duration-500"
@@ -653,7 +653,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
                   : `linear-gradient(90deg,${C.red},${C.redDeep})`,
               }} />
           </div>
-          <p className="text-[10px]" style={{ color: C.muted }}>
+          <p className="text-xs" style={{ color: C.muted }}>
             ينتهي: {expiryFull}
           </p>
         </div>
@@ -670,7 +670,7 @@ function SessionCard({ session, allCount, onManageAccounts }: {
                 style={{ background: C.redLight, border: `1px solid ${C.redBorder}` }}>
                 <span className="text-[8px] font-black" style={{ color: C.red }}>{i + 1}</span>
               </div>
-              <p className="text-[10px] leading-relaxed" style={{ color: C.muted }}>{item}</p>
+              <p className="text-xs leading-relaxed" style={{ color: C.muted }}>{item}</p>
             </div>
           ))}
         </div>
@@ -772,7 +772,7 @@ function BalanceLoginDialog({
             </div>
             <div>
               <p className="text-sm font-black text-foreground">تسجيل الدخول</p>
-              <p className="text-[11px]" style={{ color: C.muted }}>أنا فودافون · جلسة 24 ساعة</p>
+              <p className="text-xs" style={{ color: C.muted }}>أنا فودافون · جلسة 24 ساعة</p>
             </div>
           </div>
         </div>
@@ -841,7 +841,7 @@ function BalanceLoginDialog({
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جارٍ تسجيل الدخول…</> : <><LogIn className="w-4 h-4" />دخول</>}
           </button>
 
-          <p className="text-[10px] text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
+          <p className="text-xs text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
             <Shield className="w-3 h-3 inline ml-1" />
             بيانات الدخول مشفّرة · الجلسة تستمر 24 ساعة تلقائياً
           </p>
@@ -943,9 +943,9 @@ function ErrorDetailCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black" style={{ color: C.red }}>{info.title}</p>
-          <p className="text-[10px]" style={{ color: C.muted }}>فشلت عملية الشحن من الرصيد</p>
+          <p className="text-xs" style={{ color: C.muted }}>فشلت عملية الشحن من الرصيد</p>
         </div>
-        <span className="text-[9px] font-black px-2 py-1 rounded-full"
+        <span className="text-xs font-black px-2 py-1 rounded-full"
           style={{ background: 'rgba(230,0,0,0.15)', color: C.red }}>فشل</span>
       </div>
 
@@ -955,7 +955,7 @@ function ErrorDetailCard({
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: C.warning }} />
             <div>
-              <p className="text-[10px] font-black" style={{ color: C.warning }}>سبب الفشل</p>
+              <p className="text-xs font-black" style={{ color: C.warning }}>سبب الفشل</p>
               <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{info.reason}</p>
             </div>
           </div>
@@ -963,7 +963,7 @@ function ErrorDetailCard({
           <div className="flex items-start gap-2">
             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: C.green }} />
             <div>
-              <p className="text-[10px] font-black" style={{ color: C.green }}>الحل المقترح</p>
+              <p className="text-xs font-black" style={{ color: C.green }}>الحل المقترح</p>
               <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{info.solution}</p>
             </div>
           </div>
@@ -973,7 +973,7 @@ function ErrorDetailCard({
         {opTime && (
           <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'hsl(var(--muted-foreground) / 0.4)' }}>
             <Clock className="w-3 h-3" style={{ color: C.muted }} />
-            <span className="text-[10px]" style={{ color: C.muted }}>وقت المحاولة: {opTime}</span>
+            <span className="text-xs" style={{ color: C.muted }}>وقت المحاولة: {opTime}</span>
           </div>
         )}
 
@@ -1345,7 +1345,7 @@ function BalanceExecuteDialog({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-black text-foreground truncate">{product.display_name}</p>
-                <p className="text-[11px]" style={{ color: C.muted }}>
+                <p className="text-xs" style={{ color: C.muted }}>
                   {step === 'error' ? 'فشلت عملية الشحن' : step === 'executing' ? 'جارٍ الشحن…' : 'تأكيد الشحن من رصيد الهاتف'}
                 </p>
               </div>
@@ -1361,7 +1361,7 @@ function BalanceExecuteDialog({
                 <div className="flex items-start gap-2.5 p-3 rounded-xl"
                   style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', color: 'hsl(var(--foreground))' }}>
                   <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#60a5fa' }} />
-                  <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     سيتم خصم قيمة الكارت مباشرةً من <span className="font-black text-foreground">رصيد الخط</span> وليس من محفظة Vodafone Cash.
                   </p>
                 </div>
@@ -1392,14 +1392,14 @@ function BalanceExecuteDialog({
                     <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: C.warning }} />
                     <p className="text-xs font-black" style={{ color: C.warning }}>هل أنت متأكد من تنفيذ عملية الشحن؟</p>
                   </div>
-                  <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     سيتم خصم <span className="font-black text-foreground">{product.price} جنيه</span> من رصيد الخط الحالي.
                   </p>
                   <ul className="space-y-1">
                     {['وجود رصيد كافٍ على الخط.', 'أن الخط الحالي هو نفس الخط المسجل.', 'أن الخدمة تعمل بشكل طبيعي.'].map((item, i) => (
                       <li key={i} className="flex items-center gap-1.5">
                         <span className="text-[8px] font-black" style={{ color: C.warning }}>✔</span>
-                        <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{item}</span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -1439,7 +1439,7 @@ function BalanceExecuteDialog({
                 <div className="text-center space-y-1.5">
                   <p className="text-sm font-black text-foreground">جارٍ الشحن من رصيد الهاتف…</p>
                   <p className="text-xs" style={{ color: C.muted }}>لا تغلق هذه النافذة</p>
-                  <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
+                  <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
                     يتم خصم {product.price} جنيه من رصيد خط {receiverPhone}
                   </p>
                 </div>
@@ -1462,7 +1462,7 @@ function BalanceExecuteDialog({
                   <div className="flex items-start gap-2 p-3 rounded-xl"
                     style={{ background: C.warningBg, border: `1px solid ${C.warningBd}` }}>
                     <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.warning }} />
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       لا يوجد رصيد كافٍ على خطك. يرجى شحن الخط أولاً ثم إعادة المحاولة.
                       سيُتاح زر إعادة المحاولة خلال <span className="font-black text-foreground">{cooldownLeft}</span> ثانية.
                     </p>
@@ -1472,7 +1472,7 @@ function BalanceExecuteDialog({
             )}
 
             {step !== 'executing' && (
-              <p className="text-[10px] text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
+              <p className="text-xs text-center leading-relaxed" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
                 <Shield className="w-3 h-3 inline ml-1" />
                 الشحن يتم من رصيد رقم {receiverPhone} مباشرة — لا علاقة لـ Vodafone Cash
               </p>
@@ -1680,7 +1680,7 @@ export default function BalanceChargePage() {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-black text-foreground truncate">الشحن من الرصيد</p>
-            <p className="text-[10px]" style={{ color: C.muted }}>أنا فودافون · رصيد مباشر</p>
+            <p className="text-xs" style={{ color: C.muted }}>أنا فودافون · رصيد مباشر</p>
           </div>
         </div>
 
@@ -1774,7 +1774,7 @@ export default function BalanceChargePage() {
               }}
               onClick={() => setActiveCategory(tab.value)}
             >
-              {tab.label} <span className="opacity-60 text-[10px] mr-0.5">({tab.count})</span>
+              {tab.label} <span className="opacity-60 text-xs mr-0.5">({tab.count})</span>
             </button>
           ))}
         </div>

@@ -97,7 +97,7 @@ export default function SystemLogsPage() {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold truncate">سجلات النظام</h1>
-            <p className="text-[10px] text-muted-foreground">{total.toLocaleString()} سجل</p>
+            <p className="text-xs text-muted-foreground">{total.toLocaleString()} سجل</p>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={load} disabled={loading}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -158,36 +158,36 @@ export default function SystemLogsPage() {
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-bold truncate">{log.action ?? '—'}</span>
-                      <Badge variant="outline" className={`text-[9px] py-0 px-1.5 h-4 border ${lvl.cls}`}>
+                      <Badge variant="outline" className={`text-xs py-0 px-1.5 h-4 border ${lvl.cls}`}>
                         {lvl.label}
                       </Badge>
                     </div>
                     {log.message && (
-                      <p className="text-[11px] text-muted-foreground leading-snug text-pretty">{log.message}</p>
+                      <p className="text-xs text-muted-foreground leading-snug text-pretty">{log.message}</p>
                     )}
                     <div className="flex items-center gap-2 flex-wrap">
                       {log.user_id && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
                           <User className="w-2.5 h-2.5" />
                           {log.user_id.slice(0, 8)}…
                         </span>
                       )}
                       {log.action && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
                           <ActionIcon className="w-2.5 h-2.5" />
                           {log.action}
                         </span>
                       )}
                     </div>
                   </div>
-                  <span className="text-[9px] text-muted-foreground shrink-0 tabular-nums">
+                  <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                     {formatEgyptDateTime(log.created_at)}
                   </span>
                 </div>
                 {log.metadata && Object.keys(log.metadata).length > 0 && (
                   <details className="mt-1">
-                    <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">عرض التفاصيل</summary>
-                    <pre className="text-[10px] bg-muted/30 rounded p-2 mt-1 overflow-x-auto text-muted-foreground leading-relaxed">
+                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">عرض التفاصيل</summary>
+                    <pre className="text-xs bg-muted/30 rounded p-2 mt-1 overflow-x-auto text-muted-foreground leading-relaxed">
                       {JSON.stringify(log.metadata, null, 2)}
                     </pre>
                   </details>

@@ -84,7 +84,7 @@ function LiveStat({ label, value, icon: Icon, cls = '' }: { label: string; value
       <Icon className={cn('w-4 h-4 shrink-0', cls)} />
       <div className="min-w-0">
         <p className="text-xs font-black tabular-nums text-foreground">{value}</p>
-        <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+        <p className="text-xs text-muted-foreground leading-tight">{label}</p>
       </div>
     </div>
   );
@@ -93,8 +93,8 @@ function LiveStat({ label, value, icon: Icon, cls = '' }: { label: string; value
 // ─── StatusPill ──────────────────────────────────────────────────────────
 function StatusPill({ active, onLabel, offLabel }: { active: boolean; onLabel: string; offLabel: string }) {
   return active
-    ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">{onLabel}</span>
-    : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">{offLabel}</span>;
+    ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">{onLabel}</span>
+    : <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">{offLabel}</span>;
 }
 
 interface Props {
@@ -292,8 +292,8 @@ export default function MerchantControlCenter({ merchantId, adminId, onRefresh }
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground">{e.action}</p>
-                  {e.reason && <p className="text-[10px] text-muted-foreground">{e.reason}</p>}
-                  <p className="text-[9px] text-muted-foreground/70 mt-0.5">
+                  {e.reason && <p className="text-xs text-muted-foreground">{e.reason}</p>}
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">
                     {e.admin_username ?? 'أدمن'} — {fmt(e.created_at)}
                   </p>
                 </div>

@@ -147,7 +147,7 @@ export default function CodeActivationPreviewModal({
                   <span className="text-xs font-semibold flex items-center gap-1.5">
                     <Key className="w-3.5 h-3.5 text-primary" /> تفاصيل الكود
                   </span>
-                  <span className={cn('text-[11px] px-2 py-0.5 rounded-full border font-semibold', CODE_STATUS_STYLE[info.status] ?? 'text-muted-foreground')}>
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full border font-semibold', CODE_STATUS_STYLE[info.status] ?? 'text-muted-foreground')}>
                     {info.status}
                   </span>
                 </div>

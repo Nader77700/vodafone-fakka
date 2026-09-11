@@ -81,7 +81,7 @@ function TxCard({ tx, index }: { tx: Transaction; index: number }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground truncate">{name}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">#{index}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">#{index}</p>
         </div>
         <div className={`text-base font-black shrink-0 ${isOut ? 'text-primary' : 'text-green-400'}`}>
           {isOut ? '' : '+'}{amount} <span className="text-xs font-bold">ج</span>
@@ -93,33 +93,33 @@ function TxCard({ tx, index }: { tx: Transaction; index: number }) {
         {receiver && (
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <Hash className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-            <span className="text-[11px] text-muted-foreground truncate font-mono" dir="ltr">{receiver}</span>
+            <span className="text-xs text-muted-foreground truncate font-mono" dir="ltr">{receiver}</span>
           </div>
         )}
         {recvName && (
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <User className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-            <span className="text-[11px] text-muted-foreground truncate">{recvName}</span>
+            <span className="text-xs text-muted-foreground truncate">{recvName}</span>
           </div>
         )}
         <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
           <Calendar className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-          <span className="text-[11px] text-muted-foreground truncate" dir="ltr">{date}</span>
+          <span className="text-xs text-muted-foreground truncate" dir="ltr">{date}</span>
         </div>
         <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
           <Clock className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-          <span className="text-[11px] text-muted-foreground truncate" dir="ltr">{time}</span>
+          <span className="text-xs text-muted-foreground truncate" dir="ltr">{time}</span>
         </div>
         {channel && (
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
             <CreditCard className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-            <span className="text-[11px] text-muted-foreground truncate">{channel}</span>
+            <span className="text-xs text-muted-foreground truncate">{channel}</span>
           </div>
         )}
         {tax !== undefined && tax !== 0 && (
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5 min-w-0">
-            <span className="text-[10px] text-muted-foreground/50 shrink-0">ضريبة</span>
-            <span className="text-[11px] text-muted-foreground truncate">{tax} ج</span>
+            <span className="text-xs text-muted-foreground/50 shrink-0">ضريبة</span>
+            <span className="text-xs text-muted-foreground truncate">{tax} ج</span>
           </div>
         )}
       </div>
@@ -267,7 +267,7 @@ export default function TransactionHistoryPage() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">سجل العمليات</h1>
-            <p className="text-[10px] text-primary font-medium">Vodafone Cash History</p>
+            <p className="text-xs text-primary font-medium">Vodafone Cash History</p>
           </div>
           <div className="w-10" />
         </div>
@@ -291,7 +291,7 @@ export default function TransactionHistoryPage() {
             </button>
           </div>
           {lastChecked && (
-            <p className="text-[10px] text-muted-foreground mt-1.5">آخر فحص: {formatTime(lastChecked)}</p>
+            <p className="text-xs text-muted-foreground mt-1.5">آخر فحص: {formatTime(lastChecked)}</p>
           )}
         </div>
 
@@ -373,7 +373,7 @@ export default function TransactionHistoryPage() {
                   <p className={`text-sm font-bold ${paginationErr ? 'text-yellow-400' : 'text-green-400'}`}>
                     {transactions.length} عملية {paginationErr ? '(جزئي)' : ''}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{periodLabel}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{periodLabel}</p>
                 </div>
                 <button onClick={handleReset}
                   className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors shrink-0">

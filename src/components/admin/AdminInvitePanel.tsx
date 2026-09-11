@@ -88,7 +88,7 @@ export default function AdminInvitePanel({ merchantId, adminId }: Props) {
 
   return (
     <div className="mt-4 pt-4 border-t border-border space-y-3" dir="rtl">
-      <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">رابط الدعوة — Phase 7</p>
+      <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">رابط الدعوة — Phase 7</p>
 
       {/* الإحصائيات */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -114,7 +114,7 @@ export default function AdminInvitePanel({ merchantId, adminId }: Props) {
       {/* الرابط */}
       <div className="flex items-center gap-2 bg-muted/30 rounded-xl px-3 py-2 min-w-0">
         <Link2 className="w-3.5 h-3.5 text-primary shrink-0" />
-        <p className="text-[10px] font-mono text-muted-foreground truncate flex-1 min-w-0 select-all">{link}</p>
+        <p className="text-xs font-mono text-muted-foreground truncate flex-1 min-w-0 select-all">{link}</p>
       </div>
 
       {/* أزرار */}

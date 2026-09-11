@@ -168,7 +168,7 @@ export default function NotificationsPage() {
           <Bell className="w-5 h-5 text-primary shrink-0" />
           <h1 className="text-xl font-black truncate">الإشعارات</h1>
           {unreadCount > 0 && (
-            <span className="min-w-[20px] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shrink-0">
+            <span className="min-w-[20px] h-5 px-1 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -253,7 +253,7 @@ export default function NotificationsPage() {
               {tab.label}
               {count > 0 && (
                 <span className={cn(
-                  'min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center',
+                  'min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center',
                   activeTab === tab.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 )}>
                   {count > 99 ? '99+' : count}
@@ -310,7 +310,7 @@ export default function NotificationsPage() {
                     </p>
                     <div className="flex items-center gap-1 shrink-0">
                       {!notif.is_read && <div className="w-2 h-2 rounded-full bg-primary" />}
-                      <span className="text-[10px] text-muted-foreground tabular-nums">{formatTime(notif.created_at)}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{formatTime(notif.created_at)}</span>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground text-pretty leading-relaxed">
@@ -321,10 +321,10 @@ export default function NotificationsPage() {
                   </p>
                   {/* Tags row */}
                   <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-medium', config.cls)}>{config.label}</span>
-                    {prio.label && <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-medium', prio.cls)}>{prio.label}</span>}
+                    <span className={cn('text-xs px-1.5 py-0.5 rounded border font-medium', config.cls)}>{config.label}</span>
+                    {prio.label && <span className={cn('text-xs px-1.5 py-0.5 rounded border font-medium', prio.cls)}>{prio.label}</span>}
                     {hasLink && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium text-primary border-primary/30 bg-primary/5">
+                      <span className="text-xs px-1.5 py-0.5 rounded border font-medium text-primary border-primary/30 bg-primary/5">
                         🔗 {notif.action_url}
                       </span>
                     )}
@@ -333,7 +333,7 @@ export default function NotificationsPage() {
                   {hasLink && (
                     <button
                       onClick={() => handleOpen(notif)}
-                      className="mt-1.5 text-[11px] font-semibold text-primary hover:underline"
+                      className="mt-1.5 text-xs font-semibold text-primary hover:underline"
                     >
                       فتح ←
                     </button>

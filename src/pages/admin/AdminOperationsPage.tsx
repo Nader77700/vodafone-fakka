@@ -101,7 +101,7 @@ function DetailSheet({
       <div className="flex items-start gap-3 py-2.5 border-b border-border/30 last:border-b-0">
         {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />}
         <div className={`flex-1 min-w-0 ${!Icon ? 'pr-5' : ''}`}>
-          <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
           <p className={`text-xs font-semibold break-all ${mono ? 'font-mono' : ''} ${v === '—' ? 'text-muted-foreground' : 'text-foreground'}`}>
             {v}
           </p>
@@ -130,14 +130,14 @@ function DetailSheet({
           </SheetHeader>
           {/* بادج المصدر + الحالة */}
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${src.bg} ${src.border} ${src.color}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold ${src.bg} ${src.border} ${src.color}`}>
               {src.dot} {src.label}
             </span>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${isOk ? 'bg-success/10 border-success/20 text-success' : 'bg-destructive/10 border-destructive/20 text-destructive'}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold ${isOk ? 'bg-success/10 border-success/20 text-success' : 'bg-destructive/10 border-destructive/20 text-destructive'}`}>
               {isOk ? '✅ ناجحة' : '❌ فاشلة'}
             </span>
             {op.amount != null && op.amount > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-warning/10 border-warning/20 text-warning text-[10px] font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-warning/10 border-warning/20 text-warning text-xs font-semibold">
                 💰 {op.amount} ج.م
               </span>
             )}
@@ -151,7 +151,7 @@ function DetailSheet({
               <div className="flex items-center gap-3">
                 <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <div>
-                  <p className="text-[10px] text-muted-foreground mb-0.5">المستخدم</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">المستخدم</p>
                   <p className="text-xs font-semibold">{user.username ?? user.email ?? op.user_id.slice(0, 8)}</p>
                 </div>
               </div>
@@ -174,7 +174,7 @@ function DetailSheet({
           {/* الأداء */}
           {(op.duration_ms != null || op.latency_ms != null) && (
             <>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide pt-2 pb-1">⚡ الأداء</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2 pb-1">⚡ الأداء</p>
               <Row icon={Timer} label="مدة التنفيذ (duration_ms)" value={op.duration_ms != null ? `${op.duration_ms} ms` : null} />
               <Row icon={Timer} label="زمن الاستجابة (latency_ms)" value={op.latency_ms != null ? `${op.latency_ms} ms` : null} />
             </>
@@ -183,7 +183,7 @@ function DetailSheet({
           {/* Debug */}
           {(op.correlation_id || op.execution_layer || op.idempotency_key || op.retry_count != null) && (
             <>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide pt-2 pb-1">🔍 Debug</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2 pb-1">🔍 Debug</p>
               <Row icon={Shield} label="Correlation ID" value={op.correlation_id} mono copyable />
               <Row icon={Zap} label="Execution Layer" value={op.execution_layer} mono />
               <Row icon={Hash} label="Idempotency Key" value={op.idempotency_key} mono copyable />
@@ -194,7 +194,7 @@ function DetailSheet({
           {/* رسالة الخطأ */}
           {op.error_message && (
             <>
-              <p className="text-[10px] font-semibold text-destructive uppercase tracking-wide pt-2 pb-1">❌ رسالة الخطأ</p>
+              <p className="text-xs font-semibold text-destructive uppercase tracking-wide pt-2 pb-1">❌ رسالة الخطأ</p>
               <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
                 <p className="text-xs text-destructive font-medium break-all">{op.error_message}</p>
               </div>
@@ -204,9 +204,9 @@ function DetailSheet({
           {/* استجابة API */}
           {op.api_response && (
             <>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide pt-2 pb-1">📡 API Response</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2 pb-1">📡 API Response</p>
               <div className="rounded-lg bg-muted/50 border border-border p-3">
-                <pre className="text-[10px] font-mono text-muted-foreground whitespace-pre-wrap break-all">
+                <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-all">
                   {(() => {
                     try {
                       const parsed = typeof op.api_response === 'string'
@@ -247,18 +247,18 @@ function OpRow({
       {/* الصف الأول: المصدر + الحالة + الوقت */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold whitespace-nowrap ${src.bg} ${src.border} ${src.color}`}>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold whitespace-nowrap ${src.bg} ${src.border} ${src.color}`}>
             {src.dot} {src.short}
           </span>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${isOk ? 'bg-success/10 border-success/20 text-success' : 'bg-destructive/10 border-destructive/20 text-destructive'}`}>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold ${isOk ? 'bg-success/10 border-success/20 text-success' : 'bg-destructive/10 border-destructive/20 text-destructive'}`}>
             {isOk ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
             {isOk ? 'ناجحة' : 'فاشلة'}
           </span>
           {op.amount != null && op.amount > 0 && (
-            <span className="text-[10px] font-bold text-warning">{op.amount} ج.م</span>
+            <span className="text-xs font-bold text-warning">{op.amount} ج.م</span>
           )}
         </div>
-        <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{fmtShort(op.performed_at)}</span>
+        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{fmtShort(op.performed_at)}</span>
       </div>
 
       {/* الصف الثاني: رقم الهاتف + الكارت */}
@@ -270,7 +270,7 @@ function OpRow({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground tabular-nums">{op.phone_number}</p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {op.card_type ?? '—'}{op.category ? ` · ${op.category}` : ''}
             {op.operation_number ? ` · #${op.operation_number}` : ''}
           </p>
@@ -280,14 +280,14 @@ function OpRow({
       {/* الصف الثالث: المستخدم + رسالة خطأ */}
       <div className="flex items-center justify-between gap-2">
         <button
-          className="flex items-center gap-1.5 text-[11px] text-primary hover:underline underline-offset-2 min-w-0"
+          className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2 min-w-0"
           onClick={() => onUserClick(op.user_id)}>
           <User className="w-3 h-3 shrink-0" />
           <span className="truncate">{uName}</span>
           <ArrowUpRight className="w-3 h-3 shrink-0" />
         </button>
         {!isOk && op.error_message && (
-          <p className="text-[10px] text-destructive truncate max-w-[50%]">{op.error_message}</p>
+          <p className="text-xs text-destructive truncate max-w-[50%]">{op.error_message}</p>
         )}
       </div>
 
@@ -471,7 +471,7 @@ export default function AdminOperationsPage() {
                   </div>
                   <div className="min-w-0">
                     <p className={`text-base font-black tabular-nums ${cls}`}>{val}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight text-pretty">{label}</p>
+                    <p className="text-xs text-muted-foreground leading-tight text-pretty">{label}</p>
                   </div>
                 </div>
               ))

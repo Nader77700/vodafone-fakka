@@ -232,7 +232,7 @@ export default function PrinterSetupModal({
           </div>
           <div>
             <p className="text-sm font-black text-foreground">اختيار الطابعة</p>
-            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
               يُحفظ اختيارك للمرات القادمة
             </p>
           </div>
@@ -256,11 +256,11 @@ export default function PrinterSetupModal({
             </div>
             <div className="flex-1 min-w-0 text-right">
               <p className="text-sm font-bold text-foreground">طباعة عبر Android</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 WiFi · USB · Network · طابعة مدمجة · POS
               </p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0"
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold shrink-0"
               style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
               موصى به
             </span>
@@ -282,11 +282,11 @@ export default function PrinterSetupModal({
               </div>
               <div className="flex-1 min-w-0 text-right">
                 <p className="text-sm font-bold text-foreground">{builtinInfo.name || 'الطابعة المدمجة'}</p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
                   طابعة داخلية · Sunmi · PAX · Newland · فوري
                 </p>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0"
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold shrink-0"
                 style={{ background: 'rgba(168,85,247,0.1)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.2)' }}>
                 مكتشفة
               </span>
@@ -311,7 +311,7 @@ export default function PrinterSetupModal({
                 <p className="text-sm font-bold text-foreground">
                   {btState === 'idle' ? 'طابعة Bluetooth (ESC/POS)' : btLabel}
                 </p>
-                <p className="text-[11px] mt-0.5" style={{ color: btState === 'error' ? '#f87171' : 'rgba(255,255,255,0.45)' }}>
+                <p className="text-xs mt-0.5" style={{ color: btState === 'error' ? '#f87171' : 'rgba(255,255,255,0.45)' }}>
                   {btState === 'error' ? btError : 'طابعات حرارية · POS · فوري · أمان'}
                 </p>
               </div>
@@ -324,7 +324,7 @@ export default function PrinterSetupModal({
             {btState === 'done' && btDevices.length > 0 && (
               <div className="border-t px-4 pb-3 pt-2 space-y-1.5"
                 style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                <p className="text-[10px] text-muted-foreground mb-2">اختر الطابعة:</p>
+                <p className="text-xs text-muted-foreground mb-2">اختر الطابعة:</p>
                 {btDevices.map(dev => (
                   <button key={dev.address}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-right transition-all active:scale-[0.97]"
@@ -337,10 +337,10 @@ export default function PrinterSetupModal({
                     <Bluetooth className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{dev.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{dev.address}</p>
+                      <p className="text-xs text-muted-foreground">{dev.address}</p>
                     </div>
                     {isProbablyPrinter(dev.name) && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full shrink-0"
+                      <span className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
                         style={{ background: 'rgba(59,130,246,0.15)', color: '#93c5fd' }}>طابعة</span>
                     )}
                   </button>

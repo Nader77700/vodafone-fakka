@@ -153,7 +153,7 @@ export default function MerchantClientLayout() {
             <p className="text-xs font-black truncate leading-tight" style={{ color: brandColor }}>
               {data?.merchant?.name ?? 'الخدمة'}
             </p>
-            <p className="text-[9px] text-muted-foreground leading-none">{profile?.username ?? ''}</p>
+            <p className="text-xs text-muted-foreground leading-none">{profile?.username ?? ''}</p>
           </div>
         </div>
 
@@ -207,13 +207,13 @@ export default function MerchantClientLayout() {
                     />
                     {/* بادج الإشعارات غير المقروءة */}
                     {item.to === '/notifications' && unreadCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-destructive text-white text-xs font-bold flex items-center justify-center px-1 leading-none">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </div>
                   <span
-                    className="text-[9px] font-semibold leading-none"
+                    className="text-xs font-semibold leading-none"
                     style={isActive ? { color: item.color } : {}}
                   >
                     {item.label}

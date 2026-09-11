@@ -28,7 +28,7 @@ function StatusBadge({ status }: { status: MerchantOperation['status'] }) {
   }[status] ?? { label: status, cls: 'bg-muted text-muted-foreground', icon: Clock };
   const Icon = cfg.icon;
   return (
-    <span className={cn('inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border', cfg.cls)}>
+    <span className={cn('inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border', cfg.cls)}>
       <Icon className="w-2.5 h-2.5" />
       {cfg.label}
     </span>
@@ -37,8 +37,8 @@ function StatusBadge({ status }: { status: MerchantOperation['status'] }) {
 
 function SourceBadge({ source }: { source: MerchantOperation['operation_source'] }) {
   return source === 'vodafone_cash'
-    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20"><Phone className="w-2 h-2" />VC</span>
-    : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border"><Wallet className="w-2 h-2" />رصيد</span>;
+    ? <span className="inline-flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20"><Phone className="w-2 h-2" />VC</span>
+    : <span className="inline-flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border"><Wallet className="w-2 h-2" />رصيد</span>;
 }
 
 function OperationRow({ op }: { op: MerchantOperation }) {
@@ -67,20 +67,20 @@ function OperationRow({ op }: { op: MerchantOperation }) {
           <SourceBadge source={op.operation_source} />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-[10px] text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-mono">
             {op.phone_number ?? '—'}
           </p>
           {op.price != null && (
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {op.price} جنيه
             </p>
           )}
         </div>
-        <p className="text-[10px] text-muted-foreground/70 truncate">
+        <p className="text-xs text-muted-foreground/70 truncate">
           {op.username ?? op.user_email ?? op.user_id.slice(0, 8) + '…'}
         </p>
         {op.status === 'failed' && op.failure_reason && (
-          <p className="text-[10px] text-destructive mt-1 text-pretty">
+          <p className="text-xs text-destructive mt-1 text-pretty">
             ↳ {op.failure_reason}
             {op.failure_stage && <span className="text-muted-foreground"> (في: {op.failure_stage})</span>}
           </p>
@@ -90,9 +90,9 @@ function OperationRow({ op }: { op: MerchantOperation }) {
       {/* حالة + وقت */}
       <div className="flex flex-col items-end gap-1 shrink-0">
         <StatusBadge status={op.status} />
-        <p className="text-[9px] text-muted-foreground">{timeLabel}</p>
+        <p className="text-xs text-muted-foreground">{timeLabel}</p>
         {op.points_deducted > 0 && (
-          <span className="text-[9px] font-bold text-warning">-{op.points_deducted} نقطة</span>
+          <span className="text-xs font-bold text-warning">-{op.points_deducted} نقطة</span>
         )}
       </div>
     </div>
@@ -191,7 +191,7 @@ export default function MerchantOperationsTab({ merchantId }: Props) {
         >
           <RefreshCw className="w-3.5 h-3.5" />
         </Button>
-        <span className="text-[10px] text-muted-foreground">{total} عملية</span>
+        <span className="text-xs text-muted-foreground">{total} عملية</span>
       </div>
 
       {/* القائمة */}

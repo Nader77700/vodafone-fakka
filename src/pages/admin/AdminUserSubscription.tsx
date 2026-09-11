@@ -430,7 +430,7 @@ export default function AdminUserSubscription() {
             <div className="flex-1 min-w-0 space-y-1">
               <p className="font-bold text-base">{username}</p>
               <p className="text-xs text-muted-foreground">{profile.email ?? '—'}</p>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${profile.is_active ? 'text-success bg-success/10 border-success/20' : 'text-destructive bg-destructive/10 border-destructive/20'}`}>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${profile.is_active ? 'text-success bg-success/10 border-success/20' : 'text-destructive bg-destructive/10 border-destructive/20'}`}>
                 {profile.is_active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                 {profile.is_active ? 'حساب نشط' : 'حساب موقوف'}
               </span>
@@ -685,55 +685,55 @@ export default function AdminUserSubscription() {
                     <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
                       <div className="flex items-center gap-2 min-w-0 flex-wrap">
                         {h.code && <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{h.code}</span>}
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[h.status] ?? STATUS_STYLES.expired}`}>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[h.status] ?? STATUS_STYLES.expired}`}>
                           {STATUS_LABEL[h.status] ?? h.status}
                         </span>
-                        {i === 0 && <span className="text-[10px] font-bold text-primary">الحالي</span>}
+                        {i === 0 && <span className="text-xs font-bold text-primary">الحالي</span>}
                         {h.operation_type && (
-                          <span className={`text-[10px] font-medium ${OP_LABEL[h.operation_type]?.color ?? 'text-muted-foreground'}`}>
+                          <span className={`text-xs font-medium ${OP_LABEL[h.operation_type]?.color ?? 'text-muted-foreground'}`}>
                             [{OP_LABEL[h.operation_type]?.label ?? h.operation_type}]
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-muted-foreground shrink-0">{fmt(h.created_at)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{fmt(h.created_at)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <div><p className="text-[10px] text-muted-foreground">البداية</p><p className="text-xs font-medium">{fmt(h.activated_at)}</p></div>
-                      <div><p className="text-[10px] text-muted-foreground">النهاية</p><p className="text-xs font-medium">{fmt(h.expires_at)}</p></div>
-                      <div><p className="text-[10px] text-muted-foreground">المدة</p><p className="text-xs font-medium">{h.duration_days} يوم</p></div>
-                      {h.end_reason && <div><p className="text-[10px] text-muted-foreground">السبب</p><p className="text-xs font-medium">{h.end_reason}</p></div>}
-                      {h.suspend_reason && <div><p className="text-[10px] text-muted-foreground">سبب التعليق</p><p className="text-xs font-medium text-warning">{h.suspend_reason}</p></div>}
-                      {h.cancel_reason && <div><p className="text-[10px] text-muted-foreground">سبب الإلغاء</p><p className="text-xs font-medium text-destructive">{h.cancel_reason}</p></div>}
-                      {h.performed_by_name && <div><p className="text-[10px] text-muted-foreground">نفّذ بواسطة</p><p className="text-xs font-medium">{h.performed_by_name}</p></div>}
+                      <div><p className="text-xs text-muted-foreground">البداية</p><p className="text-xs font-medium">{fmt(h.activated_at)}</p></div>
+                      <div><p className="text-xs text-muted-foreground">النهاية</p><p className="text-xs font-medium">{fmt(h.expires_at)}</p></div>
+                      <div><p className="text-xs text-muted-foreground">المدة</p><p className="text-xs font-medium">{h.duration_days} يوم</p></div>
+                      {h.end_reason && <div><p className="text-xs text-muted-foreground">السبب</p><p className="text-xs font-medium">{h.end_reason}</p></div>}
+                      {h.suspend_reason && <div><p className="text-xs text-muted-foreground">سبب التعليق</p><p className="text-xs font-medium text-warning">{h.suspend_reason}</p></div>}
+                      {h.cancel_reason && <div><p className="text-xs text-muted-foreground">سبب الإلغاء</p><p className="text-xs font-medium text-destructive">{h.cancel_reason}</p></div>}
+                      {h.performed_by_name && <div><p className="text-xs text-muted-foreground">نفّذ بواسطة</p><p className="text-xs font-medium">{h.performed_by_name}</p></div>}
                     </div>
                     {/* P0: إحصائيات هذا الاشتراك فقط — مستقلة تماماً */}
                     {stats !== undefined ? (
                       <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5">
                         {/* صف: إجمالي / ناجح / فاشل / إيراد */}
                         <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-[10px] text-muted-foreground">العمليات:</span>
-                          <span className="text-[10px] font-bold text-foreground">{stats.total} إجمالي</span>
-                          <span className="text-[10px] font-semibold text-success">✅ {stats.success}</span>
-                          <span className="text-[10px] font-semibold text-destructive">❌ {stats.failed}</span>
+                          <span className="text-xs text-muted-foreground">العمليات:</span>
+                          <span className="text-xs font-bold text-foreground">{stats.total} إجمالي</span>
+                          <span className="text-xs font-semibold text-success">✅ {stats.success}</span>
+                          <span className="text-xs font-semibold text-destructive">❌ {stats.failed}</span>
                           {stats.revenue > 0 && (
-                            <span className="text-[10px] font-semibold text-primary">💰 {stats.revenue} جنيه</span>
+                            <span className="text-xs font-semibold text-primary">💰 {stats.revenue} جنيه</span>
                           )}
                         </div>
                         {/* صف: Limit / Used / Remaining */}
                         {isUnlimited ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">∞ غير محدود</span>
-                            <span className="text-[10px] text-muted-foreground">استُخدم {stats.used_operations} عملية ناجحة</span>
+                            <span className="text-xs font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">∞ غير محدود</span>
+                            <span className="text-xs text-muted-foreground">استُخدم {stats.used_operations} عملية ناجحة</span>
                           </div>
                         ) : stats.allowed_operations != null ? (
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               الحد: <strong className="text-foreground">{stats.allowed_operations}</strong>
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               مستخدم: <strong className="text-foreground">{stats.used_operations}</strong>
                             </span>
-                            <span className={`text-[10px] font-bold ${(stats.remaining_operations ?? 0) === 0 ? 'text-destructive' : 'text-success'}`}>
+                            <span className={`text-xs font-bold ${(stats.remaining_operations ?? 0) === 0 ? 'text-destructive' : 'text-success'}`}>
                               متبقي: {stats.remaining_operations ?? 0}
                             </span>
                           </div>
@@ -741,7 +741,7 @@ export default function AdminUserSubscription() {
                       </div>
                     ) : h.subscription_id ? (
                       <div className="mt-2 pt-2 border-t border-border/40">
-                        <span className="text-[10px] text-muted-foreground">جاري تحميل الإحصائيات...</span>
+                        <span className="text-xs text-muted-foreground">جاري تحميل الإحصائيات...</span>
                       </div>
                     ) : null}
                   </div>
@@ -777,14 +777,14 @@ export default function AdminUserSubscription() {
                           </span>
                           {op.code && <span className="text-xs font-mono text-muted-foreground">{op.code}</span>}
                         </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{fmt(op.performed_at)}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">{fmt(op.performed_at)}</span>
                       </div>
                       {op.reason && <p className="text-xs text-muted-foreground mt-1.5">السبب: {op.reason}</p>}
-                      {op.performed_by_name && <p className="text-[10px] text-muted-foreground mt-0.5">بواسطة: {op.performed_by_name}</p>}
+                      {op.performed_by_name && <p className="text-xs text-muted-foreground mt-0.5">بواسطة: {op.performed_by_name}</p>}
                       {(op.expires_before || op.expires_after) && (
                         <div className="flex gap-4 mt-1.5">
-                          {op.expires_before && <span className="text-[10px] text-muted-foreground">قبل: {fmt(op.expires_before)}</span>}
-                          {op.expires_after && <span className="text-[10px] text-muted-foreground">بعد: {fmt(op.expires_after)}</span>}
+                          {op.expires_before && <span className="text-xs text-muted-foreground">قبل: {fmt(op.expires_before)}</span>}
+                          {op.expires_after && <span className="text-xs text-muted-foreground">بعد: {fmt(op.expires_after)}</span>}
                         </div>
                       )}
                     </div>
@@ -820,19 +820,19 @@ export default function AdminUserSubscription() {
                       <div className="flex items-center gap-2 flex-wrap justify-between">
                         <div className="flex items-center gap-2 flex-wrap">
                           {sExt.code_used && <span className="text-xs font-mono font-bold text-primary">{sExt.code_used}</span>}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[s.status] ?? 'border-border text-muted-foreground'}`}>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[s.status] ?? 'border-border text-muted-foreground'}`}>
                             {STATUS_LABEL[s.status] ?? s.status}
                           </span>
-                          {sExt.is_archived && <span className="text-[10px] bg-muted/30 border border-border text-muted-foreground px-2 py-0.5 rounded-full font-medium">مؤرشف</span>}
-                          {i === 0 && <span className="text-[10px] text-primary font-bold">الأحدث</span>}
+                          {sExt.is_archived && <span className="text-xs bg-muted/30 border border-border text-muted-foreground px-2 py-0.5 rounded-full font-medium">مؤرشف</span>}
+                          {i === 0 && <span className="text-xs text-primary font-bold">الأحدث</span>}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] text-muted-foreground">{fmt(s.expires_at)}</span>
+                          <span className="text-xs text-muted-foreground">{fmt(s.expires_at)}</span>
                           {isReplaced && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-[10px] gap-1 border-primary/40 text-primary hover:bg-primary/10 px-2"
+                              className="h-7 text-xs gap-1 border-primary/40 text-primary hover:bg-primary/10 px-2"
                               disabled={saving}
                               onClick={() => runConfirm(
                                 'استعادة الاشتراك المستبدل',
@@ -852,24 +852,24 @@ export default function AdminUserSubscription() {
                         return (
                           <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5">
                             <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-[10px] text-muted-foreground">العمليات:</span>
-                              <span className="text-[10px] font-bold">{st.total} إجمالي</span>
-                              <span className="text-[10px] text-success font-semibold">✅ {st.success}</span>
-                              <span className="text-[10px] text-destructive font-semibold">❌ {st.failed}</span>
+                              <span className="text-xs text-muted-foreground">العمليات:</span>
+                              <span className="text-xs font-bold">{st.total} إجمالي</span>
+                              <span className="text-xs text-success font-semibold">✅ {st.success}</span>
+                              <span className="text-xs text-destructive font-semibold">❌ {st.failed}</span>
                               {st.revenue > 0 && (
-                                <span className="text-[10px] text-primary font-semibold">💰 {st.revenue} جنيه</span>
+                                <span className="text-xs text-primary font-semibold">💰 {st.revenue} جنيه</span>
                               )}
                             </div>
                             {isUnlim ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">∞ غير محدود</span>
-                                <span className="text-[10px] text-muted-foreground">استُخدم {st.used_operations} عملية</span>
+                                <span className="text-xs font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">∞ غير محدود</span>
+                                <span className="text-xs text-muted-foreground">استُخدم {st.used_operations} عملية</span>
                               </div>
                             ) : st.allowed_operations != null ? (
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[10px] text-muted-foreground">الحد: <strong className="text-foreground">{st.allowed_operations}</strong></span>
-                                <span className="text-[10px] text-muted-foreground">مستخدم: <strong className="text-foreground">{st.used_operations}</strong></span>
-                                <span className={`text-[10px] font-bold ${(st.remaining_operations ?? 0) === 0 ? 'text-destructive' : 'text-success'}`}>
+                                <span className="text-xs text-muted-foreground">الحد: <strong className="text-foreground">{st.allowed_operations}</strong></span>
+                                <span className="text-xs text-muted-foreground">مستخدم: <strong className="text-foreground">{st.used_operations}</strong></span>
+                                <span className={`text-xs font-bold ${(st.remaining_operations ?? 0) === 0 ? 'text-destructive' : 'text-success'}`}>
                                   متبقي: {st.remaining_operations ?? 0}
                                 </span>
                               </div>

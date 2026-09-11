@@ -106,12 +106,12 @@ export default function MerchantChargeGuard({ compact = false }: Props) {
           {errorLabel}
         </p>
         {eligibility?.merchant_name && (
-          <p className="text-[11px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             التاجر: <span className="font-bold">{eligibility.merchant_name}</span>
           </p>
         )}
         {eligibility?.ops_count !== undefined && eligibility?.ops_limit !== undefined && (
-          <p className="text-[11px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             العمليات: {eligibility.ops_count} / {eligibility.ops_limit}
           </p>
         )}
@@ -129,7 +129,7 @@ export default function MerchantChargeGuard({ compact = false }: Props) {
       </Button>
 
       {/* نصيحة — بدون روابط أو أرقام تواصل ───────────── */}
-      <p className="text-[11px] text-muted-foreground max-w-[260px] text-pretty">
+      <p className="text-xs text-muted-foreground max-w-[260px] text-pretty">
         للمساعدة يرجى التواصل مباشرة مع التاجر الخاص بك.
       </p>
     </div>

@@ -20,7 +20,7 @@ export default function TransferHistoryPage() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide text-foreground">سجل التحويل</h1>
-            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
+            <p className="text-xs text-primary font-medium">Vodafone Cash</p>
           </div>
           <div className="w-10" />
         </div>
@@ -71,7 +71,7 @@ export default function TransferHistoryPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-bold text-foreground">{op.amount} ج.م</p>
-                  <p className={`text-[10px] ${
+                  <p className={`text-xs ${
                     op.status === 'completed' ? 'text-green-500'
                     : op.status === 'failed'   ? 'text-red-500'
                     : 'text-orange-500'

@@ -62,7 +62,7 @@ const TX_LABELS: Record<string, string> = {
 
 function MemberStatusBadge({ status }: { status: string }) {
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold',
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold',
       MEMBER_STATUS_CLS[status] ?? MEMBER_STATUS_CLS.disabled)}>
       {MEMBER_STATUS_LABELS[status] ?? status}
     </span>
@@ -286,7 +286,7 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold truncate">{member?.username ?? '—'}</p>
-                <p className="text-[10px] text-muted-foreground font-mono">{member?.phone ?? member?.email ?? '—'}</p>
+                <p className="text-xs text-muted-foreground font-mono">{member?.phone ?? member?.email ?? '—'}</p>
               </div>
               {member && <MemberStatusBadge status={member.member_status} />}
             </SheetTitle>
@@ -313,15 +313,15 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-xl border border-border bg-muted/30 p-2.5 text-center">
                   <p className="text-sm font-black text-primary tabular-nums">{member?.remaining_points ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">المتبقية</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">المتبقية</p>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/30 p-2.5 text-center">
                   <p className="text-sm font-black text-success tabular-nums">{member?.assigned_points ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">الموزعة</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">الموزعة</p>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/30 p-2.5 text-center">
                   <p className="text-sm font-black text-destructive tabular-nums">{member?.consumed_points ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">المستخدمة</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">المستخدمة</p>
                 </div>
               </div>
 
@@ -330,11 +330,11 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold">الاشتراك</p>
                   {sub
-                    ? <span className={cn('px-2 py-0.5 rounded-full border text-[10px] font-semibold',
+                    ? <span className={cn('px-2 py-0.5 rounded-full border text-xs font-semibold',
                         sub.status === 'active' ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground border-border')}>
                         {SUB_STATUS_LABELS[sub.status] ?? sub.status}
                       </span>
-                    : <span className="text-[10px] text-muted-foreground">لا يوجد</span>
+                    : <span className="text-xs text-muted-foreground">لا يوجد</span>
                   }
                 </div>
                 {sub && (
@@ -361,7 +361,7 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                   className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-primary" /> تفعيل بكود اشتراك</span>
-                  <span className="text-[10px]">{showCodeBox ? '▲' : '▼'}</span>
+                  <span className="text-xs">{showCodeBox ? '▲' : '▼'}</span>
                 </button>
                 {showCodeBox && (
                   <div className="px-3 pb-3 space-y-2 border-t border-border/50">
@@ -381,13 +381,13 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                       </Button>
                     </div>
                     {codePreview && !codePreview.success && (
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-[11px] text-destructive">
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
                         <XCircle className="w-3 h-3 shrink-0" />{codePreview.error}
                       </div>
                     )}
                     {codePreview?.success && (
                       <div className="space-y-2">
-                        <div className="rounded-lg bg-muted/30 border border-border p-2 grid grid-cols-2 gap-1.5 text-[11px]">
+                        <div className="rounded-lg bg-muted/30 border border-border p-2 grid grid-cols-2 gap-1.5 text-xs">
                           <div><span className="text-muted-foreground">النوع: </span><span className="font-semibold">{codePreview.code_type ?? '—'}</span></div>
                           <div><span className="text-muted-foreground">المدة: </span><span className="font-semibold">{codePreview.duration_days ? `${codePreview.duration_days} يوم` : '—'}</span></div>
                           <div><span className="text-muted-foreground">المتبقية: </span>
@@ -525,11 +525,11 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                         e.amount > 0 ? 'text-success' : 'text-destructive')}>
                         {e.amount > 0 ? '+' : ''}{e.amount}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">{TX_LABELS[e.type] ?? e.type}</span>
+                      <span className="text-xs text-muted-foreground">{TX_LABELS[e.type] ?? e.type}</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate">{e.reason ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{e.reason ?? '—'}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{fmt(e.created_at)}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{fmt(e.created_at)}</span>
                 </div>
               ))}
               {ledgerPages > 1 && (
@@ -537,7 +537,7 @@ export default function MemberDetailSheet({ userId, merchantId, open, onClose, o
                   <Button size="sm" variant="ghost" disabled={ledgerPage === 0} onClick={() => setLedgerPage(p => p - 1)}>
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                  <span className="text-[10px] text-muted-foreground">{ledgerPage + 1}/{ledgerPages}</span>
+                  <span className="text-xs text-muted-foreground">{ledgerPage + 1}/{ledgerPages}</span>
                   <Button size="sm" variant="ghost" disabled={ledgerPage >= ledgerPages - 1} onClick={() => setLedgerPage(p => p + 1)}>
                     <ChevronLeft className="w-4 h-4" />
                   </Button>

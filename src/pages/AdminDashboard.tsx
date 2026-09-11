@@ -208,7 +208,7 @@ function CodeStatusBadge({ k }: { k: LicenseKey }) {
 
   if (expiringSoon) {
     return (
-      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border text-warning bg-warning/10 border-warning/20">
+      <span className="text-xs font-semibold px-2 py-0.5 rounded-full border text-warning bg-warning/10 border-warning/20">
         ⚠ ينتهي قريباً
       </span>
     );
@@ -216,7 +216,7 @@ function CodeStatusBadge({ k }: { k: LicenseKey }) {
   const disp = resolveDisplayStatus(k);
   const st = CODE_STATUS_MAP[disp] ?? CODE_STATUS_MAP.active;
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 ${st.cls}`}>
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 ${st.cls}`}>
       <span className={`w-1.5 h-1.5 rounded-full inline-block ${st.dot}`} />
       {st.label}
     </span>
@@ -225,9 +225,9 @@ function CodeStatusBadge({ k }: { k: LicenseKey }) {
 
 // badge نوع الكود
 function CodeTypeBadge({ type }: { type: string }) {
-  if (type === 'trial') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border text-warning bg-warning/10 border-warning/20">🧪 تجريبي</span>;
-  if (type === 'gift')  return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border text-success bg-success/10 border-success/20">🎁 هدية</span>;
-  return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/20">💳 مدفوع</span>;
+  if (type === 'trial') return <span className="text-xs font-semibold px-2 py-0.5 rounded-full border text-warning bg-warning/10 border-warning/20">🧪 تجريبي</span>;
+  if (type === 'gift')  return <span className="text-xs font-semibold px-2 py-0.5 rounded-full border text-success bg-success/10 border-success/20">🎁 هدية</span>;
+  return <span className="text-xs font-semibold px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/20">💳 مدفوع</span>;
 }
 
 const CODE_ACTION_MAP: Record<string, { label: string; color: string }> = {
@@ -291,13 +291,13 @@ function StatCard({ icon: Icon, label, value, sub, color = 'text-primary', trend
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color.replace('text-', 'bg-')}/10 border ${color.replace('text-', 'border-')}/20`}>
           <Icon className={`w-5 h-5 ${color}`} />
         </div>
-        {trend && <span className="text-[10px] text-success bg-success/10 px-2 py-0.5 rounded-full font-medium">{trend}</span>}
+        {trend && <span className="text-xs text-success bg-success/10 px-2 py-0.5 rounded-full font-medium">{trend}</span>}
       </div>
       <div>
         <p className={`text-2xl font-black tabular-nums ${color}`}>{value}</p>
         <p className="text-xs text-muted-foreground mt-0.5 text-pretty">{label}</p>
       </div>
-      {sub && <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-2 mt-auto">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground border-t border-border/40 pt-2 mt-auto">{sub}</p>}
     </div>
   );
 }
@@ -418,11 +418,11 @@ function HeroAccentColorControl() {
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg border border-border flex items-center justify-center"
           style={{ background: color }}>
-          <span className="text-[10px] text-white font-bold">A</span>
+          <span className="text-xs text-white font-bold">A</span>
         </div>
         <div>
           <p className="text-sm font-bold">لون Hero Accent</p>
-          <p className="text-[10px] text-muted-foreground font-mono">hero_accent_color · يؤثر على Glow / Border / Highlight</p>
+          <p className="text-xs text-muted-foreground font-mono">hero_accent_color · يؤثر على Glow / Border / Highlight</p>
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -652,7 +652,7 @@ function UpdateDiagnosticsPanel() {
                   <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-muted-foreground">{r.version_code}</td>
                   <td className="px-3 py-2.5 max-w-[160px]">
                     <a href={r.apk_url + (r.apk_url.includes('?') ? '&' : '?') + 'download='} target="_blank" rel="noopener noreferrer"
-                      className="text-primary text-[11px] font-mono hover:underline break-all line-clamp-1">
+                      className="text-primary text-xs font-mono hover:underline break-all line-clamp-1">
                       {r.apk_url.split('/').pop()}
                     </a>
                   </td>
@@ -670,14 +670,14 @@ function UpdateDiagnosticsPanel() {
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
                     {r.is_latest
-                      ? <Badge className="bg-success/15 text-success border-success/30 text-[10px]">✔ الحالي</Badge>
-                      : <span className="text-[10px] text-muted-foreground">—</span>}
+                      ? <Badge className="bg-success/15 text-success border-success/30 text-xs">✔ الحالي</Badge>
+                      : <span className="text-xs text-muted-foreground">—</span>}
                   </td>
                   {/* إحصائيات Push Notification */}
                   <td className="whitespace-nowrap px-3 py-2.5">
                     {r.push_notif_sent
-                      ? <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px]">🔔 أُرسل</Badge>
-                      : <span className="text-[10px] text-muted-foreground">لم يُرسَل</span>}
+                      ? <Badge className="bg-primary/10 text-primary border-primary/30 text-xs">🔔 أُرسل</Badge>
+                      : <span className="text-xs text-muted-foreground">لم يُرسَل</span>}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs tabular-nums text-muted-foreground">
                     {r.push_total_devices > 0 ? r.push_total_devices : '—'}
@@ -688,7 +688,7 @@ function UpdateDiagnosticsPanel() {
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs tabular-nums text-destructive font-bold">
                     {r.push_fail_count > 0 ? r.push_fail_count : '—'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[10px] text-muted-foreground tabular-nums">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground tabular-nums">
                     {r.push_notif_sent_at ? formatEgyptDateTime(r.push_notif_sent_at) : '—'}
                   </td>
                 </tr>
@@ -705,15 +705,15 @@ function UpdateDiagnosticsPanel() {
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="space-y-0.5">
               <p className="text-lg font-bold text-foreground tabular-nums">{pushResult.total_devices}</p>
-              <p className="text-[10px] text-muted-foreground">إجمالي الأجهزة</p>
+              <p className="text-xs text-muted-foreground">إجمالي الأجهزة</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-lg font-bold text-success tabular-nums">{pushResult.sent}</p>
-              <p className="text-[10px] text-muted-foreground">وصل بنجاح</p>
+              <p className="text-xs text-muted-foreground">وصل بنجاح</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-lg font-bold text-destructive tabular-nums">{pushResult.failed}</p>
-              <p className="text-[10px] text-muted-foreground">فشل</p>
+              <p className="text-xs text-muted-foreground">فشل</p>
             </div>
           </div>
         </div>
@@ -768,7 +768,7 @@ function UpdateDiagnosticsPanel() {
           {pubBtnLabel()}
         </Button>
         {pubApkOk !== true && (
-          <p className="text-[11px] text-muted-foreground text-center">
+          <p className="text-xs text-muted-foreground text-center">
             ⚠️ لا يمكن النشر حتى يتم التحقق من وجود ملف APK
           </p>
         )}
@@ -849,7 +849,7 @@ function ForceUpdateSettingsCard() {
               حفظ
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             ✏️ مثال: اضبط على <strong>93</strong> لإجبار من لديه كود 92 أو أقل على التحديث.<br/>
             🔓 اضبط على <strong>0</strong> لإلغاء الإجبار والسماح لجميع الإصدارات بالدخول.
           </p>
@@ -1010,9 +1010,9 @@ function UserDiagnosticsSection({ user }: { user: UserDetail }) {
                   <div className="shrink-0 mt-0.5">{iconFor(c.status)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold">{c.label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 text-pretty">{c.message}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 text-pretty">{c.message}</p>
                     {c.action && (
-                      <p className="text-[10px] text-primary font-semibold mt-0.5">← الإجراء المقترح: {c.action}</p>
+                      <p className="text-xs text-primary font-semibold mt-0.5">← الإجراء المقترح: {c.action}</p>
                     )}
                   </div>
                 </div>
@@ -1972,7 +1972,7 @@ function AdminDashboard() {
             </div>
             <div>
               <p className="text-sm font-black gradient-text leading-tight">لوحة الإدارة</p>
-              <p className="text-[10px] text-muted-foreground">Vodafone Fakka Premium</p>
+              <p className="text-xs text-muted-foreground">Vodafone Fakka Premium</p>
             </div>
           </div>
         </div>
@@ -1992,7 +1992,7 @@ function AdminDashboard() {
                 <t.icon className={`w-4 h-4 shrink-0 mt-0.5 ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground'}`} />
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-semibold leading-tight ${active ? 'text-primary' : ''}`}>{t.label}</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 truncate">{t.desc}</p>
+                  <p className="text-xs text-muted-foreground leading-tight mt-0.5 truncate">{t.desc}</p>
                 </div>
                 {active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1" />}
               </button>
@@ -2054,7 +2054,7 @@ function AdminDashboard() {
                   >
                     <t.icon className={`w-4 h-4 ${activeTab === t.id ? 'text-primary' : 'text-muted-foreground'}`} />
                     <span className="text-xs font-semibold">{t.label}</span>
-                    <span className="text-[10px] text-muted-foreground leading-tight">{t.desc}</span>
+                    <span className="text-xs text-muted-foreground leading-tight">{t.desc}</span>
                   </button>
                 ))}
               </div>
@@ -2220,8 +2220,8 @@ function AdminDashboard() {
                               <p className="text-sm font-bold text-foreground">
                                 {entry.profile.full_name ?? entry.profile.username ?? 'مجهول'}
                               </p>
-                              {isOwner && <span className="text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full">👑 المالك</span>}
-                              {isAdmin && <span className="text-[10px] font-black text-warning bg-warning/10 border border-warning/20 px-1.5 py-0.5 rounded-full">🛡 مسؤول</span>}
+                              {isOwner && <span className="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full">👑 المالك</span>}
+                              {isAdmin && <span className="text-xs font-black text-warning bg-warning/10 border border-warning/20 px-1.5 py-0.5 rounded-full">🛡 مسؤول</span>}
                             </div>
                             {/* اسم المستخدم */}
                             {entry.profile.username && entry.profile.full_name && (
@@ -2237,7 +2237,7 @@ function AdminDashboard() {
 
                           {/* حالة الحساب */}
                           <div className="shrink-0 flex flex-col items-end gap-1">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                               entry.is_banned
                                 ? 'text-destructive bg-destructive/10 border-destructive/20'
                                 : entry.profile.is_active !== false
@@ -2250,7 +2250,7 @@ function AdminDashboard() {
                             {(() => {
                               const st = entry.subscription?.status;
                               if (!st) return (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border text-muted-foreground bg-muted/30 border-border">
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full border text-muted-foreground bg-muted/30 border-border">
                                   بدون اشتراك
                                 </span>
                               );
@@ -2260,7 +2260,7 @@ function AdminDashboard() {
                                 st === 'suspended' ? { cls: 'text-warning bg-warning/10 border-warning/20',          label: 'معلق'  } :
                                                     { cls: 'text-muted-foreground bg-muted/30 border-border',        label: 'منتهي' };
                               return (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.cls}`}>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${cfg.cls}`}>
                                   {cfg.label}
                                 </span>
                               );
@@ -2330,7 +2330,7 @@ function AdminDashboard() {
                           <div className="mt-2 flex items-center gap-2 flex-wrap border-t border-border/30 pt-2">
                             {entry.profile.role !== 'merchant' ? (
                               <Button size="sm" variant="outline"
-                                className="h-7 text-[11px] gap-1 text-success border-success/30 hover:bg-success/5"
+                                className="h-7 text-xs gap-1 text-success border-success/30 hover:bg-success/5"
                                 disabled={merchantActionLoading === entry.profile.id}
                                 onClick={async () => {
                                   setMerchantActionLoading(entry.profile.id);
@@ -2351,12 +2351,12 @@ function AdminDashboard() {
                             ) : (
                               <>
                                 <Button size="sm" variant="outline"
-                                  className="h-7 text-[11px] gap-1 text-primary border-primary/30 hover:bg-primary/5"
+                                  className="h-7 text-xs gap-1 text-primary border-primary/30 hover:bg-primary/5"
                                   onClick={() => navigate(`/admin/merchants/${entry.profile.merchant_id}`)}>
                                   <Building2 className="w-3 h-3" /> لوحة التاجر
                                 </Button>
                                 <Button size="sm" variant="outline"
-                                  className="h-7 text-[11px] gap-1 text-destructive border-destructive/20 hover:bg-destructive/5"
+                                  className="h-7 text-xs gap-1 text-destructive border-destructive/20 hover:bg-destructive/5"
                                   disabled={merchantActionLoading === entry.profile.id}
                                   onClick={async () => {
                                     setMerchantActionLoading(entry.profile.id);
@@ -2412,7 +2412,7 @@ function AdminDashboard() {
                       </div>
                       <div>
                         <p className={`text-lg font-black tabular-nums ${cls}`}>{val}</p>
-                        <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+                        <p className="text-xs text-muted-foreground leading-tight">{label}</p>
                       </div>
                     </div>
                   ))}
@@ -2489,10 +2489,10 @@ function AdminDashboard() {
                             <div>
                               <p className="text-sm font-bold leading-tight">{displayName}</p>
                               {s.profile?.username && s.profile?.full_name && (
-                                <p className="text-[11px] text-muted-foreground">@{s.profile.username}</p>
+                                <p className="text-xs text-muted-foreground">@{s.profile.username}</p>
                               )}
                               {s.profile?.email && (
-                                <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{s.profile.email}</p>
+                                <p className="text-xs text-muted-foreground truncate max-w-[180px]">{s.profile.email}</p>
                               )}
                             </div>
                           </div>
@@ -2505,7 +2505,7 @@ function AdminDashboard() {
                               {s.status === 'active' ? '● نشط' : s.status === 'expired' ? '✕ منتهي' : '◌ معلق'}
                             </span>
                             {ctLabel && (
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${ctColor}`}>{ctLabel}</span>
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ctColor}`}>{ctLabel}</span>
                             )}
                           </div>
                         </div>
@@ -2513,16 +2513,16 @@ function AdminDashboard() {
                         {/* معلومات الاتصال */}
                         <div className="flex items-center gap-2 flex-wrap">
                           {s.profile?.phone && (
-                            <span className="text-[11px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">
+                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">
                               {s.profile.phone}
                             </span>
                           )}
                           {s.license_code && (
-                            <span className="text-[11px] font-mono bg-muted/40 px-2 py-0.5 rounded-lg border border-border">
+                            <span className="text-xs font-mono bg-muted/40 px-2 py-0.5 rounded-lg border border-border">
                               🔑 {s.license_code}
                             </span>
                           )}
-                          <span className="text-[10px] text-muted-foreground font-mono bg-muted/20 px-1.5 py-0.5 rounded">
+                          <span className="text-xs text-muted-foreground font-mono bg-muted/20 px-1.5 py-0.5 rounded">
                             {s.user_id.slice(0, 8)}…
                           </span>
                         </div>
@@ -2553,7 +2553,7 @@ function AdminDashboard() {
                           ].map(({ label, val, cls }) => (
                             <div key={label} className="bg-muted/20 rounded-lg p-2 text-center">
                               <p className={`text-sm font-black tabular-nums ${cls}`}>{String(val)}</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</p>
                             </div>
                           ))}
                         </div>
@@ -2567,7 +2567,7 @@ function AdminDashboard() {
                           ].map(({ label, val }) => (
                             <div key={label} className="bg-muted/30 rounded-lg p-2 text-center">
                               <p className="text-xs font-semibold truncate">{val}</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
                             </div>
                           ))}
                         </div>
@@ -2576,14 +2576,14 @@ function AdminDashboard() {
                         <div className="flex items-center justify-between pt-2 border-t border-border/40 flex-wrap gap-2">
                           <div className="flex items-center gap-1.5">
                             <Tag className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {s.ops_count ?? 0} عملية مُستخدمة
                             </span>
                           </div>
                           {daysLeft != null && daysLeft <= 7 && daysLeft >= 0 && (
-                            <span className="text-[11px] text-warning font-bold">⚠ {daysLeft} أيام متبقية</span>
+                            <span className="text-xs text-warning font-bold">⚠ {daysLeft} أيام متبقية</span>
                           )}
-                          <Button size="sm" variant="outline" className="h-7 text-[11px] border-border px-2"
+                          <Button size="sm" variant="outline" className="h-7 text-xs border-border px-2"
                             onClick={() => openUserDetail(s.user_id)}>
                             <Eye className="w-3 h-3 ml-1" /> التفاصيل
                           </Button>
@@ -2771,31 +2771,31 @@ function AdminDashboard() {
                                   <CodeStatusBadge k={k} />
                                   <CodeTypeBadge type={k.code_type ?? 'paid'} />
                                   {expiringSoon && daysLeft !== null && (
-                                    <span className="text-[10px] font-medium text-warning">⏰ {daysLeft} أيام متبقية</span>
+                                    <span className="text-xs font-medium text-warning">⏰ {daysLeft} أيام متبقية</span>
                                   )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <Button size="sm" variant="outline" className="h-7 text-[11px] border-border gap-1"
+                                <Button size="sm" variant="outline" className="h-7 text-xs border-border gap-1"
                                   onClick={() => openCodeDetail(k.id)}>
                                   <Eye className="w-3 h-3" /> تفاصيل
                                 </Button>
                                 {(k.status === 'active' || k.status === 'used') && (
-                                  <Button size="sm" variant="ghost" className="h-7 text-[11px] text-warning hover:text-warning hover:bg-warning/10"
+                                  <Button size="sm" variant="ghost" className="h-7 text-xs text-warning hover:text-warning hover:bg-warning/10"
                                     title="تعطيل الكود"
                                     onClick={() => handleToggleKeyStatus(k.id, k.code, k.status)}>
                                     <Ban className="w-3.5 h-3.5" />
                                   </Button>
                                 )}
                                 {k.status === 'disabled' && (
-                                  <Button size="sm" variant="ghost" className="h-7 text-[11px] text-success hover:text-success hover:bg-success/10"
+                                  <Button size="sm" variant="ghost" className="h-7 text-xs text-success hover:text-success hover:bg-success/10"
                                     title="إعادة تشغيل الكود"
                                     onClick={() => handleToggleKeyStatus(k.id, k.code, k.status)}>
                                     <PlayCircle className="w-3.5 h-3.5" />
                                   </Button>
                                 )}
                                 {(profile?.role === 'super_admin' || profile?.role === 'admin') && (
-                                  <Button size="sm" variant="ghost" className="h-7 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                                     title="حذف الكود نهائياً"
                                     onClick={() => setDeleteKeyId(k.id)}>
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -2815,7 +2815,7 @@ function AdminDashboard() {
                                 <div key={label} className="flex items-center gap-1.5 bg-muted/30 rounded-lg px-2 py-1.5">
                                   <Icon className="w-3 h-3 text-muted-foreground shrink-0" />
                                   <div>
-                                    <p className="text-[10px] text-muted-foreground">{label}</p>
+                                    <p className="text-xs text-muted-foreground">{label}</p>
                                     <p className="text-xs font-semibold tabular-nums">{val}</p>
                                   </div>
                                 </div>
@@ -2825,7 +2825,7 @@ function AdminDashboard() {
                             {/* Row 3: Trial progress bar */}
                             {isTrialKey && maxUsers > 0 && (
                               <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] text-muted-foreground">
+                                <div className="flex justify-between text-xs text-muted-foreground">
                                   <span>استهلاك المستخدمين</span>
                                   <span className={`font-bold tabular-nums ${trialPct >= 90 ? 'text-destructive' : trialPct >= 60 ? 'text-warning' : 'text-success'}`}>
                                     {usedCount}/{maxUsers} ({trialPct}%)
@@ -2836,9 +2836,9 @@ function AdminDashboard() {
                                     style={{ width: `${trialPct}%` }} />
                                 </div>
                                 {k.max_ops_per_user !== null ? (
-                                  <p className="text-[10px] text-muted-foreground">عمليات/مستخدم: {k.max_ops_per_user}</p>
+                                  <p className="text-xs text-muted-foreground">عمليات/مستخدم: {k.max_ops_per_user}</p>
                                 ) : (
-                                  <p className="text-[10px] text-primary font-bold">عمليات/مستخدم: ♾️</p>
+                                  <p className="text-xs text-primary font-bold">عمليات/مستخدم: ♾️</p>
                                 )}
                               </div>
                             )}
@@ -2851,21 +2851,21 @@ function AdminDashboard() {
                               >
                                 <UserCheck className="w-3.5 h-3.5 text-success shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-semibold text-success truncate">
+                                  <p className="text-xs font-semibold text-success truncate">
                                     {(linked.profiles as typeof linked.profiles & { full_name?: string }).full_name ?? linked.profiles.username ?? linked.profiles.email ?? '—'}
                                   </p>
-                                  {linked.profiles.email && <p className="text-[10px] text-muted-foreground truncate">{linked.profiles.email}</p>}
+                                  {linked.profiles.email && <p className="text-xs text-muted-foreground truncate">{linked.profiles.email}</p>}
                                 </div>
                                 <ExternalLink className="w-3 h-3 text-success/70 shrink-0" />
                               </button>
                             ) : (
                               <div className="flex items-center gap-2 bg-muted/10 border border-border/40 rounded-lg px-3 py-2">
                                 <UserCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                <p className="text-[11px] text-muted-foreground">غير مرتبط بأي مستخدم</p>
+                                <p className="text-xs text-muted-foreground">غير مرتبط بأي مستخدم</p>
                               </div>
                             )}
 
-                            {k.notes && <p className="text-[10px] text-muted-foreground bg-muted/20 rounded-lg px-2 py-1">{k.notes}</p>}
+                            {k.notes && <p className="text-xs text-muted-foreground bg-muted/20 rounded-lg px-2 py-1">{k.notes}</p>}
                           </div>
                         </div>
                       </div>
@@ -2914,13 +2914,13 @@ function AdminDashboard() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <p className="text-xs font-semibold">{meta.label}</p>
-                            <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                            <p className="text-xs text-muted-foreground tabular-nums shrink-0">
                               {formatEgyptDateTime(log.created_at)}
                             </p>
                           </div>
-                          {log.details && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{log.details}</p>}
+                          {log.details && <p className="text-xs text-muted-foreground mt-0.5 truncate">{log.details}</p>}
                           {(log as CodeLog & { profile?: { username?: string } }).profile?.username && (
-                            <p className="text-[10px] text-primary mt-0.5">
+                            <p className="text-xs text-primary mt-0.5">
                               بواسطة: {(log as CodeLog & { profile?: { username?: string } }).profile?.username}
                             </p>
                           )}
@@ -2976,7 +2976,7 @@ function AdminDashboard() {
                         ].map(({ label, val, color }) => (
                           <div key={label} className="bg-muted/30 rounded-xl p-2 text-center">
                             <p className={`text-sm font-black tabular-nums ${color}`}>{val}</p>
-                            <p className="text-[10px] text-muted-foreground">{label}</p>
+                            <p className="text-xs text-muted-foreground">{label}</p>
                           </div>
                         ))}
                       </div>
@@ -2984,7 +2984,7 @@ function AdminDashboard() {
                         <div className="h-full bg-primary rounded-full transition-all"
                           style={{ width: `${Math.min(100, (pa.usage_count / (phoneResult.data[0]?.usage_count || 1)) * 100)}%` }} />
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         آخر استخدام: {formatEgyptDateTime(pa.last_used_at)}
                       </p>
                     </div>
@@ -3153,7 +3153,7 @@ function AdminDashboard() {
                           <div className="flex items-center gap-2 justify-between flex-wrap">
                             <p className={`text-xs font-semibold ${actionCls}`}>{log.action}</p>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <Badge variant="outline" className={`text-[9px] ${levelCls}`}>{log.level}</Badge>
+                              <Badge variant="outline" className={`text-xs ${levelCls}`}>{log.level}</Badge>
                               <button
                                 onClick={() => { navigator.clipboard.writeText(`[${log.level}] ${log.action}: ${log.message ?? ''} | ${formatEgyptDateTime(log.created_at)}`); toast.success('تم النسخ'); }}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground">
@@ -3161,14 +3161,14 @@ function AdminDashboard() {
                               </button>
                             </div>
                           </div>
-                          {log.message && <p className="text-[11px] text-muted-foreground mt-0.5 break-words">{log.message}</p>}
+                          {log.message && <p className="text-xs text-muted-foreground mt-0.5 break-words">{log.message}</p>}
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {log.user_id && (
-                              <span className="text-[10px] text-muted-foreground font-mono bg-muted/30 px-1.5 py-0.5 rounded">
+                              <span className="text-xs text-muted-foreground font-mono bg-muted/30 px-1.5 py-0.5 rounded">
                                 👤 {log.user_id.slice(0, 8)}...
                               </span>
                             )}
-                            <p className="text-[10px] text-muted-foreground tabular-nums">{formatEgyptDateTime(log.created_at)}</p>
+                            <p className="text-xs text-muted-foreground tabular-nums">{formatEgyptDateTime(log.created_at)}</p>
                           </div>
                         </div>
                       </div>
@@ -3215,7 +3215,7 @@ function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{s.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{s.body}</p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">{formatEgyptDateTime(s.scheduled_at)} · {s.target_type === 'all' ? 'الجميع' : 'مستخدم محدد'}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums">{formatEgyptDateTime(s.scheduled_at)} · {s.target_type === 'all' ? 'الجميع' : 'مستخدم محدد'}</p>
                       </div>
                       <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10 shrink-0"
                         onClick={async () => { await deleteScheduledNotification(s.id); toast.success('تم الحذف'); loadScheduled(); }}>
@@ -3240,14 +3240,14 @@ function AdminDashboard() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold">{n.title}</p>
                             {n.priority && n.priority !== 'normal' && (
-                              <Badge variant="outline" className={`text-[10px] ${n.priority === 'urgent' ? 'border-destructive/40 text-destructive' : 'border-warning/40 text-warning'}`}>
+                              <Badge variant="outline" className={`text-xs ${n.priority === 'urgent' ? 'border-destructive/40 text-destructive' : 'border-warning/40 text-warning'}`}>
                                 {n.priority === 'urgent' ? 'عاجل' : 'مهم'}
                               </Badge>
                             )}
-                            {n.is_global && <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">للجميع</Badge>}
+                            {n.is_global && <Badge variant="outline" className="text-xs border-primary/30 text-primary">للجميع</Badge>}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 text-pretty">{n.body}</p>
-                          <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">{formatEgyptDateTime(n.created_at)}</p>
+                          <p className="text-xs text-muted-foreground mt-1 tabular-nums">{formatEgyptDateTime(n.created_at)}</p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button variant="ghost" size="icon" className="w-8 h-8 text-primary hover:bg-primary/10"
@@ -3311,7 +3311,7 @@ function AdminDashboard() {
                   <div>
                     <p className="text-base font-bold">{profile?.username ?? 'مسؤول'}</p>
                     <p className="text-sm text-muted-foreground">{profile?.email}</p>
-                    <Badge variant="outline" className="text-[10px] mt-1 border-primary/40 text-primary">
+                    <Badge variant="outline" className="text-xs mt-1 border-primary/40 text-primary">
                       {profile?.role === 'super_admin' ? '⭐ مدير عام' : '🛡️ مسؤول'}
                     </Badge>
                   </div>
@@ -3401,12 +3401,12 @@ function AdminDashboard() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="text-sm font-bold">{label}</p>
-                            <p className="text-[10px] text-muted-foreground font-mono">{key}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{key}</p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <Badge
                               variant="outline"
-                              className={`text-[10px] ${hasImage ? 'border-success/30 text-success' : 'border-muted-foreground/30 text-muted-foreground'}`}
+                              className={`text-xs ${hasImage ? 'border-success/30 text-success' : 'border-muted-foreground/30 text-muted-foreground'}`}
                             >
                               {hasImage ? '● مفعّل' : '○ فارغ'}
                             </Badge>
@@ -3445,8 +3445,8 @@ function AdminDashboard() {
 
                         {/* موقع الاستخدام */}
                         <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/40 border border-border">
-                          <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">📍</span>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed text-pretty">
+                          <span className="text-xs text-muted-foreground shrink-0 mt-0.5">📍</span>
+                          <p className="text-xs text-muted-foreground leading-relaxed text-pretty">
                             <span className="font-semibold text-foreground/70">يُستخدم في: </span>
                             {usedIn}
                           </p>
@@ -3605,7 +3605,7 @@ function AdminDashboard() {
                           <p className="text-xs font-semibold">
                             الحالة المحفوظة: {giftBox.is_enabled ? 'مفعّل' : 'معطّل'}
                           </p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             آخر تحديث: {formatEgyptDateTime(giftBox.updated_at)}
                           </p>
                         </div>
@@ -3799,7 +3799,7 @@ function AdminDashboard() {
                               <UserX className="w-3.5 h-3.5 text-destructive shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-semibold">@{o.username ?? '—'}</p>
-                                <p className="text-[10px] text-muted-foreground font-mono truncate">{o.email ?? o.id.slice(0, 16) + '...'}</p>
+                                <p className="text-xs text-muted-foreground font-mono truncate">{o.email ?? o.id.slice(0, 16) + '...'}</p>
                               </div>
                               <Button size="sm" variant="outline"
                                 className="h-7 text-xs border-border gap-1 shrink-0"
@@ -3936,11 +3936,11 @@ function AdminDashboard() {
                         <div className="flex items-center gap-2 min-w-0">
                           <Package className="w-4 h-4 text-primary shrink-0" />
                           <p className="font-bold text-sm truncate">{cfg.display_name}</p>
-                          <span className="text-[10px] font-mono text-muted-foreground">{cfg.product_id}</span>
+                          <span className="text-xs font-mono text-muted-foreground">{cfg.product_id}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {/* بادج الحالة */}
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                          <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${
                             cfg.status === 'active'             ? 'bg-success/15 text-success border-success/30' :
                             cfg.status === 'disabled_execution' ? 'bg-warning/15 text-warning border-warning/30' :
                                                                   'bg-destructive/15 text-destructive border-destructive/30'
@@ -4124,11 +4124,11 @@ function AdminDashboard() {
                         <div className="flex items-center gap-2 min-w-0">
                           <Banknote className="w-4 h-4 text-primary shrink-0" />
                           <p className="font-bold text-sm truncate">{prod.display_name}</p>
-                          <span className="text-[10px] font-mono text-muted-foreground">{prod.product_id}</span>
+                          <span className="text-xs font-mono text-muted-foreground">{prod.product_id}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 flex-wrap">
                           {/* بادج الحالة */}
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                          <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${
                             prod.is_enabled && prod.is_visible ? 'bg-success/15 text-success border-success/30' :
                             !prod.is_enabled ? 'bg-destructive/15 text-destructive border-destructive/30' :
                             'bg-warning/15 text-warning border-warning/30'
@@ -4162,14 +4162,14 @@ function AdminDashboard() {
                           { label: 'الصلاحية', value: prod.validity },
                         ].map(({ label, value }) => (
                           <div key={label} className="bg-muted/30 rounded-lg px-2.5 py-1.5">
-                            <p className="text-[10px] text-muted-foreground">{label}</p>
+                            <p className="text-xs text-muted-foreground">{label}</p>
                             <p className="font-semibold truncate">{value}</p>
                           </div>
                         ))}
                       </div>
 
                       {/* إحصاء الاستخدام */}
-                      <div className="flex gap-3 text-[11px] pt-1 flex-wrap">
+                      <div className="flex gap-3 text-xs pt-1 flex-wrap">
                         <span className="text-muted-foreground">مجموع: <strong>{prod.usage_count}</strong></span>
                         <span className="text-success">نجاح: <strong>{prod.success_count}</strong></span>
                         <span className="text-destructive">فشل: <strong>{prod.fail_count}</strong></span>
@@ -4399,15 +4399,15 @@ function AdminDashboard() {
                             </div>
                             <div className="min-w-0">
                               <p className="font-bold text-sm truncate">{m.name}</p>
-                              <p className="text-[10px] text-muted-foreground font-mono">{m.id.slice(0, 16)}…</p>
+                              <p className="text-xs text-muted-foreground font-mono">{m.id.slice(0, 16)}…</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusColors[m.status]}`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold ${statusColors[m.status]}`}>
                               {statusLabels[m.status]}
                             </span>
                             {/* Invite status badge */}
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold ${
                               mFull.invite_status === 'active'
                                 ? 'bg-success/10 text-success border-success/20'
                                 : mFull.invite_status === 'disabled'
@@ -4430,14 +4430,14 @@ function AdminDashboard() {
                           ].map(({ label, val }) => (
                             <div key={label} className="rounded-xl bg-muted/60 p-2">
                               <p className="text-xs font-bold tabular-nums">{val}</p>
-                              <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+                              <p className="text-xs text-muted-foreground leading-tight">{label}</p>
                             </div>
                           ))}
                         </div>
 
                         {/* ── رابط الدعوة ── */}
                         <div className="flex items-center gap-2 bg-muted rounded-xl px-3 py-2">
-                          <p className="flex-1 min-w-0 text-[10px] font-mono text-muted-foreground truncate">{inviteLink}</p>
+                          <p className="flex-1 min-w-0 text-xs font-mono text-muted-foreground truncate">{inviteLink}</p>
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0"
                             onClick={async () => {
                               await navigator.clipboard.writeText(inviteLink);
@@ -4453,7 +4453,7 @@ function AdminDashboard() {
 
                         {/* ── أزرار التحكم في الدعوة ── */}
                         <div className="flex flex-wrap gap-1.5 border-t border-border/30 pt-2">
-                          <p className="w-full text-[10px] text-muted-foreground mb-0.5">🔗 إدارة الدعوة:</p>
+                          <p className="w-full text-xs text-muted-foreground mb-0.5">🔗 إدارة الدعوة:</p>
                           {mFull.invite_status !== 'active' && (
                             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-success border-success/30"
                               onClick={async () => {
@@ -4494,7 +4494,7 @@ function AdminDashboard() {
 
                         {/* ── أزرار حالة التاجر + عرض التفاصيل ── */}
                         <div className="flex flex-wrap gap-1.5 border-t border-border/30 pt-2">
-                          <p className="w-full text-[10px] text-muted-foreground mb-0.5">🏪 حالة التاجر:</p>
+                          <p className="w-full text-xs text-muted-foreground mb-0.5">🏪 حالة التاجر:</p>
                           {(['active', 'suspended', 'disabled', 'blocked'] as MerchantStatus[])
                             .filter(s => s !== m.status)
                             .map(s => (
@@ -4592,12 +4592,12 @@ function AdminDashboard() {
                             <div className="min-w-0">
                               <p className="font-bold text-sm truncate">{pkg.name}</p>
                               {pkg.badge_label && (
-                                <span className="text-[10px] text-muted-foreground">{pkg.badge_label}</span>
+                                <span className="text-xs text-muted-foreground">{pkg.badge_label}</span>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${statusColors[pkg.status] ?? ''}`}>
+                            <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${statusColors[pkg.status] ?? ''}`}>
                               {statusLabels[pkg.status] ?? pkg.status}
                             </span>
                             <button
@@ -4629,13 +4629,13 @@ function AdminDashboard() {
                             { label: 'الخصم',      value: pct > 0 ? `${pct}% (${originalPrice}→${currentPrice})` : 'لا يوجد' },
                           ].map(({ label, value }) => (
                             <div key={label} className="bg-muted/30 rounded-lg px-2.5 py-1.5">
-                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                              <p className="text-xs text-muted-foreground">{label}</p>
                               <p className="font-semibold truncate">{value}</p>
                             </div>
                           ))}
                         </div>
                         {pkg.description && (
-                          <p className="text-[11px] text-muted-foreground line-clamp-1">{pkg.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{pkg.description}</p>
                         )}
                       </div>
                     );
@@ -4657,7 +4657,7 @@ function AdminDashboard() {
 
                       {/* ── القسم 1: المعلومات الأساسية ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">المعلومات الأساسية</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">المعلومات الأساسية</p>
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1">
@@ -4700,7 +4700,7 @@ function AdminDashboard() {
 
                       {/* ── القسم 2: البيانات الرقمية ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">البيانات الرقمية</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">البيانات الرقمية</p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">الإنترنت (GB)</Label>
@@ -4749,7 +4749,7 @@ function AdminDashboard() {
 
                       {/* ── القسم 3: الإعدادات ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">الإعدادات والترتيب</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">الإعدادات والترتيب</p>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">الحالة</Label>
@@ -4782,7 +4782,7 @@ function AdminDashboard() {
 
                       {/* ── القسم 4: الألوان ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">الألوان</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">الألوان</p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           {[
                             { label: 'لون الكارت',    key: 'card_color',      def: '#E60000' },
@@ -4793,7 +4793,7 @@ function AdminDashboard() {
                             { label: 'لون ثانوي',     key: 'color_secondary', def: '#B30000' },
                           ].map(({ label, key, def }) => (
                             <div key={key} className="space-y-1">
-                              <Label className="text-[10px]">{label}</Label>
+                              <Label className="text-xs">{label}</Label>
                               <div className="flex items-center gap-2">
                                 <input
                                   type="color"
@@ -4814,12 +4814,12 @@ function AdminDashboard() {
 
                       {/* ── القسم 5: واتساب ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">إعدادات واتساب</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">إعدادات واتساب</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">رقم واتساب</Label>
                             <Input value={redPkgEdit.whatsapp_number ?? ''} onChange={e => setRedPkgEdit(p => p ? { ...p, whatsapp_number: e.target.value } : p)} placeholder="مثال: 201012345678" dir="ltr" />
-                            <p className="text-[9px] text-muted-foreground">بدون + — يُستخدم لبناء رابط wa.me تلقائياً</p>
+                            <p className="text-xs text-muted-foreground">بدون + — يُستخدم لبناء رابط wa.me تلقائياً</p>
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">رابط واتساب مخصص (اختياري)</Label>
@@ -4838,7 +4838,7 @@ function AdminDashboard() {
 
                       {/* ── القسم 6: المحتوى ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">المحتوى والشروط</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">المحتوى والشروط</p>
                         <div className="space-y-3">
                           <div className="space-y-1">
                             <Label className="text-xs">المميزات (سطر لكل ميزة)</Label>
@@ -4871,7 +4871,7 @@ function AdminDashboard() {
 
                       {/* ── القسم 7: إظهار/إخفاء العناصر ── */}
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">إظهار / إخفاء العناصر</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">إظهار / إخفاء العناصر</p>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                           {([
                             { key: 'gb',           label: 'الجيجا' },
@@ -4898,7 +4898,7 @@ function AdminDashboard() {
                                   return { ...p, show_fields: cur as unknown as RedPackage['show_fields'] };
                                 })}>
                                 {val ? <ToggleOn className="w-4 h-4 shrink-0 text-green-400" /> : <ToggleOff className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                                <span className="text-[11px]">{label}</span>
+                                <span className="text-xs">{label}</span>
                               </button>
                             );
                           })}
@@ -5006,11 +5006,11 @@ function AdminDashboard() {
                             </div>
                             <div className="min-w-0">
                               <p className="font-bold text-sm truncate">{promo.title}</p>
-                              {promo.description && <p className="text-[10px] text-muted-foreground truncate">{promo.description}</p>}
+                              {promo.description && <p className="text-xs text-muted-foreground truncate">{promo.description}</p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${statusColors[promo.status] ?? ''}`}>
+                            <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${statusColors[promo.status] ?? ''}`}>
                               {statusLabels[promo.status] ?? promo.status}
                             </span>
                             <button
@@ -5041,7 +5041,7 @@ function AdminDashboard() {
                             { label: 'Push',     value: promo.send_push ? (promo.push_sent ? 'أُرسل ✓' : 'سيُرسل') : 'لا' },
                           ].map(({ label, value }) => (
                             <div key={label} className="bg-muted/30 rounded-lg px-2.5 py-1.5">
-                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                              <p className="text-xs text-muted-foreground">{label}</p>
                               <p className="font-semibold truncate">{value}</p>
                             </div>
                           ))}
@@ -5275,7 +5275,7 @@ function AdminDashboard() {
                   <Badge variant="outline" className={`text-xs ${selectedUser.profile.is_active ? 'text-success border-success/40' : 'text-destructive border-destructive/40'}`}>
                     {selectedUser.profile.is_active ? '● نشط' : '✕ محظور'}
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">{selectedUser.profile.role}</span>
+                  <span className="text-xs text-muted-foreground">{selectedUser.profile.role}</span>
                 </div>
               </div>
 
@@ -5382,7 +5382,7 @@ function AdminDashboard() {
                   ].map(({ label, val, cls }) => (
                     <div key={label} className="p-3 text-center">
                       <p className={`text-base font-black ${cls}`}>{val}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 text-balance">{label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 text-balance">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -5413,7 +5413,7 @@ function AdminDashboard() {
                 <div className="p-3 space-y-3">
                   {/* مجموعة: الاشتراك */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">إدارة الاشتراك</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">إدارة الاشتراك</span>
                     <div className="grid grid-cols-2 gap-2">
                       <Button size="sm" variant="outline" className="h-9 text-xs border-success/40 text-success hover:bg-success/10 gap-1.5"
                         onClick={() => execUserAction(
@@ -5469,7 +5469,7 @@ function AdminDashboard() {
 
                   {/* مجموعة: الكود */}
                   <div className="space-y-1.5 pt-1 border-t border-border/30">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">إدارة الكود</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">إدارة الكود</span>
                     <div className="grid grid-cols-2 gap-2">
                       <Button size="sm" variant="outline" className="h-9 text-xs border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
                         onClick={() => {
@@ -5499,7 +5499,7 @@ function AdminDashboard() {
 
                   {/* مجموعة: العمليات */}
                   <div className="space-y-1.5 pt-1 border-t border-border/30">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">العمليات</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">العمليات</span>
                     <Button size="sm" variant="outline" className="w-full h-9 text-xs border-success/40 text-success hover:bg-success/10 gap-1.5"
                       onClick={() => {
                         setAdjustOpsTarget({ userId: selectedUser.profile.id, username: selectedUser.profile.username ?? '' });
@@ -5512,7 +5512,7 @@ function AdminDashboard() {
 
                   {/* مجموعة: المستخدم */}
                   <div className="space-y-1.5 pt-1 border-t border-border/30">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">إدارة المستخدم</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">إدارة المستخدم</span>
                     <div className="grid grid-cols-2 gap-2">
                       <Button size="sm" variant="outline" className="h-9 text-xs border-destructive/40 text-destructive hover:bg-destructive/10 gap-1.5"
                         disabled={!selectedUser.profile.is_active}
@@ -5582,11 +5582,11 @@ function AdminDashboard() {
                       return (
                         <div key={op.id} className="flex items-center gap-2 px-3 py-2 min-w-0">
                           <div className={`w-2 h-2 rounded-full shrink-0 ${op.status === 'success' ? 'bg-success' : op.status === 'failed' ? 'bg-destructive' : 'bg-warning'}`} />
-                          <span className="text-[11px] font-mono flex-1 min-w-0 truncate">{op.phone_number}</span>
-                          <span className="text-[11px] text-muted-foreground truncate hidden md:block">{op.card_type}</span>
-                          {op.amount != null && <span className="text-[11px] font-bold text-primary shrink-0">{op.amount}ج</span>}
-                          <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(op.performed_at)}</span>
-                          <button className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-primary/10 text-primary border border-primary/20"
+                          <span className="text-xs font-mono flex-1 min-w-0 truncate">{op.phone_number}</span>
+                          <span className="text-xs text-muted-foreground truncate hidden md:block">{op.card_type}</span>
+                          {op.amount != null && <span className="text-xs font-bold text-primary shrink-0">{op.amount}ج</span>}
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(op.performed_at)}</span>
+                          <button className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0 bg-primary/10 text-primary border border-primary/20"
                             onClick={() => setAdminOpDetail({ op: opRaw })}>تفاصيل</button>
                         </div>
                       );
@@ -5606,10 +5606,10 @@ function AdminDashboard() {
                       <div key={a.id} className="flex items-start gap-2 px-3 py-2 min-w-0">
                         <Activity className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold truncate">{a.title}</p>
-                          {a.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{a.description}</p>}
+                          <p className="text-xs font-semibold truncate">{a.title}</p>
+                          {a.description && <p className="text-xs text-muted-foreground line-clamp-1">{a.description}</p>}
                         </div>
-                        <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(a.created_at)}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(a.created_at)}</p>
                       </div>
                     ))}
                   </div>
@@ -5621,7 +5621,7 @@ function AdminDashboard() {
                 <div className="bg-card border border-border rounded-xl overflow-hidden">
                   <div className="px-3 py-2 border-b border-border bg-muted/20 flex items-center justify-between">
                     <span className="text-xs font-bold">الإشعارات ({selectedUser.notifications.length})</span>
-                    <button className="text-[10px] text-destructive hover:text-destructive/80 font-semibold flex items-center gap-1 disabled:opacity-40"
+                    <button className="text-xs text-destructive hover:text-destructive/80 font-semibold flex items-center gap-1 disabled:opacity-40"
                       disabled={deletingAllNotifs}
                       onClick={async () => {
                         if (!window.confirm('حذف كل إشعارات هذا المستخدم نهائياً؟')) return;
@@ -5639,10 +5639,10 @@ function AdminDashboard() {
                       <div key={n.id} className="flex items-start gap-2 px-3 py-2 group min-w-0">
                         <Bell className="w-3 h-3 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold truncate">{n.title}</p>
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">{n.body}</p>
+                          <p className="text-xs font-semibold truncate">{n.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{n.body}</p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(n.created_at)}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums shrink-0">{formatEgyptDate(n.created_at)}</p>
                         <button className="opacity-0 group-hover:opacity-100 shrink-0 text-destructive/60 hover:text-destructive transition-opacity disabled:opacity-30"
                           disabled={deletingNotifId === n.id}
                           onClick={async () => {
@@ -5657,7 +5657,7 @@ function AdminDashboard() {
                     ))}
                   </div>
                   {selectedUser.notifications.length > 5 && (
-                    <button className="w-full text-[11px] text-primary/70 hover:text-primary py-2 flex items-center justify-center gap-1 border-t border-border/30"
+                    <button className="w-full text-xs text-primary/70 hover:text-primary py-2 flex items-center justify-center gap-1 border-t border-border/30"
                       onClick={() => setShowAllNotifs(v => !v)}>
                       {showAllNotifs ? <><ChevronUp className="w-3 h-3" /> عرض أقل</> : <><ChevronDown className="w-3 h-3" /> عرض الكل ({selectedUser.notifications.length})</>}
                     </button>
@@ -5746,7 +5746,7 @@ function AdminDashboard() {
                     { label: 'وضع الانتهاء',     val: codeDetail.key.expiration_mode ?? '—' },
                   ].map(({ label, val }) => (
                     <div key={label} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
-                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                      <span className="text-xs text-muted-foreground">{label}</span>
                       <span className="text-xs font-semibold">{val}</span>
                     </div>
                   ))}
@@ -5782,13 +5782,13 @@ function AdminDashboard() {
                         ].map(({ label, val, cls }) => (
                           <div key={label} className="bg-muted/30 rounded-lg p-2.5">
                             <p className={`text-lg font-black tabular-nums ${cls}`}>{val}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</p>
                           </div>
                         ))}
                       </div>
                       {maxUsers > 0 && (
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <div className="flex justify-between text-xs text-muted-foreground">
                             <span>نسبة الامتلاء</span>
                             <span className={`font-bold ${userPct >= 90 ? 'text-destructive' : userPct >= 60 ? 'text-warning' : 'text-success'}`}>{userPct}%</span>
                           </div>
@@ -5803,7 +5803,7 @@ function AdminDashboard() {
                           { label: `نشطون الآن: ${activeUsers}`, cls: 'bg-success/10 text-success' },
                           { label: `مرات التفعيل: ${codeDetail.key.activation_limit_per_user ?? codeDetail.key.uses_per_user ?? 1}`, cls: 'bg-primary/10 text-primary' },
                         ].map(({ label, cls }) => (
-                          <span key={label} className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${cls}`}>{label}</span>
+                          <span key={label} className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cls}`}>{label}</span>
                         ))}
                       </div>
                     </div>
@@ -5821,14 +5821,14 @@ function AdminDashboard() {
                           { label: 'المتبقية',          val: remOps     != null ? remOps.toLocaleString()    : '♾️', cls: remOps === 0 ? 'text-destructive' : 'text-success' },
                         ].map(({ label, val, cls }) => (
                           <div key={label} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-muted/30">
-                            <span className="text-[10px] text-muted-foreground">{label}</span>
+                            <span className="text-xs text-muted-foreground">{label}</span>
                             <span className={`text-xs font-black tabular-nums ${cls ?? 'text-foreground'}`}>{val}</span>
                           </div>
                         ))}
                       </div>
                       {totalOps != null && totalOps > 0 && (
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <div className="flex justify-between text-xs text-muted-foreground">
                             <span>نسبة الاستهلاك</span>
                             <span className={`font-bold ${opsPct >= 90 ? 'text-destructive' : opsPct >= 60 ? 'text-warning' : 'text-success'}`}>{opsPct}%</span>
                           </div>
@@ -5875,9 +5875,9 @@ function AdminDashboard() {
                               </div>
                               {/* PHASE 1: بيانات المستخدم */}
                               {tu.profile?.email && (
-                                <p className="text-[10px] text-muted-foreground truncate">{tu.profile.email}</p>
+                                <p className="text-xs text-muted-foreground truncate">{tu.profile.email}</p>
                               )}
-                              <p className="text-[10px] text-muted-foreground">
+                              <p className="text-xs text-muted-foreground">
                                 تفعيل: {formatEgyptDate(tu.activated_at)}
                               </p>
                             </div>
@@ -5887,7 +5887,7 @@ function AdminDashboard() {
                                 const st = tu.subscription_status ?? 'expired';
                                 const stMap = CODE_STATUS_MAP[st] ?? CODE_STATUS_MAP.expired;
                                 return (
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${stMap.cls}`}>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${stMap.cls}`}>
                                     {stMap.label}
                                   </span>
                                 );
@@ -5912,7 +5912,7 @@ function AdminDashboard() {
                                 {/* ── نشط: تجديد + إلغاء + تعليق + إزالة ── */}
                                 {isSubActive && (
                                   <Button size="sm" variant="outline"
-                                    className="h-7 text-[10px] border-success/30 text-success hover:bg-success/10 gap-1 px-2"
+                                    className="h-7 text-xs border-success/30 text-success hover:bg-success/10 gap-1 px-2"
                                     onClick={async () => {
                                       const r = await renewUserSubscription(tu.profile!.id, 30);
                                       r.success ? toast.success('تم تجديد الاشتراك ✅') : toast.error(r.error ?? 'خطأ');
@@ -5923,7 +5923,7 @@ function AdminDashboard() {
                                 )}
                                 {isSubActive && (
                                   <Button size="sm" variant="outline"
-                                    className="h-7 text-[10px] border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 px-2"
+                                    className="h-7 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 px-2"
                                     onClick={async () => {
                                       const r = await cancelUserSubscription(tu.profile!.id);
                                       r.success ? toast.success('تم إلغاء الاشتراك') : toast.error(r.error ?? 'خطأ');
@@ -5934,7 +5934,7 @@ function AdminDashboard() {
                                 )}
                                 {isSubActive && (
                                   <Button size="sm" variant="outline"
-                                    className="h-7 text-[10px] border-warning/30 text-warning hover:bg-warning/10 gap-1 px-2"
+                                    className="h-7 text-xs border-warning/30 text-warning hover:bg-warning/10 gap-1 px-2"
                                     onClick={async () => {
                                       const r = await suspendUserSubscription(tu.profile!.id, true);
                                       r.success ? toast.success('تم تعليق الاشتراك ⏸') : toast.error(r.error ?? 'خطأ');
@@ -5946,7 +5946,7 @@ function AdminDashboard() {
                                 {/* ── معلق: رفع التعليق + إلغاء + إزالة ── */}
                                 {isSubSuspended && (
                                   <Button size="sm" variant="outline"
-                                    className="h-7 text-[10px] border-success/30 text-success hover:bg-success/10 gap-1 px-2"
+                                    className="h-7 text-xs border-success/30 text-success hover:bg-success/10 gap-1 px-2"
                                     onClick={async () => {
                                       const r = await suspendUserSubscription(tu.profile!.id, false);
                                       r.success ? toast.success('تم رفع التعليق ✅') : toast.error(r.error ?? 'خطأ');
@@ -5957,7 +5957,7 @@ function AdminDashboard() {
                                 )}
                                 {isSubSuspended && (
                                   <Button size="sm" variant="outline"
-                                    className="h-7 text-[10px] border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 px-2"
+                                    className="h-7 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 px-2"
                                     onClick={async () => {
                                       const r = await cancelUserSubscription(tu.profile!.id);
                                       r.success ? toast.success('تم إلغاء الاشتراك') : toast.error(r.error ?? 'خطأ');
@@ -5969,7 +5969,7 @@ function AdminDashboard() {
                                 {/* ── ملغي/منتهي: تفعيل مجدداً + إزالة فقط ── */}
                                 {isSubCancelled && (
                                   <Button size="sm" variant="outline"
-                                    className="h-7 text-[10px] border-primary/30 text-primary hover:bg-primary/10 gap-1 px-2"
+                                    className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10 gap-1 px-2"
                                     onClick={async () => {
                                       const r = await reactivateUserSubscription(tu.profile!.id);
                                       r.success ? toast.success('تم إعادة التفعيل ✅') : toast.error(r.error ?? 'خطأ');
@@ -5980,7 +5980,7 @@ function AdminDashboard() {
                                 )}
                                 {/* ── إزالة نهائية — دائماً متاحة ── */}
                                 <Button size="sm" variant="outline"
-                                  className="h-7 text-[10px] border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive gap-1 px-2"
+                                  className="h-7 text-xs border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive gap-1 px-2"
                                   onClick={async () => {
                                     const r = await removeUserFromCode(tu.profile!.id);
                                     r.success ? toast.success('تم إزالة المستخدم من الكود ✅') : toast.error(r.error ?? 'خطأ');
@@ -6013,11 +6013,11 @@ function AdminDashboard() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
                                 <p className="text-xs font-semibold">{meta.label}</p>
-                                <p className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                                <p className="text-xs text-muted-foreground shrink-0 tabular-nums">
                                   {formatEgyptDateTime(log.created_at)}
                                 </p>
                               </div>
-                              {log.details && <p className="text-[10px] text-muted-foreground mt-0.5">{log.details}</p>}
+                              {log.details && <p className="text-xs text-muted-foreground mt-0.5">{log.details}</p>}
                             </div>
                           </div>
                         );
@@ -6073,7 +6073,7 @@ function AdminDashboard() {
                   <RefreshCw className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground">اضغط 🔄 لتوليد كود مختلف</p>
+              <p className="text-xs text-muted-foreground">اضغط 🔄 لتوليد كود مختلف</p>
             </div>
 
             {/* المدة */}
@@ -6124,7 +6124,7 @@ function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {newKeyExpirationMode === 'BY_DATE' ? 'ينتهي في تاريخ الانتهاء المحدد' :
                  newKeyExpirationMode === 'BY_USAGE' ? 'ينتهي عند نفاد الحصة' :
                  'ينتهي عند الأقرب: التاريخ أو نفاد الحصة'}
@@ -6137,27 +6137,27 @@ function AdminDashboard() {
                 <Label className="text-sm font-normal text-muted-foreground">تاريخ انتهاء الكود (اختياري)</Label>
                 <Input type="date" className="bg-background border-border h-9 text-sm"
                   value={newKeyExpiryDate} onChange={e => setNewKeyExpiryDate(e.target.value)} />
-                <p className="text-[10px] text-muted-foreground">الكود لن يُقبل بعد هذا التاريخ</p>
+                <p className="text-xs text-muted-foreground">الكود لن يُقبل بعد هذا التاريخ</p>
               </div>
             )}
 
             {/* حقول جميع الأنواع — max_users + activation_limit + ops_per_user */}
             <div className="space-y-3 p-3 bg-primary/5 border border-primary/15 rounded-xl">
-              <p className="text-[11px] font-bold text-primary">إعدادات الحصص</p>
+              <p className="text-xs font-bold text-primary">إعدادات الحصص</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-normal text-muted-foreground">عدد المستخدمين المسموح (max_users)</Label>
                   <Input type="number" min="1" max="100000" className="bg-background border-border h-9 text-sm"
                     placeholder="مثال: 100"
                     value={newKeyMaxUsers} onChange={e => setNewKeyMaxUsers(e.target.value)} />
-                  <p className="text-[10px] text-muted-foreground">0 = غير محدود</p>
+                  <p className="text-xs text-muted-foreground">0 = غير محدود</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-normal text-muted-foreground">مرات التفعيل للمستخدم الواحد</Label>
                   <Input type="number" min="1" max="100" className="bg-background border-border h-9 text-sm"
                     placeholder="مثال: 1"
                     value={newKeyActivationLimit} onChange={e => setNewKeyActivationLimit(e.target.value)} />
-                  <p className="text-[10px] text-muted-foreground">1 = مرة واحدة فقط</p>
+                  <p className="text-xs text-muted-foreground">1 = مرة واحدة فقط</p>
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label className="text-xs font-normal text-muted-foreground">عدد العمليات لكل مستخدم (operations_per_user)</Label>
@@ -6172,7 +6172,7 @@ function AdminDashboard() {
                       title="غير محدود"
                     >♾️</button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">اضغط ♾️ أو اتركه فارغاً = غير محدود</p>
+                  <p className="text-xs text-muted-foreground">اضغط ♾️ أو اتركه فارغاً = غير محدود</p>
                 </div>
               </div>
             </div>
@@ -6185,7 +6185,7 @@ function AdminDashboard() {
               const total = mu > 0 && opu > 0 ? mu * opu : null;
               return (
                 <div className="p-3 rounded-xl border border-border bg-muted/30 space-y-2">
-                  <p className="text-[11px] font-bold text-muted-foreground">ملخص مباشر</p>
+                  <p className="text-xs font-bold text-muted-foreground">ملخص مباشر</p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { label: 'عدد المستخدمين',     val: mu  > 0 ? mu.toLocaleString()  : '♾️' },
@@ -6194,7 +6194,7 @@ function AdminDashboard() {
                       { label: 'إجمالي العمليات',     val: total != null ? total.toLocaleString() : '♾️', highlight: true },
                     ].map(({ label, val, highlight }) => (
                       <div key={label} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg ${highlight ? 'bg-primary/10 border border-primary/20' : 'bg-muted/40'}`}>
-                        <span className="text-[10px] text-muted-foreground">{label}</span>
+                        <span className="text-xs text-muted-foreground">{label}</span>
                         <span className={`text-xs font-black tabular-nums ${highlight ? 'text-primary' : 'text-foreground'}`}>{val}</span>
                       </div>
                     ))}
@@ -6283,14 +6283,14 @@ function AdminDashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-black truncate">{userActionsTarget.profile.full_name || userActionsTarget.profile.username || '—'}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{userActionsTarget.profile.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">{userActionsTarget.profile.email}</p>
                   </div>
                   <div className="shrink-0 flex flex-col items-end gap-1">
-                    <Badge variant="outline" className={`text-[10px] ${userActionsTarget.profile.is_active ? 'text-success border-success/40' : 'text-destructive border-destructive/40'}`}>
+                    <Badge variant="outline" className={`text-xs ${userActionsTarget.profile.is_active ? 'text-success border-success/40' : 'text-destructive border-destructive/40'}`}>
                       {userActionsTarget.profile.is_active ? '● نشط' : '✕ محظور'}
                     </Badge>
                     {userActionsTarget.subscription && (
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full border ${
                         userActionsTarget.subscription.status === 'active' ? 'bg-success/15 text-success border-success/30' :
                         userActionsTarget.subscription.status === 'suspended' ? 'bg-warning/15 text-warning border-warning/30' :
                         'bg-destructive/15 text-destructive border-destructive/30'
@@ -6312,8 +6312,8 @@ function AdminDashboard() {
                     .filter(r => r.value)
                     .map(row => (
                       <div key={row.label} className="flex items-center gap-2 px-3 py-1.5">
-                        <span className="text-[10px] text-muted-foreground shrink-0 w-20">{row.label}</span>
-                        <span className={`text-[10px] ${row.mono ? 'font-mono' : 'font-semibold'} flex-1 min-w-0 truncate`}>{row.value}</span>
+                        <span className="text-xs text-muted-foreground shrink-0 w-20">{row.label}</span>
+                        <span className={`text-xs ${row.mono ? 'font-mono' : 'font-semibold'} flex-1 min-w-0 truncate`}>{row.value}</span>
                         <button className="shrink-0 p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-primary transition-colors"
                           onClick={() => { navigator.clipboard.writeText(row.value!); toast.success(`تم نسخ ${row.label}`); }}>
                           <Copy className="w-3 h-3" />
@@ -6329,7 +6329,7 @@ function AdminDashboard() {
               ) : (
                 <div className="space-y-2">
                   {/* مجموعة: الاشتراك */}
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-0.5">الاشتراك</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">الاشتراك</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" variant="outline" className="h-9 text-xs border-success/30 text-success hover:bg-success/10 gap-1.5"
                       onClick={() => execUserAction(() => renewUserSubscription(userActionsTarget.profile.id, 30, profile?.id), 'تم تجديد الاشتراك 30 يوم')}>
@@ -6360,7 +6360,7 @@ function AdminDashboard() {
                   </div>
 
                   {/* مجموعة: الكود */}
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-0.5 pt-1">الكود</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5 pt-1">الكود</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" variant="outline" className="h-9 text-xs border-primary/30 text-primary hover:bg-primary/10 gap-1.5"
                       onClick={async () => {
@@ -6380,7 +6380,7 @@ function AdminDashboard() {
                   </div>
 
                   {/* مجموعة: المستخدم */}
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-0.5 pt-1">المستخدم</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5 pt-1">المستخدم</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" variant="outline" className="h-9 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1.5"
                       disabled={!userActionsTarget.profile.is_active}
@@ -6606,13 +6606,13 @@ function AdminDashboard() {
                 <div key={d.user_id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{d.profiles?.username ?? d.profiles?.email ?? d.user_id.slice(0, 8) + '...'}</p>
-                    <p className="text-[10px] text-muted-foreground">{formatEgyptDateTime(d.delivered_at)}</p>
+                    <p className="text-xs text-muted-foreground">{formatEgyptDateTime(d.delivered_at)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="outline" className={`text-[10px] ${d.push_sent ? 'border-success/40 text-success' : 'border-muted-foreground/30 text-muted-foreground'}`}>
+                    <Badge variant="outline" className={`text-xs ${d.push_sent ? 'border-success/40 text-success' : 'border-muted-foreground/30 text-muted-foreground'}`}>
                       {d.push_sent ? 'Push ✓' : 'Push ✗'}
                     </Badge>
-                    <Badge variant="outline" className={`text-[10px] ${d.opened_at ? 'border-primary/40 text-primary' : 'border-muted-foreground/30 text-muted-foreground'}`}>
+                    <Badge variant="outline" className={`text-xs ${d.opened_at ? 'border-primary/40 text-primary' : 'border-muted-foreground/30 text-muted-foreground'}`}>
                       {d.opened_at ? 'فُتح' : 'لم يُفتح'}
                     </Badge>
                   </div>
@@ -6631,7 +6631,7 @@ function AdminDashboard() {
         <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-2xl max-h-[90dvh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-sm font-black flex items-center gap-2">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,229,255,0.1)', color: '#00E5FF' }}>ADMIN</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,229,255,0.1)', color: '#00E5FF' }}>ADMIN</span>
               تفاصيل العملية
             </DialogTitle>
           </DialogHeader>
@@ -6658,16 +6658,16 @@ function AdminDashboard() {
                 </div>
                 {op.api_response && (
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">API Response</p>
-                    <pre className="text-[10px] font-mono bg-muted/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all border border-border/30 max-h-40">
+                    <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">API Response</p>
+                    <pre className="text-xs font-mono bg-muted/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all border border-border/30 max-h-40">
                       {op.api_response}
                     </pre>
                   </div>
                 )}
                 {op.error_message && (
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-destructive tracking-widest uppercase">Error Message (Raw)</p>
-                    <pre className="text-[10px] font-mono bg-destructive/5 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all border border-destructive/20 max-h-40 text-destructive/80">
+                    <p className="text-xs font-bold text-destructive tracking-widest uppercase">Error Message (Raw)</p>
+                    <pre className="text-xs font-mono bg-destructive/5 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all border border-destructive/20 max-h-40 text-destructive/80">
                       {op.error_message}
                     </pre>
                   </div>

@@ -60,7 +60,7 @@ export default function MerchantBlockedMemberScreen({ status }: Props) {
 
       <div className="relative z-10 flex flex-col items-center text-center gap-5 max-w-sm w-full">
         {/* Badge */}
-        <span className={`text-[11px] font-black px-3 py-1 rounded-full border ${cfg.badgeCls}`}>
+        <span className={`text-xs font-black px-3 py-1 rounded-full border ${cfg.badgeCls}`}>
           {cfg.badge}
         </span>
 
@@ -89,7 +89,7 @@ export default function MerchantBlockedMemberScreen({ status }: Props) {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-muted-foreground">التاجر المرتبط بحسابك</p>
+              <p className="text-xs text-muted-foreground">التاجر المرتبط بحسابك</p>
               <p className="text-sm font-black truncate" style={{ color: brandColor }}>
                 {data.merchant.name}
               </p>
@@ -106,7 +106,7 @@ export default function MerchantBlockedMemberScreen({ status }: Props) {
           تسجيل الخروج
         </Button>
 
-        <p className="text-[10px] text-muted-foreground/50">Vodafone Fakka Premium</p>
+        <p className="text-xs text-muted-foreground/50">Vodafone Fakka Premium</p>
       </div>
     </div>
   );

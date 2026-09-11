@@ -180,7 +180,7 @@ export default function SettingsPage() {
           </div>
           {/* Badge الحالة */}
           {!eng.loading && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
               style={{ background: `${C}18`, border: `1px solid ${C}35`, color: C }}>
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C }} />
               {eng.isActive ? 'نشط'
@@ -281,7 +281,7 @@ export default function SettingsPage() {
           {/* شريط استهلاك الحصة — للمستخدم المحدود فقط */}
           {eng.opsLimit !== null && (
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
                   استهلاك الحصة — {eng.opsUsed} / {eng.opsLimit}
                 </span>
@@ -293,7 +293,7 @@ export default function SettingsPage() {
               <MiniBar pct={eng.opsPct} color={
                 eng.opsPct >= 90 ? '#ef4444' : eng.opsPct >= 60 ? '#F7C948' : '#22c55e'
               } />
-              <p className="text-[10px] text-muted-foreground tabular-nums">
+              <p className="text-xs text-muted-foreground tabular-nums">
                 متبقي: {eng.opsRem ?? 0} عملية
               </p>
             </div>
@@ -358,12 +358,12 @@ export default function SettingsPage() {
           </div>
           <div className="text-right">
             <p className="text-sm font-bold">تحديثات التطبيق</p>
-            <p className="text-[11px] text-muted-foreground">{displayVersion} · تنزيل APK وسجل الإصدارات</p>
+            <p className="text-xs text-muted-foreground">{displayVersion} · تنزيل APK وسجل الإصدارات</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {hasUpdate && (
-            <span className="text-[10px] font-bold text-yellow-500 bg-yellow-500/15 px-1.5 py-0.5 rounded-full">جديد</span>
+            <span className="text-xs font-bold text-yellow-500 bg-yellow-500/15 px-1.5 py-0.5 rounded-full">جديد</span>
           )}
           <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </div>
@@ -377,7 +377,7 @@ export default function SettingsPage() {
             {displayVersion} · Powered By <span className="text-primary font-semibold">Nader Akram</span>
           </p>
           {!hasUpdate && (
-            <span className="text-[10px] bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded-full font-medium">
               ✓ أحدث إصدار
             </span>
           )}

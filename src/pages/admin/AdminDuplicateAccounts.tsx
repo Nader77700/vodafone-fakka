@@ -54,7 +54,7 @@ function GroupCard({ group, onClick }: { group: DuplicateDeviceGroup; onClick: (
         <div className="flex items-center gap-2 mb-0.5">
           <p className="font-semibold text-sm truncate leading-snug">{displayNames || '—'}</p>
           {group.is_banned && (
-            <Badge variant="destructive" className="text-[9px] px-1.5 h-4 shrink-0">محظور</Badge>
+            <Badge variant="destructive" className="text-xs px-1.5 h-4 shrink-0">محظور</Badge>
           )}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -64,7 +64,7 @@ function GroupCard({ group, onClick }: { group: DuplicateDeviceGroup; onClick: (
           </span>
           <span className="truncate font-mono">{shortFp(group.device_fp ?? group.hardware_hash)}</span>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           آخر نشاط: {fmtDate(group.last_seen)}
         </p>
       </div>
@@ -170,7 +170,7 @@ export default function AdminDuplicateAccounts() {
             </div>
             <div>
               <p className="text-xl font-bold leading-none">{s.val}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
             </div>
           </div>
         ))}
@@ -258,7 +258,7 @@ export default function AdminDuplicateAccounts() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{a.username ?? '—'}</p>
                     <p className="text-xs text-muted-foreground truncate">{a.phone ?? a.email ?? '—'}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {a.updated_at ? format(new Date(a.updated_at), 'dd MMM yyyy', { locale: ar }) : '—'}
                     </p>
                   </div>
@@ -293,18 +293,18 @@ export default function AdminDuplicateAccounts() {
                       <p className="font-semibold text-sm truncate">
                         {b.associated_usernames?.join('، ') || '—'}
                       </p>
-                      <p className="text-[10px] font-mono text-muted-foreground truncate">
+                      <p className="text-xs font-mono text-muted-foreground truncate">
                         {shortFp(b.device_fp ?? b.hardware_hash)}
                       </p>
                     </div>
-                    <Badge variant={b.is_active ? 'destructive' : 'secondary'} className="text-[9px] shrink-0">
+                    <Badge variant={b.is_active ? 'destructive' : 'secondary'} className="text-xs shrink-0">
                       {b.is_active ? 'نشط' : 'ملغي'}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-1">
                     <span className="font-medium">السبب: </span>{b.ban_reason || '—'}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     بواسطة: {b.banned_by_name ?? '—'} · {b.banned_at ? format(new Date(b.banned_at), 'dd MMM yyyy', { locale: ar }) : '—'}
                   </p>
                 </div>

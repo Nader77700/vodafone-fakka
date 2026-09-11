@@ -207,7 +207,7 @@ export default function OperationDetailPage() {
         </button>
         <h1 className="flex-1 text-sm font-black truncate" style={{ color: headClr }}>تفاصيل العملية</h1>
         {isAdmin && (
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
             style={{ background: 'rgba(230,0,0,0.15)', color: '#ff8888', border: '1px solid rgba(230,0,0,0.25)' }}>
             <Shield className="w-2.5 h-2.5 inline ml-1" />أدمن
           </span>
@@ -252,7 +252,7 @@ export default function OperationDetailPage() {
             {showDebug && (
               <div style={{ background: debugBg }}>
                 <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
-                  <p className="text-[10px] font-bold text-muted-foreground mb-1.5">معرّفات التتبع</p>
+                  <p className="text-xs font-bold text-muted-foreground mb-1.5">معرّفات التتبع</p>
                   <DataRow L={L} label="Operation ID"    value={opFull.id}                mono copyable />
                   <DataRow L={L} label="User ID"          value={opFull.user_id}           mono copyable />
                   <DataRow L={L} label="Correlation ID"   value={opFull.correlation_id}    mono copyable />
@@ -260,7 +260,7 @@ export default function OperationDetailPage() {
                 </div>
 
                 <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
-                  <p className="text-[10px] font-bold text-muted-foreground mb-1.5">تفاصيل التنفيذ</p>
+                  <p className="text-xs font-bold text-muted-foreground mb-1.5">تفاصيل التنفيذ</p>
                   <DataRow L={L} label="Operation Source" value={opFull.operation_source ?? 'vodafone_cash'} />
                   <DataRow L={L} label="Execution Layer"  value={opFull.execution_layer} />
                   <DataRow L={L} label="Retry Count"      value={opFull.retry_count ?? 0} />
@@ -269,7 +269,7 @@ export default function OperationDetailPage() {
                 </div>
 
                 <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
-                  <p className="text-[10px] font-bold text-muted-foreground mb-1.5">نتيجة العملية</p>
+                  <p className="text-xs font-bold text-muted-foreground mb-1.5">نتيجة العملية</p>
                   <DataRow L={L} label="Status"           value={op.status} />
                   {op.status === 'success' && <DataRow L={L} label="سبب النجاح" value="اكتملت العملية بنجاح عبر API" />}
                   {op.status === 'failed'  && <DataRow L={L} label="سبب الفشل"  value={mapped?.arabicMessage.split('\n')[0] ?? op.error_message} />}
@@ -279,12 +279,12 @@ export default function OperationDetailPage() {
                 {apiResponseStr && (
                   <div className="px-3 py-2 border-b" style={{ borderColor: debugRowBd }}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[10px] font-bold text-muted-foreground">API Response</p>
-                      <button onClick={() => copyText(apiResponseStr)} className="text-[10px] text-primary hover:opacity-70 flex items-center gap-1">
+                      <p className="text-xs font-bold text-muted-foreground">API Response</p>
+                      <button onClick={() => copyText(apiResponseStr)} className="text-xs text-primary hover:opacity-70 flex items-center gap-1">
                         <Copy className="w-2.5 h-2.5" /> نسخ
                       </button>
                     </div>
-                    <pre className="text-[10px] font-mono text-foreground/70 break-words whitespace-pre-wrap bg-muted/20 rounded-lg p-2 max-h-36 overflow-y-auto">
+                    <pre className="text-xs font-mono text-foreground/70 break-words whitespace-pre-wrap bg-muted/20 rounded-lg p-2 max-h-36 overflow-y-auto">
                       {apiResponseStr}
                     </pre>
                   </div>
@@ -293,12 +293,12 @@ export default function OperationDetailPage() {
                 {cardDataStr && (
                   <div className="px-3 py-2">
                     <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[10px] font-bold text-muted-foreground">Card Data (Internal)</p>
-                      <button onClick={() => copyText(cardDataStr)} className="text-[10px] text-primary hover:opacity-70 flex items-center gap-1">
+                      <p className="text-xs font-bold text-muted-foreground">Card Data (Internal)</p>
+                      <button onClick={() => copyText(cardDataStr)} className="text-xs text-primary hover:opacity-70 flex items-center gap-1">
                         <Copy className="w-2.5 h-2.5" /> نسخ
                       </button>
                     </div>
-                    <pre className="text-[10px] font-mono text-foreground/70 break-words whitespace-pre-wrap bg-muted/20 rounded-lg p-2 max-h-36 overflow-y-auto">
+                    <pre className="text-xs font-mono text-foreground/70 break-words whitespace-pre-wrap bg-muted/20 rounded-lg p-2 max-h-36 overflow-y-auto">
                       {cardDataStr}
                     </pre>
                   </div>

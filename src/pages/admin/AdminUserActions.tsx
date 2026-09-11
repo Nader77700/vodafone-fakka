@@ -47,7 +47,7 @@ function ActionBtn({ icon: Icon, label, description, variant = 'default', onClic
       </div>
       <div className="flex-1 text-right min-w-0">
         <p className="text-sm font-semibold">{label}</p>
-        <p className="text-[10px] text-muted-foreground">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
     </button>
@@ -282,7 +282,7 @@ export default function AdminUserActions() {
                 <div className="flex items-center gap-2 pb-1 border-b border-border/40">
                   <Info className="w-3.5 h-3.5 text-primary shrink-0" />
                   <p className="text-xs font-bold text-foreground">تفاصيل الكود</p>
-                  <span className={`mr-auto text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                  <span className={`mr-auto text-xs px-2 py-0.5 rounded-full font-semibold ${
                     codePreview.status === 'active'   ? 'bg-green-500/15 text-green-600' :
                     codePreview.status === 'used'     ? 'bg-orange-500/15 text-orange-600' :
                     codePreview.status === 'disabled' ? 'bg-destructive/15 text-destructive' :
@@ -298,22 +298,22 @@ export default function AdminUserActions() {
                 {/* بيانات الكود */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                   <div>
-                    <p className="text-muted-foreground text-[10px]">الكود</p>
+                    <p className="text-muted-foreground text-xs">الكود</p>
                     <p className="font-mono font-bold text-foreground">{codePreview.code}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-[10px]">النوع</p>
+                    <p className="text-muted-foreground text-xs">النوع</p>
                     <p className="font-semibold text-foreground">
                       {codePreview.code_type === 'gift'  ? '🎁 هدية' :
                        codePreview.code_type === 'trial' ? '🔬 تجريبي' : '💳 مدفوع'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-[10px]">المدة</p>
+                    <p className="text-muted-foreground text-xs">المدة</p>
                     <p className="font-semibold text-foreground">{codePreview.duration} يوم</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-[10px]">الاستخدام</p>
+                    <p className="text-muted-foreground text-xs">الاستخدام</p>
                     <p className="font-semibold text-foreground">
                       {codePreview.used_count}
                       {codePreview.max_users !== null ? ` / ${codePreview.max_users}` : ' / ∞'}
@@ -321,7 +321,7 @@ export default function AdminUserActions() {
                   </div>
                   {codePreview.expiry_date && (
                     <div className="col-span-2">
-                      <p className="text-muted-foreground text-[10px]">تاريخ الانتهاء</p>
+                      <p className="text-muted-foreground text-xs">تاريخ الانتهاء</p>
                       <p className="font-semibold text-foreground">{fmt(codePreview.expiry_date)}</p>
                     </div>
                   )}
@@ -351,7 +351,7 @@ export default function AdminUserActions() {
               </div>
             )}
 
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               أدخل الكود واضغط «فحص» لمعاينة التفاصيل، ثم «تأكيد التفعيل».
               يتجاوز هذا الإجراء فحص الجهاز.
             </p>
@@ -382,7 +382,7 @@ export default function AdminUserActions() {
                 تعديل
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground">أدخل قيمة موجبة للإضافة أو سالبة للطرح</p>
+            <p className="text-xs text-muted-foreground">أدخل قيمة موجبة للإضافة أو سالبة للطرح</p>
 
             {/* تعديل الحد الأقصى للعمليات */}
             <div className="flex gap-2 items-center mt-1">
@@ -453,7 +453,7 @@ export default function AdminUserActions() {
               )}
               <div className="rounded-xl bg-muted/40 border border-border/40 p-3 flex items-start gap-2">
                 <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   {profile.role === 'merchant'
                     ? 'هذا المستخدم تاجر حالياً. التحويل يُوقف لوحة التحكم ورابط الدعوة دون حذف البيانات.'
                     : profile.merchant_id
@@ -522,10 +522,10 @@ export default function AdminUserActions() {
                   <Shield className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold">{log.action}</p>
-                    {log.error_msg && <p className="text-[10px] text-muted-foreground mt-0.5">{log.error_msg}</p>}
-                    <p className="text-[10px] text-muted-foreground mt-0.5">بواسطة: {log.admin_id?.slice(0, 8) ?? '—'}</p>
+                    {log.error_msg && <p className="text-xs text-muted-foreground mt-0.5">{log.error_msg}</p>}
+                    <p className="text-xs text-muted-foreground mt-0.5">بواسطة: {log.admin_id?.slice(0, 8) ?? '—'}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground shrink-0">{fmt(log.created_at)}</p>
+                  <p className="text-xs text-muted-foreground shrink-0">{fmt(log.created_at)}</p>
                 </div>
               ))}
             </div>

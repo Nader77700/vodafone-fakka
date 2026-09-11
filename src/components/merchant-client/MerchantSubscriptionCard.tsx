@@ -86,7 +86,7 @@ export default function MerchantSubscriptionCard() {
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground leading-none mb-0.5">تاجرك المعتمد</p>
+            <p className="text-xs text-muted-foreground leading-none mb-0.5">تاجرك المعتمد</p>
             <p className="text-sm font-black truncate leading-tight" style={{ color: brandColor }}>
               {merchant.name}
             </p>
@@ -96,7 +96,7 @@ export default function MerchantSubscriptionCard() {
         <div className="flex items-center gap-2 shrink-0">
           <Badge
             variant="outline"
-            className={cn('h-6 text-[10px] font-semibold border gap-1', SUB_STATUS_STYLE[subKey])}
+            className={cn('h-6 text-xs font-semibold border gap-1', SUB_STATUS_STYLE[subKey])}
           >
             <SubIcon className="w-3 h-3" />
             {SUB_STATUS_LABEL[subKey]}
@@ -122,7 +122,7 @@ export default function MerchantSubscriptionCard() {
             👋 مرحباً، <span style={{ color: brandColor }}>{profile?.username ?? '—'}</span>
           </p>
           {sub?.expires_at && (
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
               <CalendarDays className="w-3 h-3" />
               <span>ينتهي {format(new Date(sub.expires_at), 'dd/MM/yyyy', { locale: ar })}</span>
             </div>
@@ -138,13 +138,13 @@ export default function MerchantSubscriptionCard() {
               <p className="text-lg font-black leading-none">
                 {sub.ops_remaining !== null ? sub.ops_remaining : '∞'}
               </p>
-              <p className="text-[9px] text-muted-foreground">متبقي</p>
+              <p className="text-xs text-muted-foreground">متبقي</p>
             </div>
             {/* العمليات المستخدمة */}
             <div className="bg-muted/40 rounded-xl p-2.5 text-center space-y-0.5">
               <Clock className="w-4 h-4 text-muted-foreground mx-auto" />
               <p className="text-lg font-black leading-none">{sub.ops_count}</p>
-              <p className="text-[9px] text-muted-foreground">مستخدم</p>
+              <p className="text-xs text-muted-foreground">مستخدم</p>
             </div>
             {/* الحد الأقصى */}
             <div className="bg-muted/40 rounded-xl p-2.5 text-center space-y-0.5">
@@ -152,7 +152,7 @@ export default function MerchantSubscriptionCard() {
               <p className="text-lg font-black leading-none">
                 {sub.ops_limit !== null ? sub.ops_limit : '∞'}
               </p>
-              <p className="text-[9px] text-muted-foreground">الحد</p>
+              <p className="text-xs text-muted-foreground">الحد</p>
             </div>
           </div>
         ) : (
@@ -163,7 +163,7 @@ export default function MerchantSubscriptionCard() {
         )}
 
         {/* آخر تحديث */}
-        <p className="text-[9px] text-muted-foreground text-left">
+        <p className="text-xs text-muted-foreground text-left">
           آخر تحديث: {format(new Date(), 'hh:mm a', { locale: ar })}
         </p>
       </div>

@@ -63,13 +63,13 @@ export default function SubscriptionHealthCard({ subscription, isAdmin, onRenew 
           </div>
           <div>
             <p className="text-xs font-bold">صحة الاشتراك</p>
-            <p className={`text-[10px] ${cfg.textColor} font-semibold`}>{cfg.label}</p>
+            <p className={`text-xs ${cfg.textColor} font-semibold`}>{cfg.label}</p>
           </div>
         </div>
         {(health === 'warning' || health === 'critical' || health === 'expired') && onRenew && (
           <button
             onClick={onRenew}
-            className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${cfg.textColor} ${cfg.borderColor} hover:opacity-80 transition-opacity`}
+            className={`text-xs font-bold px-2.5 py-1 rounded-full border ${cfg.textColor} ${cfg.borderColor} hover:opacity-80 transition-opacity`}
           >
             تجديد
           </button>
@@ -83,7 +83,7 @@ export default function SubscriptionHealthCard({ subscription, isAdmin, onRenew 
             <div className={`h-full rounded-full transition-all duration-700 ${cfg.barColor}`}
               style={{ width: cfg.barWidth }} />
           </div>
-          <p className={`text-[10px] ${cfg.textColor} tabular-nums`}>{sublabel}</p>
+          <p className={`text-xs ${cfg.textColor} tabular-nums`}>{sublabel}</p>
         </div>
       )}
     </div>

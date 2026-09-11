@@ -95,7 +95,7 @@ export default function WalletLinesOtpPage() {
           </button>
           <div>
             <h1 className="text-base font-black text-foreground">رمز التحقق</h1>
-            <p className="text-[10px] text-muted-foreground">تأكيد رقم الهاتف</p>
+            <p className="text-xs text-muted-foreground">تأكيد رقم الهاتف</p>
           </div>
         </div>
       </div>

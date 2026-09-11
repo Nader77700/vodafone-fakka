@@ -96,9 +96,9 @@ function AccountCard({
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-sm">{profile.username ?? '—'}</p>
             {isPrimary && (
-              <Badge className="text-[9px] h-4 px-1.5 bg-primary/20 text-primary border-0">رئيسي</Badge>
+              <Badge className="text-xs h-4 px-1.5 bg-primary/20 text-primary border-0">رئيسي</Badge>
             )}
-            <Badge variant={isActive ? 'outline' : 'destructive'} className="text-[9px] h-4 px-1.5">
+            <Badge variant={isActive ? 'outline' : 'destructive'} className="text-xs h-4 px-1.5">
               {isActive ? 'نشط' : 'محظور'}
             </Badge>
           </div>
@@ -448,11 +448,11 @@ export default function AdminDuplicateGroupDetail() {
             <InfoItem label="إصدار التطبيق"        value={appVersion} />
             <div className="grid grid-cols-2 gap-4 mt-1">
               <div>
-                <p className="text-[10px] text-muted-foreground mb-0.5">أول ظهور</p>
+                <p className="text-xs text-muted-foreground mb-0.5">أول ظهور</p>
                 <p className="text-xs font-medium">{fmt(group?.first_seen)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground mb-0.5">آخر نشاط</p>
+                <p className="text-xs text-muted-foreground mb-0.5">آخر نشاط</p>
                 <p className="text-xs font-medium">{fmt(group?.last_seen)}</p>
               </div>
             </div>
@@ -498,7 +498,7 @@ export default function AdminDuplicateGroupDetail() {
                 onView={() => navigate(`/admin/users/${primaryProfile.id}`)}
                 actionLoading={actionLoading}
               />
-              <p className="text-[10px] text-muted-foreground mt-2 text-center">
+              <p className="text-xs text-muted-foreground mt-2 text-center">
                 * الحساب الرئيسي يُستبعد من إجراءات الحذف/الحظر الجماعي
               </p>
             </SectionCard>
@@ -574,19 +574,19 @@ export default function AdminDuplicateGroupDetail() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
                 <p className="text-xl font-bold text-primary">{profiles.length}</p>
-                <p className="text-[10px] text-muted-foreground">إجمالي الحسابات</p>
+                <p className="text-xs text-muted-foreground">إجمالي الحسابات</p>
               </div>
               <div>
                 <p className="text-xl font-bold text-green-500">
                   {profiles.filter(p => p.is_active).length}
                 </p>
-                <p className="text-[10px] text-muted-foreground">نشط</p>
+                <p className="text-xs text-muted-foreground">نشط</p>
               </div>
               <div>
                 <p className="text-xl font-bold text-destructive">
                   {profiles.filter(p => !p.is_active).length}
                 </p>
-                <p className="text-[10px] text-muted-foreground">محظور</p>
+                <p className="text-xs text-muted-foreground">محظور</p>
               </div>
             </div>
           </div>

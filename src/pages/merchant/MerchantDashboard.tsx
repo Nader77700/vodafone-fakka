@@ -76,7 +76,7 @@ const STATUS_CLS: Record<MerchantUserStatus, string> = {
 function UserStatusBadge({ status }: { status: string }) {
   const s = (status ?? 'active') as MerchantUserStatus;
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold', STATUS_CLS[s] ?? STATUS_CLS.disabled)}>
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold', STATUS_CLS[s] ?? STATUS_CLS.disabled)}>
       {STATUS_LABELS[s] ?? s}
     </span>
   );
@@ -94,7 +94,7 @@ function StatusBadge({ status }: { status: string }) {
     active: 'نشط', suspended: 'موقوف', disabled: 'معطل', blocked: 'محظور', deleted: 'محذوف',
   };
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold', map[status] ?? map.disabled)}>
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold', map[status] ?? map.disabled)}>
       {labels[status] ?? status}
     </span>
   );
@@ -191,7 +191,7 @@ function UserDetailSheet({
             ].map(({ label, val, cls }) => (
               <div key={label} className="rounded-xl border border-border bg-muted/30 p-2.5 text-center">
                 <p className={cn('text-sm font-bold', cls)}>{val}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
               </div>
             ))}
           </div>
@@ -288,7 +288,7 @@ function UsersTab({ merchantId }: { merchantId: string }) {
         {statCards.map(({ label, val, cls, bg }) => (
           <div key={label} className="rounded-xl border border-border bg-card p-2 text-center">
             <p className={cn('text-sm md:text-base font-black tabular-nums', cls)}>{val}</p>
-            <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+            <p className="text-xs text-muted-foreground leading-tight">{label}</p>
           </div>
         ))}
       </div>
@@ -355,13 +355,13 @@ function UsersTab({ merchantId }: { merchantId: string }) {
                 <p className="text-xs text-muted-foreground font-mono truncate">{u.phone ?? u.email ?? '—'}</p>
               </div>
               <div className="shrink-0 text-right space-y-0.5">
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {u.merchant_created_at
                     ? format(new Date(u.merchant_created_at), 'dd/MM/yy')
                     : format(new Date(u.created_at), 'dd/MM/yy')}
                 </p>
                 {u.registration_source === 'invite_link' && (
-                  <p className="text-[10px] text-primary">رابط دعوة</p>
+                  <p className="text-xs text-primary">رابط دعوة</p>
                 )}
               </div>
               <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -548,7 +548,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
           ].map(s => (
             <div key={s.label} className="rounded-xl border border-border bg-card p-3 text-center">
               <p className={`text-xl font-black ${s.cls}`}>{s.val}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -592,11 +592,11 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold truncate">{m.username ?? '—'}</p>
-                      <p className="text-[10px] text-muted-foreground">{m.phone ?? '—'}</p>
+                      <p className="text-xs text-muted-foreground">{m.phone ?? '—'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${SUB_COLORS[subKey] ?? SUB_COLORS.pending}`}>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${SUB_COLORS[subKey] ?? SUB_COLORS.pending}`}>
                       {SUB_LABELS[subKey] ?? subKey}
                     </span>
                   </div>
@@ -604,7 +604,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
 
                 {/* تفاصيل الاشتراك */}
                 {(m.start_date || m.end_date || m.remaining_days > 0) && (
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground px-1">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground px-1">
                     {m.start_date && <span>من: {format(new Date(m.start_date), 'dd/MM/yyyy', { locale: ar })}</span>}
                     {m.end_date   && <span>إلى: {format(new Date(m.end_date), 'dd/MM/yyyy', { locale: ar })}</span>}
                     {m.remaining_days > 0 && (
@@ -766,7 +766,7 @@ function SubscriptionsTab({ merchantId }: { merchantId: string }) {
                     onChange={e => { setPtsDelta(Number(e.target.value)); setValidationError(null); }}
                     className="h-9 text-sm" />
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   ملاحظة: يتم خصم النقاط من رصيد محفظة التاجر تلقائياً.
                 </p>
               </div>
@@ -890,19 +890,19 @@ function PointsTab({ merchantId }: { merchantId: string }) {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-border bg-card p-3 text-center">
-          <p className="text-[10px] text-muted-foreground">الرصيد الحالي</p>
+          <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
           <p className="text-xl font-black tabular-nums text-primary">{wallet?.current_points ?? 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-3 text-center">
-          <p className="text-[10px] text-muted-foreground">المستخدم</p>
+          <p className="text-xs text-muted-foreground">المستخدم</p>
           <p className="text-xl font-black tabular-nums text-destructive">{wallet?.used_points ?? 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-3 text-center">
-          <p className="text-[10px] text-muted-foreground">الشهري</p>
+          <p className="text-xs text-muted-foreground">الشهري</p>
           <p className="text-lg font-black tabular-nums">{wallet?.monthly_consumed ?? 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-3 text-center">
-          <p className="text-[10px] text-muted-foreground">اليومي</p>
+          <p className="text-xs text-muted-foreground">اليومي</p>
           <p className="text-lg font-black tabular-nums">{wallet?.daily_consumed ?? 0}</p>
         </div>
       </div>
@@ -924,7 +924,7 @@ function PointsTab({ merchantId }: { merchantId: string }) {
           <div className="space-y-2">
             {ledger.map(e => (
               <div key={e.id} className="flex items-center gap-2 text-xs border-b border-border/50 pb-2 last:border-0">
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${
                   e.amount > 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                 }`}>
                   {e.amount > 0 ? '+' : ''}{e.amount}
@@ -942,7 +942,7 @@ function PointsTab({ merchantId }: { merchantId: string }) {
             <Button size="sm" variant="ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
               <ChevronRight className="w-3 h-3" />
             </Button>
-            <span className="text-[10px] text-muted-foreground">{page + 1}/{pages}</span>
+            <span className="text-xs text-muted-foreground">{page + 1}/{pages}</span>
             <Button size="sm" variant="ghost" disabled={page >= pages - 1} onClick={() => setPage(p => p + 1)}>
               <ChevronLeft className="w-3 h-3" />
             </Button>
@@ -1122,7 +1122,7 @@ function OverviewTab() {
             </div>
             <div className="min-w-0">
               <p className="font-bold text-sm text-foreground truncate">{merchant.name}</p>
-              <p className="text-[10px] text-muted-foreground font-mono">{merchant.id.slice(0, 16)}…</p>
+              <p className="text-xs text-muted-foreground font-mono">{merchant.id.slice(0, 16)}…</p>
             </div>
           </div>
           <StatusBadge status={merchant.status} />
@@ -1143,7 +1143,7 @@ function OverviewTab() {
             </div>
             <div className="min-w-0">
               <p className={cn('text-base font-black tabular-nums', cls)}>{val}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight text-pretty">{label}</p>
+              <p className="text-xs text-muted-foreground leading-tight text-pretty">{label}</p>
             </div>
           </div>
         ))}
@@ -1163,7 +1163,7 @@ function OverviewTab() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-primary">رابط الدعوة الجديد</p>
-          <p className="text-[10px] text-muted-foreground">اضغط لعرض الرابط الآمن والإحصائيات</p>
+          <p className="text-xs text-muted-foreground">اضغط لعرض الرابط الآمن والإحصائيات</p>
         </div>
         <ChevronLeft className="w-4 h-4 text-primary shrink-0" />
       </button>
@@ -1202,7 +1202,7 @@ export default function MerchantDashboard() {
                 <p className="text-sm font-bold truncate">
                   {loading ? '…' : (merchant?.name ?? 'لوحة التاجر')}
                 </p>
-                <p className="text-[10px] text-muted-foreground">{profile?.username ?? profile?.email}</p>
+                <p className="text-xs text-muted-foreground">{profile?.username ?? profile?.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -1267,7 +1267,7 @@ export default function MerchantDashboard() {
 
       {/* Footer */}
       <div className="sticky bottom-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-2 flex items-center justify-between max-w-2xl mx-auto">
-        <p className="text-[10px] text-muted-foreground">Vodafone Fakka Premium · Merchant Portal</p>
+        <p className="text-xs text-muted-foreground">Vodafone Fakka Premium · Merchant Portal</p>
         <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" onClick={() => window.location.reload()}>
           <RefreshCw className="w-3 h-3" /> تحديث
         </Button>

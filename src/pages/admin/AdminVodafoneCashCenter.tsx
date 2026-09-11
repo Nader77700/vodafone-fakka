@@ -132,7 +132,7 @@ export default function AdminVodafoneCashCenter() {
                           {tr.status === 'completed' ? 'ناجح' : tr.status === 'failed' ? 'فشل' : 'معلق'}
                         </span>
                         {tr.status === 'failed' && tr.failure_reason && (
-                          <div className="text-[10px] text-red-400 mt-2 max-w-[120px] truncate">{tr.failure_reason}</div>
+                          <div className="text-xs text-red-400 mt-2 max-w-[120px] truncate">{tr.failure_reason}</div>
                         )}
                       </div>
                     </div>

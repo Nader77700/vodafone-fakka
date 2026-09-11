@@ -75,12 +75,12 @@ function StatusBadge({ entry, engineOverride }: {
   const Icon = c.icon;
   return (
     <div className="flex flex-col gap-1">
-      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.bg} ${c.color} w-fit`}>
+      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${c.bg} ${c.color} w-fit`}>
         <Icon className="w-2.5 h-2.5" />
         {c.label}
       </div>
       {end_reason && (
-        <p className={`text-[9px] ${c.color} opacity-80`}>{reasonLabel[end_reason] ?? end_reason}</p>
+        <p className={`text-xs ${c.color} opacity-80`}>{reasonLabel[end_reason] ?? end_reason}</p>
       )}
     </div>
   );
@@ -107,7 +107,7 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
       {/* شريط التقدم — Limited فقط */}
       {isLimited && usage.allowed_operations != null && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-foreground">
               {usage.used_operations} / {usage.allowed_operations} عملية
             </span>
@@ -123,7 +123,7 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
               style={{ width: `${usedPct}%` }}
             />
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Target className="w-3 h-3" />
             <span>متبقي: <strong className="text-foreground">{usage.remaining_operations ?? 0}</strong> عملية</span>
           </div>
@@ -136,7 +136,7 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
           <div className="w-4 h-4 text-primary shrink-0 font-black text-xs flex items-center justify-center">∞</div>
           <div>
             <p className="text-xs font-bold text-primary">اشتراك غير محدود</p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               استُخدم: <strong>{usage.used_operations}</strong> عملية ناجحة خلال فترة هذا الاشتراك
             </p>
           </div>
@@ -147,15 +147,15 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-muted/20 rounded-lg p-2 text-center">
           <p className="text-sm font-black tabular-nums">{usage.total}</p>
-          <p className="text-[9px] text-muted-foreground">إجمالي</p>
+          <p className="text-xs text-muted-foreground">إجمالي</p>
         </div>
         <div className="bg-success/8 rounded-lg p-2 text-center">
           <p className="text-sm font-black tabular-nums text-success">{usage.success}</p>
-          <p className="text-[9px] text-muted-foreground">ناجح</p>
+          <p className="text-xs text-muted-foreground">ناجح</p>
         </div>
         <div className="bg-destructive/8 rounded-lg p-2 text-center">
           <p className="text-sm font-black tabular-nums text-destructive">{usage.failed}</p>
-          <p className="text-[9px] text-muted-foreground">فاشل</p>
+          <p className="text-xs text-muted-foreground">فاشل</p>
         </div>
       </div>
 
@@ -163,20 +163,20 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-primary/5 border border-primary/15 rounded-lg p-2 text-center">
           <p className="text-sm font-black tabular-nums text-primary">
-            {usage.revenue} <span className="text-[9px] font-normal">جنيه</span>
+            {usage.revenue} <span className="text-xs font-normal">جنيه</span>
           </p>
-          <p className="text-[9px] text-muted-foreground">إجمالي الإيراد</p>
+          <p className="text-xs text-muted-foreground">إجمالي الإيراد</p>
         </div>
         <div className="bg-muted/20 rounded-lg p-2 text-center">
           <p className="text-sm font-black tabular-nums">{usage.unique_phones}</p>
-          <p className="text-[9px] text-muted-foreground">أرقام فريدة</p>
+          <p className="text-xs text-muted-foreground">أرقام فريدة</p>
         </div>
       </div>
 
       {/* ملاحظة: بيانات هذا الاشتراك فقط */}
       <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-muted/20 border border-border/40">
         <CheckCircle className="w-3 h-3 text-success shrink-0 mt-0.5" />
-        <p className="text-[9px] text-muted-foreground leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           هذه الإحصائيات خاصة بهذا الاشتراك فقط
           {usage.start_date && usage.end_date && (
             <> ({new Date(usage.start_date).toLocaleDateString('en-GB', { day:'numeric', month:'short' })} → {new Date(usage.end_date).toLocaleDateString('en-GB', { day:'numeric', month:'short' })})</>
@@ -188,7 +188,7 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
       {/* رسم بياني يومي */}
       {usage.daily_usage && usage.daily_usage.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> الاستخدام اليومي
           </p>
           <div className="flex items-end gap-0.5 h-12 overflow-x-auto pb-1">
@@ -210,7 +210,7 @@ function SubscriptionUsagePanel({ usage }: { usage: SubscriptionUsageAnalytics }
 
       {/* أول + آخر عملية */}
       {(usage.first_op_at || usage.last_op_at) && (
-        <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
           {usage.first_op_at && (
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 shrink-0" />
@@ -334,7 +334,7 @@ export default function SubscriptionHistoryPage() {
           <p className="text-xs text-muted-foreground">استخدام كل اشتراك بشكل مستقل</p>
         </div>
         {!eng.loading && (
-          <div className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${
+          <div className={`text-xs font-bold px-2 py-1 rounded-full shrink-0 ${
             eng.isActive ? 'bg-success/15 text-success' : 'bg-destructive/15 text-destructive'
           }`}>
             {eng.isActive ? '● نشط' : '● منتهي'}
@@ -392,7 +392,7 @@ export default function SubscriptionHistoryPage() {
                     </div>
                     <div>
                       <p className="text-xs font-bold font-mono">{h.code ?? 'كود مجهول'}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {h.code_type === 'trial' ? 'تجريبي' : h.code_type === 'gift' ? 'هدية' : 'مدفوع'}
                         {idx === 0 && <span className="mr-1.5 text-primary font-semibold">• الأحدث</span>}
                       </p>
@@ -400,7 +400,7 @@ export default function SubscriptionHistoryPage() {
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <StatusBadge entry={h} engineOverride={idx === 0 ? engineOverride : null} />
-                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                    <span className="text-xs text-muted-foreground tabular-nums">
                       {new Date(h.activated_at).toLocaleDateString('en-GB')}
                     </span>
                   </div>
@@ -420,26 +420,26 @@ export default function SubscriptionHistoryPage() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-muted/30 rounded-lg p-2">
                     <p className="text-sm font-black tabular-nums">{h.duration_days}</p>
-                    <p className="text-[9px] text-muted-foreground">أيام الكود</p>
+                    <p className="text-xs text-muted-foreground">أيام الكود</p>
                   </div>
                   <div className="bg-muted/30 rounded-lg p-2">
                     <Calendar className="w-3 h-3 text-muted-foreground mx-auto mb-0.5" />
-                    <p className="text-[10px] font-semibold tabular-nums">
+                    <p className="text-xs font-semibold tabular-nums">
                       {new Date(h.activated_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">البداية</p>
+                    <p className="text-xs text-muted-foreground">البداية</p>
                   </div>
                   <div className="bg-muted/30 rounded-lg p-2">
                     <Clock className="w-3 h-3 text-muted-foreground mx-auto mb-0.5" />
-                    <p className="text-[10px] font-semibold tabular-nums">
+                    <p className="text-xs font-semibold tabular-nums">
                       {new Date(h.expires_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">الانتهاء</p>
+                    <p className="text-xs text-muted-foreground">الانتهاء</p>
                   </div>
                 </div>
 
                 {h.notes && (
-                  <p className="text-[10px] text-muted-foreground bg-muted/20 rounded px-2 py-1">{h.notes}</p>
+                  <p className="text-xs text-muted-foreground bg-muted/20 rounded px-2 py-1">{h.notes}</p>
                 )}
 
                 {/* زر Usage — P0: يجلب بيانات هذا الاشتراك فقط */}
@@ -500,12 +500,12 @@ export default function SubscriptionHistoryPage() {
                     <div className="mr-9 flex-1 min-w-0 bg-card border border-border/50 rounded-xl px-3 py-2.5">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-xs font-semibold">{a.title}</p>
-                        <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                           {relativeTime(a.created_at)}
                         </span>
                       </div>
                       {a.description && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{a.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>
                       )}
                     </div>
                   </div>
@@ -521,7 +521,7 @@ export default function SubscriptionHistoryPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-muted/20 border border-border/40">
             <XCircle className="w-3 h-3 text-muted-foreground shrink-0" />
-            <p className="text-[9px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               الأرقام التالية إجمالي السجل الكامل — لإحصائيات اشتراك محدد اضغط "إحصائيات هذا الاشتراك فقط"
             </p>
           </div>

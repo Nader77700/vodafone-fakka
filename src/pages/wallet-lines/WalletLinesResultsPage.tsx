@@ -48,7 +48,7 @@ const AvailabilityBadge = memo(function AvailabilityBadge({ avail }: { avail: Da
   };
   const m = map[avail] ?? map.empty;
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+    <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
       style={{ background: `${m.color}18`, color: m.color, border: `1px solid ${m.color}30` }}>
       {m.icon}{m.label}
     </span>
@@ -81,7 +81,7 @@ const WalletCard = memo(function WalletCard({ w }: { w: WalletInfo }) {
         </div>
       )}
       {w.availability !== 'loaded' && w.availability !== 'loading' && (
-        <p className="text-[11px] text-muted-foreground/60 pr-2">
+        <p className="text-xs text-muted-foreground/60 pr-2">
           {w.availability === 'empty' && 'لا توجد محافظ مسجلة لهذه الشركة.'}
           {w.availability === 'unavailable' && 'خدمة هذه الشركة غير متاحة حاليًا.'}
           {w.availability === 'no_response' && 'لم ترجع هذه الشركة أي بيانات.'}
@@ -118,7 +118,7 @@ const LineCard = memo(function LineCard({ l, fullNums }: { l: LineInfo; fullNums
           {/* الأرقام الكاملة بعد OTP */}
           {fullNums && fullNums.length > 0 && (
             <div className="mt-2 pt-2 border-t border-border space-y-1">
-              <p className="text-[10px] font-bold text-amber-400/80 mb-1">الأرقام الكاملة (بعد التحقق)</p>
+              <p className="text-xs font-bold text-amber-400/80 mb-1">الأرقام الكاملة (بعد التحقق)</p>
               {fullNums.map((n, i) => (
                 <div key={n} className="flex items-center justify-between">
                   <span className="text-amber-400/60">خط {i + 1} كامل</span>
@@ -129,10 +129,10 @@ const LineCard = memo(function LineCard({ l, fullNums }: { l: LineInfo; fullNums
           )}
         </div>
       )}
-      {l.availability === 'empty'       && <p className="text-[11px] text-muted-foreground/60 pr-2">لا توجد خطوط مسجلة لهذه الشركة.</p>}
-      {l.availability === 'unavailable' && <p className="text-[11px] text-muted-foreground/60 pr-2">خدمة هذه الشركة غير متاحة حاليًا.</p>}
-      {l.availability === 'no_response' && <p className="text-[11px] text-muted-foreground/60 pr-2">لم ترجع هذه الشركة أي بيانات.</p>}
-      {l.availability === 'conn_error'  && <p className="text-[11px] text-muted-foreground/60 pr-2">تعذّر الاتصال بهذه الشركة.</p>}
+      {l.availability === 'empty'       && <p className="text-xs text-muted-foreground/60 pr-2">لا توجد خطوط مسجلة لهذه الشركة.</p>}
+      {l.availability === 'unavailable' && <p className="text-xs text-muted-foreground/60 pr-2">خدمة هذه الشركة غير متاحة حاليًا.</p>}
+      {l.availability === 'no_response' && <p className="text-xs text-muted-foreground/60 pr-2">لم ترجع هذه الشركة أي بيانات.</p>}
+      {l.availability === 'conn_error'  && <p className="text-xs text-muted-foreground/60 pr-2">تعذّر الاتصال بهذه الشركة.</p>}
     </div>
   );
 });
@@ -195,7 +195,7 @@ const OtpDialog = memo(function OtpDialog({
           <p className="text-xs text-muted-foreground leading-relaxed px-2">
             للتأكد من هويتك قبل إظهار الأرقام الكاملة، أدخل رمز التحقق المرسَل على هاتفك.
           </p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {sending
               ? 'جاري إرسال رمز التحقق على هاتفك...'
               : 'أدخل الرمز أو الصقه إذا وصلك في رسالة.'}
@@ -286,7 +286,7 @@ const OtpDialog = memo(function OtpDialog({
 
         {/* إعادة الإرسال مع التايمر */}
         {cooldown > 0 ? (
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/60">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/60">
             <Clock className="w-3 h-3" />
             <span>إعادة الإرسال بعد {cooldown} ثانية</span>
           </div>
@@ -294,7 +294,7 @@ const OtpDialog = memo(function OtpDialog({
           <button
             onClick={onResend}
             disabled={loading || sending}
-            className="w-full text-center text-[11px] text-indigo-400/60 hover:text-indigo-400 transition-colors"
+            className="w-full text-center text-xs text-indigo-400/60 hover:text-indigo-400 transition-colors"
           >
             لم يصلك الرمز؟ أعد الإرسال
           </button>
@@ -432,15 +432,15 @@ export default function WalletLinesResultsPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-black text-foreground">بيانات الخطوط والمحافظ على My NTRA</h1>
-            <p className="text-[10px] text-muted-foreground">نتائج الاستعلام</p>
+            <p className="text-xs text-muted-foreground">نتائج الاستعلام</p>
           </div>
-          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+          <span className="text-xs font-bold px-2 py-1 rounded-full"
             style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
             {new Date(result.fetchedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
           </span>
           {/* زر تسجيل الخروج */}
           <button onClick={handleLogout}
-            className="flex items-center gap-1.5 text-[11px] text-red-400/70 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 active:scale-95">
+            className="flex items-center gap-1.5 text-xs text-red-400/70 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 active:scale-95">
             <LogOut className="w-3.5 h-3.5" />
             <span>خروج</span>
           </button>
@@ -451,15 +451,15 @@ export default function WalletLinesResultsPage() {
 
         {/* بيانات حساب My NTRA */}
         <div className="rounded-2xl p-4 border border-amber-500/20 bg-amber-500/6 space-y-2">
-          <p className="text-[10px] font-bold text-amber-300/70 uppercase tracking-wide">حساب My NTRA</p>
+          <p className="text-xs font-bold text-amber-300/70 uppercase tracking-wide">حساب My NTRA</p>
           <div className="flex items-center gap-2.5 text-sm">
             <User className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-foreground/70 text-[11px]">الاسم</span>
+            <span className="text-foreground/70 text-xs">الاسم</span>
             <span className="flex-1 text-foreground font-bold truncate text-left">{userFullName}</span>
           </div>
           <div className="flex items-center gap-2.5 text-sm">
             <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-foreground/70 text-[11px]">البريد</span>
+            <span className="text-foreground/70 text-xs">البريد</span>
             <span className="flex-1 text-foreground font-bold truncate text-left" dir="ltr">{userEmail}</span>
           </div>
         </div>
@@ -469,12 +469,12 @@ export default function WalletLinesResultsPage() {
           <div className="rounded-2xl p-3 border border-indigo-500/20 bg-indigo-500/6 text-center">
             <Wallet className="w-5 h-5 text-indigo-400 mx-auto mb-1" />
             <p className="text-lg font-black text-foreground">{totalWallets}</p>
-            <p className="text-[10px] text-muted-foreground">محفظة مسجلة</p>
+            <p className="text-xs text-muted-foreground">محفظة مسجلة</p>
           </div>
           <div className="rounded-2xl p-3 border border-green-500/20 bg-green-500/6 text-center">
             <Phone className="w-5 h-5 text-green-400 mx-auto mb-1" />
             <p className="text-lg font-black text-foreground">{totalLines}</p>
-            <p className="text-[10px] text-muted-foreground">خط مسجل</p>
+            <p className="text-xs text-muted-foreground">خط مسجل</p>
           </div>
         </div>
 
@@ -485,7 +485,7 @@ export default function WalletLinesResultsPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-black text-foreground">{fullNumbers ? 'تم التحقق بنجاح' : 'إظهار الأرقام كاملة'}</h3>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {fullNumbers
                 ? 'تم إظهار الأرقام الكاملة لكل الشركات أدناه.'
                 : 'للتأكد من هويتك قبل إظهار الأرقام الكاملة، يتطلب تحقق OTP.'}
@@ -514,7 +514,7 @@ export default function WalletLinesResultsPage() {
           </button>
         </div>
         {sendOtpError && (
-          <p className="text-[11px] text-red-400 flex items-center gap-1 justify-center -mt-1">
+          <p className="text-xs text-red-400 flex items-center gap-1 justify-center -mt-1">
             <XCircle className="w-3 h-3" />{sendOtpError}
           </p>
         )}
@@ -536,7 +536,7 @@ export default function WalletLinesResultsPage() {
             <Phone className="w-4 h-4 text-green-400" />
             <h2 className="text-sm font-black text-foreground">الخطوط المسجلة</h2>
             {fullNumbers && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)' }}>
                 + أرقام كاملة
               </span>
@@ -555,7 +555,7 @@ export default function WalletLinesResultsPage() {
 
         {/* دليل الحالات */}
         <div className="rounded-2xl p-4 border border-border bg-muted/50 space-y-2">
-          <p className="text-[11px] font-bold text-muted-foreground mb-2">دليل الحالات</p>
+          <p className="text-xs font-bold text-muted-foreground mb-2">دليل الحالات</p>
           {([
             ['loaded', 'بيانات موجودة'],
             ['empty', 'لا توجد بيانات (الاستجابة صحيحة)'],
@@ -565,7 +565,7 @@ export default function WalletLinesResultsPage() {
           ] as [DataAvailability, string][]).map(([a, label]) => (
             <div key={a} className="flex items-center justify-between">
               <AvailabilityBadge avail={a} />
-              <span className="text-[10px] text-muted-foreground/60">{label}</span>
+              <span className="text-xs text-muted-foreground/60">{label}</span>
             </div>
           ))}
         </div>

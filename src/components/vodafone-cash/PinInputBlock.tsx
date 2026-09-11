@@ -129,7 +129,7 @@ export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
           <button
             type="button"
             onClick={() => setManagerOpen(true)}
-            className="text-[10px] px-2 py-0.5 rounded-full transition-colors"
+            className="text-xs px-2 py-0.5 rounded-full transition-colors"
             style={{
               background: L ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.07)',
               border: `1px solid ${L ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'}`,
@@ -269,7 +269,7 @@ export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
                 </Button>
               </div>
               {editCurrentError && (
-                <p className="text-[11px] text-red-400">الرقم السري غير صحيح</p>
+                <p className="text-xs text-red-400">الرقم السري غير صحيح</p>
               )}
             </div>
           ) : (
@@ -335,7 +335,7 @@ export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
       )}
 
       {/* ── تحذير قفل الحساب ── */}
-      <p className="text-[11px] flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
+      <p className="text-xs flex items-center gap-1" style={{ color: 'rgba(251,146,60,0.7)' }}>
         <span>⚠️</span>
         <span>رقم سري Vodafone Cash المكوّن من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
       </p>

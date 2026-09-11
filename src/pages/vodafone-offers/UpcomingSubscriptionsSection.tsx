@@ -62,7 +62,7 @@ export default function UpcomingSubscriptionsSection({
             <path d="M20 6 9 17l-5-5" />
           </svg>
           <p className="text-[12px] font-bold text-green-300 flex-1">{cancelSuccess}</p>
-          <button onClick={clearCancelSuccess} className="text-[10px] text-muted-foreground mr-auto">إغلاق</button>
+          <button onClick={clearCancelSuccess} className="text-xs text-muted-foreground mr-auto">إغلاق</button>
         </div>
       )}
       {cancelError && (
@@ -72,7 +72,7 @@ export default function UpcomingSubscriptionsSection({
         >
           <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
           <p className="text-[12px] font-medium text-red-200 flex-1">{cancelError}</p>
-          <button onClick={clearCancelError} className="text-[10px] text-muted-foreground mr-auto">إغلاق</button>
+          <button onClick={clearCancelError} className="text-xs text-muted-foreground mr-auto">إغلاق</button>
         </div>
       )}
 
@@ -83,7 +83,7 @@ export default function UpcomingSubscriptionsSection({
           <h3 className="text-sm font-black text-foreground truncate">الاشتراكات القادمة</h3>
           {!loading && subscriptions.length > 0 && (
             <span
-              className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0"
+              className="text-xs font-black px-2 py-0.5 rounded-full shrink-0"
               style={{ background: 'rgba(230,0,0,0.15)', color: '#ff6b6b', border: '1px solid rgba(230,0,0,0.25)' }}
             >
               {subscriptions.length}
@@ -93,7 +93,7 @@ export default function UpcomingSubscriptionsSection({
         <button
           onClick={() => load()}
           disabled={loading || !!cancellingId}
-          className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 shrink-0"
+          className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           تحديث
@@ -146,7 +146,7 @@ export default function UpcomingSubscriptionsSection({
           </div>
           <div className="text-center px-4">
             <p className="text-sm font-black text-foreground mb-1">لا توجد اشتراكات قادمة</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">لا توجد اشتراكات مرتبطة بهذا الرقم حالياً</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">لا توجد اشتراكات مرتبطة بهذا الرقم حالياً</p>
           </div>
         </div>
       ) : (

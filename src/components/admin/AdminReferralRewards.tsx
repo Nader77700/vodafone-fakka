@@ -136,7 +136,7 @@ function TasksManager() {
               <div className="flex-1 min-w-0 space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
-                  <Badge variant={t.is_active ? 'default' : 'secondary'} className="text-[10px] h-5 px-1.5 shrink-0">
+                  <Badge variant={t.is_active ? 'default' : 'secondary'} className="text-xs h-5 px-1.5 shrink-0">
                     {t.is_active ? 'نشطة' : 'متوقفة'}
                   </Badge>
                 </div>
@@ -323,7 +323,7 @@ function ClaimsLog() {
                 <tr key={i} className="text-xs">
                   <td className="py-2 pr-0 font-mono text-foreground/80 whitespace-nowrap">{prof?.username ?? '—'}</td>
                   <td className="py-2 whitespace-nowrap">{task?.title ?? '—'}</td>
-                  <td className="py-2"><Badge className={`text-[10px] border ${statusCls[item.claim_status as string] ?? ''}`}>{item.claim_status as string}</Badge></td>
+                  <td className="py-2"><Badge className={`text-xs border ${statusCls[item.claim_status as string] ?? ''}`}>{item.claim_status as string}</Badge></td>
                   <td className="py-2 font-mono text-primary">{(item.reward_value as number) ?? '—'}</td>
                   <td className="py-2 whitespace-nowrap text-muted-foreground">{fmtDate(item.completed_at as string)}</td>
                 </tr>
@@ -382,12 +382,12 @@ function TransfersLog() {
                 <tr key={i} className="text-xs">
                   <td className="py-2 pr-0 font-mono text-foreground/80 whitespace-nowrap">{prof?.username ?? '—'}</td>
                   <td className="py-2 font-mono font-bold text-primary">{fmt(item.operations as number)}</td>
-                  <td className="py-2"><Badge variant={item.status === 'success' ? 'default' : 'secondary'} className="text-[10px]">{item.status as string}</Badge></td>
+                  <td className="py-2"><Badge variant={item.status === 'success' ? 'default' : 'secondary'} className="text-xs">{item.status as string}</Badge></td>
                   <td className="py-2 whitespace-nowrap text-muted-foreground">{fmtDate(item.transfer_valid_until as string)}</td>
                   <td className="py-2 whitespace-nowrap text-muted-foreground">{fmtDate(item.created_at as string)}</td>
                   <td className="py-2">
                     {item.status === 'success' && (
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive hover:text-destructive px-2"
+                      <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive hover:text-destructive px-2"
                         onClick={() => setCancelId(item.id as string)}>إلغاء</Button>
                     )}
                   </td>
@@ -470,7 +470,7 @@ function BalancesTable() {
                   <td className="py-2 font-mono font-bold text-primary">{fmt(avail)}</td>
                   <td className="py-2 whitespace-nowrap text-muted-foreground">{fmtDate(item.last_claim_at as string)}</td>
                   <td className="py-2">
-                    <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2"
+                    <Button variant="ghost" size="sm" className="h-6 text-xs px-2"
                       onClick={() => { setAdjustDlg({ userId: item.user_id as string, username: prof?.username ?? '—' }); setAdjAmount('10'); setAdjNotes(''); setAdjType('manual_grant'); }}>
                       تعديل
                     </Button>
@@ -552,7 +552,7 @@ function AllLogsTable() {
                   <td className={`py-2 font-mono font-bold ${isDebit ? 'text-destructive' : 'text-success'}`}>
                     {isDebit ? '-' : '+'}{fmt(item.operations as number)}
                   </td>
-                  <td className="py-2"><Badge variant={item.status === 'success' ? 'default' : 'secondary'} className="text-[10px]">{item.status as string}</Badge></td>
+                  <td className="py-2"><Badge variant={item.status === 'success' ? 'default' : 'secondary'} className="text-xs">{item.status as string}</Badge></td>
                   <td className="py-2 whitespace-nowrap text-muted-foreground">{fmtDate(item.created_at as string)}</td>
                 </tr>
               );

@@ -98,7 +98,7 @@ export default function LegacyFlexSystemsPage() {
               <h1 className="text-lg font-black text-foreground drop-shadow-md">
                 أنظمة فليكس القديمة
               </h1>
-              <p className="text-[10px] text-primary flex items-center gap-1 font-bold tracking-widest">
+              <p className="text-xs text-primary flex items-center gap-1 font-bold tracking-widest">
                 VODAFONE CLASSIC
               </p>
             </div>
@@ -206,16 +206,16 @@ function CompactLegacyCard({ system, onConvert }: { system: LegacyFlexSystem; on
         </div>
         <div>
           <p className="text-lg font-black text-foreground leading-none tracking-tight">{Number(system.flexCount || 0).toLocaleString()}</p>
-          <p className="text-[9px] text-muted-foreground font-bold -mt-0.5">فليكس</p>
+          <p className="text-xs text-muted-foreground font-bold -mt-0.5">فليكس</p>
         </div>
       </div>
 
       {/* 3. Price */}
       <div className="relative z-10 bg-white/5 rounded-lg p-1.5 border border-white/5 flex justify-between items-center mt-auto">
-        <span className="text-[10px] text-muted-foreground font-bold">السعر</span>
+        <span className="text-xs text-muted-foreground font-bold">السعر</span>
         <div className="text-right">
           <span className="text-sm font-black text-foreground">{system.price}</span>
-          <span className="text-[9px] text-primary ml-0.5 font-bold">ج.م</span>
+          <span className="text-xs text-primary ml-0.5 font-bold">ج.م</span>
         </div>
       </div>
 
@@ -408,7 +408,7 @@ function ActivationDialog({
               {/* Inputs */}
               <div className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-foreground ml-1">رقم الهاتف</label>
+                  <label className="text-xs font-bold text-foreground ml-1">رقم الهاتف</label>
                   <div className="relative">
                     <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
@@ -423,7 +423,7 @@ function ActivationDialog({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-foreground ml-1">كلمة مرور Ana Vodafone</label>
+                  <label className="text-xs font-bold text-foreground ml-1">كلمة مرور Ana Vodafone</label>
                   <div className="relative">
                     <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
@@ -449,7 +449,7 @@ function ActivationDialog({
 
               {/* Alerts Section (Premium Box) */}
               <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-2">
-                <h4 className="text-[11px] font-black text-primary flex items-center gap-1.5 mb-1.5">
+                <h4 className="text-xs font-black text-primary flex items-center gap-1.5 mb-1.5">
                   <AlertCircle className="w-3.5 h-3.5" />
                   تعليمات التفعيل:
                 </h4>
@@ -460,7 +460,7 @@ function ActivationDialog({
                     'سيتم عرض نتيجة التنفيذ فور انتهاء العملية.',
                     'في حالة الفشل سيتم عرض السبب الحقيقي.'
                   ].map((note, i) => (
-                    <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted-foreground font-medium leading-relaxed">
+                    <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground font-medium leading-relaxed">
                       <div className="w-1 h-1 rounded-full bg-primary/60 mt-1.5 shrink-0" />
                       <span>{note}</span>
                     </li>
@@ -491,7 +491,7 @@ function ActivationDialog({
           {!result && !isActivating && !isChecking && eligibilityResult?.isEligible && (
             <div className="space-y-4">
               <div className={`border rounded-2xl p-4 space-y-2 ${eligibilityResult.needsACP ? 'bg-warning/5 border-warning/20' : 'bg-success/5 border-success/20'}`}>
-                <h4 className={`text-[11px] font-black flex items-center gap-1.5 mb-1.5 ${eligibilityResult.needsACP ? 'text-warning' : 'text-success'}`}>
+                <h4 className={`text-xs font-black flex items-center gap-1.5 mb-1.5 ${eligibilityResult.needsACP ? 'text-warning' : 'text-success'}`}>
                   <AlertCircle className="w-3.5 h-3.5" />
                   نتيجة الفحص:
                 </h4>
@@ -548,7 +548,7 @@ function ActivationDialog({
                   </div>
                 )}
                 {result.executionTime && (
-                  <p className="text-[10px] text-muted-foreground mt-2 font-mono text-center">
+                  <p className="text-xs text-muted-foreground mt-2 font-mono text-center">
                     زمن التنفيذ: {(result.executionTime / 1000).toFixed(1)}s
                   </p>
                 )}

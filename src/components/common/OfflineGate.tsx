@@ -114,7 +114,7 @@ export default function OfflineGate({ children }: OfflineGateProps) {
               </div>
               <div className="text-center">
                 <p className="text-base font-black text-foreground leading-tight">Vodafone Fakka</p>
-                <p className="text-[11px] font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>Premium</p>
+                <p className="text-xs font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>Premium</p>
               </div>
             </div>
 
@@ -179,7 +179,7 @@ export default function OfflineGate({ children }: OfflineGateProps) {
 
           {/* Footer */}
           <div className="relative pb-8 flex flex-col items-center gap-1">
-            <p className="text-[10px] font-semibold" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
+            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--muted-foreground) / 0.4)' }}>
               Vodafone Fakka Premium · by Nader Akram
             </p>
           </div>

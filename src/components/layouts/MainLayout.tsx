@@ -54,7 +54,7 @@ function NavLogo() {
           <span style={{ color: '#E60000' }}>Vodafone Fakka</span>
           <span className="text-foreground"> Premium</span>
         </p>
-        <p className="text-[9px] text-muted-foreground leading-tight tracking-wide">by Nader Akram</p>
+        <p className="text-xs text-muted-foreground leading-tight tracking-wide">by Nader Akram</p>
       </div>
     </div>
   );
@@ -258,7 +258,7 @@ export default function MainLayout() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">{profile?.username ?? 'مستخدم'}</p>
-                        <Badge variant="outline" className="text-[10px] mt-0.5">
+                        <Badge variant="outline" className="text-xs mt-0.5">
                           {profile?.role === 'super_admin' ? 'مدير عام' : profile?.role === 'admin' ? 'مسؤول' : profile?.role === 'merchant' ? 'تاجر' : 'مستخدم'}
                         </Badge>
                       </div>
@@ -334,7 +334,7 @@ export default function MainLayout() {
                 className={({ isActive }) => `bottom-nav-item px-2 py-1 min-w-[52px] text-center ${isActive ? 'active' : ''}`}
               >
                 <Icon className="w-5 h-5 mx-auto" />
-                <span className="text-[10px]">{label}</span>
+                <span className="text-xs">{label}</span>
               </NavLink>
             ))}
           </div>

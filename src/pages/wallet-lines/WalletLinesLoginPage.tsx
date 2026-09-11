@@ -111,7 +111,7 @@ export default function WalletLinesLoginPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-black" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>تسجيل الدخول</h1>
-            <p className="text-[10px] text-muted-foreground">خدمات الخطوط والمحافظ</p>
+            <p className="text-xs text-muted-foreground">خدمات الخطوط والمحافظ</p>
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function WalletLinesLoginPage() {
           }}>
           <div className="flex items-start gap-2.5">
             <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] leading-relaxed"
+            <p className="text-xs leading-relaxed"
               style={{ color: L ? 'rgba(0,0,0,0.60)' : 'rgba(255,255,255,0.65)' }}>
               سجّل الدخول باستخدام حسابك الرسمي على My NTRA للوصول إلى بيانات الخطوط والمحافظ المسجلة باسمك.
             </p>
@@ -170,7 +170,7 @@ export default function WalletLinesLoginPage() {
               aria-invalid={!!phoneErr}
             />
           </div>
-          {phoneErr && <p className="text-[11px] text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" />{phoneErr}</p>}
+          {phoneErr && <p className="text-xs text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" />{phoneErr}</p>}
         </div>
 
         {/* كلمة المرور */}
@@ -199,7 +199,7 @@ export default function WalletLinesLoginPage() {
               {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          {passErr && <p className="text-[11px] text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" />{passErr}</p>}
+          {passErr && <p className="text-xs text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" />{passErr}</p>}
         </div>
 
         <Button type="submit" disabled={isDisabled}
@@ -235,7 +235,7 @@ export default function WalletLinesLoginPage() {
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 mt-2">
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/60 mt-2">
           <span className="text-indigo-400/60 font-bold">تسجيل الدخول</span>
           <span>←</span><span>التحقق بالرقم القومي</span>
           <span>←</span><span>النتائج</span>

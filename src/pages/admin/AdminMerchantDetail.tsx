@@ -53,7 +53,7 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
 function MerchantStatusBadge({ status }: { status: string }) {
   const cfg = STATUS_CFG[status] ?? STATUS_CFG.active;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${cfg.cls}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold ${cfg.cls}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current inline-block" />
       {cfg.label}
     </span>
@@ -69,7 +69,7 @@ function StatCard({ icon: Icon, label, value, color = '' }: {
         <Icon className={`w-4 h-4 ${color ? '' : 'text-primary'}`} />
       </div>
       <p className="text-lg font-black tabular-nums">{value}</p>
-      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -327,7 +327,7 @@ export default function AdminMerchantDetail() {
                 <h2 className="text-base font-black truncate">{detail.name}</h2>
                 <MerchantStatusBadge status={detail.status} />
               </div>
-              <p className="text-[11px] text-muted-foreground font-mono mt-0.5 select-all">{detail.id}</p>
+              <p className="text-xs text-muted-foreground font-mono mt-0.5 select-all">{detail.id}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -370,7 +370,7 @@ export default function AdminMerchantDetail() {
                 { label: 'الحساب',       val: detail.owner_profile.is_active ? '✅ نشط' : '❌ معطل' },
               ].map(({ label, val }) => (
                 <div key={label} className="rounded-xl bg-muted/60 p-2">
-                  <p className="text-[10px] text-muted-foreground">{label}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
                   <p className="font-semibold text-foreground truncate">{val}</p>
                 </div>
               ))}
@@ -428,17 +428,17 @@ export default function AdminMerchantDetail() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-card border border-border rounded-xl p-2 text-center">
                   <p className="text-sm font-black">{detail.invite.join_count}</p>
-                  <p className="text-[10px] text-muted-foreground">انضموا</p>
+                  <p className="text-xs text-muted-foreground">انضموا</p>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-2 text-center">
                   <p className="text-sm font-black">{detail.invite.view_count}</p>
-                  <p className="text-[10px] text-muted-foreground">مشاهدة</p>
+                  <p className="text-xs text-muted-foreground">مشاهدة</p>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-2 text-center">
-                  <Badge variant="outline" className={`text-[10px] ${detail.invite.status === 'active' ? 'text-success border-success/30' : 'text-warning border-warning/30'}`}>
+                  <Badge variant="outline" className={`text-xs ${detail.invite.status === 'active' ? 'text-success border-success/30' : 'text-warning border-warning/30'}`}>
                     {detail.invite.status === 'active' ? 'نشط' : 'معطل'}
                   </Badge>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">الحالة</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">الحالة</p>
                 </div>
               </div>
             )}
@@ -543,7 +543,7 @@ export default function AdminMerchantDetail() {
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground font-medium">
                     تعليمات الاستخدام
-                    <span className="text-[10px] text-muted-foreground/60 mr-1">(تظهر للعضو عند أول دخول)</span>
+                    <span className="text-xs text-muted-foreground/60 mr-1">(تظهر للعضو عند أول دخول)</span>
                   </label>
                   <textarea
                     value={welcomeInstructions}
@@ -553,7 +553,7 @@ export default function AdminMerchantDetail() {
                     dir="rtl"
                     className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                   />
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     سيتم إرسال التعليمات كـ Dialog لكل عضو — تحديثها يُعيد إظهار الـ Dialog تلقائياً.
                   </p>
                 </div>
@@ -582,7 +582,7 @@ export default function AdminMerchantDetail() {
               <Input value={walletReason} onChange={e => setWalletReason(e.target.value)} placeholder="السبب (اختياري)" className="h-9 text-sm" />
               {walletAction === 'recharge' && (
                 <div className="space-y-1">
-                  <label className="text-[11px] text-muted-foreground font-medium">
+                  <label className="text-xs text-muted-foreground font-medium">
                     صلاحية النقاط بالأيام <span className="opacity-60">(اتركه فارغاً = بدون انتهاء)</span>
                   </label>
                   <div className="relative">
@@ -596,7 +596,7 @@ export default function AdminMerchantDetail() {
                       className="h-9 text-sm pl-2 pr-24"
                     />
                     {walletDays && (
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
                         ينتهي: {walletExpiresAt}
                       </span>
                     )}
@@ -681,16 +681,16 @@ export default function AdminMerchantDetail() {
                     <div key={i} className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${['recharge','refund','admin_grant'].includes(entry.type) ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${['recharge','refund','admin_grant'].includes(entry.type) ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                             {['recharge','refund','admin_grant'].includes(entry.type) ? `+ ${entry.type}` : `- ${entry.type}`}
                           </span>
                           <span className="text-xs font-black tabular-nums">{entry.amount}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">{entry.reason ?? '—'}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{entry.reason ?? '—'}</p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-[10px] font-mono text-muted-foreground">{entry.balance_before} → {entry.balance_after}</p>
-                        <p className="text-[10px] text-muted-foreground">{fmt(entry.created_at)}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{entry.balance_before} → {entry.balance_after}</p>
+                        <p className="text-xs text-muted-foreground">{fmt(entry.created_at)}</p>
                       </div>
                     </div>
                   ))}
@@ -708,9 +708,9 @@ export default function AdminMerchantDetail() {
                 <div key={i} className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold font-mono">{entry.action}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{entry.reason ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{entry.reason ?? '—'}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground shrink-0">{fmt(entry.created_at)}</p>
+                  <p className="text-xs text-muted-foreground shrink-0">{fmt(entry.created_at)}</p>
                 </div>
               ))}
             </div>

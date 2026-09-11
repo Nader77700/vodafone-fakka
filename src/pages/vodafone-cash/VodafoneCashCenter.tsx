@@ -62,7 +62,7 @@ export default function VodafoneCashCenter() {
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide"
               style={{ color: L ? '#111827' : '#ffffff' }}>Vodafone Cash Center</h1>
-            <p className="text-[10px] font-medium"
+            <p className="text-xs font-medium"
               style={{ color: L ? '#6b7280' : 'rgba(255,255,255,0.55)' }}>اختر الخدمة التي تريد استخدامها</p>
           </div>
           <div className="w-10"></div>
@@ -102,7 +102,7 @@ export default function VodafoneCashCenter() {
                   {/* Text */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-black" style={{ color: '#111827' }}>{svc.title}</h3>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest mt-0.5" style={{ color: '#9ca3af' }}>
+                    <p className="text-xs font-semibold uppercase tracking-widest mt-0.5" style={{ color: '#9ca3af' }}>
                       {svc.titleEn}
                     </p>
                     <p className="text-xs mt-1.5 leading-relaxed" style={{ color: '#4b5563' }}>{svc.desc}</p>
@@ -130,11 +130,11 @@ export default function VodafoneCashCenter() {
                     </div>
                     <div className="flex flex-col">
                       <h3 className="text-xl font-black tracking-wide text-white leading-tight">{svc.title}</h3>
-                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>{svc.titleEn}</span>
+                      <span className="text-xs uppercase tracking-widest font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>{svc.titleEn}</span>
                     </div>
                   </div>
                   <p className="text-sm text-white/60 font-medium leading-relaxed max-w-[85%] mt-1">{svc.desc}</p>
-                  <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold text-white backdrop-blur-sm">
+                  <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-bold text-white backdrop-blur-sm">
                     الدخول <ArrowLeft className="w-3 h-3 ml-1 rotate-180" />
                   </div>
                 </div>

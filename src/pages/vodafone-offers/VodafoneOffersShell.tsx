@@ -47,7 +47,7 @@ export default function VodafoneOffersShell({ title, subtitle, children }: Vodaf
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-black leading-tight truncate"
               style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{title}</h1>
-            {subtitle && <p className="text-[10px] text-muted-foreground truncate">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
           </div>
         </div>
       </div>

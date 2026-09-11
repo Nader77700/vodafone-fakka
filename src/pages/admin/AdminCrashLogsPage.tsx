@@ -114,7 +114,7 @@ export default function AdminCrashLogsPage() {
                 <p className="text-sm font-bold text-destructive line-clamp-1 flex-1 ml-4" dir="ltr">
                   {log.error_message || 'Unknown Error'}
                 </p>
-                <div className="text-[10px] text-muted-foreground shrink-0 text-left" dir="ltr">
+                <div className="text-xs text-muted-foreground shrink-0 text-left" dir="ltr">
                   {new Date(log.created_at).toLocaleString('en-US', {
                     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
                   })}
@@ -134,11 +134,11 @@ export default function AdminCrashLogsPage() {
                   </div>
                 )}
                 
-                <div className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-[10px]">
+                <div className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-xs">
                   <span>v{log.app_version || '?'}</span>
                 </div>
                 
-                <div className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-[10px]" dir="ltr">
+                <div className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-xs" dir="ltr">
                   <span>{log.os_info || 'Unknown OS'}</span>
                 </div>
               </div>
@@ -165,15 +165,15 @@ export default function AdminCrashLogsPage() {
               {/* User Info */}
               <div className="bg-muted/50 rounded-xl p-3 border border-border/50 flex flex-wrap gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground block text-[10px] mb-0.5">المستخدم</span>
+                  <span className="text-muted-foreground block text-xs mb-0.5">المستخدم</span>
                   <span className="font-medium text-foreground">{selectedLog.user ? selectedLog.user.full_name : 'غير مسجل'}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px] mb-0.5">رقم الهاتف</span>
+                  <span className="text-muted-foreground block text-xs mb-0.5">رقم الهاتف</span>
                   <span className="font-medium text-foreground" dir="ltr">{selectedLog.user ? selectedLog.user.phone : 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px] mb-0.5">وقت العطل</span>
+                  <span className="text-muted-foreground block text-xs mb-0.5">وقت العطل</span>
                   <span className="font-medium text-foreground text-xs" dir="ltr">{new Date(selectedLog.created_at).toLocaleString('en-US')}</span>
                 </div>
               </div>
@@ -201,11 +201,11 @@ export default function AdminCrashLogsPage() {
               {/* Device Info */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
-                  <span className="text-muted-foreground block text-[10px] mb-1">نسخة التطبيق</span>
+                  <span className="text-muted-foreground block text-xs mb-1">نسخة التطبيق</span>
                   <span className="font-medium text-sm" dir="ltr">v{selectedLog.app_version || 'Unknown'}</span>
                 </div>
                 <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
-                  <span className="text-muted-foreground block text-[10px] mb-1">نظام التشغيل والجهاز</span>
+                  <span className="text-muted-foreground block text-xs mb-1">نظام التشغيل والجهاز</span>
                   <span className="font-medium text-sm" dir="ltr">{selectedLog.os_info || 'Unknown'}</span>
                 </div>
               </div>

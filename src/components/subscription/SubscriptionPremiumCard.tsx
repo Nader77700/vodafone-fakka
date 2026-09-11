@@ -160,7 +160,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                   boxShadow: '0 0 14px rgba(247,201,72,0.12)',
                 }}>
                 <Sparkles className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
-                <span className="text-[10px] font-black tracking-[0.12em] uppercase"
+                <span className="text-xs font-black tracking-[0.12em] uppercase"
                   style={{ color: L ? '#78350f' : undefined,
                     ...(L ? {} : {
                       background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
@@ -168,7 +168,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                       WebkitTextFillColor: 'transparent',
                     })
                   }}>PREMIUM</span>
-                <span className="text-[9px] font-black tracking-widest"
+                <span className="text-xs font-black tracking-widest"
                   style={L ? {
                     color: '#7c2d12',
                     border: '1px solid rgba(124,45,18,0.40)',
@@ -194,7 +194,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                   background: 'rgba(107,114,128,0.12)',
                   border: '1px solid rgba(156,163,175,0.25)',
                 }}>
-                <span className="text-[10px] font-black tracking-[0.15em] uppercase"
+                <span className="text-xs font-black tracking-[0.15em] uppercase"
                   style={{ color: L ? '#374151' : '#9ca3af' }}>FREE</span>
               </div>
             )}
@@ -206,7 +206,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 border: `1px solid ${statusColor}${L ? '35' : '40'}`,
               }}>
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: statusColor }} />
-              <span className="text-[11px] font-black" style={{ color: statusColor }}>{statusLabel}</span>
+              <span className="text-xs font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
 
             {/* Plan name — CSS class shimmer (theme-switch safe) */}
@@ -272,7 +272,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 مسؤول النظام
               </p>
               {/* subtitle */}
-              <p className="text-[10px] font-medium leading-snug mt-0.5"
+              <p className="text-xs font-medium leading-snug mt-0.5"
                 style={{ color: L ? '#92400e' : 'rgba(247,201,72,0.70)' }}>
                 صلاحيات كاملة — استخدام غير محدود ♾️
               </p>
@@ -317,7 +317,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
                 </div>
                 <div className="min-w-0">
                   {/* Light: مرئي — رمادي داكن كافٍ */}
-                  <p className="text-[9px] font-medium" style={{ color: L ? '#6b7280' : 'hsl(var(--muted-foreground))' }}>{label}</p>
+                  <p className="text-xs font-medium" style={{ color: L ? '#6b7280' : 'hsl(var(--muted-foreground))' }}>{label}</p>
                   {/* Light: لون داكن واضح */}
                   <p className="text-[12px] font-black tabular-nums" style={{ color: accent }}>{value}</p>
                 </div>
@@ -333,7 +333,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" style={{ color: L ? '#b45309' : '#F7C948' }} />
-                <span className="text-[11px] font-bold" style={{ color: L ? '#374151' : 'hsl(var(--foreground)/0.8)' }}>
+                <span className="text-xs font-bold" style={{ color: L ? '#374151' : 'hsl(var(--foreground)/0.8)' }}>
                   العمليات
                 </span>
               </div>
@@ -351,7 +351,7 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
             {subActive && opsLimit !== null && (
               <>
                 <PremiumBar pct={opsPct} color={L ? '#b45309' : '#F7C948'} isDark={!L} />
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span style={{ color: L ? '#6b7280' : 'hsl(var(--muted-foreground))' }}>
                     مستخدم:{' '}
                     <span className="font-bold tabular-nums" style={{ color: L ? '#b45309' : '#F7C948' }}>
@@ -373,11 +373,11 @@ export default function SubscriptionPremiumCard({ subscription, opsInfo, isAdmin
         {subscription && (
           <div className="flex items-center justify-between pt-1 border-t"
             style={{ borderColor: L ? 'rgba(212,175,55,0.20)' : 'hsl(var(--muted))' }}>
-            <span className="text-[9px] uppercase tracking-widest font-semibold"
+            <span className="text-xs uppercase tracking-widest font-semibold"
               style={{ color: L ? '#b45309' : 'rgba(247,201,72,0.55)' }}>
               رقم الاشتراك
             </span>
-            <span className="text-[11px] font-mono font-black tabular-nums"
+            <span className="text-xs font-mono font-black tabular-nums"
               style={L ? {
                 background: 'linear-gradient(90deg, #b45309, #d97706)',
                 WebkitBackgroundClip: 'text',

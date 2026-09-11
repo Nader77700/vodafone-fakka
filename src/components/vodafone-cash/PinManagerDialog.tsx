@@ -145,7 +145,7 @@ export function PinManagerDialog({ open, onClose }: { open: boolean; onClose: ()
                           {isRevealed ? p : '••••••'}
                         </div>
                         {isDefault && (
-                          <span className="text-[10px] text-green-500 bg-green-400/10 px-2 py-0.5 rounded flex w-max items-center gap-1 mt-1">
+                          <span className="text-xs text-green-500 bg-green-400/10 px-2 py-0.5 rounded flex w-max items-center gap-1 mt-1">
                             <CheckCircle2 className="w-3 h-3" /> الافتراضي
                           </span>
                         )}

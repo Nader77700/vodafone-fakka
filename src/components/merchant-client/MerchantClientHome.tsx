@@ -95,7 +95,7 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
         {/* صف: التاجر + المستخدم */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold truncate" style={{ color: brandColor }}>
+            <p className="text-xs font-semibold truncate" style={{ color: brandColor }}>
               {mer?.name ?? 'التاجر'}
             </p>
             <p className="text-lg font-black leading-tight text-foreground truncate">
@@ -105,12 +105,12 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
           {/* شارة نوع الاشتراك */}
           <div className="shrink-0">
             {isExpired ? (
-              <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]">
+              <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-xs">
                 منتهي
               </Badge>
             ) : isPointsBased ? (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold"
+                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-xs font-bold"
                 style={{ background: `${brandColor}15`, borderColor: `${brandColor}30`, color: brandColor }}
               >
                 <Zap className="w-3 h-3" />
@@ -118,7 +118,7 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
               </div>
             ) : isUnlimited ? (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-black"
+                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-xs font-black"
                 style={{ background: `${brandColor}15`, borderColor: `${brandColor}30`, color: brandColor }}
               >
                 <Infinity className="w-3 h-3" />
@@ -126,7 +126,7 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
               </div>
             ) : isOpsLimited ? (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold"
+                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-xs font-bold"
                 style={{ background: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.30)', color: '#f59e0b' }}
               >
                 <Zap className="w-3 h-3" />
@@ -134,7 +134,7 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
               </div>
             ) : (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold"
+                className="flex items-center gap-1 px-2 py-1 rounded-xl border text-xs font-bold"
                 style={{ background: 'rgba(74,222,128,0.10)', borderColor: 'rgba(74,222,128,0.25)', color: '#4ade80' }}
               >
                 <Clock className="w-3 h-3" />
@@ -151,7 +151,7 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
             {showLive ? (
               <p className="text-xs font-bold text-warning">
                 متبقي: {countdown!.hours}س {countdown!.minutes}د {countdown!.seconds}ث
-                <span className="text-[9px] font-normal text-muted-foreground mr-1">(عد تنازلي)</span>
+                <span className="text-xs font-normal text-muted-foreground mr-1">(عد تنازلي)</span>
               </p>
             ) : countdown ? (
               <p className="text-xs text-muted-foreground">
@@ -179,7 +179,7 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
         {/* ─── شريط تقدم العمليات ─── */}
         {isOpsLimited && opsLimit && progressPct !== null && !isExpired && (
           <div className="space-y-1">
-            <div className="flex justify-between text-[10px]">
+            <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">العمليات المستخدمة</span>
               <span className="font-bold text-foreground">{opsUsed} / {opsLimit}</span>
             </div>
@@ -200,15 +200,15 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
           <div className="grid grid-cols-3 gap-2 pt-1">
             <div className="flex flex-col items-center px-2 py-2 rounded-xl bg-muted/30 border border-border">
               <p className="text-base font-black leading-none" style={{ color: brandColor }}>{subPtsAssigned > 0 ? subPtsAssigned : (data?.member?.assigned_points ?? 0)}</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">المخصصة</p>
+              <p className="text-xs text-muted-foreground mt-0.5">المخصصة</p>
             </div>
             <div className="flex flex-col items-center px-2 py-2 rounded-xl bg-muted/30 border border-border">
               <p className="text-base font-black text-success leading-none">{displayPts}</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">المتبقية</p>
+              <p className="text-xs text-muted-foreground mt-0.5">المتبقية</p>
             </div>
             <div className="flex flex-col items-center px-2 py-2 rounded-xl bg-muted/30 border border-border">
               <p className="text-base font-black text-destructive leading-none">{subPtsAssigned > 0 ? subPtsConsumed : (data?.member?.consumed_points ?? 0)}</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">المستهلكة</p>
+              <p className="text-xs text-muted-foreground mt-0.5">المستهلكة</p>
             </div>
           </div>
         ) : (
@@ -217,14 +217,14 @@ function SubscriptionCard({ brandColor }: { brandColor: string }) {
               <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
               <div className="min-w-0">
                 <p className="text-base font-black text-success leading-none">{opsUsed}</p>
-                <p className="text-[9px] text-muted-foreground">ناجحة</p>
+                <p className="text-xs text-muted-foreground">ناجحة</p>
               </div>
             </div>
             <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-muted/30 border border-border">
               <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
               <div className="min-w-0">
                 <p className="text-base font-black text-destructive leading-none">{opsFail}</p>
-                <p className="text-[9px] text-muted-foreground">فاشلة</p>
+                <p className="text-xs text-muted-foreground">فاشلة</p>
               </div>
             </div>
           </div>
@@ -314,7 +314,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
               style={{ textShadow: '0 1px 4px rgba(0,0,0,0.90)' }}>vodafone</span>
           </div>
           <div>
-            <p className="text-[9px] font-bold leading-tight text-white"
+            <p className="text-xs font-bold leading-tight text-white"
               style={{ fontFamily: "'Dancing Script','Brush Script MT',cursive", textShadow: '0 1px 6px rgba(0,0,0,0.95)' }}>
               Nader Akram
             </p>
@@ -325,7 +325,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
         {/* يمين: بيانات الكارت */}
         <div className="flex flex-col flex-1 min-w-0 px-2 py-1.5 text-right justify-between">
           <div className="flex justify-end">
-            <span className="text-[9px] font-black px-2 py-0.5 rounded-full"
+            <span className="text-xs font-black px-2 py-0.5 rounded-full"
               style={{ color: '#fff', background: '#E60000', border: '1px solid rgba(255,255,255,0.20)' }}>
               {isMared ? 'مارد' : 'فكة'}
             </span>
@@ -337,11 +337,11 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
           </p>
 
           <div className="flex items-center justify-end gap-2 mt-0.5">
-            <span className="text-[10px] font-semibold tabular-nums" style={{ color: 'rgba(255,255,255,0.80)' }}>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: 'rgba(255,255,255,0.80)' }}>
               {product.unitsLabel}
             </span>
             {product.net_balance > 0 && (
-              <span className="text-[10px] font-semibold"
+              <span className="text-xs font-semibold"
                 style={{ color: 'rgba(255,200,0,0.90)', textShadow: '0 1px 3px rgba(0,0,0,0.80)' }}>
                 صافي: {product.net_balance.toFixed(2)} ج
               </span>
@@ -355,8 +355,8 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
               <ChevronLeft className="w-3 h-3" style={{ color: '#00E5FF' }} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-white/70">🗓 {product.validity}</span>
-              <span className="text-[11px] font-black"
+              <span className="text-xs font-medium text-white/70">🗓 {product.validity}</span>
+              <span className="text-xs font-black"
                 style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.55)' }}>
                 تنفيذ الآن
               </span>
@@ -413,11 +413,11 @@ export default function MerchantClientHome() {
         <div className="space-y-3">
           {/* عنوان القسم */}
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+            <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">
               شحن كروت فودافون كاش
             </p>
             {isExpired && (
-              <span className="text-[9px] text-destructive font-semibold">الاشتراك منتهي</span>
+              <span className="text-xs text-destructive font-semibold">الاشتراك منتهي</span>
             )}
           </div>
 
@@ -462,7 +462,7 @@ export default function MerchantClientHome() {
 
         {/* ─── قسم شحن من الرصيد ─── */}
         <div className="space-y-2">
-          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+          <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">
             شحن من رصيد أنا فودافون
           </p>
           <button

@@ -86,14 +86,14 @@ function MerchantCard({
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-bold truncate">{merchant.name}</p>
             <span className={cn(
-              'text-[10px] font-semibold px-1.5 py-0.5 rounded-full border',
+              'text-xs font-semibold px-1.5 py-0.5 rounded-full border',
               MERCHANT_STATUS_CLS[merchant.status] ?? MERCHANT_STATUS_CLS.inactive
             )}>
               {MERCHANT_STATUS_LABELS[merchant.status] ?? merchant.status}
             </span>
           </div>
           {merchant.last_activity && (
-            <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
               <Clock className="w-3 h-3 shrink-0" />
               آخر نشاط: {fmtDate(merchant.last_activity)}
             </p>
@@ -108,28 +108,28 @@ function MerchantCard({
         style={{ background: `${brandColor}08`, borderColor: `${brandColor}15` }}
       >
         <div className="text-center">
-          <p className="text-[10px] text-muted-foreground">الرصيد</p>
+          <p className="text-xs text-muted-foreground">الرصيد</p>
           <p className="text-sm font-black tabular-nums" style={{ color: brandColor }}>
             {num(merchant.current_balance).toLocaleString()}
           </p>
         </div>
         <div className="w-px h-8 bg-border" />
         <div className="text-center">
-          <p className="text-[10px] text-muted-foreground">نقاط وردت</p>
+          <p className="text-xs text-muted-foreground">نقاط وردت</p>
           <p className="text-sm font-black tabular-nums text-success">
             {num(merchant.total_points_received).toLocaleString()}
           </p>
         </div>
         <div className="w-px h-8 bg-border" />
         <div className="text-center">
-          <p className="text-[10px] text-muted-foreground">نقاط وُزّعت</p>
+          <p className="text-xs text-muted-foreground">نقاط وُزّعت</p>
           <p className="text-sm font-black tabular-nums text-warning">
             {num(merchant.total_points_given).toLocaleString()}
           </p>
         </div>
         <div className="w-px h-8 bg-border" />
         <div className="text-center">
-          <p className="text-[10px] text-muted-foreground">متبقية</p>
+          <p className="text-xs text-muted-foreground">متبقية</p>
           <p className="text-sm font-black tabular-nums text-primary">
             {num(merchant.remaining_points).toLocaleString()}
           </p>
@@ -142,7 +142,7 @@ function MerchantCard({
           <div key={label} className="text-center">
             <Icon className="w-3 h-3 mx-auto text-muted-foreground mb-0.5" />
             <p className="text-xs font-black tabular-nums">{val}</p>
-            <p className="text-[9px] text-muted-foreground leading-tight">{label}</p>
+            <p className="text-xs text-muted-foreground leading-tight">{label}</p>
           </div>
         ))}
       </div>
@@ -221,7 +221,7 @@ function MerchantDetailView({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold truncate">{merchant.name}</p>
-          <p className="text-[10px] text-muted-foreground">تفاصيل التاجر</p>
+          <p className="text-xs text-muted-foreground">تفاصيل التاجر</p>
         </div>
         <Button size="sm" variant="outline" className="h-8 gap-1 text-xs shrink-0" onClick={load}>
           <RefreshCw className="w-3 h-3" />
@@ -255,7 +255,7 @@ function MerchantDetailView({
                 </div>
                 <div>
                   <p className={cn('text-base font-black tabular-nums', cls)}>{val}</p>
-                  <p className="text-[10px] text-muted-foreground">{label}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
                 </div>
               </div>
             ))}
@@ -298,13 +298,13 @@ function MerchantDetailView({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-semibold truncate">{m.username ?? '—'}</p>
                       <span className={cn(
-                        'text-[10px] font-semibold px-1.5 py-0.5 rounded-full border',
+                        'text-xs font-semibold px-1.5 py-0.5 rounded-full border',
                         MEMBER_STATUS_CLS[m.member_status] ?? MEMBER_STATUS_CLS.pending
                       )}>
                         {MEMBER_STATUS_LABELS[m.member_status] ?? m.member_status}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                       <span className="flex items-center gap-1">
                         <Zap className="w-3 h-3 text-warning" />{m.remaining_points ?? 0} نقطة
                       </span>
@@ -327,10 +327,10 @@ function MerchantDetailView({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate">{String(op.operation_type ?? op.type ?? '—')}</p>
-                      <p className="text-[10px] text-muted-foreground">{fmt(String(op.created_at ?? ''))}</p>
+                      <p className="text-xs text-muted-foreground">{fmt(String(op.created_at ?? ''))}</p>
                     </div>
                     <span className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded-full border font-semibold shrink-0',
+                      'text-xs px-1.5 py-0.5 rounded-full border font-semibold shrink-0',
                       op.status === 'success' || op.status === 'completed'
                         ? 'bg-success/10 text-success border-success/20'
                         : op.status === 'failed'
@@ -357,12 +357,12 @@ function MerchantDetailView({
                       <p className="text-xs font-semibold">
                         {fmtDate(String(s.start_date ?? ''))} ← {fmtDate(String(s.end_date ?? ''))}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {num(s.ops_used)} / {num(s.ops_limit)} عملية
                       </p>
                     </div>
                     <span className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded-full border font-semibold shrink-0',
+                      'text-xs px-1.5 py-0.5 rounded-full border font-semibold shrink-0',
                       s.status === 'active' ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground border-border'
                     )}>
                       {s.status === 'active' ? 'نشط' : s.status === 'expired' ? 'منتهي' : String(s.status ?? '—')}
@@ -383,10 +383,10 @@ function MerchantDetailView({
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs font-mono font-bold">{String(c.code ?? '—')}</p>
-                      <p className="text-[10px] text-muted-foreground">{fmt(String(c.created_at ?? ''))}</p>
+                      <p className="text-xs text-muted-foreground">{fmt(String(c.created_at ?? ''))}</p>
                     </div>
                     <span className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded-full border font-semibold shrink-0',
+                      'text-xs px-1.5 py-0.5 rounded-full border font-semibold shrink-0',
                       c.is_used ? 'bg-muted text-muted-foreground border-border' : 'bg-success/10 text-success border-success/20'
                     )}>
                       {c.is_used ? 'مستخدم' : 'متاح'}
@@ -484,7 +484,7 @@ export default function AdminMembersMonitor() {
             </div>
             <div className="min-w-0">
               <p className={cn('text-base font-black tabular-nums', cls)}>{val}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+              <p className="text-xs text-muted-foreground leading-tight">{label}</p>
             </div>
           </div>
         ))}

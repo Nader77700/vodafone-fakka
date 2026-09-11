@@ -96,11 +96,11 @@ export default function WalletLinesNationalIdPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-black text-foreground">التحقق بالرقم القومي</h1>
-            <p className="text-[10px] text-muted-foreground">خطوة أخيرة لعرض النتائج</p>
+            <p className="text-xs text-muted-foreground">خطوة أخيرة لعرض النتائج</p>
           </div>
           {/* زر تسجيل الخروج */}
           <button onClick={handleLogout} disabled={isDisabled}
-            className="flex items-center gap-1.5 text-[11px] text-red-400/70 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 active:scale-95">
+            className="flex items-center gap-1.5 text-xs text-red-400/70 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 active:scale-95">
             <LogOut className="w-3.5 h-3.5" />
             <span>خروج</span>
           </button>
@@ -111,15 +111,15 @@ export default function WalletLinesNationalIdPage() {
 
         {/* بيانات حساب My NTRA */}
         <div className="rounded-2xl p-4 border border-indigo-500/20 bg-indigo-500/6 space-y-2">
-          <p className="text-[10px] font-bold text-indigo-300/70 uppercase tracking-wide">حساب My NTRA</p>
+          <p className="text-xs font-bold text-indigo-300/70 uppercase tracking-wide">حساب My NTRA</p>
           <div className="flex items-center gap-2.5 text-sm">
             <User className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span className="text-muted-foreground text-[11px]">الاسم</span>
+            <span className="text-muted-foreground text-xs">الاسم</span>
             <span className="flex-1 text-foreground font-bold truncate text-left">{userFullName}</span>
           </div>
           <div className="flex items-center gap-2.5 text-sm">
             <Mail className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span className="text-muted-foreground text-[11px]">البريد</span>
+            <span className="text-muted-foreground text-xs">البريد</span>
             <span className="flex-1 text-foreground font-bold truncate text-left" dir="ltr">{userEmail}</span>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function WalletLinesNationalIdPage() {
             <IdCard className="w-8 h-8 text-indigo-400" />
           </div>
           <p className="text-sm text-foreground font-semibold">أدخل رقمك القومي المكوّن من 14 رقمًا</p>
-          <p className="text-[11px] text-muted-foreground leading-relaxed px-2">
+          <p className="text-xs text-muted-foreground leading-relaxed px-2">
             للتأكد من ارتباط الرقم القومي بحسابك على My NTRA قبل إظهار بيانات الخطوط والمحافظ الكاملة.
           </p>
         </div>
@@ -151,12 +151,12 @@ export default function WalletLinesNationalIdPage() {
                 style={{ background: i < filled ? '#6366f1' : 'transparent' }} />
             ))}
           </div>
-          <p className="text-[11px] text-center"
+          <p className="text-xs text-center"
             style={{ color: filled === 14 ? '#a5b4fc' : 'hsl(var(--muted-foreground) / 0.6)' }}>
             {filled} / 14 رقم
           </p>
           {err && (
-            <p className="text-[11px] text-red-400 flex items-center gap-1 justify-center">
+            <p className="text-xs text-red-400 flex items-center gap-1 justify-center">
               <XCircle className="w-3 h-3" />{err}
             </p>
           )}
@@ -187,7 +187,7 @@ export default function WalletLinesNationalIdPage() {
 
         <div className="flex items-start gap-2 p-3 rounded-xl border border-border bg-muted/50">
           <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             رقمك القومي لا يُحفظ ولا يُرسل لأي طرف ثالث — يُستخدم فقط للاستعلام الآمن.
           </p>
         </div>

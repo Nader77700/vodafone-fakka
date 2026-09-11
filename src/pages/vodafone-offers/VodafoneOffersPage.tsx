@@ -76,7 +76,7 @@ function MenuCard({ item }: { item: typeof menuItems[0] }) {
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-black mb-0.5 truncate"
             style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{item.label}</h3>
-          <p className="text-[11px] truncate"
+          <p className="text-xs truncate"
             style={{ color: L ? '#4b5563' : 'rgba(255,255,255,0.65)' }}>{item.desc}</p>
         </div>
         <ArrowRight className="w-4 h-4 rotate-180 transition-colors shrink-0"
@@ -116,13 +116,13 @@ function SessionCard({
             <PhoneCall className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-muted-foreground mb-0.5">رقم الهاتف المسجّل</p>
+            <p className="text-xs text-muted-foreground mb-0.5">رقم الهاتف المسجّل</p>
             <p className="text-sm font-black text-foreground font-mono tracking-wide truncate">{formatPhone(phone)}</p>
           </div>
           <button
             onClick={logout}
             disabled={logoutLoading}
-            className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50"
             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
           >
             {logoutLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
@@ -151,7 +151,7 @@ function RechargeShortcutCard({ ready, onClick }: { ready: boolean; onClick: () 
         </div>
         <div className="flex-1 min-w-0 text-right">
           <h3 className="text-sm font-black text-foreground mb-0.5 truncate">شحن الرصيد</h3>
-          <p className="text-[11px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {ready ? 'فتح نظام الشحن الأساسي' : 'غير متاح — تأكد من اتصال الشبكة'}
           </p>
         </div>
@@ -210,10 +210,10 @@ export default function VodafoneOffersPage() {
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-black leading-tight truncate"
               style={{ color: L ? '#1a1a2e' : '#ffffff' }}>عروض واشتراكات فودافون</h1>
-            <p className="text-[10px] text-muted-foreground">أنا فودافون</p>
+            <p className="text-xs text-muted-foreground">أنا فودافون</p>
           </div>
           <div
-            className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full shrink-0"
+            className="flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full shrink-0"
             style={{ background: 'rgba(230,0,0,0.12)', color: '#E60000', border: '1px solid rgba(230,0,0,0.25)' }}
           >
             <Tag className="w-3 h-3" />
@@ -247,7 +247,7 @@ export default function VodafoneOffersPage() {
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-black mb-0.5"
                 style={{ color: L ? '#1a1a2e' : '#ffffff' }}>عروض واشتراكات فودافون</h2>
-              <p className="text-[11px] leading-relaxed"
+              <p className="text-xs leading-relaxed"
                 style={{ color: L ? 'rgba(0,0,0,0.52)' : 'rgba(255,255,255,0.55)' }}>
                 سجّل دخولك لعرض اشتراكاتك والعروض الشخصية المتاحة على رقمك.
               </p>

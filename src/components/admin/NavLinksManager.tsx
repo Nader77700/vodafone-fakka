@@ -52,11 +52,11 @@ export default function NavLinksManager() {
 
       {/* Stats */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">{filtered.length} صفحة</Badge>
-        <Badge variant="outline" className="text-[10px] border-success/40 text-success">
+        <Badge variant="outline" className="text-xs border-primary/40 text-primary">{filtered.length} صفحة</Badge>
+        <Badge variant="outline" className="text-xs border-success/40 text-success">
           {filtered.filter(p => !ROUTE_DETAILS[p.path]?.access.includes('مسؤول')).length} عامة
         </Badge>
-        <Badge variant="outline" className="text-[10px] border-warning/40 text-warning">
+        <Badge variant="outline" className="text-xs border-warning/40 text-warning">
           {filtered.filter(p => ROUTE_DETAILS[p.path]?.access.includes('مسؤول')).length} مسؤول فقط
         </Badge>
       </div>
@@ -87,13 +87,13 @@ export default function NavLinksManager() {
                     </span>
                   </td>
                   <td className="p-3 whitespace-nowrap">
-                    <code className="text-[11px] bg-muted/60 px-1.5 py-0.5 rounded font-mono text-primary">{page.path}</code>
+                    <code className="text-xs bg-muted/60 px-1.5 py-0.5 rounded font-mono text-primary">{page.path}</code>
                   </td>
                   <td className="p-3 text-xs text-muted-foreground hidden md:table-cell max-w-[180px]">
                     <span className="line-clamp-2">{page.description ?? '—'}</span>
                   </td>
                   <td className="p-3 whitespace-nowrap hidden lg:table-cell">
-                    <Badge variant="outline" className={`text-[10px] ${isAdmin ? 'border-warning/40 text-warning' : 'border-success/40 text-success'}`}>
+                    <Badge variant="outline" className={`text-xs ${isAdmin ? 'border-warning/40 text-warning' : 'border-success/40 text-success'}`}>
                       {details?.access ?? 'مستخدم مسجّل'}
                     </Badge>
                   </td>

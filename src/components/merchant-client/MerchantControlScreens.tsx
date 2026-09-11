@@ -91,7 +91,7 @@ function FullScreenBlock({ icon: Icon, iconBg, iconColor, title, message, badge,
       dir="rtl"
     >
       {/* Badge */}
-      <span className={cn('text-[10px] font-black px-3 py-1 rounded-full border', badgeCls)}>
+      <span className={cn('text-xs font-black px-3 py-1 rounded-full border', badgeCls)}>
         {badge}
       </span>
 
@@ -119,7 +119,7 @@ function FullScreenBlock({ icon: Icon, iconBg, iconColor, title, message, badge,
       )}
 
       {/* Powered by */}
-      <p className="text-[10px] text-muted-foreground/50 absolute bottom-6">
+      <p className="text-xs text-muted-foreground/50 absolute bottom-6">
         Vodafone Fakka Premium
       </p>
     </div>

@@ -98,7 +98,7 @@ export default function InvoiceReceipt({ invoice, compact = false }: InvoiceRece
               {invoice.status === 'success' ? '✓ تمت العملية بنجاح' : invoice.status === 'failed' ? '✗ فشلت العملية' : '⏳ معلقة'}
             </p>
             {invoice.opNumber != null && (
-              <p className="text-[11px] font-mono text-muted-foreground">
+              <p className="text-xs font-mono text-muted-foreground">
                 رقم العملية: <span className="font-bold text-foreground">#{invoice.opNumber}</span>
               </p>
             )}
@@ -114,7 +114,7 @@ export default function InvoiceReceipt({ invoice, compact = false }: InvoiceRece
             className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border"
             style={{ background: 'var(--invoice-row-bg, rgba(255,255,255,0.03))', borderColor: 'var(--invoice-row-bd, rgba(255,255,255,0.06))' }}
           >
-            <span className="text-[11px] shrink-0 text-muted-foreground">{r.label}</span>
+            <span className="text-xs shrink-0 text-muted-foreground">{r.label}</span>
             <div className="flex items-center gap-1.5 min-w-0">
               <span
                 className={`text-xs font-mono truncate max-w-[160px] ${r.bold ? 'font-bold' : 'font-semibold'}`}

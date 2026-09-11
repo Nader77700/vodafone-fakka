@@ -39,7 +39,7 @@ export default function UpdateBanner() {
           </div>
           <p className="text-xs text-muted-foreground/90 mt-1 flex items-center gap-2">
             <span>النسخة v{latestVersion.version}</span>
-            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium tracking-widest">
+            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium tracking-widest">
               الحالية: {installedVersion ?? '؟'}
             </span>
           </p>

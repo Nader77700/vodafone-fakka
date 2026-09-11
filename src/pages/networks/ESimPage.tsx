@@ -56,13 +56,13 @@ function OfferCard({
       <div className="h-px w-full" style={{ background: `linear-gradient(90deg,transparent,${BLUE}80,transparent)` }} />
 
       {offer.is_featured && (
-        <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black"
+        <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black"
           style={{ background: 'rgba(255,215,0,0.2)', border: '1px solid rgba(255,215,0,0.5)', color: '#FFD700' }}>
           <Star className="w-2.5 h-2.5" /> مميز
         </div>
       )}
       {offer.hidden && isAdmin && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black"
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black"
           style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444' }}>
           <EyeOff className="w-2.5 h-2.5" /> مخفي
         </div>
@@ -84,22 +84,22 @@ function OfferCard({
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-black text-foreground">{offer.title}</p>
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+              <span className="text-xs px-1.5 py-0.5 rounded-full font-bold"
                 style={{ background: `${BLUE}20`, color: BLUE, border: `1px solid ${BLUE}30` }}>
                 {offer.data_size}
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground line-clamp-2 text-pretty">{offer.description}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 text-pretty">{offer.description}</p>
 
             <div className="flex items-center gap-3 flex-wrap pt-1">
               {settings.show_prices && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-base font-black" style={{ color: BLUE }}>{offer.price} جنيه</span>
                   {settings.show_discounts && offer.old_price && (
-                    <span className="text-[10px] line-through text-muted-foreground">{offer.old_price}</span>
+                    <span className="text-xs line-through text-muted-foreground">{offer.old_price}</span>
                   )}
                   {settings.show_discounts && offer.discount && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                    <span className="text-xs px-1.5 py-0.5 rounded-full font-bold"
                       style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}>
                       -{offer.discount}%
                     </span>
@@ -108,17 +108,17 @@ function OfferCard({
               )}
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">{offer.duration}</span>
+                <span className="text-xs text-muted-foreground">{offer.duration}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Zap className="w-3 h-3" style={{ color: BLUE }} />
-                <span className="text-[10px]" style={{ color: BLUE }}>{offer.speed}</span>
+                <span className="text-xs" style={{ color: BLUE }}>{offer.speed}</span>
               </div>
               <div className="flex items-center gap-1">
                 {offer.warranty
                   ? <Shield className="w-3 h-3 text-success" />
                   : <ShieldOff className="w-3 h-3 text-muted-foreground" />}
-                <span className={`text-[10px] ${offer.warranty ? 'text-success' : 'text-muted-foreground'}`}>
+                <span className={`text-xs ${offer.warranty ? 'text-success' : 'text-muted-foreground'}`}>
                   {offer.warranty ? 'ضمان' : 'بدون ضمان'}
                 </span>
               </div>
@@ -130,7 +130,7 @@ function OfferCard({
         <div className="flex items-center gap-2 mt-3">
           <button
             onClick={() => navigate(`/networks/esim/${offer.id}`)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
             style={{ background: `${BLUE}20`, border: `1px solid ${BLUE}40`, color: BLUE }}
           >
             التفاصيل <ArrowRight className="w-3.5 h-3.5" />
@@ -201,19 +201,19 @@ function AdminStatusPanel({ settings, onUpdate }: { settings: ESimSettings; onUp
       <div className="flex items-center gap-2">
         <Settings className="w-4 h-4" style={{ color: BLUE }} />
         <p className="text-sm font-black" style={{ color: BLUE }}>لوحة إدارة eSIM</p>
-        {saving && <span className="text-[10px] text-muted-foreground">جاري الحفظ...</span>}
+        {saving && <span className="text-xs text-muted-foreground">جاري الحفظ...</span>}
       </div>
 
       {/* حالة القسم */}
       <div>
-        <p className="text-[10px] text-muted-foreground mb-2">حالة القسم</p>
+        <p className="text-xs text-muted-foreground mb-2">حالة القسم</p>
         <div className="grid grid-cols-2 gap-2">
           {STATUS_OPTIONS.map(opt => {
             const Icon = opt.icon;
             const active = settings.section_status === opt.value;
             return (
               <button key={opt.value} onClick={() => handleStatusChange(opt.value)}
-                className="flex items-center gap-2 p-2 rounded-xl text-[11px] font-bold transition-all"
+                className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold transition-all"
                 style={{
                   background: active ? `${opt.color}20` : 'rgba(255,255,255,0.03)',
                   border: `1px solid ${active ? `${opt.color}50` : 'rgba(255,255,255,0.08)'}`,
@@ -230,13 +230,13 @@ function AdminStatusPanel({ settings, onUpdate }: { settings: ESimSettings; onUp
       {/* إعدادات العرض */}
       <div className="flex gap-2">
         <button onClick={handleTogglePrices}
-          className="flex-1 flex items-center justify-between gap-2 p-2.5 rounded-xl text-[11px] font-bold"
+          className="flex-1 flex items-center justify-between gap-2 p-2.5 rounded-xl text-xs font-bold"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <span className="flex items-center gap-1.5"><Tag className="w-3 h-3" style={{ color: BLUE }} /> عرض الأسعار</span>
           {settings.show_prices ? <ToggleRight className="w-5 h-5" style={{ color: BLUE }} /> : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}
         </button>
         <button onClick={handleToggleDiscounts}
-          className="flex-1 flex items-center justify-between gap-2 p-2.5 rounded-xl text-[11px] font-bold"
+          className="flex-1 flex items-center justify-between gap-2 p-2.5 rounded-xl text-xs font-bold"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <span className="flex items-center gap-1.5"><Tag className="w-3 h-3 text-success" /> الخصومات</span>
           {settings.show_discounts ? <ToggleRight className="w-5 h-5 text-success" /> : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}
@@ -398,7 +398,7 @@ export default function ESimPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-black text-foreground text-balance">📶 شرائح eSIM</h1>
-            <p className="text-[11px] text-muted-foreground">إلكترونية جاهزة للتفعيل فوراً · بدون VPN</p>
+            <p className="text-xs text-muted-foreground">إلكترونية جاهزة للتفعيل فوراً · بدون VPN</p>
           </div>
           {isAdmin && (
             <button

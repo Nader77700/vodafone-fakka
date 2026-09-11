@@ -93,7 +93,7 @@ export default function SubscribePackagePage() {
             <ChevronRight className="w-4 h-4" />تفاصيل الباقة
           </button>
           <h1 className="text-xl font-black text-foreground">الاشتراك في الباقة</h1>
-          <p className="text-[11px] text-muted-foreground mt-1">راجع بياناتك ثم أرسل الطلب عبر واتساب</p>
+          <p className="text-xs text-muted-foreground mt-1">راجع بياناتك ثم أرسل الطلب عبر واتساب</p>
         </div>
       </div>
 
@@ -104,14 +104,14 @@ export default function SubscribePackagePage() {
           <div className="rounded-xl p-3 flex items-start gap-2"
             style={{ background: `${cardColor}14`, border: `1px solid ${cardColor}38` }}>
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: cardColor }} />
-            <p className="text-[11px] text-foreground">{pkg.pre_subscription_msg}</p>
+            <p className="text-xs text-foreground">{pkg.pre_subscription_msg}</p>
           </div>
         )}
 
         {/* ══ ملخص الباقة ══ */}
         <div className="rounded-2xl p-4"
           style={{ background: L ? `linear-gradient(135deg,${cardColor}10,#f9fafb)` : `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.65))`, border: `1.5px solid ${cardColor}4d` }}>
-          <p className="text-[10px] font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
+          <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
             <Package className="w-3 h-3" />الباقة المختارة
           </p>
           <div className="flex items-center gap-3">
@@ -124,25 +124,25 @@ export default function SubscribePackagePage() {
               {pkg.network_name && (
                 <div className="flex items-center gap-1">
                   <Network className="w-3 h-3" style={{ color: cardColor }} />
-                  <span className="text-[10px] font-semibold" style={{ color: cardColor }}>{pkg.network_name}</span>
+                  <span className="text-xs font-semibold" style={{ color: cardColor }}>{pkg.network_name}</span>
                 </div>
               )}
               <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Wifi className="w-3 h-3" />{pkg.data_gb} GB
                 </span>
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Phone className="w-3 h-3" />{pkg.minutes} دقيقة
                 </span>
                 {pkg.duration && (
-                  <span className="text-[10px] text-muted-foreground">{pkg.duration}</span>
+                  <span className="text-xs text-muted-foreground">{pkg.duration}</span>
                 )}
               </div>
             </div>
             <div className="text-left shrink-0">
               <p className="text-lg font-black text-foreground">{currentPrice}</p>
-              {pct > 0 && <p className="text-[9px] text-muted-foreground line-through">{originalPrice}</p>}
-              <p className="text-[9px] text-muted-foreground">جنيه/شهر</p>
+              {pct > 0 && <p className="text-xs text-muted-foreground line-through">{originalPrice}</p>}
+              <p className="text-xs text-muted-foreground">جنيه/شهر</p>
             </div>
           </div>
         </div>
@@ -159,8 +159,8 @@ export default function SubscribePackagePage() {
             style={{ background: userName ? 'rgba(0,200,150,0.06)' : 'rgba(230,0,0,0.06)', border: `1px solid ${userName ? 'rgba(0,200,150,0.20)' : 'rgba(230,0,0,0.20)'}` }}>
             <User className="w-3.5 h-3.5 shrink-0" style={{ color: userName ? '#00C896' : VF_RED }} />
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] text-muted-foreground">الاسم</p>
-              <p className="text-[11px] font-bold text-foreground truncate">{userName || '⚠ غير محدد'}</p>
+              <p className="text-xs text-muted-foreground">الاسم</p>
+              <p className="text-xs font-bold text-foreground truncate">{userName || '⚠ غير محدد'}</p>
             </div>
             {userName ? <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#00C896' }} />
                       : <AlertCircle className="w-3.5 h-3.5 shrink-0" style={{ color: VF_RED }} />}
@@ -171,8 +171,8 @@ export default function SubscribePackagePage() {
             style={{ background: profile?.phone ? 'rgba(0,200,150,0.06)' : 'rgba(230,0,0,0.06)', border: `1px solid ${profile?.phone ? 'rgba(0,200,150,0.20)' : 'rgba(230,0,0,0.20)'}` }}>
             <PhoneIcon className="w-3.5 h-3.5 shrink-0" style={{ color: profile?.phone ? '#00C896' : VF_RED }} />
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] text-muted-foreground">رقم الهاتف</p>
-              <p className="text-[11px] font-bold text-foreground truncate">{profile?.phone || '⚠ غير محدد'}</p>
+              <p className="text-xs text-muted-foreground">رقم الهاتف</p>
+              <p className="text-xs font-bold text-foreground truncate">{profile?.phone || '⚠ غير محدد'}</p>
             </div>
             {profile?.phone ? <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#00C896' }} />
                             : <AlertCircle className="w-3.5 h-3.5 shrink-0" style={{ color: VF_RED }} />}
@@ -184,8 +184,8 @@ export default function SubscribePackagePage() {
               style={{ background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.20)' }}>
               <Hash className="w-3.5 h-3.5 shrink-0" style={{ color: '#a78bfa' }} />
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] text-muted-foreground">معرف المستخدم</p>
-                <p className="text-[10px] font-mono text-foreground truncate">{user.id}</p>
+                <p className="text-xs text-muted-foreground">معرف المستخدم</p>
+                <p className="text-xs font-mono text-foreground truncate">{user.id}</p>
               </div>
               <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#00C896' }} />
             </div>
@@ -196,8 +196,8 @@ export default function SubscribePackagePage() {
             style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))' }}>
             <Calendar className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] text-muted-foreground">تاريخ الطلب</p>
-              <p className="text-[11px] font-bold text-foreground">{formatEgyptDate(new Date().toISOString())}</p>
+              <p className="text-xs text-muted-foreground">تاريخ الطلب</p>
+              <p className="text-xs font-bold text-foreground">{formatEgyptDate(new Date().toISOString())}</p>
             </div>
           </div>
 
@@ -206,7 +206,7 @@ export default function SubscribePackagePage() {
             <div className="flex items-start gap-2 rounded-xl p-2.5"
               style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.22)' }}>
               <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: VF_RED }} />
-              <p className="text-[10px] text-muted-foreground">{blockMsg}</p>
+              <p className="text-xs text-muted-foreground">{blockMsg}</p>
             </div>
           )}
         </div>
@@ -215,17 +215,17 @@ export default function SubscribePackagePage() {
         {pkg.show_fields?.terms !== false && pkg.terms.length > 0 && (
           <div className="rounded-2xl p-4"
             style={{ background: `${cardColor}0a`, border: `1px solid ${cardColor}26` }}>
-            <p className="text-[10px] font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
+            <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
               <AlertCircle className="w-3 h-3" style={{ color: cardColor }} />شروط الاشتراك
             </p>
             <ul className="space-y-1.5">
               {pkg.terms.slice(0, 4).map((t, i) => (
-                <li key={i} className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                   <span style={{ color: cardColor }}>•</span>{t}
                 </li>
               ))}
               {pkg.terms.length > 4 && (
-                <li className="text-[10px]" style={{ color: cardColor }}>+{pkg.terms.length - 4} شروط أخرى…</li>
+                <li className="text-xs" style={{ color: cardColor }}>+{pkg.terms.length - 4} شروط أخرى…</li>
               )}
             </ul>
           </div>

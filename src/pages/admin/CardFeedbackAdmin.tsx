@@ -186,13 +186,13 @@ export default function CardFeedbackAdmin() {
                   </div>
                   <div>
                     <h3 className="font-bold text-sm truncate max-w-[150px]">{fb.user_name}</h3>
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <Clock className="w-3 h-3" />
                       {formatEgyptDate(fb.created_at)}
                     </p>
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${STATUS_COLORS[fb.status]}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${STATUS_COLORS[fb.status]}`}>
                   {STATUS_LABELS[fb.status]}
                 </span>
               </div>
@@ -204,21 +204,21 @@ export default function CardFeedbackAdmin() {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">الرقم المرجعي:</span>
-                  <span className="font-mono text-[10px]">{fb.operation_id.slice(0, 10).toUpperCase()}</span>
+                  <span className="font-mono text-xs">{fb.operation_id.slice(0, 10).toUpperCase()}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-primary/5 rounded-lg p-2 text-center border border-primary/10">
-                  <p className="text-[10px] text-muted-foreground mb-1">الوحدات</p>
+                  <p className="text-xs text-muted-foreground mb-1">الوحدات</p>
                   <p className="text-sm font-bold text-primary">{fb.actual_units ?? '-'}</p>
                 </div>
                 <div className="bg-primary/5 rounded-lg p-2 text-center border border-primary/10">
-                  <p className="text-[10px] text-muted-foreground mb-1">السعر</p>
+                  <p className="text-xs text-muted-foreground mb-1">السعر</p>
                   <p className="text-sm font-bold text-primary">{fb.actual_price ? `${fb.actual_price}ج` : '-'}</p>
                 </div>
                 <div className="bg-primary/5 rounded-lg p-2 text-center border border-primary/10">
-                  <p className="text-[10px] text-muted-foreground mb-1">الصلاحية</p>
+                  <p className="text-xs text-muted-foreground mb-1">الصلاحية</p>
                   <p className="text-sm font-bold text-primary">{fb.actual_validity_days ? `${fb.actual_validity_days}ي` : '-'}</p>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function CardFeedbackAdmin() {
 
               {fb.admin_notes && (
                 <div className="bg-warning/5 rounded-lg p-3 border border-warning/20">
-                  <p className="text-[10px] font-bold text-warning mb-1 flex items-center gap-1">
+                  <p className="text-xs font-bold text-warning mb-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> ملاحظات الإدارة:
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">{fb.admin_notes}</p>

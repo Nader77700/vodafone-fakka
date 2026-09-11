@@ -74,7 +74,7 @@ export default function UserPickerSheet({ selectedIds, onSelect }: UserPickerShe
           </Button>
         )}
         {selectedIds.length > 0 && (
-          <Badge variant="outline" className="text-[10px] border-primary/40 text-primary mr-auto">
+          <Badge variant="outline" className="text-xs border-primary/40 text-primary mr-auto">
             {selectedIds.length} محدد
           </Badge>
         )}
@@ -109,13 +109,13 @@ export default function UserPickerSheet({ selectedIds, onSelect }: UserPickerShe
                 {u.avatar_url ? (
                   <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-[10px] font-bold text-primary">{getInitials(u)}</span>
+                  <span className="text-xs font-bold text-primary">{getInitials(u)}</span>
                 )}
               </div>
               {/* Info */}
               <div className="flex-1 min-w-0 text-right">
                 <p className="text-xs font-semibold truncate">{u.username ?? u.full_name ?? '—'}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{u.email ?? u.phone ?? u.id.slice(0,12)+'…'}</p>
+                <p className="text-xs text-muted-foreground truncate">{u.email ?? u.phone ?? u.id.slice(0,12)+'…'}</p>
               </div>
               {/* Check */}
               {selected

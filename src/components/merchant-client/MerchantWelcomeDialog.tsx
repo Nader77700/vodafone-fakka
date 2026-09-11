@@ -111,7 +111,7 @@ export default function MerchantWelcomeDialog() {
               {lines.map((line, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed">
                   <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5"
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
                     style={{ background: `${brandColor}18`, color: brandColor }}
                   >
                     {i + 1}

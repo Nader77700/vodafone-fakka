@@ -83,7 +83,7 @@ export default function ESimOfferFormModal({ offer, onClose, onSave }: Props) {
             { label: 'رابط الصورة', key: 'image', type: 'text', placeholder: 'https://...' },
           ].map(({ label, key, type, placeholder }) => (
             <div key={key}>
-              <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
+              <p className="text-xs text-muted-foreground mb-1">{label}</p>
               <input
                 type={type}
                 value={(form[key as keyof typeof form] as string | number) ?? ''}
@@ -99,7 +99,7 @@ export default function ESimOfferFormModal({ offer, onClose, onSave }: Props) {
 
           {/* الوصف */}
           <div>
-            <p className="text-[11px] text-muted-foreground mb-1">الوصف</p>
+            <p className="text-xs text-muted-foreground mb-1">الوصف</p>
             <textarea
               value={form.description}
               onChange={e => set('description', e.target.value)}
@@ -111,7 +111,7 @@ export default function ESimOfferFormModal({ offer, onClose, onSave }: Props) {
 
           {/* المميزات */}
           <div>
-            <p className="text-[11px] text-muted-foreground mb-1">المميزات (كل مميزة في سطر)</p>
+            <p className="text-xs text-muted-foreground mb-1">المميزات (كل مميزة في سطر)</p>
             <textarea
               value={form.features.join('\n')}
               onChange={e => set('features', e.target.value.split('\n').filter(Boolean))}
@@ -123,7 +123,7 @@ export default function ESimOfferFormModal({ offer, onClose, onSave }: Props) {
 
           {/* الشبكات المدعومة */}
           <div>
-            <p className="text-[11px] text-muted-foreground mb-1">الشبكات المدعومة (كل شبكة في سطر)</p>
+            <p className="text-xs text-muted-foreground mb-1">الشبكات المدعومة (كل شبكة في سطر)</p>
             <textarea
               value={form.supported_networks.join('\n')}
               onChange={e => set('supported_networks', e.target.value.split('\n').filter(Boolean))}
@@ -143,7 +143,7 @@ export default function ESimOfferFormModal({ offer, onClose, onSave }: Props) {
             ].map(({ label, key }) => (
               <button key={key}
                 onClick={() => set(key as keyof typeof EMPTY, !form[key as keyof typeof form])}
-                className="flex items-center justify-between p-2.5 rounded-xl text-[11px] font-bold"
+                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-bold"
                 style={{
                   background: form[key as keyof typeof form] ? `${BLUE}15` : 'rgba(255,255,255,0.03)',
                   border: `1px solid ${form[key as keyof typeof form] ? `${BLUE}40` : 'rgba(255,255,255,0.08)'}`,

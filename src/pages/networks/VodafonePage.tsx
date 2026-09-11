@@ -52,12 +52,12 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
 
       <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end z-10">
         {pct > 0 && (
-          <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+          <span className="text-xs font-black px-2 py-0.5 rounded-full"
             style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})`, color: '#ffffff' }}>
             وفر {pct}%
           </span>
         )}
-        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full"
           style={{ background: statusMeta.bg, color: statusMeta.color, border: `1px solid ${statusMeta.color}40` }}>
           {statusMeta.label}
         </span>
@@ -73,13 +73,13 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-black text-foreground">{pkg.name}</h3>
               {pkg.badge_label && (
-                <Badge className="text-[9px] px-1.5 py-0 h-4 shrink-0"
+                <Badge className="text-xs px-1.5 py-0 h-4 shrink-0"
                   style={{ background: `${cardColor}26`, color: cardColor, border: `1px solid ${cardColor}59` }}>
                   {pkg.badge_label}
                 </Badge>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 text-pretty line-clamp-2">
+            <p className="text-xs text-muted-foreground mt-0.5 text-pretty line-clamp-2">
               {pkg.short_description || pkg.description}
             </p>
           </div>
@@ -92,9 +92,9 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Wifi className="w-3 h-3" style={{ color: cardColor }} />
                 <span className="text-xs font-black" style={{ color: cardColor }}>{pkg.data_gb}</span>
-                <span className="text-[9px] text-muted-foreground">جيجا</span>
+                <span className="text-xs text-muted-foreground">جيجا</span>
               </div>
-              <p className="text-[9px] text-muted-foreground">إنترنت عالي السرعة</p>
+              <p className="text-xs text-muted-foreground">إنترنت عالي السرعة</p>
             </div>
           )}
           {sf.minutes !== false && (
@@ -105,9 +105,9 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
                 <span className="text-xs font-black" style={{ color: cardColor }}>
                   {pkg.minutes >= 1000 ? `${(pkg.minutes/1000).toFixed(pkg.minutes%1000===0?0:1)}k` : pkg.minutes}
                 </span>
-                <span className="text-[9px] text-muted-foreground">دقيقة</span>
+                <span className="text-xs text-muted-foreground">دقيقة</span>
               </div>
-              <p className="text-[9px] text-muted-foreground">على جميع الشبكات</p>
+              <p className="text-xs text-muted-foreground">على جميع الشبكات</p>
             </div>
           )}
         </div>
@@ -115,11 +115,11 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
         {sf.renewal !== false && (
           <div className="flex items-center gap-1.5 mb-3">
             <RefreshCw className="w-3 h-3" style={{ color: cardColor }} />
-            <span className="text-[10px] font-semibold" style={{ color: cardColor }}>
+            <span className="text-xs font-semibold" style={{ color: cardColor }}>
               {pkg.renewal_type || 'تجديد تلقائي شهري'}
             </span>
             {sf.duration !== false && pkg.duration && (
-              <span className="text-[10px] text-muted-foreground">• {pkg.duration}</span>
+              <span className="text-xs text-muted-foreground">• {pkg.duration}</span>
             )}
           </div>
         )}
@@ -130,10 +130,10 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
               <span className="text-2xl font-black text-foreground">{currentPrice}</span>
               <span className="text-xs text-muted-foreground">جنيه/شهر</span>
             </div>
-            {pct > 0 && <span className="text-[10px] text-muted-foreground line-through">{originalPrice} جنيه</span>}
+            {pct > 0 && <span className="text-xs text-muted-foreground line-through">{originalPrice} جنيه</span>}
           </div>
           {pct > 0 && (
-            <div className="flex items-center gap-1 mb-1 text-[10px] font-bold" style={{ color: '#00C896' }}>
+            <div className="flex items-center gap-1 mb-1 text-xs font-bold" style={{ color: '#00C896' }}>
               <Zap className="w-3 h-3" />
               وفرت {originalPrice - currentPrice} جنيه
             </div>
@@ -163,14 +163,14 @@ function PackageCard({ pkg, onSubscribe, onWhatsapp }: {
         <div className="grid grid-cols-2 gap-2">
           <Link
             to={`/networks/vodafone/package/${pkg.id}`}
-            className="h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+            className="h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
             style={{ background: `${cardColor}14`, border: `1px solid ${cardColor}33`, color: cardColor }}>
             <Info className="w-3.5 h-3.5" />
             تفاصيل الباقة
           </Link>
           <button
             onClick={() => onWhatsapp(pkg)}
-            className="h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+            className="h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
             style={{ background: 'rgba(37,211,102,0.10)', border: '1px solid rgba(37,211,102,0.25)', color: '#25d366' }}>
             <MessageCircle className="w-3.5 h-3.5" />
             واتساب
@@ -237,11 +237,11 @@ export default function VodafonePage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-black text-foreground">Vodafone</h1>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                <span className="text-xs font-black px-2 py-0.5 rounded-full"
                   style={{ background: 'linear-gradient(90deg,#E60000,#B30000)', color: '#ffffff' }}>RED</span>
               </div>
               <p className="text-sm font-bold" style={{ color: '#E60000' }}>باقات خطوط الأفراد</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">اشترك وادفع شهرياً — تجديد تلقائي</p>
+              <p className="text-xs text-muted-foreground mt-0.5">اشترك وادفع شهرياً — تجديد تلقائي</p>
             </div>
           </div>
         </div>
@@ -258,7 +258,7 @@ export default function VodafonePage() {
             <div key={label} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 shrink-0"
               style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.18)' }}>
               <Icon className="w-3 h-3" style={{ color: '#E60000' }} />
-              <span className="text-[10px] font-semibold" style={{ color: '#E60000' }}>{label}</span>
+              <span className="text-xs font-semibold" style={{ color: '#E60000' }}>{label}</span>
             </div>
           ))}
         </div>
@@ -268,7 +268,7 @@ export default function VodafonePage() {
         <div className="flex items-center gap-2">
           <Wifi className="w-4 h-4" style={{ color: '#E60000' }} />
           <h2 className="text-sm font-black text-foreground">باقات Vodafone RED</h2>
-          {!loading && <span className="text-[10px] text-muted-foreground">({packages.length} باقة)</span>}
+          {!loading && <span className="text-xs text-muted-foreground">({packages.length} باقة)</span>}
         </div>
 
         {loading ? (
@@ -281,7 +281,7 @@ export default function VodafonePage() {
             style={{ background: 'rgba(230,0,0,0.06)', border: '1.5px solid rgba(230,0,0,0.18)' }}>
             <Wifi className="w-10 h-10 mx-auto mb-3 opacity-40" style={{ color: '#E60000' }} />
             <p className="text-sm font-bold text-foreground">لا توجد باقات متاحة حالياً</p>
-            <p className="text-[11px] text-muted-foreground mt-1">سيتم إضافة الباقات قريباً</p>
+            <p className="text-xs text-muted-foreground mt-1">سيتم إضافة الباقات قريباً</p>
           </div>
         ) : (
           <div className="space-y-4">

@@ -234,7 +234,7 @@ function OpDetailsSheet({ op, open, onClose }: { op: Operation | null; open: boo
       <div className="flex items-start gap-3 py-2.5 border-b border-border/30 last:border-b-0">
         {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />}
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
           <p className={`text-xs font-semibold break-all ${mono ? 'font-mono' : ''} ${v === '—' ? 'text-muted-foreground' : 'text-foreground'}`}>{v}</p>
         </div>
         {copyable && v !== '—' && (
@@ -254,11 +254,11 @@ function OpDetailsSheet({ op, open, onClose }: { op: Operation | null; open: boo
           <SheetTitle className="flex items-center gap-2 text-sm">
             <span>{isSuccess ? '✅' : '❌'}</span>
             تفاصيل العملية
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${srcCls}`}>{srcDot} {srcLabel}</span>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${srcCls}`}>{srcDot} {srcLabel}</span>
           </SheetTitle>
         </SheetHeader>
         <div className="py-2">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2">📋 البيانات الأساسية</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2">📋 البيانات الأساسية</p>
           <Row icon={Hash}       label="رقم العملية"  value={op.operation_number} mono copyable />
           <Row icon={Phone}      label="رقم الهاتف"   value={op.phone_number} mono copyable />
           <Row icon={CreditCard} label="نوع الكارت"   value={op.card_type} />
@@ -267,24 +267,24 @@ function OpDetailsSheet({ op, open, onClose }: { op: Operation | null; open: boo
           <Row icon={Calendar}   label="وقت التنفيذ"  value={op.performed_at ? format(new Date(op.performed_at), 'dd MMM yyyy HH:mm', { locale: ar }) : null} />
           <Row icon={Shield}     label="الحالة"        value={isSuccess ? '✅ ناجحة' : '❌ فاشلة'} />
 
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⚡ مصدر الشحن</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⚡ مصدر الشحن</p>
           <Row icon={Zap}        label="مصدر الشحن"   value={srcLabel} />
           <Row                   label="operation_source" value={op.operation_source} mono copyable />
           <Row                   label="execution_layer"  value={op.execution_layer} mono />
 
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⏱️ الأداء والتتبع</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⏱️ الأداء والتتبع</p>
           <Row icon={Timer}      label="مدة التنفيذ"  value={op.duration_ms != null ? `${op.duration_ms} ms` : null} />
           <Row                   label="latency_ms"    value={op.latency_ms != null ? `${op.latency_ms} ms` : null} />
           <Row                   label="retry_count"   value={op.retry_count} />
 
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">🔍 معرّفات Debug</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">🔍 معرّفات Debug</p>
           <Row label="Operation ID"    value={op.id} mono copyable />
           <Row label="correlation_id"  value={op.correlation_id} mono copyable />
           <Row label="idempotency_key" value={op.idempotency_key} mono copyable />
 
           {!isSuccess && op.error_message && (
             <>
-              <p className="text-[10px] font-bold text-destructive uppercase tracking-wider py-2 pt-4">🚨 تفاصيل الخطأ</p>
+              <p className="text-xs font-bold text-destructive uppercase tracking-wider py-2 pt-4">🚨 تفاصيل الخطأ</p>
               <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-3">
                 <p className="text-xs text-destructive font-medium break-words">{op.error_message}</p>
               </div>
@@ -293,9 +293,9 @@ function OpDetailsSheet({ op, open, onClose }: { op: Operation | null; open: boo
 
           {op.api_response && (
             <>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">📡 استجابة API</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">📡 استجابة API</p>
               <div className="bg-muted/30 border border-border/40 rounded-xl p-3">
-                <pre className="text-[10px] font-mono text-muted-foreground break-all whitespace-pre-wrap overflow-x-auto max-h-48">
+                <pre className="text-xs font-mono text-muted-foreground break-all whitespace-pre-wrap overflow-x-auto max-h-48">
                   {(() => { try { return JSON.stringify(JSON.parse(op.api_response), null, 2); } catch { return op.api_response; } })()}
                 </pre>
               </div>
@@ -330,8 +330,8 @@ function MiniStat({ icon: Icon, label, value, color = 'text-primary', sub }: {
       </div>
       <div className="min-w-0 flex-1">
         <p className={cn('text-sm font-black tabular-nums leading-none truncate', color)}>{value}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
-        {sub && <p className="text-[10px] text-muted-foreground/60 leading-tight">{sub}</p>}
+        <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</p>
+        {sub && <p className="text-xs text-muted-foreground/60 leading-tight">{sub}</p>}
       </div>
     </div>
   );
@@ -581,7 +581,7 @@ export default function AdminUserDetail() {
 
         {/* ══ 2. إحصائيات مدى الحياة (Lifetime) ═════════════════════════ */}
         <SectionCard title="إجمالي النشاط مدى الحياة" icon={TrendingUp}>
-          <p className="text-[11px] text-muted-foreground mb-3">
+          <p className="text-xs text-muted-foreground mb-3">
             يشمل جميع الاشتراكات القديمة والحالية — لا يتأثر بتغيير الاشتراك
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -591,7 +591,7 @@ export default function AdminUserDetail() {
             <MiniStat icon={Wallet}      label="إجمالي الإيرادات"  value={`${lifetime_amount.toFixed(0)} ج`} color="text-warning" />
           </div>
           {lifetime_last_op && (
-            <p className="text-[11px] text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               آخر عملية: <span className="font-semibold text-foreground">{fmt(lifetime_last_op)}</span>
             </p>
           )}
@@ -615,7 +615,7 @@ export default function AdminUserDetail() {
                   </>
                 }
                 {!isSubReallyActive && subscription.status === 'active' && subscription.expires_at && new Date(subscription.expires_at) <= new Date() && (
-                  <span className="mr-auto text-[10px] opacity-70">(status=active في DB لكن وقته انتهى)</span>
+                  <span className="mr-auto text-xs opacity-70">(status=active في DB لكن وقته انتهى)</span>
                 )}
               </div>
               <div className="rounded-xl border border-border overflow-hidden divide-y divide-border/50">
@@ -631,7 +631,7 @@ export default function AdminUserDetail() {
               </div>
 
               {/* ── إحصائيات الاشتراك الحالي (معزولة) ─────────────────── */}
-              <p className="text-[11px] font-semibold text-muted-foreground mt-4 mb-2 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-muted-foreground mt-4 mb-2 uppercase tracking-wide">
                 إحصائيات هذا الاشتراك فقط
               </p>
               <div className="grid grid-cols-3 gap-1.5">
@@ -676,28 +676,28 @@ export default function AdminUserDetail() {
                             : <XCircle    className="w-3.5 h-3.5 text-destructive shrink-0" />}
                           <div className="min-w-0">
                             <p className="text-xs font-medium truncate">{op.phone_number}</p>
-                            <p className="text-[10px] text-muted-foreground">{op.card_type} · {op.amount} ج</p>
+                            <p className="text-xs text-muted-foreground">{op.card_type} · {op.amount} ج</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <p className="text-[10px] text-muted-foreground hidden md:block">{fmt(op.performed_at)}</p>
+                          <p className="text-xs text-muted-foreground hidden md:block">{fmt(op.performed_at)}</p>
                           <button
                             onClick={() => { setDetailOp(op as unknown as Operation); setOpSheetOpen(true); }}
-                            className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-lg font-semibold hover:bg-primary/20 transition-colors">
+                            className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-lg font-semibold hover:bg-primary/20 transition-colors">
                             تفاصيل
                           </button>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <span className={cn(
-                          'text-[10px] font-bold px-1.5 py-0.5 rounded-full border',
+                          'text-xs font-bold px-1.5 py-0.5 rounded-full border',
                           srcIsBalance
                             ? 'bg-red-500/10 text-red-400 border-red-500/20'
                             : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                         )}>
                           {srcIsBalance ? '🔴 رصيد أنا فودافون' : '💳 Vodafone Cash'}
                         </span>
-                        <p className="text-[10px] text-muted-foreground md:hidden">{fmt(op.performed_at)}</p>
+                        <p className="text-xs text-muted-foreground md:hidden">{fmt(op.performed_at)}</p>
                       </div>
                     </div>
                   );
@@ -728,30 +728,30 @@ export default function AdminUserDetail() {
                       <Smartphone className="w-4 h-4 text-primary shrink-0" />
                       <span className="text-xs font-semibold">{dev.device_model || 'Android'}</span>
                       {dev.is_active
-                        ? <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط الآن</span>
-                        : <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">غير نشط</span>}
+                        ? <span className="text-xs bg-success/10 text-success px-1.5 py-0.5 rounded-full">نشط الآن</span>
+                        : <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">غير نشط</span>}
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{fmt(dev.last_seen_at)}</span>
+                    <span className="text-xs text-muted-foreground">{fmt(dev.last_seen_at)}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     <div className="rounded-lg bg-muted/30 p-2">
-                      <p className="text-[10px] text-muted-foreground">نظام التشغيل</p>
+                      <p className="text-xs text-muted-foreground">نظام التشغيل</p>
                       <p className="text-xs font-medium">{dev.platform || '—'}</p>
                     </div>
                     <div className="rounded-lg bg-muted/30 p-2">
-                      <p className="text-[10px] text-muted-foreground">إصدار التطبيق</p>
+                      <p className="text-xs text-muted-foreground">إصدار التطبيق</p>
                       <p className="text-xs font-medium">v{dev.app_version ?? '—'}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2 border-t border-border/50 flex-wrap">
                     <Button variant="outline" size="sm"
-                      className="flex-1 min-w-[90px] h-8 text-[10px] gap-1"
+                      className="flex-1 min-w-[90px] h-8 text-xs gap-1"
                       onClick={() => handleForceLogout(dev)}>
                       <LogOut className="w-3 h-3" /> خروج إجباري
                     </Button>
                     <Button variant="outline" size="sm"
                       className={cn(
-                        'flex-1 min-w-[90px] h-8 text-[10px] gap-1',
+                        'flex-1 min-w-[90px] h-8 text-xs gap-1',
                         dev.is_banned_from_account
                           ? 'text-success hover:bg-success/10'
                           : 'text-destructive hover:bg-destructive/10'
@@ -762,7 +762,7 @@ export default function AdminUserDetail() {
                         : <><Shield className="w-3 h-3" /> حظر من الحساب</>}
                     </Button>
                     <Button variant="outline" size="sm"
-                      className="flex-1 min-w-[90px] h-8 text-[10px] gap-1 text-destructive hover:bg-destructive/10"
+                      className="flex-1 min-w-[90px] h-8 text-xs gap-1 text-destructive hover:bg-destructive/10"
                       onClick={() => handleBanDevice(dev)}>
                       <Ban className="w-3 h-3" /> حظر نهائي (التطبيق)
                     </Button>
@@ -807,8 +807,8 @@ export default function AdminUserDetail() {
                   )}>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold line-clamp-1">{n.title || 'إشعار'}</p>
-                      {n.body && <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{n.body}</p>}
-                      <p className="text-[10px] text-muted-foreground mt-1">{fmt(n.created_at)}</p>
+                      {n.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.body}</p>}
+                      <p className="text-xs text-muted-foreground mt-1">{fmt(n.created_at)}</p>
                     </div>
                     <Button size="sm" variant="ghost"
                       className="h-6 w-6 p-0 shrink-0 text-destructive hover:bg-destructive/10"
@@ -837,8 +837,8 @@ export default function AdminUserDetail() {
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium">{a.title || a.event_type}</p>
-                    {a.description && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{a.description}</p>}
-                    <p className="text-[10px] text-muted-foreground mt-1">{fmt(a.created_at)}</p>
+                    {a.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.description}</p>}
+                    <p className="text-xs text-muted-foreground mt-1">{fmt(a.created_at)}</p>
                   </div>
                 </div>
               ))}
@@ -859,8 +859,8 @@ export default function AdminUserDetail() {
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-destructive/20 bg-destructive/5">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold">@{sim.username || '—'}</p>
-                    <p className="text-[10px] text-muted-foreground">{sim.email}</p>
-                    <p className="text-[10px] text-muted-foreground">تسجيل: {fmt(sim.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">{sim.email}</p>
+                    <p className="text-xs text-muted-foreground">تسجيل: {fmt(sim.created_at)}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1"

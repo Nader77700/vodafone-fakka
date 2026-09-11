@@ -94,7 +94,7 @@ export default function ESimDetailPage() {
           {offer.title}
         </h1>
         {offer.is_featured && (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black shrink-0"
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black shrink-0"
             style={{ background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.4)', color: '#FFD700' }}>
             <Star className="w-2.5 h-2.5" /> مميز
           </span>
@@ -138,7 +138,7 @@ export default function ESimDetailPage() {
                   <span className="text-base line-through text-muted-foreground">{offer.old_price} جنيه</span>
                 )}
                 {settings.show_discounts && offer.discount && (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-black"
+                  <span className="px-2 py-0.5 rounded-full text-xs font-black"
                     style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}>
                     وفّر {offer.discount}%
                   </span>
@@ -150,7 +150,7 @@ export default function ESimDetailPage() {
             {offer.features.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {offer.features.map(f => (
-                  <span key={f} className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold"
+                  <span key={f} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold"
                     style={{ background: `${BLUE}15`, border: `1px solid ${BLUE}30`, color: BLUE }}>
                     <CheckCircle className="w-2.5 h-2.5" /> {f}
                   </span>
@@ -163,7 +163,7 @@ export default function ESimDetailPage() {
         {/* مواصفات الشريحة */}
         <div className="rounded-2xl p-4 space-y-1"
           style={{ background: L ? 'hsl(var(--card))' : 'rgba(255,255,255,0.02)', border: L ? '1px solid hsl(var(--border))' : '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="text-[11px] font-black text-muted-foreground uppercase tracking-wider mb-2">مواصفات الشريحة</p>
+          <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">مواصفات الشريحة</p>
           <InfoRow label="نوع الشريحة"       value="eSIM إلكترونية"           icon={Smartphone} color={BLUE} L={L} />
           <InfoRow label="حجم البيانات"       value={offer.data_size}          icon={Wifi} color={BLUE} L={L} />
           <InfoRow label="مدة الصلاحية"       value={offer.duration}           icon={Clock} L={L} />
@@ -190,7 +190,7 @@ export default function ESimDetailPage() {
             <p className={`text-sm font-black ${offer.warranty ? 'text-success' : 'text-destructive'}`}>
               {offer.warranty ? '✅ يوجد ضمان' : '❌ لا يوجد ضمان'}
             </p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {offer.warranty
                 ? 'هذا العرض مضمون — في حال وجود أي مشكلة يتم الاستبدال أو الاسترجاع'
                 : 'هذا العرض لا يشمل ضماناً — للاستفسار تواصل معنا'}
@@ -213,7 +213,7 @@ export default function ESimDetailPage() {
           <div className="space-y-2">
             {ACTIVATION_STEPS.map(step => (
               <div key={step.n} className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-black"
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-black"
                   style={{ background: `${BLUE}20`, border: `1px solid ${BLUE}40`, color: BLUE }}>
                   {step.n}
                 </div>
@@ -226,7 +226,7 @@ export default function ESimDetailPage() {
         {/* معلومات الجهاز */}
         <div className="rounded-2xl p-4"
           style={{ background: L ? 'hsl(var(--card))' : 'rgba(255,255,255,0.02)', border: L ? '1px solid hsl(var(--border))' : '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="text-[11px] font-black text-muted-foreground uppercase tracking-wider mb-2">الأجهزة المدعومة</p>
+          <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">الأجهزة المدعومة</p>
           <p className="text-[12px] text-muted-foreground text-pretty">
             تعمل على جميع الأجهزة الداعمة لـ eSIM مثل iPhone XS وأحدث، Samsung Galaxy S20 وأحدث،
             وجميع أجهزة Android الحديثة الداعمة لـ eSIM.

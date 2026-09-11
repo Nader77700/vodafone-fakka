@@ -37,7 +37,7 @@ function ESimCard({ settings }: { settings: ESimSettings | null }) {
         style={{ background: `linear-gradient(90deg,transparent,${BLUE}90,transparent)` }} />
 
       {/* شارة جديد */}
-      <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-full text-[9px] font-black"
+      <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-full text-xs font-black"
         style={{ background: `${BLUE}25`, border: `1px solid ${BLUE}50`, color: BLUE }}>
         جديد ✨
       </div>
@@ -57,22 +57,22 @@ function ESimCard({ settings }: { settings: ESimSettings | null }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <p className="text-base font-black text-foreground">eSIM</p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
               style={{ background: `${BLUE}22`, color: BLUE, border: `1px solid ${BLUE}35` }}>
               شرائح إلكترونية
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground text-pretty leading-relaxed line-clamp-2">
+          <p className="text-xs text-muted-foreground text-pretty leading-relaxed line-clamp-2">
             احصل على شرائح eSIM جاهزة للتفعيل فوراً بسرعات عالية، بدون VPN، مع أفضل تغطية داخل مصر.
           </p>
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1">
               <Zap className="w-3 h-3" style={{ color: BLUE }} />
-              <span className="text-[10px] font-semibold" style={{ color: BLUE }}>تفعيل فوري</span>
+              <span className="text-xs font-semibold" style={{ color: BLUE }}>تفعيل فوري</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">بدون VPN</span>
+              <span className="text-xs text-muted-foreground">بدون VPN</span>
             </div>
           </div>
         </div>
@@ -185,23 +185,23 @@ function NetworkCard({ network }: { network: NetworkConfig }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <p className="text-base font-black text-foreground">{network.name}</p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
               style={{ background: `${network.color}22`, color: network.color, border: `1px solid ${network.borderColor}` }}>
               {network.nameAr}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground text-pretty leading-relaxed line-clamp-2">{network.description}</p>
+          <p className="text-xs text-muted-foreground text-pretty leading-relaxed line-clamp-2">{network.description}</p>
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1">
               <Zap className="w-3 h-3" style={{ color: network.color }} />
-              <span className="text-[10px] font-semibold" style={{ color: network.color }}>
+              <span className="text-xs font-semibold" style={{ color: network.color }}>
                 {network.serviceCount > 0 ? `${network.serviceCount} باقة متاحة` : 'تحت التطوير'}
               </span>
             </div>
             {network.serviceCount === 0 && (
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">قريباً</span>
+                <span className="text-xs text-muted-foreground">قريباً</span>
               </div>
             )}
           </div>
@@ -237,7 +237,7 @@ export default function NetworksPage() {
           </div>
           <div>
             <h1 className="text-lg font-black text-foreground text-balance">📡 شبكات أخرى</h1>
-            <p className="text-[11px] text-muted-foreground">اختر شبكتك واستعرض جميع الخدمات</p>
+            <p className="text-xs text-muted-foreground">اختر شبكتك واستعرض جميع الخدمات</p>
           </div>
         </div>
       </div>

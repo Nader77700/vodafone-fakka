@@ -66,7 +66,7 @@ function OperationDetailsSheet({
       <div className="flex items-start gap-3 py-2.5 border-b border-border/30 last:border-b-0">
         {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />}
         <div className={`flex-1 min-w-0 ${!Icon ? 'pr-5' : ''}`}>
-          <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
           <p className={`text-xs font-semibold break-all ${mono ? 'font-mono' : ''} ${v === '—' ? 'text-muted-foreground' : 'text-foreground'}`}>{v}</p>
         </div>
         {copyable && v !== '—' && (
@@ -87,7 +87,7 @@ function OperationDetailsSheet({
               {isSuccess ? '✅' : '❌'}
             </span>
             تفاصيل العملية
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${src.bg} ${src.color} ${src.border}`}>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${src.bg} ${src.color} ${src.border}`}>
               {src.dot} {src.label}
             </span>
           </SheetTitle>
@@ -95,7 +95,7 @@ function OperationDetailsSheet({
 
         <div className="py-2 space-y-1">
           {/* معلومات أساسية */}
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2">📋 البيانات الأساسية</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2">📋 البيانات الأساسية</p>
           <Row icon={Hash}       label="رقم العملية"   value={op.operation_number} mono copyable />
           <Row icon={Phone}      label="رقم الهاتف"    value={op.phone_number} mono copyable />
           <Row icon={CreditCard} label="نوع الكارت"    value={op.card_type} />
@@ -105,19 +105,19 @@ function OperationDetailsSheet({
           <Row icon={Shield}     label="الحالة"         value={isSuccess ? '✅ ناجحة' : '❌ فاشلة'} />
 
           {/* مصدر الشحن */}
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⚡ مصدر الشحن</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⚡ مصدر الشحن</p>
           <Row icon={Zap}        label="مصدر الشحن"    value={src.label} />
           <Row                   label="operation_source" value={op.operation_source} mono copyable />
           <Row                   label="execution_layer"  value={op.execution_layer} mono />
 
           {/* أداء */}
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⏱️ الأداء والتتبع</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">⏱️ الأداء والتتبع</p>
           <Row icon={Timer}      label="مدة التنفيذ"   value={op.duration_ms != null ? `${op.duration_ms} ms` : null} />
           <Row                   label="latency_ms"     value={op.latency_ms != null ? `${op.latency_ms} ms` : null} />
           <Row                   label="retry_count"    value={op.retry_count} />
 
           {/* معرّفات Debug */}
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">🔍 معرّفات Debug</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">🔍 معرّفات Debug</p>
           <Row label="Operation ID"    value={op.id} mono copyable />
           <Row label="correlation_id"  value={op.correlation_id} mono copyable />
           <Row label="idempotency_key" value={op.idempotency_key} mono copyable />
@@ -125,7 +125,7 @@ function OperationDetailsSheet({
           {/* خطأ (إن وُجد) */}
           {!isSuccess && op.error_message && (
             <>
-              <p className="text-[10px] font-bold text-destructive uppercase tracking-wider py-2 pt-4">🚨 تفاصيل الخطأ</p>
+              <p className="text-xs font-bold text-destructive uppercase tracking-wider py-2 pt-4">🚨 تفاصيل الخطأ</p>
               <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-3">
                 <p className="text-xs text-destructive font-medium break-words">{op.error_message}</p>
               </div>
@@ -135,9 +135,9 @@ function OperationDetailsSheet({
           {/* استجابة API */}
           {op.api_response && (
             <>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">📡 استجابة API</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">📡 استجابة API</p>
               <div className="bg-muted/30 border border-border/40 rounded-xl p-3">
-                <pre className="text-[10px] font-mono text-muted-foreground break-all whitespace-pre-wrap overflow-x-auto max-h-48">
+                <pre className="text-xs font-mono text-muted-foreground break-all whitespace-pre-wrap overflow-x-auto max-h-48">
                   {(() => {
                     try { return JSON.stringify(JSON.parse(op.api_response), null, 2); }
                     catch { return op.api_response; }
@@ -150,9 +150,9 @@ function OperationDetailsSheet({
           {/* بيانات الكارت */}
           {op.card_data && Object.keys(op.card_data).length > 0 && (
             <>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">🃏 بيانات الكارت</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider py-2 pt-4">🃏 بيانات الكارت</p>
               <div className="bg-muted/30 border border-border/40 rounded-xl p-3">
-                <pre className="text-[10px] font-mono text-muted-foreground break-all whitespace-pre-wrap overflow-x-auto max-h-48">
+                <pre className="text-xs font-mono text-muted-foreground break-all whitespace-pre-wrap overflow-x-auto max-h-48">
                   {JSON.stringify(op.card_data, null, 2)}
                 </pre>
               </div>
@@ -184,30 +184,30 @@ function OpCard({ op, onDetails }: { op: Operation; onDetails: (op: Operation) =
             : <AlertCircle className="w-4 h-4 text-destructive shrink-0" />}
           <div className="min-w-0">
             <p className="text-sm font-semibold font-mono tabular-nums">{op.phone_number}</p>
-            <p className="text-[10px] text-muted-foreground">{op.card_type} · {op.amount} ج.م</p>
+            <p className="text-xs text-muted-foreground">{op.card_type} · {op.amount} ج.م</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <p className="text-[10px] text-muted-foreground">{fmt(op.performed_at)}</p>
+          <p className="text-xs text-muted-foreground">{fmt(op.performed_at)}</p>
           <button
             onClick={() => onDetails(op)}
-            className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-semibold hover:bg-primary/20 transition-colors">
+            className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-semibold hover:bg-primary/20 transition-colors">
             تفاصيل
           </button>
         </div>
       </div>
       {/* بادجات */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${src.bg} ${src.color} ${src.border}`}>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${src.bg} ${src.color} ${src.border}`}>
           {src.dot} {src.label}
         </span>
         {isSuccess
-          ? <span className="text-[10px] text-success bg-success/5 border border-success/20 px-2 py-0.5 rounded-full">✓ تمّ بنجاح</span>
-          : <span className="text-[10px] text-destructive bg-destructive/5 border border-destructive/20 px-2 py-0.5 rounded-full truncate max-w-[200px]">
+          ? <span className="text-xs text-success bg-success/5 border border-success/20 px-2 py-0.5 rounded-full">✓ تمّ بنجاح</span>
+          : <span className="text-xs text-destructive bg-destructive/5 border border-destructive/20 px-2 py-0.5 rounded-full truncate max-w-[200px]">
               {op.error_message?.split('\n')[0] ?? 'فاشلة'}
             </span>}
         {op.operation_number && (
-          <span className="text-[10px] text-muted-foreground font-mono">#{op.operation_number}</span>
+          <span className="text-xs text-muted-foreground font-mono">#{op.operation_number}</span>
         )}
       </div>
     </div>
@@ -373,7 +373,7 @@ export default function AdminUserOperations() {
           ].map(s => (
             <div key={s.label} className="rounded-xl border border-border bg-card p-3 text-center">
               <p className={`text-xl font-black tabular-nums ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -442,7 +442,7 @@ export default function AdminUserOperations() {
             <button
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setPage(1); }}
-              className={`flex-1 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === tab.key
                   ? 'bg-card text-foreground shadow-sm border border-border/40'
                   : 'text-muted-foreground hover:text-foreground'
@@ -496,7 +496,7 @@ export default function AdminUserOperations() {
           {(search || sourceF !== 'all' || cardTypeF !== 'all' || amountF !== null) && (
             <button
               onClick={() => { setSearch(''); setSourceF('all'); setCardTypeF('all'); setAmountF(null); setPage(1); }}
-              className="text-[11px] text-primary flex items-center gap-1 hover:opacity-70">
+              className="text-xs text-primary flex items-center gap-1 hover:opacity-70">
               <X className="w-3 h-3" /> مسح الفلاتر
             </button>
           )}

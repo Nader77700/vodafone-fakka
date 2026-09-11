@@ -113,21 +113,21 @@ export default function DeepLinkSelect({ value, onChange, placeholder = 'اخت�
 
           {/* ── صفحات التطبيق ── */}
           <div className="px-2 py-1">
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">صفحات التطبيق</p>
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">صفحات التطبيق</p>
           </div>
           {APP_PAGES.map(page => (
             <SelectItem key={page.path + page.label} value={page.path}>
               <span className="flex items-center gap-2">
                 <span>{page.icon}</span>
                 <span>{page.label}</span>
-                <span className="text-[10px] text-muted-foreground font-mono hidden md:inline">{page.path}</span>
+                <span className="text-xs text-muted-foreground font-mono hidden md:inline">{page.path}</span>
               </span>
             </SelectItem>
           ))}
 
           {/* ── روابط خارجية ── */}
           <div className="px-2 py-1 border-t border-border mt-1">
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">روابط خارجية</p>
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">روابط خارجية</p>
           </div>
           <SelectItem value={WA_VALUE}>
             <span className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function DeepLinkSelect({ value, onChange, placeholder = 'اخت�
             />
           </div>
           {waPhone && (
-            <p className="text-[10px] text-muted-foreground font-mono">🔗 https://wa.me/20{waPhone}</p>
+            <p className="text-xs text-muted-foreground font-mono">🔗 https://wa.me/20{waPhone}</p>
           )}
         </div>
       )}

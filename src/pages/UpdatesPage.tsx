@@ -170,7 +170,7 @@ export default function UpdatesPage() {
               <span className="text-xs text-muted-foreground">
                 APK <span className="font-mono text-foreground/70">v{installedVersion}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground/50">·</span>
+              <span className="text-xs text-muted-foreground/50">·</span>
               <span className="text-xs text-primary/80 font-medium">
                 ويب <span className="font-mono">v{BUILD_INFO.appVersion}</span> ⚡
               </span>
@@ -213,13 +213,13 @@ export default function UpdatesPage() {
                   تحديث ويب فوري — لا تحتاج تنزيل APK جديد
                 </p>
               </div>
-              <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full shrink-0">
+              <span className="text-xs font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full shrink-0">
                 v{activeVersion.version}
               </span>
             </div>
             <div className="rounded-xl bg-muted/30 px-3 py-2 flex items-start gap-2">
               <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 التطبيق يحمّل آخر تحديث تلقائياً عند كل فتح. إصدار APK المثبَّت{' '}
                 <span className="font-mono text-foreground/70">v{installedVersion}</span>{' '}
                 يشغّل كود الويب{' '}
@@ -232,7 +232,7 @@ export default function UpdatesPage() {
                 {parseNotes(activeVersion.release_notes, true)
                   .split('\n').filter(Boolean)
                   .map((line, i) => (
-                    <p key={i} className="text-[11px] text-muted-foreground leading-relaxed flex gap-1.5">
+                    <p key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
                       <span className="text-primary/60 shrink-0">•</span>
                       {line.replace(/^[•·\-\d]+[.)]\s*/, '')}
                     </p>
@@ -265,7 +265,7 @@ export default function UpdatesPage() {
                 {parseNotes(activeVersion.release_notes, true)
                   .split('\n').filter(Boolean)
                   .map((line, i) => (
-                    <p key={i} className="text-[11px] text-muted-foreground leading-relaxed flex gap-1.5">
+                    <p key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
                       <span className="text-yellow-500/60 shrink-0">•</span>
                       {line.replace(/^[•·\-\d]+[.)]\s*/, '')}
                     </p>
@@ -287,7 +287,7 @@ export default function UpdatesPage() {
                     style={{ width: `${progress?.percent || 0}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-yellow-500/80 px-1">
+                <div className="flex items-center justify-between text-xs text-yellow-500/80 px-1">
                   <span>{((progress?.downloaded || 0) / 1024 / 1024).toFixed(1)} MB</span>
                   {progress?.remainingSec ? <span>متبقي {progress.remainingSec}ث</span> : null}
                 </div>
@@ -302,7 +302,7 @@ export default function UpdatesPage() {
             )}
             
             <div className="pt-2 border-t border-yellow-500/20 text-center">
-              <button onClick={() => Browser.open({ url: activeVersion.apk_url })} className="text-[10px] text-yellow-500/70 hover:text-yellow-500 underline underline-offset-2">
+              <button onClick={() => Browser.open({ url: activeVersion.apk_url })} className="text-xs text-yellow-500/70 hover:text-yellow-500 underline underline-offset-2">
                 مواجهة مشكلة؟ التحميل عبر المتصفح
               </button>
             </div>
@@ -330,7 +330,7 @@ export default function UpdatesPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold">تطبيق Vodafone Fakka</p>
                 {/* عرض إصدار APK الفعلي (من App.getInfo) لا BUILD_INFO */}
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   APK v{installedVersion ?? activeVersion.version} · code {installedCode ?? activeVersion.version_code}
                 </p>
               </div>
@@ -350,7 +350,7 @@ export default function UpdatesPage() {
                     style={{ width: `${progress?.percent || 0}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-primary/80 px-1">
+                <div className="flex items-center justify-between text-xs text-primary/80 px-1">
                   <span>{((progress?.downloaded || 0) / 1024 / 1024).toFixed(1)} MB</span>
                   {progress?.remainingSec ? <span>متبقي {progress.remainingSec}ث</span> : null}
                 </div>
@@ -369,12 +369,12 @@ export default function UpdatesPage() {
             )}
 
             <div className="pt-1 text-center">
-              <button onClick={() => Browser.open({ url: activeVersion.apk_url })} className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2">
+              <button onClick={() => Browser.open({ url: activeVersion.apk_url })} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2">
                 تواجه مشكلة؟ قم بالتحميل عبر المتصفح
               </button>
             </div>
 
-            <div className="rounded-xl bg-muted/30 p-3 text-[11px] text-muted-foreground space-y-1 leading-relaxed">
+            <div className="rounded-xl bg-muted/30 p-3 text-xs text-muted-foreground space-y-1 leading-relaxed">
               <p className="font-bold text-foreground/80">📋 خطوات التثبيت:</p>
               <p>1️⃣ اضغط تحميل ↑</p>
               <p>2️⃣ افتح الملف من "التنزيلات"</p>
@@ -403,14 +403,14 @@ export default function UpdatesPage() {
               <div key={v.id} className={`card-premium p-3.5 space-y-1.5 ${v.is_latest ? 'border-primary/30' : ''}`}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-bold font-mono">{v.version}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">code {v.version_code}</span>
+                  <span className="text-xs text-muted-foreground font-mono">code {v.version_code}</span>
                   {v.is_latest && (
-                    <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">أحدث</span>
+                    <span className="text-xs bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">أحدث</span>
                   )}
                   {v.update_type && v.update_type !== 'apk' && (
-                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{v.update_type}</span>
+                    <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{v.update_type}</span>
                   )}
-                  <span className="mr-auto text-[10px] text-muted-foreground flex items-center gap-1">
+                  <span className="mr-auto text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {new Date(v.created_at).toLocaleDateString('ar-EG')}
                   </span>
@@ -420,7 +420,7 @@ export default function UpdatesPage() {
                   <>
                     <div className={`space-y-0.5 overflow-hidden transition-all ${isExpanded ? '' : 'max-h-10'}`}>
                       {noteLines.map((line, i) => (
-                        <p key={i} className="text-[11px] text-muted-foreground leading-relaxed flex gap-1.5">
+                        <p key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
                           <span className="text-primary/40 shrink-0">•</span>
                           {line.replace(/^[•·\-\d]+[.)]\s*/, '')}
                         </p>
@@ -429,7 +429,7 @@ export default function UpdatesPage() {
                     {noteLines.length > 2 && (
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : v.id)}
-                        className="flex items-center gap-1 text-[10px] text-primary/70 hover:text-primary transition-colors"
+                        className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
                       >
                         {isExpanded ? <><ChevronUp className="w-3 h-3" />أقل</> : <><ChevronDown className="w-3 h-3" />المزيد</>}
                       </button>
@@ -440,7 +440,7 @@ export default function UpdatesPage() {
                 {v.apk_url && (
                   <button
                     onClick={() => Browser.open({ url: v.apk_url })}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary/70 hover:text-primary transition-colors mt-1"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/70 hover:text-primary transition-colors mt-1"
                   >
                     <Download className="w-3 h-3" /> تحميل {v.version}
                   </button>
@@ -459,7 +459,7 @@ export default function UpdatesPage() {
               {displayVersion} · Powered By <span className="text-primary font-semibold">Nader Akram</span>
             </p>
             {!showUpdate && (
-              <span className="text-[10px] bg-success/20 text-success px-1.5 py-0.5 rounded-full font-medium">
+              <span className="text-xs bg-success/20 text-success px-1.5 py-0.5 rounded-full font-medium">
                 ✓ أحدث إصدار
               </span>
             )}

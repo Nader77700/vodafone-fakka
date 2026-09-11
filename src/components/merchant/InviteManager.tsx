@@ -148,7 +148,7 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
       {/* ─── الحالة والإحصائيات ─── */}
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-3 md:col-span-1 bg-card border border-border rounded-2xl p-4 flex flex-col gap-2">
-          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">حالة الرابط</p>
+          <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">حالة الرابط</p>
           <Badge variant="outline" className={cn('w-fit text-xs font-semibold border', STATUS_STYLE[status])}>
             {invite.locked_by_owner ? 'معطّل بواسطة الإدارة' : STATUS_LABEL[status]}
           </Badge>
@@ -156,12 +156,12 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
         <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-1">
           <Users className="w-4 h-4 text-primary" />
           <p className="text-xl font-black">{invite.join_count ?? 0}</p>
-          <p className="text-[10px] text-muted-foreground">انضموا</p>
+          <p className="text-xs text-muted-foreground">انضموا</p>
         </div>
         <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-1">
           <Eye className="w-4 h-4 text-muted-foreground" />
           <p className="text-xl font-black">{invite.view_count ?? 0}</p>
-          <p className="text-[10px] text-muted-foreground">مشاهدة</p>
+          <p className="text-xs text-muted-foreground">مشاهدة</p>
         </div>
       </div>
 
@@ -170,7 +170,7 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
         'border rounded-2xl p-4 space-y-3',
         isActive ? 'bg-primary/5 border-primary/20' : 'bg-muted/20 border-border/50 opacity-75'
       )}>
-        <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">كود الدعوة</p>
+        <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">كود الدعوة</p>
         <p className={cn(
           'text-2xl font-black font-mono tracking-widest select-all',
           isActive ? 'text-primary' : 'text-muted-foreground/50'
@@ -206,7 +206,7 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
         )}
 
         {!isActive && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             الدعوة {invite.locked_by_owner ? 'مقفلة من الإدارة' : 'غير نشطة'} — لا يمكن استخدامها حالياً
           </p>
         )}
@@ -215,7 +215,7 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
       {/* ─── معاينة رسالة واتساب ─── */}
       {isActive && invite.apk_url && (
         <div className="border border-border/50 rounded-2xl p-4 bg-muted/20 space-y-2">
-          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">معاينة رسالة الدعوة</p>
+          <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">معاينة رسالة الدعوة</p>
           <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans leading-relaxed">
             {buildWhatsAppMessage(invite)}
           </pre>
@@ -223,7 +223,7 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
       )}
 
       {/* ─── ملاحظة ─── */}
-      <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/30 rounded-xl px-3 py-2 border border-border/50">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl px-3 py-2 border border-border/50">
         <Lock className="w-3 h-3 shrink-0" />
         <span>إدارة الدعوة (تفعيل / تعطيل / إعادة توليد) من لوحة الإدارة حصراً</span>
       </div>
@@ -239,15 +239,15 @@ export default function InviteManager({ merchantId }: { merchantId: string }) {
       {/* ─── آخر 5 منضمّين ─── */}
       {invite.recent_joins && invite.recent_joins.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase px-1">آخر المنضمّين</p>
+          <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase px-1">آخر المنضمّين</p>
           <div className="space-y-1.5">
             {invite.recent_joins.map((j, idx) => (
               <div key={idx} className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold truncate">{j.username ?? '—'}</p>
-                  <p className="text-[10px] text-muted-foreground">{j.phone ?? ''}</p>
+                  <p className="text-xs text-muted-foreground">{j.phone ?? ''}</p>
                 </div>
-                <p className="text-[10px] text-muted-foreground shrink-0">
+                <p className="text-xs text-muted-foreground shrink-0">
                   {format(new Date(j.joined_at), 'dd MMM', { locale: ar })}
                 </p>
               </div>

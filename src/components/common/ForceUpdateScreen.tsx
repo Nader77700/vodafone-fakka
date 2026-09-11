@@ -139,7 +139,7 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion, customMessage
                 style={{ width: `${progress?.percent || 0}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
               <span>{((progress?.downloaded || 0) / 1024 / 1024).toFixed(1)} MB</span>
               {progress?.remainingSec ? <span>متبقي {progress.remainingSec}ث</span> : null}
             </div>
@@ -171,7 +171,7 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion, customMessage
         <div className="pt-2 border-t border-border/50">
           {!Capacitor.isNativePlatform() ? (
             <>
-              <p className="text-[11px] text-muted-foreground text-center mb-3 leading-relaxed">
+              <p className="text-xs text-muted-foreground text-center mb-3 leading-relaxed">
                 إذا كنت تستخدم نسخة الويب (المتصفح)، يمكنك محاولة مسح الذاكرة المؤقتة لتحديث التطبيق.
               </p>
               <Button
@@ -187,7 +187,7 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion, customMessage
             </>
           ) : (
             <>
-              <p className="text-[11px] text-muted-foreground text-center mb-3 leading-relaxed">
+              <p className="text-xs text-muted-foreground text-center mb-3 leading-relaxed">
                 إذا واجهتك مشكلة في التنزيل الداخلي أو توقف التحميل،<br/> انسخ الرابط وافتحه في <span className="font-bold text-foreground">Google Chrome</span>
               </p>
               <Button

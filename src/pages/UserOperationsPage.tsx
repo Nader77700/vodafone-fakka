@@ -96,7 +96,7 @@ function OpDetailSheet({ op, open, onClose }: { op: Operation | null; open: bool
         {!isSuccess && op.error_message && (
           <div className="mx-3 mt-2 rounded-xl p-3"
             style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)' }}>
-            <p className="text-[10px] font-bold text-red-400 mb-1">سبب الفشل</p>
+            <p className="text-xs font-bold text-red-400 mb-1">سبب الفشل</p>
             <p className="text-xs text-red-300 break-words">
               {parseApiError(op.error_message).arabicMessage}
             </p>
@@ -119,32 +119,31 @@ function OpDetailSheet({ op, open, onClose }: { op: Operation | null; open: bool
 // ─── Component ───────────────────────────────────────────────────────────────
 import { OperationsAmountsFilter } from '@/components/common/OperationsAmountsFilter';
 
+const USER_OPS_PAGE_SIZE = 30;
+
 export default function UserOperationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [ops,         setOps]         = useState<Operation[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page,        setPage]        = useState(1);
-  const [hasMore,     setHasMore]     = useState(true);
-  const [search,      setSearch]      = useState('');
+  const [ops,          setOps]          = useState<Operation[]>([]);
+  const [totalCount,   setTotalCount]   = useState(0);
+  const [loading,      setLoading]      = useState(true);
+  const [loadingMore,  setLoadingMore]  = useState(false);
+  const [page,         setPage]         = useState(1);
+  const [hasMore,      setHasMore]      = useState(true);
+  const [search,       setSearch]       = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'balance' | 'vcash'>('all');
   const [dateFilter,   setDateFilter]   = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [amountFilter, setAmountFilter] = useState<number | null>(null);
-  const [detailOp,    setDetailOp]    = useState<Operation | null>(null);
-  const [sheetOpen,   setSheetOpen]   = useState(false);
+  const [detailOp,     setDetailOp]     = useState<Operation | null>(null);
+  const [sheetOpen,    setSheetOpen]    = useState(false);
 
-  const PAGE_SIZE = 50;
-
-  const loadOps = useCallback(async (p = 1, isLoadMore = false) => {
-    if (!user) return;
-    if (isLoadMore) setLoadingMore(true);
-    else setLoading(true);
-
-    const from = (p - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+  // ─── بناء الاستعلام مع تطبيق الفلاتر على DB مباشرة ──────────────────────
+  const buildQuery = useCallback((p: number) => {
+    if (!user) return null;
+    const from = (p - 1) * USER_OPS_PAGE_SIZE;
+    const to   = from + USER_OPS_PAGE_SIZE - 1;
 
     let q = supabase
       .from('operations')
@@ -153,67 +152,75 @@ export default function UserOperationsPage() {
       .order('performed_at', { ascending: false })
       .range(from, to);
 
-    if (amountFilter !== null) {
-      q = q.eq('amount', amountFilter);
+    // فلتر الحالة
+    if (statusFilter !== 'all') q = q.eq('status', statusFilter);
+
+    // فلتر المصدر
+    if (sourceFilter === 'balance')
+      q = q.in('operation_source', ['ana_vodafone_balance', 'balance']);
+    else if (sourceFilter === 'vcash')
+      q = q.not('operation_source', 'in', '("ana_vodafone_balance","balance")');
+
+    // فلتر التاريخ
+    if (dateFilter !== 'all') {
+      const start = new Date();
+      if (dateFilter === 'today')  start.setHours(0, 0, 0, 0);
+      else if (dateFilter === 'week')  start.setDate(start.getDate() - 7);
+      else if (dateFilter === 'month') start.setDate(start.getDate() - 30);
+      q = q.gte('performed_at', start.toISOString());
     }
 
-    const { data, count } = await q;
-    
-    const newOps = Array.isArray(data) ? (data as unknown as Operation[]) : [];
-    
-    if (p === 1) {
-      setOps(newOps);
-    } else {
-      setOps(prev => [...prev, ...newOps]);
+    // فلتر المبلغ
+    if (amountFilter !== null) q = q.eq('amount', amountFilter);
+
+    // بحث نصي
+    if (search.trim()) {
+      const s = search.trim();
+      const isNum = /^[0-9]+$/.test(s);
+      if (isNum) q = q.or(`phone_number.ilike.%${s}%,operation_number.eq.${parseInt(s, 10)}`);
+      else       q = q.or(`phone_number.ilike.%${s}%,card_type.ilike.%${s}%`);
     }
-    
-    setHasMore(count ? from + PAGE_SIZE < count : false);
+
+    return { q, from };
+  }, [user, statusFilter, sourceFilter, dateFilter, amountFilter, search]);
+
+  const loadOps = useCallback(async (p = 1, isLoadMore = false) => {
+    const built = buildQuery(p);
+    if (!built) return;
+    if (isLoadMore) setLoadingMore(true);
+    else            setLoading(true);
+
+    const { data, count } = await built.q;
+    const newOps = Array.isArray(data) ? (data as unknown as Operation[]) : [];
+
+    if (p === 1) setOps(newOps);
+    else         setOps(prev => [...prev, ...newOps]);
+
+    const total = count ?? 0;
+    setTotalCount(total);
+    setHasMore(built.from + USER_OPS_PAGE_SIZE < total);
     setPage(p);
-    
     setLoading(false);
     setLoadingMore(false);
-  }, [user, amountFilter]);
+  }, [buildQuery]);
 
+  // إعادة التحميل عند تغيير أي فلتر
   useEffect(() => { loadOps(1); }, [loadOps]);
 
-  // إحصائيات
+  // إحصائيات من الـ ops المحملة فقط — للعرض السريع
   const stats = useMemo(() => {
-    const success = ops.filter(o => o.status === 'success');
-    const failed  = ops.filter(o => o.status !== 'success');
+    const success  = ops.filter(o => o.status === 'success');
+    const failed   = ops.filter(o => o.status !== 'success');
     const totalAmt = success.reduce((s, o) => s + (o.amount ?? 0), 0);
-    return { total: ops.length, success: success.length, failed: failed.length, totalAmt };
-  }, [ops]);
-
-  // فلترة
-  const filtered = useMemo(() => ops.filter(op => {
-    const now = new Date();
-    if (statusFilter !== 'all' && op.status !== statusFilter) return false;
-    if (sourceFilter !== 'all') {
-      const src = op.operation_source ?? (op.card_data as Record<string,unknown> | null)?.source as string;
-      const isBalance = src === 'ana_vodafone_balance' || src === 'balance';
-      if (sourceFilter === 'balance' && !isBalance) return false;
-      if (sourceFilter === 'vcash' && isBalance) return false;
-    }
-    if (dateFilter !== 'all') {
-      const opDate = new Date(op.performed_at);
-      const start = new Date(now);
-      if (dateFilter === 'today') start.setHours(0,0,0,0);
-      else if (dateFilter === 'week') start.setDate(start.getDate() - 7);
-      else if (dateFilter === 'month') start.setDate(start.getDate() - 30);
-      if (opDate < start) return false;
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      return (
-        op.phone_number?.toLowerCase().includes(q) ||
-        op.card_type?.toLowerCase().includes(q) ||
-        String(op.operation_number ?? '').includes(q)
-      );
-    }
-    return true;
-  }), [ops, statusFilter, sourceFilter, dateFilter, search]);
+    return { total: totalCount, success: success.length, failed: failed.length, totalAmt };
+  }, [ops, totalCount]);
 
   const hasFilters = search || statusFilter !== 'all' || sourceFilter !== 'all' || dateFilter !== 'all' || amountFilter !== null;
+
+  const clearFilters = () => {
+    setSearch(''); setStatusFilter('all'); setSourceFilter('all');
+    setDateFilter('all'); setAmountFilter(null);
+  };
 
   return (
     <div className="min-h-screen pb-8 bg-background" dir="rtl">
@@ -221,77 +228,75 @@ export default function UserOperationsPage() {
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b"
         style={{ background: 'hsl(var(--background) / 0.95)', borderColor: 'rgba(230,0,0,0.15)', backdropFilter: 'blur(8px)' }}>
         <button onClick={() => navigate(-1)}
-          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
           <ArrowRight className="w-4 h-4" style={{ color: '#E60000' }} />
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-black text-foreground truncate">سجل العمليات</h1>
-          <p className="text-[10px] text-muted-foreground">{stats.total} عملية إجمالاً</p>
+          <p className="text-xs text-muted-foreground">{totalCount} عملية إجمالاً</p>
         </div>
-        <button onClick={() => loadOps(1)} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+        <button onClick={() => loadOps(1)} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
           style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.15)' }}>
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} style={{ color: '#E60000' }} />
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} style={{ color: '#E60000' }} />
         </button>
       </div>
 
       <div className="px-4 pt-4 space-y-3">
-        {/* إحصائيات مختصرة */}
+        {/* إحصائيات */}
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: 'الكل',    value: stats.total,                      color: '#ffffff' },
-            { label: 'ناجحة',   value: stats.success,                    color: '#4ade80' },
-            { label: 'فاشلة',   value: stats.failed,                     color: '#f87171' },
-            { label: 'المبلغ',  value: `${stats.totalAmt.toFixed(0)}ج`,  color: '#E60000' },
+            { label: 'الكل',   value: stats.total,                     color: '#ffffff' },
+            { label: 'ناجحة',  value: stats.success,                   color: '#4ade80' },
+            { label: 'فاشلة',  value: stats.failed,                    color: '#f87171' },
+            { label: 'المبلغ', value: `${stats.totalAmt.toFixed(0)}ج`, color: '#E60000' },
           ].map(s => (
-            <div key={s.label} className="rounded-xl p-2.5 text-center"
+            <div key={s.label} className="rounded-xl p-3 text-center"
               style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
-              <p className="text-base font-black tabular-nums" style={{ color: s.color === '#ffffff' ? 'hsl(var(--foreground))' : s.color }}>{s.value}</p>
-              <p className="text-[9px] mt-0.5 text-muted-foreground">{s.label}</p>
+              <p className="text-base font-black tabular-nums"
+                style={{ color: s.color === '#ffffff' ? 'hsl(var(--foreground))' : s.color }}>{s.value}</p>
+              <p className="text-xs mt-0.5 text-muted-foreground">{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* فلاتر القيم */}
-        <OperationsAmountsFilter 
+        <OperationsAmountsFilter
           userId={user?.id}
-          selectedAmount={amountFilter} 
-          onSelectAmount={(a) => { setAmountFilter(a); loadOps(1); }} 
+          selectedAmount={amountFilter}
+          onSelectAmount={(a) => setAmountFilter(a)}
         />
 
         {/* بحث */}
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             placeholder="ابحث برقم الهاتف أو المنتج أو رقم العملية..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pr-9 pl-3 py-2 text-sm rounded-xl outline-none text-right"
+            className="w-full pr-10 pl-3 py-2.5 text-sm rounded-xl outline-none text-right"
             style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))', caretColor: '#E60000' }}
           />
         </div>
 
         {/* فلاتر */}
         <div className="grid grid-cols-3 gap-2">
-          {/* الحالة */}
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-            className="h-8 text-xs rounded-lg px-2 outline-none"
+            className="h-9 text-xs rounded-lg px-2 outline-none"
             style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
             <option value="all">كل الحالات</option>
             <option value="success">✅ ناجحة</option>
             <option value="failed">❌ فاشلة</option>
           </select>
-          {/* المصدر */}
           <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value as typeof sourceFilter)}
-            className="h-8 text-xs rounded-lg px-2 outline-none"
+            className="h-9 text-xs rounded-lg px-2 outline-none"
             style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
             <option value="all">كل المصادر</option>
             <option value="balance">🔴 رصيد أنا</option>
             <option value="vcash">💳 VCash</option>
           </select>
-          {/* التاريخ */}
           <select value={dateFilter} onChange={e => setDateFilter(e.target.value as typeof dateFilter)}
-            className="h-8 text-xs rounded-lg px-2 outline-none"
+            className="h-9 text-xs rounded-lg px-2 outline-none"
             style={{ background: 'hsl(var(--input))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
             <option value="all">كل الأوقات</option>
             <option value="today">اليوم</option>
@@ -302,9 +307,9 @@ export default function UserOperationsPage() {
 
         {/* مسح الفلاتر */}
         {hasFilters && (
-          <button onClick={() => { setSearch(''); setStatusFilter('all'); setSourceFilter('all'); setDateFilter('all'); setAmountFilter(null); loadOps(1); }}
-            className="flex items-center gap-1 text-[11px]" style={{ color: '#E60000' }}>
-            <X className="w-3 h-3" /> مسح الفلاتر ({filtered.length} نتيجة)
+          <button onClick={clearFilters}
+            className="flex items-center gap-1 text-xs font-medium" style={{ color: '#E60000' }}>
+            <X className="w-3.5 h-3.5" /> مسح الفلاتر ({totalCount} نتيجة)
           </button>
         )}
 
@@ -312,17 +317,22 @@ export default function UserOperationsPage() {
         {loading ? (
           <div className="space-y-2">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-20 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
+              <div key={i} className="h-24 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : ops.length === 0 ? (
           <div className="text-center py-16 space-y-2">
-            <p className="text-2xl">📭</p>
+            <p className="text-3xl">📭</p>
             <p className="text-sm text-muted-foreground">لا توجد عمليات</p>
+            {hasFilters && (
+              <button onClick={clearFilters} className="text-xs font-medium" style={{ color: '#E60000' }}>
+                مسح الفلاتر
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map(op => {
+            {ops.map(op => {
               const st = statusLabel(op.status);
               const StIcon = st.icon;
               const opSrc = op.operation_source ?? (op.card_data as Record<string,unknown> | null)?.source as string | undefined;
@@ -339,51 +349,47 @@ export default function UserOperationsPage() {
                   style={{ background: 'rgba(255,255,255,0.03)', borderColor: op.status === 'success' ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)' }}>
                   {/* صف رئيسي */}
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${st.bg}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${st.bg}`}>
                       <StIcon className={`w-4 h-4 ${st.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-xs font-bold text-foreground truncate">{op.card_type}</p>
+                        <p className="text-sm font-bold text-foreground truncate">{op.card_type}</p>
                         {op.operation_number != null && (
-                          <span className="text-[9px] font-mono px-1.5 py-0 rounded-full shrink-0"
+                          <span className="text-xs font-mono px-1.5 py-0.5 rounded-full shrink-0"
                             style={{ background: 'rgba(230,0,0,0.1)', color: '#ff8888', border: '1px solid rgba(230,0,0,0.2)' }}>
                             #{op.operation_number}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-mono mt-0.5 text-muted-foreground">
-                        {op.phone_number}
-                      </p>
+                      <p className="text-xs font-mono mt-0.5 text-muted-foreground">{op.phone_number}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}>{st.text}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}>{st.text}</span>
                       {op.amount != null && (
-                        <span className="text-[11px] font-bold" style={{ color: '#E60000' }}>{op.amount} ج</span>
+                        <span className="text-xs font-bold" style={{ color: '#E60000' }}>{op.amount} ج</span>
                       )}
                     </div>
                   </div>
-                  {/* بادجات + وقت */}
+                  {/* بادجات + وقت + سبب الفشل */}
                   <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                         isBalance
                           ? 'bg-red-500/10 text-red-400 border-red-500/20'
                           : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                       }`}>{isBalance ? '🔴' : '💳'} {srcLabel}</span>
                       {failReason && (
-                        <span className="text-[9px] truncate max-w-[140px]" style={{ color: 'rgba(248,113,113,0.75)' }}>
+                        <span className="text-xs truncate max-w-[140px]" style={{ color: 'rgba(248,113,113,0.85)' }}>
                           {failReason}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <p className="text-[9px] text-muted-foreground">
-                        {opDateStr}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{opDateStr}</p>
                       <button
                         onClick={() => { setDetailOp(op); setSheetOpen(true); }}
-                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors"
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
                         style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)', color: '#ff8888' }}>
                         تفاصيل
                       </button>
@@ -392,15 +398,14 @@ export default function UserOperationsPage() {
                 </div>
               );
             })}
-            
+
             {hasMore && (
               <div className="flex justify-center pt-4 pb-8">
                 <button
                   onClick={() => loadOps(page + 1, true)}
                   disabled={loadingMore}
-                  className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-                  style={{ background: 'rgba(230,0,0,0.1)', color: '#ff4444', border: '1px solid rgba(230,0,0,0.2)' }}
-                >
+                  className="px-6 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                  style={{ background: 'rgba(230,0,0,0.1)', color: '#ff4444', border: '1px solid rgba(230,0,0,0.2)' }}>
                   {loadingMore ? 'جاري التحميل...' : 'عرض المزيد'}
                 </button>
               </div>

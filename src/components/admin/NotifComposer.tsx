@@ -148,7 +148,7 @@ export default function NotifComposer({ onSent }: NotifComposerProps) {
             <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold truncate">{t.name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{t.title}</p>
+                <p className="text-xs text-muted-foreground truncate">{t.title}</p>
               </div>
               <div className="flex gap-1 shrink-0">
                 <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-primary" onClick={() => applyTemplate(t)}>تطبيق</Button>
@@ -176,7 +176,7 @@ export default function NotifComposer({ onSent }: NotifComposerProps) {
       {/* Notification Preview */}
       {showPreview && (title || body) && (
         <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">معاينة الإشعار</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">معاينة الإشعار</p>
           <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border shadow-sm">
             <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border', currentType.color, 'bg-current/10 border-current/20')}>
               <TypeIcon className={cn('w-5 h-5', currentType.color)} />
@@ -184,16 +184,16 @@ export default function NotifComposer({ onSent }: NotifComposerProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-bold truncate">{title || 'عنوان الإشعار'}</p>
-                <span className="text-[10px] text-muted-foreground shrink-0">الآن</span>
+                <span className="text-xs text-muted-foreground shrink-0">الآن</span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 text-pretty">{body || 'محتوى الإشعار...'}</p>
               {actionUrl && (
-                <p className="text-[10px] text-primary mt-1 font-mono truncate">🔗 {actionUrl}</p>
+                <p className="text-xs text-primary mt-1 font-mono truncate">🔗 {actionUrl}</p>
               )}
               <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-medium', currentType.color, 'bg-current/10 border-current/20')}>{currentType.label}</span>
+                <span className={cn('text-xs px-1.5 py-0.5 rounded border font-medium', currentType.color, 'bg-current/10 border-current/20')}>{currentType.label}</span>
                 {priority !== 'normal' && (
-                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-medium',
+                  <span className={cn('text-xs px-1.5 py-0.5 rounded border font-medium',
                     priority === 'urgent' ? 'text-destructive bg-destructive/10 border-destructive/20' : 'text-warning bg-warning/10 border-warning/20'
                   )}>{priority === 'urgent' ? 'عاجل' : 'مهم'}</span>
                 )}
@@ -221,7 +221,7 @@ export default function NotifComposer({ onSent }: NotifComposerProps) {
           <Label className="text-sm font-normal text-muted-foreground">
             اختر المستخدمين
             {selectedUserIds.length > 0 && (
-              <Badge variant="outline" className="mr-2 text-[10px] border-primary/40 text-primary">{selectedUserIds.length} محدد</Badge>
+              <Badge variant="outline" className="mr-2 text-xs border-primary/40 text-primary">{selectedUserIds.length} محدد</Badge>
             )}
           </Label>
           <UserPickerSheet selectedIds={selectedUserIds} onSelect={setSelectedUserIds} />
@@ -232,7 +232,7 @@ export default function NotifComposer({ onSent }: NotifComposerProps) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-normal text-muted-foreground">العنوان</Label>
-          <span className={cn('text-[10px] tabular-nums', titleCount > 60 ? 'text-destructive' : 'text-muted-foreground')}>
+          <span className={cn('text-xs tabular-nums', titleCount > 60 ? 'text-destructive' : 'text-muted-foreground')}>
             {titleCount}/65
           </span>
         </div>
@@ -244,7 +244,7 @@ export default function NotifComposer({ onSent }: NotifComposerProps) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-normal text-muted-foreground">المحتوى</Label>
-          <span className={cn('text-[10px] tabular-nums', bodyCount > 230 ? 'text-destructive' : 'text-muted-foreground')}>
+          <span className={cn('text-xs tabular-nums', bodyCount > 230 ? 'text-destructive' : 'text-muted-foreground')}>
             {bodyCount}/240
           </span>
         </div>

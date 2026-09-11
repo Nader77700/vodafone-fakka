@@ -104,7 +104,7 @@ export default function PackageDetailPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-black text-foreground">{pkg.name}</h1>
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                   style={{ color: statusMeta.color, background: `${statusMeta.color}26`, border: `1px solid ${statusMeta.color}40` }}>
                   {statusMeta.label}
                 </span>
@@ -112,10 +112,10 @@ export default function PackageDetailPage() {
               {pkg.network_name && (
                 <div className="flex items-center gap-1 mt-0.5">
                   <Network className="w-3 h-3" style={{ color: cardColor }} />
-                  <span className="text-[11px] font-bold" style={{ color: cardColor }}>{pkg.network_name}</span>
+                  <span className="text-xs font-bold" style={{ color: cardColor }}>{pkg.network_name}</span>
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground mt-0.5 text-pretty">
+              <p className="text-xs text-muted-foreground mt-0.5 text-pretty">
                 {pkg.short_description || pkg.description}
               </p>
             </div>
@@ -132,8 +132,8 @@ export default function PackageDetailPage() {
               style={{ background: L ? `linear-gradient(135deg,${cardColor}12,#f9fafb)` : `linear-gradient(135deg,${cardColor}1e,rgba(0,0,0,0.60))`, border: `1.5px solid ${cardColor}47` }}>
               <Wifi className="w-6 h-6 mx-auto mb-1" style={{ color: cardColor }} />
               <p className="text-2xl font-black text-foreground">{pkg.data_gb}</p>
-              <p className="text-[10px] text-muted-foreground">جيجابايت</p>
-              <p className="text-[9px] font-semibold mt-0.5" style={{ color: cardColor }}>إنترنت عالي السرعة</p>
+              <p className="text-xs text-muted-foreground">جيجابايت</p>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: cardColor }}>إنترنت عالي السرعة</p>
             </div>
           )}
           {sf.minutes !== false && (
@@ -143,8 +143,8 @@ export default function PackageDetailPage() {
               <p className="text-2xl font-black text-foreground">
                 {pkg.minutes >= 1000 ? `${(pkg.minutes/1000).toFixed(1)}K` : pkg.minutes}
               </p>
-              <p className="text-[10px] text-muted-foreground">دقيقة</p>
-              <p className="text-[9px] font-semibold mt-0.5" style={{ color: cardColor }}>على جميع الشبكات</p>
+              <p className="text-xs text-muted-foreground">دقيقة</p>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: cardColor }}>على جميع الشبكات</p>
             </div>
           )}
         </div>
@@ -157,7 +157,7 @@ export default function PackageDetailPage() {
                 style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
                 <Timer className="w-4 h-4 shrink-0" style={{ color: cardColor }} />
                 <div>
-                  <p className="text-[9px] text-muted-foreground">مدة الاشتراك</p>
+                  <p className="text-xs text-muted-foreground">مدة الاشتراك</p>
                   <p className="text-xs font-bold text-foreground">{pkg.duration}</p>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default function PackageDetailPage() {
                 style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
                 <RotateCcw className="w-4 h-4 shrink-0" style={{ color: cardColor }} />
                 <div>
-                  <p className="text-[9px] text-muted-foreground">نوع التجديد</p>
+                  <p className="text-xs text-muted-foreground">نوع التجديد</p>
                   <p className="text-xs font-bold text-foreground">{pkg.renewal_type}</p>
                 </div>
               </div>
@@ -192,9 +192,9 @@ export default function PackageDetailPage() {
             </div>
             {pct > 0 && (
               <div className="text-left">
-                <p className="text-[11px] text-muted-foreground line-through">{originalPrice} جنيه</p>
+                <p className="text-xs text-muted-foreground line-through">{originalPrice} جنيه</p>
                 <p className="text-sm font-black" style={{ color: '#00C896' }}>وفرت {savings} جنيه</p>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
+                <span className="text-xs font-black px-2 py-0.5 rounded-full text-white"
                   style={{ background: `linear-gradient(90deg,${cardColor},${darkColor})` }}>
                   خصم {pct}%
                 </span>
@@ -210,7 +210,7 @@ export default function PackageDetailPage() {
             <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
               <Info className="w-3.5 h-3.5" style={{ color: cardColor }} />عن الباقة
             </p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">{pkg.full_description}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{pkg.full_description}</p>
           </div>
         )}
 
@@ -225,7 +225,7 @@ export default function PackageDetailPage() {
               {pkg.features.map((f, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#00C896' }} />
-                  <span className="text-[11px] text-foreground">{f}</span>
+                  <span className="text-xs text-foreground">{f}</span>
                 </li>
               ))}
             </ul>
@@ -243,7 +243,7 @@ export default function PackageDetailPage() {
               {pkg.requirements.map((r, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#a78bfa' }} />
-                  <span className="text-[11px] text-foreground">{r}</span>
+                  <span className="text-xs text-foreground">{r}</span>
                 </li>
               ))}
             </ul>
@@ -261,7 +261,7 @@ export default function PackageDetailPage() {
               {pkg.terms.map((t, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: cardColor }} />
-                  <span className="text-[11px] text-foreground">{t}</span>
+                  <span className="text-xs text-foreground">{t}</span>
                 </li>
               ))}
             </ul>
@@ -275,7 +275,7 @@ export default function PackageDetailPage() {
             <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
               <RefreshCw className="w-3.5 h-3.5" style={{ color: '#00C896' }} />طريقة وتعليمات الاشتراك
             </p>
-            <p className="text-[11px] text-muted-foreground whitespace-pre-line">
+            <p className="text-xs text-muted-foreground whitespace-pre-line">
               {pkg.subscription_instructions || pkg.subscription_method}
             </p>
           </div>
@@ -287,7 +287,7 @@ export default function PackageDetailPage() {
           <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
             <MessageCircle className="w-3.5 h-3.5" style={{ color: '#25d366' }} />الدعم والتواصل
           </p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             للاشتراك أو الاستفسار تواصل معنا عبر واتساب وسيتم تفعيل الباقة فور استلام الطلب.
           </p>
         </div>

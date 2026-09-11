@@ -101,7 +101,7 @@ export default function WalletBalancePage() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">رصيد المحفظة وسجل العمليات</h1>
-            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
+            <p className="text-xs text-primary font-medium">Vodafone Cash</p>
           </div>
           <div className="w-10" />
         </div>
@@ -145,7 +145,7 @@ export default function WalletBalancePage() {
                 <span className="text-sm font-bold truncate text-foreground">{networkName}</span>
               </div>
               {lastChecked && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
               )}
             </div>
             <div className="text-xs font-bold px-2 py-0.5 rounded-full"

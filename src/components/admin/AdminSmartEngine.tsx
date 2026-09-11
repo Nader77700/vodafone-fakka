@@ -67,7 +67,7 @@ function Section({
         </div>
         <div className="flex-1 min-w-0 text-right">
           <p className="text-sm font-bold">{title}</p>
-          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
       </button>
@@ -140,7 +140,7 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold">النظام الذكي</h3>
-          <p className="text-[11px] text-muted-foreground">أوامر بسيطة — تطبّق على كل الأجهزة فوراً</p>
+          <p className="text-xs text-muted-foreground">أوامر بسيطة — تطبّق على كل الأجهزة فوراً</p>
         </div>
         <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={load} disabled={loading}>
           <RefreshCw className={cn('w-3 h-3', loading && 'animate-spin')} /> تحديث
@@ -215,8 +215,8 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
               تطبيق
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground">الحالي: كل إصدار أقدم من <strong>{status.minVersion}</strong> سيتم حجبه وإجباره على التحديث.</p>
-          <p className="text-[10px] text-destructive/80 mt-1">ملاحظة: هذا الرقم هو <b>الحد المسموح به</b>. إذا أردت إجبار إصدار 236 على التحديث، يجب كتابة 237 هنا.</p>
+          <p className="text-xs text-muted-foreground">الحالي: كل إصدار أقدم من <strong>{status.minVersion}</strong> سيتم حجبه وإجباره على التحديث.</p>
+          <p className="text-xs text-destructive/80 mt-1">ملاحظة: هذا الرقم هو <b>الحد المسموح به</b>. إذا أردت إجبار إصدار 236 على التحديث، يجب كتابة 237 هنا.</p>
         </div>
         <div className="space-y-2 pt-2 border-t border-border/40">
           <label className="text-xs text-muted-foreground">حجب إصدارات محددة (أرقام مفصولة بفاصلة)</label>
@@ -239,11 +239,11 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
           </div>
           {status.blockedCodes.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-muted-foreground">محجوب الآن:</span>
+              <span className="text-xs text-muted-foreground">محجوب الآن:</span>
               {status.blockedCodes.map(c => (
-                <span key={c} className="text-[10px] font-mono font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">{c}</span>
+                <span key={c} className="text-xs font-mono font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">{c}</span>
               ))}
-              <button className="text-[10px] text-muted-foreground underline"
+              <button className="text-xs text-muted-foreground underline"
                 onClick={() => run('unblock_all', () => engineBlockVersion([]))}>
                 إلغاء الكل
               </button>

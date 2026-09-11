@@ -124,12 +124,12 @@ function HomeServicesCard() {
               <div>
                 <h3 className="text-lg font-black drop-shadow-md leading-tight"
                   style={{ color: L ? '#1e1b4b' : '#ffffff' }}>الخدمات</h3>
-                <p className="text-[10px] font-medium"
+                <p className="text-xs font-medium"
                   style={{ color: L ? 'rgba(30,27,75,0.55)' : 'rgba(255,255,255,0.40)' }}>جميع خدمات التطبيق في مكان واحد</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg backdrop-blur-md"
+              <span className="text-xs font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow-lg backdrop-blur-md"
                 style={{
                   background: L ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.2)',
                   color: L ? '#4f46e5' : '#a5b4fc',
@@ -154,7 +154,7 @@ function HomeServicesCard() {
               { label: 'الخطوط والمحافظ', color: '#6366f1' },
             ].map(s => (
               <span key={s.label}
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                className="text-xs font-bold px-2 py-0.5 rounded-full"
                 style={{ background: `${s.color}${L ? '15' : '18'}`, color: s.color, border: `1px solid ${s.color}${L ? '25' : '30'}` }}>
                 {s.label}
               </span>
@@ -209,7 +209,7 @@ function HomeNetworksCard() {
                   <h3 className="text-base font-black" style={{ color: '#111827' }}>
                     عروض باقي الشبكات
                   </h3>
-                  <p className="text-[11px] font-medium mt-0.5" style={{ color: '#6b7280' }}>
+                  <p className="text-xs font-medium mt-0.5" style={{ color: '#6b7280' }}>
                     أورانج · اتصالات · وي
                   </p>
                 </div>
@@ -222,7 +222,7 @@ function HomeNetworksCard() {
                   boxShadow: '0 1px 4px rgba(247,201,72,0.20)',
                 }}>
                 <Star className="w-3 h-3 fill-current" style={{ color: '#92400e' }} />
-                <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#78350f' }}>
+                <span className="text-xs font-black tracking-widest uppercase" style={{ color: '#78350f' }}>
                   Premium
                 </span>
               </div>
@@ -246,7 +246,7 @@ function HomeNetworksCard() {
               <p className="text-xs font-medium" style={{ color: '#4b5563' }}>
                 عروض حصرية لجميع الشبكات المصرية
               </p>
-              <div className="flex items-center gap-1 text-[11px] font-bold" style={{ color: '#cc0000' }}>
+              <div className="flex items-center gap-1 text-xs font-bold" style={{ color: '#cc0000' }}>
                 عرض الكل
                 <ChevronLeft className="w-3.5 h-3.5" />
               </div>
@@ -290,7 +290,7 @@ function HomeNetworksCard() {
               </div>
               <h3 className="text-lg font-black text-white drop-shadow-md">عروض باقي الشبكات</h3>
             </div>
-            <span className="text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md"
+            <span className="text-xs font-black tracking-widest px-2.5 py-1 rounded-full uppercase shrink-0 shadow-lg backdrop-blur-md"
               style={{ background: 'rgba(0,0,0,0.50)', border: '1px solid rgba(255,255,255,0.10)', color: '#F7C948' }}>
               Premium
             </span>
@@ -348,9 +348,9 @@ function DebugValueCard({
     <div className="rounded-xl p-3 flex flex-col gap-1.5 min-w-0"
       style={{ border: `1px solid ${colors.border}`, background: colors.bg }}>
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-widest"
+        <span className="text-xs font-bold uppercase tracking-widest"
           style={{ color: colors.dot }}>{label}</span>
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+        <span className="text-xs font-mono px-1.5 py-0.5 rounded"
           style={{
             background: L ? 'rgba(0,0,0,0.06)' : '#ffffff08',
             color: L ? 'rgba(0,0,0,0.45)' : '#ffffff40',
@@ -359,7 +359,7 @@ function DebugValueCard({
       <p className="text-sm font-bold font-mono leading-tight break-all"
         style={{ color: colors.val }}>{rawValue}</p>
       {subValue && (
-        <p className="text-[11px] font-mono"
+        <p className="text-xs font-mono"
           style={{ color: L ? 'rgba(0,0,0,0.40)' : '#ffffff55' }}>{subValue}</p>
       )}
     </div>
@@ -468,10 +468,10 @@ function NativeDebugPanel() {
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-2 h-2 rounded-full shrink-0 animate-pulse"
             style={{ backgroundColor: canExec ? '#22c55e' : loading ? '#60a5fa' : '#f59e0b' }} />
-          <span className="text-[11px] font-bold tracking-widest text-foreground/70 font-mono">
+          <span className="text-xs font-bold tracking-widest text-foreground/70 font-mono">
             NATIVE DEBUG PANEL
           </span>
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold shrink-0"
+          <span className="text-xs px-1.5 py-0.5 rounded-full font-mono font-bold shrink-0"
             style={{
               background: isNative ? '#22c55e20' : '#f59e0b20',
               color: isNative ? (L ? '#15803d' : '#4ade80') : (L ? '#b45309' : '#fbbf24'),
@@ -481,7 +481,7 @@ function NativeDebugPanel() {
           </span>
         </div>
         <button onClick={fetchInfo} disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95"
           style={{
             background: L ? 'rgba(0,160,200,0.10)' : '#00E5FF15',
             color: L ? '#0077aa' : '#00E5FF',
@@ -551,9 +551,9 @@ function NativeDebugPanel() {
             { k: 'Android',             v: info.androidVersion },
           ].map(row => (
             <div key={row.k} className="flex items-center justify-between py-2 gap-3">
-              <span className="text-[10px] font-mono shrink-0"
+              <span className="text-xs font-mono shrink-0"
                 style={{ color: L ? 'rgba(0,0,0,0.40)' : '#ffffff45' }}>{row.k}</span>
-              <span className="text-[11px] font-mono font-bold text-right break-all"
+              <span className="text-xs font-mono font-bold text-right break-all"
                 style={{ color: row.ok === true ? (L ? '#15803d' : '#4ade80') : row.ok === false ? '#f87171' : (L ? '#374151' : '#94a3b8') }}>
                 {row.v}
               </span>
@@ -578,7 +578,7 @@ function NativeDebugPanel() {
                 style={{ color: canExec ? (L ? '#15803d' : '#4ade80') : (L ? '#b45309' : '#fbbf24') }}>
                 canExecuteNative = {canExec ? 'true' : 'false'}
               </p>
-              <p className="text-[11px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : '#ffffff55' }}>
+              <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : '#ffffff55' }}>
                 {canExec
                   ? 'Active Data SIM = Vodafone ✓  +  بيانات جوال ✓  +  لا VPN ✓'
                   : [
@@ -596,7 +596,7 @@ function NativeDebugPanel() {
       {/* ── Web hint ── */}
       {!isNative && (
         <div className="px-4 pb-3 text-center">
-          <p className="text-[10px] font-mono" style={{ color: L ? 'rgba(0,0,0,0.30)' : '#ffffff25' }}>
+          <p className="text-xs font-mono" style={{ color: L ? 'rgba(0,0,0,0.30)' : '#ffffff25' }}>
             ⓘ القيم الحقيقية من TelephonyManager تظهر فقط داخل APK الأصلي
           </p>
         </div>
@@ -697,7 +697,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
               style={{ color: L ? '#E60000' : '#ffffff', textShadow: L ? 'none' : '0 1px 4px rgba(0,0,0,0.90)' }}>vodafone</span>
           </div>
           <div>
-            <p className="text-[9px] font-bold leading-tight"
+            <p className="text-xs font-bold leading-tight"
               style={{
                 color: L ? '#1a1a2e' : '#ffffff',
                 fontFamily: "'Dancing Script','Brush Script MT',cursive",
@@ -714,7 +714,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
 
           {/* Badge النوع */}
           <div className="flex justify-end">
-            <span className="text-[9px] font-black px-2 py-0.5 rounded-full"
+            <span className="text-xs font-black px-2 py-0.5 rounded-full"
               style={{ color: '#fff', background: '#E60000', border: '1px solid rgba(255,255,255,0.20)' }}>
               {isMared ? 'مارد' : 'فكة'}
             </span>
@@ -731,12 +731,12 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
 
           {/* الوحدات + صافي الربح */}
           <div className="flex items-center justify-end gap-2 mt-0.5">
-            <span className="text-[10px] font-semibold tabular-nums"
+            <span className="text-xs font-semibold tabular-nums"
               style={{ color: L ? 'rgba(0,0,0,0.60)' : 'rgba(255,255,255,0.80)' }}>
               {product.unitsLabel}
             </span>
             {product.net_balance > 0 && (
-              <span className="text-[10px] font-semibold"
+              <span className="text-xs font-semibold"
                 style={{ color: L ? '#b45309' : 'rgba(255,200,0,0.90)', textShadow: L ? 'none' : '0 1px 3px rgba(0,0,0,0.80)' }}>
                 صافي: {product.net_balance.toFixed(2)} ج
               </span>
@@ -754,11 +754,11 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
               <ChevronLeft className="w-3 h-3" style={{ color: L ? '#0077aa' : '#00E5FF' }} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium"
+              <span className="text-xs font-medium"
                 style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.70)' }}>
                 🗓 {validity}
               </span>
-              <span className="text-[11px] font-black"
+              <span className="text-xs font-black"
                 style={{
                   color: L ? '#0077aa' : '#00E5FF',
                   textShadow: L ? 'none' : '0 0 10px rgba(0,229,255,0.55)',
@@ -1463,11 +1463,11 @@ function ExecuteModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-black text-balance" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>تنفيذ شحن كارت</p>
-                  <p className="text-[10px] font-mono truncate" style={{ color: 'rgba(230,0,0,0.6)' }}>
+                  <p className="text-xs font-mono truncate" style={{ color: 'rgba(230,0,0,0.6)' }}>
                     {product.id}
                   </p>
                 </div>
-                <span className="text-[10px] font-black px-2.5 py-1 rounded-full shrink-0"
+                <span className="text-xs font-black px-2.5 py-1 rounded-full shrink-0"
                   style={{ background: isMared ? 'rgba(247,201,72,0.15)' : 'rgba(230,0,0,0.15)', color: isMared ? '#F7C948' : '#ff6666', border: `1px solid ${isMared ? 'rgba(247,201,72,0.3)' : 'rgba(230,0,0,0.3)'}` }}>
                   {isMared ? '🟡 مارد' : '🔴 فكة'}
                 </span>
@@ -1487,25 +1487,25 @@ function ExecuteModal({
                       <div className="text-4xl">🔒</div>
                       <div className="space-y-1.5">
                         <p className="text-sm font-black text-orange-300">حسابك مجمَّد مؤقتاً</p>
-                        <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
+                        <p className="text-xs leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
                           تم تجميد Vodafone Cash بسبب تكرار الرقم السري الخاطئ 3 مرات.
                         </p>
                       </div>
                       <div className="rounded-xl py-3 px-4"
                         style={{ background: 'rgba(251,146,60,0.12)', border: '1px solid rgba(251,146,60,0.25)' }}>
-                        <p className="text-[10px] font-semibold mb-1" style={{ color: 'rgba(251,146,60,0.7)' }}>الوقت المتبقي للفتح التلقائي</p>
+                        <p className="text-xs font-semibold mb-1" style={{ color: 'rgba(251,146,60,0.7)' }}>الوقت المتبقي للفتح التلقائي</p>
                         <p className="text-2xl font-black tabular-nums text-orange-300">{hoursLeft} ساعة</p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] font-bold" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.4)' }}>لفتح الحساب فوراً:</p>
+                        <p className="text-xs font-bold" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.4)' }}>لفتح الحساب فوراً:</p>
                         {['اتصل على 888 من خطك وقل "رقم سري"', 'أو اكتب #912# وأرسل من نفس الخط'].map((s, i) => (
                           <div key={i} className="flex items-start gap-1.5">
-                            <span className="text-[10px] font-black text-orange-400 shrink-0">{i + 1}.</span>
-                            <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.5)' }}>{s}</p>
+                            <span className="text-xs font-black text-orange-400 shrink-0">{i + 1}.</span>
+                            <p className="text-xs leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.5)' }}>{s}</p>
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px]" style={{ color: L ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.3)' }}>
+                      <p className="text-xs" style={{ color: L ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.3)' }}>
                         سيُفتح الحساب تلقائياً عند انتهاء المدة
                       </p>
                     </div>
@@ -1532,7 +1532,7 @@ function ExecuteModal({
                     ].map((cell, i) => (
                       <div key={i} className="p-3 text-right border-b border-l last:border-b-0"
                         style={{ borderColor: 'rgba(230,0,0,0.1)' }}>
-                        <p className="text-[10px] mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{cell.label}</p>
+                        <p className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{cell.label}</p>
                         <p className={`font-black tabular-nums leading-none ${cell.big ? 'text-2xl' : 'text-sm'}`}
                           style={{ color: accentColor }}>{cell.value}</p>
                       </div>
@@ -1591,7 +1591,7 @@ function ExecuteModal({
                           </div>
                         )}
                         {isAdmin && (
-                          <div className="px-3 pb-2.5 space-y-1 text-[11px] border-t" style={{ borderColor: 'rgba(245,158,11,0.15)' }}>
+                          <div className="px-3 pb-2.5 space-y-1 text-xs border-t" style={{ borderColor: 'rgba(245,158,11,0.15)' }}>
                             {[
                               { label: 'شريحة البيانات', value: networkInfo.activeDataSimOperatorName, ok: networkInfo.isVodafoneMobile },
                               { label: 'الشبكة الفعالة', value: networkInfo.activeNetwork, ok: networkInfo.isMobileDataActive && networkInfo.isVodafoneMobile },
@@ -1619,7 +1619,7 @@ function ExecuteModal({
                       <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
                       <div>
                         <p className="text-xs font-bold text-green-400">الجسر المحلي متصل</p>
-                        <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>سيتم تنفيذ الشحن مباشرة عبر شبكة فودافون.</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>سيتم تنفيذ الشحن مباشرة عبر شبكة فودافون.</p>
                       </div>
                     </div>
                   );
@@ -1656,7 +1656,7 @@ function ExecuteModal({
                       <div key={step} className="flex items-center gap-2.5">
                         {loadingStep > step ? (
                           <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-green-500">
-                            <span className="text-white text-[10px] font-black">✓</span>
+                            <span className="text-white text-xs font-black">✓</span>
                           </div>
                         ) : loadingStep === step ? (
                           <Loader2 className="w-5 h-5 animate-spin shrink-0 text-primary" />
@@ -1677,24 +1677,24 @@ function ExecuteModal({
                   <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
-                      <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
+                      <span className="text-xs font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
+                              <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
                                 FULL PIPELINE TRACE
                               </span>
-                              <span className="text-[10px] font-mono font-semibold truncate text-yellow-200">
+                              <span className="text-xs font-mono font-semibold truncate text-yellow-200">
                                 {traceReport.traceId}
                               </span>
                            </div>
                            
                            <div className="space-y-1">
                              {traceReport.steps.map((step: any, idx: number) => (
-                               <div key={idx} className="flex flex-col text-[10px] font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
+                               <div key={idx} className="flex flex-col text-xs font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
                                  <div className="flex items-center justify-between">
                                    <span style={{ color: step.status === 'Success' ? '#4ade80' : step.status === 'Failed' ? '#f87171' : '#94a3b8' }}>
                                      {step.status === 'Success' ? '✅' : step.status === 'Failed' ? '❌' : '⏳'} [{step.id}] {step.name} {step.executionTimeMs ? `(${step.executionTimeMs}ms)` : ''}
@@ -1717,7 +1717,7 @@ function ExecuteModal({
 
                            {traceReport.requests && traceReport.requests.length > 0 && (
                              <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
-                               <div className="text-[9px] font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
+                               <div className="text-xs font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
                                {traceReport.requests.map((req: any, idx: number) => (
                                  <div key={idx} className="p-1.5 rounded border border-blue-500/20 bg-blue-500/5 text-[8.5px] font-mono text-blue-200">
                                    <div className="font-bold text-white mb-0.5">{req.method} {req.url}</div>
@@ -1736,8 +1736,8 @@ function ExecuteModal({
                            )}
 
                            <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
-                              <div className="text-[10px] font-bold text-red-400">PROBLEM SOURCE:</div>
-                              <div className="text-[10px] font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
+                              <div className="text-xs font-bold text-red-400">PROBLEM SOURCE:</div>
+                              <div className="text-xs font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
                                 {traceReport.analysis?.problemSource || 'Unknown'}
                               </div>
                            </div>
@@ -1747,18 +1747,18 @@ function ExecuteModal({
                       {seamlessDebug && (
                         <div className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
+                            <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
                               SEAMLESS
                             </span>
-                            <span className="text-[10px] font-mono font-semibold truncate text-blue-300">
+                            <span className="text-xs font-mono font-semibold truncate text-blue-300">
                               Fetch Token Attempt
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                             <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
-                              <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
+                              <span className="text-xs font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
-                            <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
+                            <div className="p-2 space-y-0.5 text-xs font-mono overflow-x-auto">
                               <pre style={{ color: '#ffffff80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                                 {JSON.stringify(seamlessDebug, null, 2)}
                               </pre>
@@ -1769,28 +1769,28 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
-                            <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
+                            <span className="text-xs font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className={`text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
-                            <span className="text-[10px] font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
+                            <span className="text-xs font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          <p className="text-xs font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                               <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
-                                <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
+                                <span className="text-xs font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
-                              <div className="p-2 space-y-0.5 text-[9px] font-mono">
+                              <div className="p-2 space-y-0.5 text-xs font-mono">
                                 <Row k="HTTP Status" v={String(s.inspect.httpStatus)} c={s.inspect.httpStatus===200?'#4ade80':'#f87171'} />
                                 {s.inspect.errorCode && <Row k="Error Code" v={s.inspect.errorCode} c="#f87171" />}
                                 {s.inspect.txId && <Row k="TX ID" v={s.inspect.txId} />}
                                 {s.inspect.responseBody && (
                                   <div className="mt-1 pt-1 border-t" style={{ borderColor: '#00E5FF08' }}>
                                     <span className="text-[8px] opacity-40 mb-0.5 block">Response Body</span>
-                                    <p className="text-[9px] break-all opacity-70 leading-relaxed max-h-32 overflow-y-auto">{s.inspect.responseBody}</p>
+                                    <p className="text-xs break-all opacity-70 leading-relaxed max-h-32 overflow-y-auto">{s.inspect.responseBody}</p>
                                   </div>
                                 )}
                               </div>
@@ -1808,7 +1808,7 @@ function ExecuteModal({
                   <div className="flex items-center gap-2 px-4 py-2.5 border-b"
                     style={{ borderColor: 'rgba(34,197,94,0.15)', background: 'rgba(34,197,94,0.08)' }}>
                     <Info className="w-3.5 h-3.5 shrink-0" style={{ color: '#4ade80' }} />
-                    <p className="text-[11px] font-black" style={{ color: '#4ade80' }}>سيتم التعرف على رقم المحفظة تلقائياً</p>
+                    <p className="text-xs font-black" style={{ color: '#4ade80' }}>سيتم التعرف على رقم المحفظة تلقائياً</p>
                   </div>
                   <ul className="px-4 py-3 space-y-1.5">
                     {[
@@ -1819,7 +1819,7 @@ function ExecuteModal({
                     ].map((tip, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: '#4ade80', opacity: 0.6 }} />
-                        <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{tip}</p>
+                        <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{tip}</p>
                       </li>
                     ))}
                   </ul>
@@ -1857,7 +1857,7 @@ function ExecuteModal({
                       <span className="text-sm font-black" style={{ color: chargeForSelf ? '#E60000' : L ? 'rgba(0,0,0,0.75)' : '#ffffff' }}>
                         شحن لرقمي
                       </span>
-                      <span className="block text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)' }}>
+                      <span className="block text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)' }}>
                         سيتم شحن الرقم المتصل بالشبكة تلقائياً
                       </span>
                     </div>
@@ -1870,7 +1870,7 @@ function ExecuteModal({
                       style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.18)' }}
                     >
                       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#E60000' }} />
-                      <p className="text-[11px] leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
+                      <p className="text-xs leading-relaxed" style={{ color: L ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)' }}>
                         سيتم التعرف على رقمك تلقائياً من شبكة فودافون عند التنفيذ. تأكد من تشغيل بيانات فودافون.
                       </p>
                     </div>
@@ -1900,7 +1900,7 @@ function ExecuteModal({
                       </div>
                       <div className="flex-1 min-w-0 text-right">
                         <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام عن الرقم</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                        <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
                           اعرف النظام والرصيد والكروت قبل الشحن
                         </p>
                       </div>
@@ -1924,7 +1924,7 @@ function ExecuteModal({
                       </div>
                       <div className="flex-1 min-w-0 text-right">
                         <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام رصيد المحفظة</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                        <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
                           Vodafone Cash — اعرف رصيدك قبل الشحن
                         </p>
                       </div>
@@ -1943,7 +1943,7 @@ function ExecuteModal({
                       </div>
                       <div className="flex-1 min-w-0 text-right">
                         <p className="text-sm font-black" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>خزنة الرقم السري</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                        <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
                           احفظ واسترجع رقمك السري بأمان
                         </p>
                       </div>
@@ -1985,11 +1985,11 @@ function ExecuteModal({
                       {/* الحل */}
                       {hasSolution && (
                         <div className="pt-2.5 border-t space-y-1.5" style={{ borderColor: locked ? 'rgba(251,146,60,0.2)' : 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>الحل</p>
+                          <p className="text-xs font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>الحل</p>
                           {hallLines.map((line, i) => (
                             <div key={i} className="flex items-start gap-1.5">
-                              <span className="text-[9px] shrink-0 mt-1" style={{ color: titleColor }}>▸</span>
-                              <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                              <span className="text-xs shrink-0 mt-1" style={{ color: titleColor }}>▸</span>
+                              <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
                                 {line.replace(/^[•\-]\s*/, '')}
                               </p>
                             </div>
@@ -2000,14 +2000,14 @@ function ExecuteModal({
                       {/* تحذير إضافي عند القفل */}
                       {locked && (
                         <div className="pt-2 border-t" style={{ borderColor: 'rgba(251,146,60,0.2)' }}>
-                          <p className="text-[11px] font-bold text-orange-300">⛔ لا تحاول مجدداً الآن — محاولات إضافية لن تُفيد.</p>
+                          <p className="text-xs font-bold text-orange-300">⛔ لا تحاول مجدداً الآن — محاولات إضافية لن تُفيد.</p>
                         </div>
                       )}
 
                       {/* زر تجديد الاشتراك عند استنفاد الباقة */}
                       {opsExhausted && (
                         <div className="pt-2.5 border-t" style={{ borderColor: 'rgba(168,85,247,0.2)' }}>
-                          <p className="text-[11px] font-bold text-purple-300 mb-2.5">⚡ الباقة الحالية مكتملة — جدّد لتواصل الشحن</p>
+                          <p className="text-xs font-bold text-purple-300 mb-2.5">⚡ الباقة الحالية مكتملة — جدّد لتواصل الشحن</p>
                           <button
                             onClick={() => { navigate('/activate'); }}
                             className="w-full py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
@@ -2022,11 +2022,11 @@ function ExecuteModal({
                       {/* نصائح الشبكة */}
                       {shouldShowNetworkTips(lastErrorType) && (
                         <div className="pt-2 border-t" style={{ borderColor: 'rgba(220,38,38,0.2)' }}>
-                          <p className="text-[10px] font-black uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>تحقق أيضاً</p>
+                          <p className="text-xs font-black uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>تحقق أيضاً</p>
                           {['أوقف الـ WiFi وشغّل بيانات الهاتف (4G)', 'تأكد أن الشريحة النشطة هي Vodafone', 'أعد تشغيل بيانات الهاتف ثم حاول مجدداً'].map((tip, i) => (
                             <div key={i} className="flex items-start gap-1.5">
-                              <span className="text-[9px] shrink-0 mt-1 text-red-400">▸</span>
-                              <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>{tip}</p>
+                              <span className="text-xs shrink-0 mt-1 text-red-400">▸</span>
+                              <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>{tip}</p>
                             </div>
                           ))}
                         </div>
@@ -2040,24 +2040,24 @@ function ExecuteModal({
                   <div className="rounded-xl overflow-hidden border" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
-                      <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
+                      <span className="text-xs font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
+                              <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
                                 FULL PIPELINE TRACE
                               </span>
-                              <span className="text-[10px] font-mono font-semibold truncate text-yellow-200">
+                              <span className="text-xs font-mono font-semibold truncate text-yellow-200">
                                 {traceReport.traceId}
                               </span>
                            </div>
                            
                            <div className="space-y-1">
                              {traceReport.steps.map((step: any, idx: number) => (
-                               <div key={idx} className="flex flex-col text-[10px] font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
+                               <div key={idx} className="flex flex-col text-xs font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
                                  <div className="flex items-center justify-between">
                                    <span style={{ color: step.status === 'Success' ? '#4ade80' : step.status === 'Failed' ? '#f87171' : '#94a3b8' }}>
                                      {step.status === 'Success' ? '✅' : step.status === 'Failed' ? '❌' : '⏳'} [{step.id}] {step.name} {step.executionTimeMs ? `(${step.executionTimeMs}ms)` : ''}
@@ -2080,7 +2080,7 @@ function ExecuteModal({
 
                            {traceReport.requests && traceReport.requests.length > 0 && (
                              <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
-                               <div className="text-[9px] font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
+                               <div className="text-xs font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
                                {traceReport.requests.map((req: any, idx: number) => (
                                  <div key={idx} className="p-1.5 rounded border border-blue-500/20 bg-blue-500/5 text-[8.5px] font-mono text-blue-200">
                                    <div className="font-bold text-white mb-0.5">{req.method} {req.url}</div>
@@ -2099,8 +2099,8 @@ function ExecuteModal({
                            )}
 
                            <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
-                              <div className="text-[10px] font-bold text-red-400">PROBLEM SOURCE:</div>
-                              <div className="text-[10px] font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
+                              <div className="text-xs font-bold text-red-400">PROBLEM SOURCE:</div>
+                              <div className="text-xs font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
                                 {traceReport.analysis?.problemSource || 'Unknown'}
                               </div>
                            </div>
@@ -2110,18 +2110,18 @@ function ExecuteModal({
                       {seamlessDebug && (
                         <div className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
+                            <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
                               SEAMLESS
                             </span>
-                            <span className="text-[10px] font-mono font-semibold truncate text-blue-300">
+                            <span className="text-xs font-mono font-semibold truncate text-blue-300">
                               Fetch Token Attempt
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                             <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
-                              <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
+                              <span className="text-xs font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
-                            <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
+                            <div className="p-2 space-y-0.5 text-xs font-mono overflow-x-auto">
                               <pre style={{ color: '#ffffff80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                                 {JSON.stringify(seamlessDebug, null, 2)}
                               </pre>
@@ -2132,21 +2132,21 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
-                            <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
+                            <span className="text-xs font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className={`text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
-                            <span className="text-[10px] font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
+                            <span className="text-xs font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          <p className="text-xs font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                               <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
-                                <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
+                                <span className="text-xs font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
-                              <div className="p-2 space-y-0.5 text-[9px] font-mono">
+                              <div className="p-2 space-y-0.5 text-xs font-mono">
                                 <Row k="HTTP Status" v={String(s.inspect.httpStatus)} c={s.inspect.httpStatus===200?'#4ade80':'#f87171'} />
                                 <Row k="Token From"  v={s.inspect.tokenExtractedFrom} c={s.inspect.tokenExtractedFrom!=='NONE'?'#4ade80':'#f87171'} />
                                 <Row k="Raw (500c)"  v={s.inspect.rawFirst5000.slice(0,500)||'(empty)'} />
@@ -2154,7 +2154,7 @@ function ExecuteModal({
                             </div>
                           )}
                           {!s.inspect && s.raw && (
-                            <p className="text-[9px] font-mono pl-14 break-all" style={{ color: '#ffffff20' }}>
+                            <p className="text-xs font-mono pl-14 break-all" style={{ color: '#ffffff20' }}>
                               {s.raw.slice(0,180)}{s.raw.length>180?'…':''}
                             </p>
                           )}
@@ -2227,24 +2227,24 @@ function ExecuteModal({
                   <div className="rounded-xl overflow-hidden border mt-4" style={{ background: '#080d14', borderColor: '#ffffff10' }}>
                     <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#ffffff08', background: '#0d1523' }}>
                       <Database className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E5FF' }} />
-                      <span className="text-[10px] font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
+                      <span className="text-xs font-bold tracking-widest font-mono" style={{ color: '#00E5FF70' }}>CHARGE DEBUG</span>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
                       {/* ── FULL TRACE REPORT ── */}
                       {traceReport && (
                         <div className="px-3 py-2 space-y-2 bg-yellow-400/5">
                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
+                              <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-yellow-400/20 text-yellow-300">
                                 FULL PIPELINE TRACE
                               </span>
-                              <span className="text-[10px] font-mono font-semibold truncate text-yellow-200">
+                              <span className="text-xs font-mono font-semibold truncate text-yellow-200">
                                 {traceReport.traceId}
                               </span>
                            </div>
                            
                            <div className="space-y-1">
                              {traceReport.steps.map((step: any, idx: number) => (
-                               <div key={idx} className="flex flex-col text-[10px] font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
+                               <div key={idx} className="flex flex-col text-xs font-mono mb-1 p-1.5 rounded" style={{ background: step.status === 'Failed' ? '#ff000015' : 'transparent' }}>
                                  <div className="flex items-center justify-between">
                                    <span style={{ color: step.status === 'Success' ? '#4ade80' : step.status === 'Failed' ? '#f87171' : '#94a3b8' }}>
                                      {step.status === 'Success' ? '✅' : step.status === 'Failed' ? '❌' : '⏳'} [{step.id}] {step.name} {step.executionTimeMs ? `(${step.executionTimeMs}ms)` : ''}
@@ -2267,7 +2267,7 @@ function ExecuteModal({
 
                            {traceReport.requests && traceReport.requests.length > 0 && (
                              <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
-                               <div className="text-[9px] font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
+                               <div className="text-xs font-bold text-blue-400 mb-1.5">NETWORK DIAGNOSTICS:</div>
                                {traceReport.requests.map((req: any, idx: number) => (
                                  <div key={idx} className="p-1.5 rounded border border-blue-500/20 bg-blue-500/5 text-[8.5px] font-mono text-blue-200">
                                    <div className="font-bold text-white mb-0.5">{req.method} {req.url}</div>
@@ -2286,8 +2286,8 @@ function ExecuteModal({
                            )}
 
                            <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
-                              <div className="text-[10px] font-bold text-red-400">PROBLEM SOURCE:</div>
-                              <div className="text-[10px] font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
+                              <div className="text-xs font-bold text-red-400">PROBLEM SOURCE:</div>
+                              <div className="text-xs font-bold text-white px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30">
                                 {traceReport.analysis?.problemSource || 'Unknown'}
                               </div>
                            </div>
@@ -2297,18 +2297,18 @@ function ExecuteModal({
                       {seamlessDebug && (
                         <div className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
+                            <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 bg-blue-400/10 text-blue-400">
                               SEAMLESS
                             </span>
-                            <span className="text-[10px] font-mono font-semibold truncate text-blue-300">
+                            <span className="text-xs font-mono font-semibold truncate text-blue-300">
                               Fetch Token Attempt
                             </span>
                           </div>
                           <div className="ml-1 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                             <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
-                              <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
+                              <span className="text-xs font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>SEAMLESS DEBUG RAW</span>
                             </div>
-                            <div className="p-2 space-y-0.5 text-[9px] font-mono overflow-x-auto">
+                            <div className="p-2 space-y-0.5 text-xs font-mono overflow-x-auto">
                               <pre style={{ color: '#ffffff80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                                 {JSON.stringify(seamlessDebug, null, 2)}
                               </pre>
@@ -2319,28 +2319,28 @@ function ExecuteModal({
                       {debugSteps.map(s => (
                         <div key={s.step} className="px-3 py-2 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
-                            <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
+                            <span className="text-xs font-mono shrink-0 w-12 text-right" style={{ color: '#ffffff25' }}>Step {s.step}</span>
+                            <span className={`text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${s.status==='pass'?'text-green-400 bg-green-400/10':s.status==='fail'?'text-red-400 bg-red-400/10':'text-amber-400 bg-amber-400/10'}`}>
                               {s.status.toUpperCase()}
                             </span>
-                            <span className="text-[10px] font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
+                            <span className="text-xs font-mono font-semibold truncate" style={{ color: s.status==='pass'?'#4ade80':s.status==='fail'?'#f87171':'#fbbf24' }}>
                               {s.label}
                             </span>
                           </div>
-                          <p className="text-[10px] font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
+                          <p className="text-xs font-mono pl-14 break-all leading-relaxed" style={{ color: '#ffffff40' }}>{s.detail}</p>
                           {s.inspect && (
                             <div className="ml-14 mt-1.5 rounded-lg border overflow-hidden" style={{ borderColor: '#00E5FF12', background: '#050810' }}>
                               <div className="px-2 py-1 border-b" style={{ borderColor: '#00E5FF08', background: '#0a1020' }}>
-                                <span className="text-[9px] font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
+                                <span className="text-xs font-bold font-mono tracking-widest" style={{ color: '#00E5FF50' }}>RAW RESPONSE</span>
                               </div>
-                              <div className="p-2 space-y-0.5 text-[9px] font-mono">
+                              <div className="p-2 space-y-0.5 text-xs font-mono">
                                 <Row k="HTTP Status" v={String(s.inspect.httpStatus)} c={s.inspect.httpStatus===200?'#4ade80':'#f87171'} />
                                 {s.inspect.errorCode && <Row k="Error Code" v={s.inspect.errorCode} c="#f87171" />}
                                 {s.inspect.txId && <Row k="TX ID" v={s.inspect.txId} />}
                                 {s.inspect.responseBody && (
                                   <div className="mt-1 pt-1 border-t" style={{ borderColor: '#00E5FF08' }}>
                                     <span className="text-[8px] opacity-40 mb-0.5 block">Response Body</span>
-                                    <p className="text-[9px] break-all opacity-70 leading-relaxed max-h-32 overflow-y-auto">{s.inspect.responseBody}</p>
+                                    <p className="text-xs break-all opacity-70 leading-relaxed max-h-32 overflow-y-auto">{s.inspect.responseBody}</p>
                                   </div>
                                 )}
                               </div>
@@ -2384,7 +2384,7 @@ function ExecuteModal({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-foreground">استعلام رصيد المحفظة</p>
-              <p className="text-[11px] text-muted-foreground">Vodafone Cash</p>
+              <p className="text-xs text-muted-foreground">Vodafone Cash</p>
             </div>
           </div>
 
@@ -2394,13 +2394,13 @@ function ExecuteModal({
                 <div className="rounded-2xl p-4 text-center space-y-1"
                   style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
                   <CheckCircle2 className="w-6 h-6 mx-auto text-green-400" />
-                  <p className="text-[11px] text-muted-foreground">رصيد المحفظة الحالي</p>
+                  <p className="text-xs text-muted-foreground">رصيد المحفظة الحالي</p>
                   <p className="text-2xl font-black text-green-400">
                     {walletBalance} <span className="text-sm font-medium text-muted-foreground">جنيه</span>
                   </p>
-                  {walletMsisdn && <p className="text-[11px] text-muted-foreground font-mono">{walletMsisdn}</p>}
+                  {walletMsisdn && <p className="text-xs text-muted-foreground font-mono">{walletMsisdn}</p>}
                   {walletQueriedAt && (
-                    <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
+                    <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1">
                       <Clock className="w-3 h-3" />
                       {(() => { try { return new Date(walletQueriedAt).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }); } catch { return walletQueriedAt; } })()}
                     </p>
@@ -2429,7 +2429,7 @@ function ExecuteModal({
                 <div className="rounded-2xl p-3 border border-border" style={{ background: 'rgba(0,0,0,0.15)' }}>
                   <PinInputBlock pin={walletPin} setPin={setWalletPin} submitting={walletStatus === 'loading'} />
                 </div>
-                <p className="text-[10px] text-amber-400/70 flex items-start gap-1.5">
+                <p className="text-xs text-amber-400/70 flex items-start gap-1.5">
                   <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                   <span>رقم سري Vodafone Cash من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
                 </p>
@@ -2484,7 +2484,7 @@ function GracePeriodBanner({ graceEndsAt, onRenew }: { graceEndsAt: string; onRe
         <span className="text-warning text-lg shrink-0">⚠️</span>
         <div className="min-w-0">
           <p className="text-xs font-bold text-balance" style={{ color: L ? '#92400e' : 'hsl(var(--warning-foreground))' }}>انتهى الاشتراك</p>
-          <p className="text-[11px]" style={{ color: L ? '#78350f' : 'hsl(var(--muted-foreground))' }}>فترة السماح تنتهي خلال {remaining}</p>
+          <p className="text-xs" style={{ color: L ? '#78350f' : 'hsl(var(--muted-foreground))' }}>فترة السماح تنتهي خلال {remaining}</p>
         </div>
       </div>
       <button onClick={onRenew}
@@ -2956,7 +2956,7 @@ function HomePage() {
                 }}>
                   Vodafone Fakka Premium
                 </h1>
-                <p className="text-[11px] text-muted-foreground font-medium tracking-wide">
+                <p className="text-xs text-muted-foreground font-medium tracking-wide">
                   Smart Vodafone Cash Cards Platform
                 </p>
               </div>
@@ -2966,7 +2966,7 @@ function HomePage() {
               className="relative w-9 h-9 rounded-xl border border-primary/20 bg-primary/8 flex items-center justify-center shrink-0 hover:bg-primary/15 transition-colors">
               <Bell className="w-4 h-4 text-primary" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -2977,9 +2977,9 @@ function HomePage() {
           {isAdmin && (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-accent/30 bg-accent/8">
               <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="text-[11px] font-bold text-accent tracking-wide">Nader Akram</span>
-              <span className="text-[10px] text-foreground/50">•</span>
-              <span className="text-[10px] text-foreground/60 font-medium">Founder & Developer</span>
+              <span className="text-xs font-bold text-accent tracking-wide">Nader Akram</span>
+              <span className="text-xs text-foreground/50">•</span>
+              <span className="text-xs text-foreground/60 font-medium">Founder & Developer</span>
             </div>
           )}
 
@@ -2991,8 +2991,8 @@ function HomePage() {
                 background: L ? 'rgba(180,83,9,0.10)' : 'rgba(251,191,36,0.10)',
               }}>
               <Eye className="w-3.5 h-3.5" style={{ color: L ? '#b45309' : '#fbbf24' }} />
-              <span className="text-[11px] font-bold tracking-wide" style={{ color: L ? '#92400e' : '#fde68a' }}>وضع المعاينة</span>
-              <span className="text-[10px]" style={{ color: L ? 'rgba(146,64,14,0.65)' : 'rgba(253,230,138,0.65)' }}>— بعض الخدمات محدودة</span>
+              <span className="text-xs font-bold tracking-wide" style={{ color: L ? '#92400e' : '#fde68a' }}>وضع المعاينة</span>
+              <span className="text-xs" style={{ color: L ? 'rgba(146,64,14,0.65)' : 'rgba(253,230,138,0.65)' }}>— بعض الخدمات محدودة</span>
             </div>
           )}
         </div>
@@ -3058,13 +3058,13 @@ function HomePage() {
                       boxShadow: '0 0 14px rgba(247,201,72,0.12)',
                     }}>
                     <Sparkles className="w-3 h-3" style={{ color: L ? '#92400e' : '#F7C948' }} />
-                    <span className="text-[10px] font-black tracking-[0.12em] uppercase"
+                    <span className="text-xs font-black tracking-[0.12em] uppercase"
                       style={L ? { color: '#78350f' } : {
                         background: 'linear-gradient(90deg, #F7C948, #fde68a, #F7C948)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                       }}>PREMIUM</span>
-                    <span className="text-[9px] font-black tracking-widest"
+                    <span className="text-xs font-black tracking-widest"
                       style={L ? {
                         color: '#7c2d12',
                         border: '1px solid rgba(124,45,18,0.40)',
@@ -3090,7 +3090,7 @@ function HomePage() {
                       background: 'rgba(107,114,128,0.12)',
                       border: '1px solid rgba(156,163,175,0.25)',
                     }}>
-                    <span className="text-[10px] font-black tracking-[0.15em] uppercase"
+                    <span className="text-xs font-black tracking-[0.15em] uppercase"
                       style={{ color: L ? '#374151' : '#9ca3af' }}>FREE</span>
                   </div>
                 )}
@@ -3100,7 +3100,7 @@ function HomePage() {
                 >
                   {displayName}
                 </h2>
-                <p className="text-[11px] text-muted-foreground/80 text-pretty leading-relaxed">
+                <p className="text-xs text-muted-foreground/80 text-pretty leading-relaxed">
                   منصة احترافية لإدارة وشحن كروت Vodafone Cash بسرعة وأمان<br />مع متابعة الاشتراك والعمليات بشكل لحظي.
                 </p>
               </div>
@@ -3243,8 +3243,8 @@ function HomePage() {
             <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-white/6 bg-card/60">
               <span className="text-lg shrink-0">{icon}</span>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-balance truncate" style={{ color }}>{label}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{desc}</p>
+                <p className="text-xs font-bold text-balance truncate" style={{ color }}>{label}</p>
+                <p className="text-xs text-muted-foreground truncate">{desc}</p>
               </div>
             </div>
           ))}
@@ -3284,7 +3284,7 @@ function HomePage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="text-sm font-black text-foreground">كروت الفكة من Vodafone Cash</p>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0"
                   style={{ background: 'rgba(230,0,0,0.12)', color: '#E60000', border: '1px solid rgba(230,0,0,0.2)' }}>
                   VCash
                 </span>
@@ -3304,13 +3304,13 @@ function HomePage() {
         <Tabs value={activeTab} onValueChange={v => setActiveTab(v as typeof activeTab)}>
           <TabsList className="w-full bg-muted/40 h-10 gap-1">
             <TabsTrigger value="all" className="flex-1 text-xs font-semibold">
-              الكل <span className="mr-1 text-[10px] opacity-60">({ALL_PRODUCTS.length})</span>
+              الكل <span className="mr-1 text-xs opacity-60">({ALL_PRODUCTS.length})</span>
             </TabsTrigger>
             <TabsTrigger value="fakka" className="flex-1 text-xs font-semibold">
-              فكة <span className="mr-1 text-[10px] opacity-60">({FAKKA_PRODUCTS.length})</span>
+              فكة <span className="mr-1 text-xs opacity-60">({FAKKA_PRODUCTS.length})</span>
             </TabsTrigger>
             <TabsTrigger value="mared" className="flex-1 text-xs font-semibold">
-              مارد <span className="mr-1 text-[10px] opacity-60">({MARED_PRODUCTS.length})</span>
+              مارد <span className="mr-1 text-xs opacity-60">({MARED_PRODUCTS.length})</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -3322,7 +3322,7 @@ function HomePage() {
           <div>
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-sm font-bold text-foreground">🎯 كروت الفكة</span>
-              <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
+              <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
                 {displayedFakka.length}
               </span>
             </div>
@@ -3339,7 +3339,7 @@ function HomePage() {
           <div>
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-sm font-bold text-foreground">🔥 كروت المارد</span>
-              <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
+              <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
                 {displayedMared.length}
               </span>
             </div>
@@ -3390,7 +3390,7 @@ function HomePage() {
         <div className="px-4 pt-3">
           <div className="flex items-center gap-2 p-2.5 rounded-xl bg-success/8 border border-success/15">
             <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
-            <p className="text-[11px] text-success font-medium">اشتراكك نشط — اضغط على أي كارت للتنفيذ</p>
+            <p className="text-xs text-success font-medium">اشتراكك نشط — اضغط على أي كارت للتنفيذ</p>
           </div>
         </div>
       )}
@@ -3405,13 +3405,13 @@ function HomePage() {
           <p className="text-sm font-black shimmer-footer-title">
             Vodafone Fakka Premium
           </p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Developed By{' '}
             <span className="font-bold text-accent">Nader Akram</span>
           </p>
           <div className="flex items-center justify-center gap-1.5">
             <Gift className="w-3 h-3 text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">© 2026 جميع الحقوق محفوظة</p>
+            <p className="text-xs text-muted-foreground">© 2026 جميع الحقوق محفوظة</p>
           </div>
         </div>
       </div>

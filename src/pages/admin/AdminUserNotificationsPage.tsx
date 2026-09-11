@@ -139,18 +139,18 @@ export default function AdminUserNotificationsPage() {
                         {n.title || 'إشعار بدون عنوان'}
                       </p>
                       {!n.is_read && (
-                        <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold shrink-0">
+                        <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold shrink-0">
                           جديد
                         </span>
                       )}
                     </div>
                     {n.body && (
-                      <p className="text-[10px] text-muted-foreground line-clamp-3">{n.body}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-3">{n.body}</p>
                     )}
                     <div className="flex items-center gap-3 pt-1">
-                      <span className="text-[10px] text-muted-foreground">{fmt(n.created_at)}</span>
+                      <span className="text-xs text-muted-foreground">{fmt(n.created_at)}</span>
                       {n.type && (
-                        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                        <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
                           {n.type}
                         </span>
                       )}

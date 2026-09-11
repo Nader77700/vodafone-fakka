@@ -55,7 +55,7 @@ export default function ExpiryModal({ open, reason = 'expired', suspendReason }:
           <div className="p-6 space-y-4">
             {suspendReason && (
               <div className="p-3 bg-warning/8 rounded-xl border border-warning/20 text-center space-y-1">
-                <p className="text-[11px] text-muted-foreground font-medium">سبب التعليق</p>
+                <p className="text-xs text-muted-foreground font-medium">سبب التعليق</p>
                 <p className="text-sm font-bold text-warning">{suspendReason}</p>
               </div>
             )}

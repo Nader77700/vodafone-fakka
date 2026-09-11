@@ -92,7 +92,7 @@ function CardRow({ card, accentColor, L }: { card: CardItem; accentColor: string
           { Icon: CalendarClock, label: 'التجديد', val: card.resetDate || '—' },
         ].map(({ Icon, label, val }) => (
           <div key={label} className="rounded-xl p-2 text-center" style={{ background: innerBg, border: `1px solid ${innerBorder}` }}>
-            <p className="text-[9px] mb-0.5 flex items-center justify-center gap-0.5" style={{ color: mutC }}>
+            <p className="text-xs mb-0.5 flex items-center justify-center gap-0.5" style={{ color: mutC }}>
               <Icon className="w-2.5 h-2.5" /> {label}
             </p>
             <p className="text-xs font-black" style={{ color: textC }} dir="ltr">{val}</p>
@@ -118,7 +118,7 @@ function CardSection({ title, cards, accentColor, L }: { title: string; cards: C
             <ClipboardList className="w-3.5 h-3.5" style={{ color: accentColor }} />
           </div>
           <span className="text-sm font-black" style={{ color: textC }}>{title}</span>
-          <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+          <span className="text-xs font-black px-2 py-0.5 rounded-full"
             style={{ background: `${accentColor}18`, color: accentColor, border: `1px solid ${accentColor}33` }}>
             {cards.length}
           </span>
@@ -187,7 +187,7 @@ function HistoryPanel({ onSelect, L }: { onSelect: (entry: LineInfoHistoryEntry)
           <History className="w-3.5 h-3.5" style={{ color: '#E60000' }} />
         </div>
         <span className="text-sm font-black" style={{ color: textC }}>سجل الفحوصات</span>
-        <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(230,0,0,0.12)', color: '#E60000', border: '1px solid rgba(230,0,0,0.22)' }}>
+        <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(230,0,0,0.12)', color: '#E60000', border: '1px solid rgba(230,0,0,0.22)' }}>
           {entries.length}
         </span>
       </div>
@@ -197,13 +197,13 @@ function HistoryPanel({ onSelect, L }: { onSelect: (entry: LineInfoHistoryEntry)
             className="w-full flex items-center justify-between px-4 py-3 text-right transition-colors hover:bg-black/5 active:scale-[0.99]">
             <div className="min-w-0">
               <p className="text-sm font-black" style={{ color: textC }} dir="ltr">{entry.phone}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: mutC }}>
+              <p className="text-xs mt-0.5" style={{ color: mutC }}>
                 {entry.result.system ?? '—'} · {new Date(entry.checkedAt).toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 mr-2">
               {entry.result.balance && (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.20)' }}>
+                <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.20)' }}>
                   {entry.result.balance}
                 </span>
               )}
@@ -301,7 +301,7 @@ export default function LineInfoPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black" style={{ color: textC }}>معلومات الخط</h1>
-            <p className="text-[10px] text-muted-foreground">أدخل رقم الهاتف لمعرفة بيانات الخط</p>
+            <p className="text-xs text-muted-foreground">أدخل رقم الهاتف لمعرفة بيانات الخط</p>
           </div>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.22)' }}>

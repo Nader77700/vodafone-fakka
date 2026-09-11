@@ -247,7 +247,7 @@ export default function SecurityDashboard() {
                   <tr key={log.id} className="hover:bg-muted/50">
                     <td className="p-3 text-xs whitespace-nowrap">
                       {new Date(log.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                      <div className="text-[10px] text-muted-foreground">{new Date(log.created_at).toLocaleDateString('ar-EG')}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleDateString('ar-EG')}</div>
                     </td>
                     <td className="p-3">
                       <span className="text-red-500 font-medium text-xs md:text-sm line-clamp-2" title={log.action}>

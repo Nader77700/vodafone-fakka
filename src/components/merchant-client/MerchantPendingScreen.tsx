@@ -128,7 +128,7 @@ export default function MerchantPendingScreen() {
           </Button>
         </div>
 
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Vodafone Fakka Premium · Merchant Service
         </p>
       </div>

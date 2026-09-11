@@ -148,7 +148,7 @@ export default function WalletBalanceQueryPage() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">الاستعلام عن الرصيد</h1>
-            <p className="text-[10px] text-primary font-medium">Vodafone Cash Balance</p>
+            <p className="text-xs text-primary font-medium">Vodafone Cash Balance</p>
           </div>
           <div className="w-10" />
         </div>
@@ -180,7 +180,7 @@ export default function WalletBalanceQueryPage() {
                 <span className="text-sm font-bold truncate">{networkName}</span>
               </div>
               {lastChecked && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">آخر فحص: {formatTime(lastChecked)}</p>
               )}
             </div>
             <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-[#E60000]/20 text-primary'}`}>

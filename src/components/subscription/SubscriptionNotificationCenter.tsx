@@ -90,14 +90,14 @@ export default function SubscriptionNotificationCenter({
             <Bell className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-black">مركز الإشعارات</h3>
             {visible.length > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center tabular-nums">
+              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center tabular-nums">
                 {visible.length}
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {visible.length > 0 && (
-              <button onClick={clearAll} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 مسح الكل
               </button>
             )}
@@ -128,11 +128,11 @@ export default function SubscriptionNotificationCenter({
                   </div>
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <p className="text-xs font-semibold">{n.title}</p>
-                    {n.body && <p className="text-[11px] text-muted-foreground text-pretty">{n.body}</p>}
-                    {n.time && <p className="text-[10px] text-muted-foreground tabular-nums">{n.time}</p>}
+                    {n.body && <p className="text-xs text-muted-foreground text-pretty">{n.body}</p>}
+                    {n.time && <p className="text-xs text-muted-foreground tabular-nums">{n.time}</p>}
                     {isAlert && onRenew && (
                       <Button size="sm" variant="outline"
-                        className="mt-1.5 h-6 text-[10px] border-primary/30 text-primary hover:bg-primary/10"
+                        className="mt-1.5 h-6 text-xs border-primary/30 text-primary hover:bg-primary/10"
                         onClick={() => { onRenew(); onClose(); }}>
                         تجديد الاشتراك
                       </Button>

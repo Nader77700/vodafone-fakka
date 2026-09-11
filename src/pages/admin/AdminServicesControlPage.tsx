@@ -92,10 +92,10 @@ function ServiceCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-white truncate">{svc.name}</p>
-          <p className="text-[10px] text-white/40">آخر تعديل: {fmt(svc.updated_at)}</p>
+          <p className="text-xs text-white/40">آخر تعديل: {fmt(svc.updated_at)}</p>
         </div>
         {/* badge الحالة */}
-        <span className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0"
+        <span className="text-xs font-black px-2 py-0.5 rounded-full shrink-0"
           style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
           {st.label}
         </span>
@@ -121,7 +121,7 @@ function ServiceCard({
 
       {/* حالة الخدمة */}
       <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-white/40 px-0.5">حالة الخدمة</p>
+        <p className="text-xs font-bold text-white/40 px-0.5">حالة الخدمة</p>
         <Select
           value={svc.status}
           disabled={saving}
@@ -157,7 +157,7 @@ function ServiceCard({
 
       {/* وضع الوصول */}
       <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-white/40 px-0.5">صلاحية الوصول</p>
+        <p className="text-xs font-bold text-white/40 px-0.5">صلاحية الوصول</p>
         <Select
           value={svc.access_mode}
           disabled={saving}
@@ -195,7 +195,7 @@ function ServiceCard({
       {svc.access_mode === 'all' && (
         <div className="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/8">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-amber-300/80 leading-relaxed">
+          <p className="text-xs text-amber-300/80 leading-relaxed">
             هذا القسم مفتوح للجميع بدون اشتراك. تأكد قبل الحفظ.
           </p>
         </div>
@@ -203,7 +203,7 @@ function ServiceCard({
       {svc.access_mode === 'preview_available' && (
         <div className="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/8">
           <Eye className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-amber-300/80 leading-relaxed">
+          <p className="text-xs text-amber-300/80 leading-relaxed">
             هذا القسم يظهر للمستخدمين في وضع المعاينة فقط عند تفعيل Preview Mode.
           </p>
         </div>
@@ -347,7 +347,7 @@ export default function AdminServicesControlPage() {
     >
       <div className="flex items-start gap-2.5 p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/7 mb-4">
         <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-        <p className="text-[11px] text-white/55 leading-relaxed">
+        <p className="text-xs text-white/55 leading-relaxed">
           كل تغيير يُطبَّق فوراً على جميع المستخدمين بدون الحاجة لتحديث التطبيق.
           الإخفاء يمنع ظهور القسم في الواجهة، والصيانة تُوقف الدخول مع رسالة للمستخدم،
           والتعطيل يحجب بالكامل.
@@ -369,7 +369,7 @@ export default function AdminServicesControlPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-black text-white truncate">زر معاينة التطبيق</p>
-              <p className="text-[10px] text-white/50 truncate">
+              <p className="text-xs text-white/50 truncate">
                 {previewEnabled ? 'يظهر في شاشة التفعيل' : 'مخفي عن المستخدمين'}
               </p>
             </div>
@@ -384,19 +384,19 @@ export default function AdminServicesControlPage() {
         <div className="grid grid-cols-3 gap-2 mt-3">
           <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-center">
             <p className="text-base font-black text-amber-400">{previewStats.active}</p>
-            <p className="text-[9px] text-white/50 leading-tight">في المعاينة</p>
+            <p className="text-xs text-white/50 leading-tight">في المعاينة</p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-center">
             <p className="text-base font-black text-emerald-400">{previewStats.converted}</p>
-            <p className="text-[9px] text-white/50 leading-tight">تم تحويلهم</p>
+            <p className="text-xs text-white/50 leading-tight">تم تحويلهم</p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-center">
             <p className="text-base font-black text-indigo-400">{previewStats.total}</p>
-            <p className="text-[9px] text-white/50 leading-tight">إجمالي المستخدمين</p>
+            <p className="text-xs text-white/50 leading-tight">إجمالي المستخدمين</p>
           </div>
         </div>
 
-        <p className="text-[10px] text-white/40 px-1 mt-3 leading-relaxed">
+        <p className="text-xs text-white/40 px-1 mt-3 leading-relaxed">
           • إيقاف Preview Mode لا يمنع المستخدمين الحاليين من التصفح، لكنه يمنع أي خدمة مدفوعة من العمل.
           <br />
           • اختر &quot;متاح للمعاينة&quot; من صلاحية الوصول في أي قسم لإتاحته لمستخدمي المعاينة.
@@ -418,7 +418,7 @@ export default function AdminServicesControlPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-black text-white truncate">زر الشحن</p>
-              <p className="text-[10px] text-white/50 truncate">
+              <p className="text-xs text-white/50 truncate">
                 {chargeEnabled ? 'يظهر في قسم عروض فودافون' : 'مخفي عن المستخدمين'}
               </p>
             </div>
@@ -430,7 +430,7 @@ export default function AdminServicesControlPage() {
           />
         </div>
 
-        <p className="text-[10px] text-white/40 px-1 mt-3 leading-relaxed">
+        <p className="text-xs text-white/40 px-1 mt-3 leading-relaxed">
           • عند الإيقاف يختفي زر الشحن من بطاقات الاشتراكات ويمنع أي طلب شحن جديد.
           <br />
           • يستغرق التغيير ثوانٍ حتى ينعكس على واجهة المستخدمين بدون إعادة بناء.
@@ -476,7 +476,7 @@ export default function AdminServicesControlPage() {
                 )}
                 <ServiceCard svc={mainSection} onUpdate={handleUpdate} saving={saving} />
               </div>
-              <p className="text-[10px] text-white/30 px-1 mt-1">
+              <p className="text-xs text-white/30 px-1 mt-1">
                 ⚠ تعطيل هذا القسم يُخفي جميع الخدمات التابعة له من الشاشة الرئيسية
               </p>
             </SectionCard>
@@ -505,7 +505,7 @@ export default function AdminServicesControlPage() {
           {/* ملاحظة الاشتراك */}
           <div className="flex items-start gap-2.5 p-3 rounded-xl border border-green-500/15 bg-green-500/6">
             <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-white/50 leading-relaxed">
+            <p className="text-xs text-white/50 leading-relaxed">
               الافتراضي: جميع الخدمات تستلزم اشتراكاً نشطاً. استخدم زر &quot;الجميع&quot; لفتح قسم معين
               مجاناً مؤقتاً.
             </p>

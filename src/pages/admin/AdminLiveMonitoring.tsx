@@ -122,7 +122,7 @@ export default function AdminLiveMonitoring() {
               </div>
               <div className="min-w-0">
                 <p className={`text-xl font-black tabular-nums ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
               </div>
             </div>
           ))}
@@ -181,13 +181,13 @@ export default function AdminLiveMonitoring() {
                     {/* معلومات */}
                     <div className="flex-1 min-w-0 text-right">
                       <p className="text-xs font-semibold truncate">{u.full_name || u.username || u.email}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         آخر دخول: {ago(u.last_login)}
                       </p>
                     </div>
                     {/* تاريخ */}
                     <div className="text-left shrink-0">
-                      <p className="text-[10px] text-muted-foreground">{fmt(u.last_login)}</p>
+                      <p className="text-xs text-muted-foreground">{fmt(u.last_login)}</p>
                     </div>
                   </button>
                 );

@@ -172,7 +172,7 @@ export default function WalletLinesChangePasswordPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-black text-foreground">تغيير كلمة السر</h1>
-            <p className="text-[10px] text-muted-foreground">خدمات الخطوط والمحافظ</p>
+            <p className="text-xs text-muted-foreground">خدمات الخطوط والمحافظ</p>
           </div>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function WalletLinesChangePasswordPage() {
             const done = ['phone', 'otp', 'password', 'success'].indexOf(step) > i;
             return (
               <div key={s} className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
                   active ? 'bg-amber-500 text-amber-950' : done ? 'bg-green-500 text-green-950' : 'bg-muted text-muted-foreground'
                 }`}>
                   {done ? '✓' : i + 1}
@@ -215,7 +215,7 @@ export default function WalletLinesChangePasswordPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-foreground">أدخل رقم الهاتف</h2>
-                  <p className="text-[10px] text-muted-foreground">سنرسل رمز التحقق إلى رقم الهاتف المسجل.</p>
+                  <p className="text-xs text-muted-foreground">سنرسل رمز التحقق إلى رقم الهاتف المسجل.</p>
                 </div>
               </div>
 
@@ -268,7 +268,7 @@ export default function WalletLinesChangePasswordPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-foreground">التحقق من الرمز</h2>
-                  <p className="text-[10px] text-muted-foreground">تم إرسال رمز التحقق إلى الرقم التالي.</p>
+                  <p className="text-xs text-muted-foreground">تم إرسال رمز التحقق إلى الرقم التالي.</p>
                 </div>
               </div>
 
@@ -331,7 +331,7 @@ export default function WalletLinesChangePasswordPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-foreground">إنشاء كلمة سر جديدة</h2>
-                  <p className="text-[10px] text-muted-foreground">كلمة السر يجب أن تكون 6 أحرف على الأقل.</p>
+                  <p className="text-xs text-muted-foreground">كلمة السر يجب أن تكون 6 أحرف على الأقل.</p>
                 </div>
               </div>
 

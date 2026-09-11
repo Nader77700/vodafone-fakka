@@ -36,7 +36,7 @@ function LineInfoShortcut({ receiverPhone }: { receiverPhone: string }) {
         </div>
         <div className="flex-1 min-w-0 text-right">
           <p className="text-sm font-black" style={{ color: '#E60000' }}>معلومات الخط</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             اعرف النظام والرصيد والكروت قبل الشحن
           </p>
         </div>
@@ -276,7 +276,7 @@ export default function RechargeBalancePage() {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-[17px] font-bold tracking-wide">شحن الرصيد</h1>
-            <p className="text-[10px] text-primary font-medium">Vodafone Cash</p>
+            <p className="text-xs text-primary font-medium">Vodafone Cash</p>
           </div>
           <button
             onClick={() => navigate('/vodafone-cash-center/history/recharge')}
@@ -398,7 +398,7 @@ export default function RechargeBalancePage() {
                 {/* خانة الرصيد الصافي */}
                 <div className="flex-1 min-w-0 relative pt-2">
                   <span
-                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-card leading-none whitespace-nowrap"
+                    className="absolute top-0 right-2 text-xs font-bold px-1 bg-card leading-none whitespace-nowrap"
                     style={{ color: lastEdited === 'net' ? '#E60000' : 'hsl(var(--muted-foreground) / 0.6)' }}
                   >
                     الرصيد الصافي
@@ -417,7 +417,7 @@ export default function RechargeBalancePage() {
                       placeholder="0"
                       className="w-full bg-transparent border-none text-foreground text-base font-bold py-0 px-2 outline-none placeholder:text-muted-foreground/40 text-center"
                     />
-                    <span className="text-[10px] font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
+                    <span className="text-xs font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
                 </div>
 
@@ -433,7 +433,7 @@ export default function RechargeBalancePage() {
                 {/* خانة المبلغ الإجمالي */}
                 <div className="flex-1 min-w-0 relative pt-2">
                   <span
-                    className="absolute top-0 right-2 text-[10px] font-bold px-1 bg-card leading-none whitespace-nowrap"
+                    className="absolute top-0 right-2 text-xs font-bold px-1 bg-card leading-none whitespace-nowrap"
                     style={{ color: lastEdited === 'total' ? '#E60000' : 'hsl(var(--muted-foreground) / 0.6)' }}
                   >
                     المبلغ الإجمالي
@@ -452,14 +452,14 @@ export default function RechargeBalancePage() {
                       placeholder="0"
                       className="w-full bg-transparent border-none text-foreground text-base font-bold py-0 px-2 outline-none placeholder:text-muted-foreground/40 text-center"
                     />
-                    <span className="text-[10px] font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
+                    <span className="text-xs font-bold text-muted-foreground/50 pl-1.5 pr-1 shrink-0">ج</span>
                   </div>
                 </div>
               </div>
 
               {/* تلميح حساب + رسالة خطأ */}
               {netAmount && totalAmount && Number(netAmount) >= 2 ? (
-                <div className="flex items-center justify-between text-[10px] px-1">
+                <div className="flex items-center justify-between text-xs px-1">
                   <span className="text-muted-foreground/50">30% ضريبة مشمولة</span>
                   <span className="text-muted-foreground font-mono">{netAmount} + {Number(totalAmount) - Number(netAmount)} = {totalAmount} ج</span>
                 </div>
@@ -469,7 +469,7 @@ export default function RechargeBalancePage() {
 
               {/* Quick-picks */}
               <div className="space-y-1">
-                <p className="text-[11px] text-muted-foreground/70 font-semibold">خيارات مقترحة للرصيد</p>
+                <p className="text-xs text-muted-foreground/70 font-semibold">خيارات مقترحة للرصيد</p>
                 <div className="flex gap-2">
                   {QUICK_PICKS_NET.map(n => (
                     <button

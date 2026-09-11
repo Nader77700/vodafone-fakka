@@ -140,7 +140,7 @@ export function InfoRow({ label, value, copyable }: { label: string; value?: str
       <span className="text-xs text-muted-foreground shrink-0 w-28">{label}</span>
       <span className="text-xs font-medium text-right break-all flex-1 min-w-0">{value ?? '—'}</span>
       {copyable && value && (
-        <button onClick={copy} className="text-[10px] text-primary shrink-0 hover:opacity-70">نسخ</button>
+        <button onClick={copy} className="text-xs text-primary shrink-0 hover:opacity-70">نسخ</button>
       )}
     </div>
   );
@@ -184,7 +184,7 @@ export function StatusBadge({ status }: { status: string }) {
   };
   const cls = map[status] ?? 'bg-muted text-muted-foreground border-border';
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
       {labels[status] ?? status}
     </span>
   );

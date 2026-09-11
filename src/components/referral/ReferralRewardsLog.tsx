@@ -113,7 +113,7 @@ const ReferralRewardsLog = forwardRef<ReferralRewardsLogHandle>(function Referra
                     {log.log_type === 'manual_deduct' || log.log_type === 'transfer' ? '-' : '+'}
                     {log.operations.toLocaleString('ar-EG')}
                   </span>
-                  <Badge variant={statusVariant(log.status)} className="text-[10px] h-5 px-1.5">
+                  <Badge variant={statusVariant(log.status)} className="text-xs h-5 px-1.5">
                     {STATUS_LABEL[log.status]}
                   </Badge>
                 </div>

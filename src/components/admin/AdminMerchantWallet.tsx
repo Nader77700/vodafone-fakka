@@ -184,37 +184,37 @@ export default function AdminMerchantWallet({ merchantId, adminId }: Props) {
       <SectionCard title="محفظة النقاط" icon={Wallet}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">الرصيد الحالي</p>
+            <p className="text-xs text-muted-foreground mb-1">الرصيد الحالي</p>
             <p className="text-2xl font-black tabular-nums text-primary">{wallet?.current_points ?? 0}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">المحجوز</p>
+            <p className="text-xs text-muted-foreground mb-1">المحجوز</p>
             <p className="text-2xl font-black tabular-nums text-warning">{wallet?.reserved_points ?? 0}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">المستخدم مدى الحياة</p>
+            <p className="text-xs text-muted-foreground mb-1">المستخدم مدى الحياة</p>
             <p className="text-2xl font-black tabular-nums text-destructive">{wallet?.lifetime_consumed ?? 0}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">المشحون مدى الحياة</p>
+            <p className="text-xs text-muted-foreground mb-1">المشحون مدى الحياة</p>
             <p className="text-2xl font-black tabular-nums text-success">{wallet?.lifetime_purchased ?? 0}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">الشهري</p>
+            <p className="text-xs text-muted-foreground mb-1">الشهري</p>
             <p className="text-lg font-black tabular-nums">{wallet?.monthly_consumed ?? 0}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">اليومي</p>
+            <p className="text-xs text-muted-foreground mb-1">اليومي</p>
             <p className="text-lg font-black tabular-nums">{wallet?.daily_consumed ?? 0}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">آخر عملية</p>
+            <p className="text-xs text-muted-foreground mb-1">آخر عملية</p>
             <p className="text-xs font-semibold">{fmt(wallet?.last_operation_at)}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">آخر شحن</p>
+            <p className="text-xs text-muted-foreground mb-1">آخر شحن</p>
             <p className="text-xs font-semibold">{fmt(wallet?.last_recharge_at)}</p>
           </div>
         </div>
@@ -274,23 +274,23 @@ export default function AdminMerchantWallet({ merchantId, adminId }: Props) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${TX_COLORS[entry.type]}`}>
+                    <Badge variant="outline" className={`text-xs px-1.5 py-0 ${TX_COLORS[entry.type]}`}>
                       {TX_LABELS[entry.type]}
                     </Badge>
                     <span className={`text-sm font-bold tabular-nums ${entry.amount > 0 ? 'text-success' : 'text-destructive'}`}>
                       {entry.amount > 0 ? '+' : ''}{entry.amount}
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {entry.reason || '—'} {entry.notes && `· ${entry.notes}`}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     قبل: {entry.balance_before} → بعد: {entry.balance_after}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[10px] text-muted-foreground">{fmt(entry.created_at)}</p>
-                  <p className="text-[9px] font-mono text-muted-foreground opacity-60">{entry.transaction_id.slice(0, 16)}…</p>
+                  <p className="text-xs text-muted-foreground">{fmt(entry.created_at)}</p>
+                  <p className="text-xs font-mono text-muted-foreground opacity-60">{entry.transaction_id.slice(0, 16)}…</p>
                 </div>
               </div>
             ))}
@@ -349,7 +349,7 @@ export default function AdminMerchantWallet({ merchantId, adminId }: Props) {
               />
             </div>
             {pendingAction === 'adjust' && (
-              <p className="text-[10px] text-warning">
+              <p className="text-xs text-warning">
                 ⚠️ القيمة السالبة تخصم والموجبة تضيف. لا يسمح برصيد سالب.
               </p>
             )}

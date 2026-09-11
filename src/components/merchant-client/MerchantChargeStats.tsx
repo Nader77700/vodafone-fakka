@@ -30,8 +30,8 @@ function StatCard({
       </div>
       <div className="min-w-0">
         <p className={cn('text-base font-black tabular-nums', cls)}>{value}</p>
-        <p className="text-[10px] text-muted-foreground leading-tight text-pretty">{label}</p>
-        {sub && <p className="text-[9px] text-muted-foreground/70 mt-0.5 truncate">{sub}</p>}
+        <p className="text-xs text-muted-foreground leading-tight text-pretty">{label}</p>
+        {sub && <p className="text-xs text-muted-foreground/70 mt-0.5 truncate">{sub}</p>}
       </div>
     </div>
   );
@@ -89,7 +89,7 @@ export default function MerchantChargeStats({ merchantId, compact = false, class
             <Zap className="w-4 h-4 text-primary" />
             <p className="text-sm font-bold">إحصائيات العمليات</p>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
             <span>{lastOpLabel}</span>
           </div>
@@ -104,7 +104,7 @@ export default function MerchantChargeStats({ merchantId, compact = false, class
         ))}
       </div>
       {!compact && stats.last_success && (
-        <p className="text-[10px] text-muted-foreground text-center">
+        <p className="text-xs text-muted-foreground text-center">
           آخر نجاح: {formatDistanceToNow(new Date(stats.last_success), { addSuffix: true, locale: ar })}
         </p>
       )}

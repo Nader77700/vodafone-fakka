@@ -145,9 +145,9 @@ export default function NotifAutomation() {
     <div className="space-y-4">
       {/* Stats */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">{rules.length} قاعدة</Badge>
-        <Badge variant="outline" className="text-[10px] border-success/40 text-success">{enabledCount} مفعّلة</Badge>
-        <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">{rules.length - enabledCount} معطّلة</Badge>
+        <Badge variant="outline" className="text-xs border-primary/40 text-primary">{rules.length} قاعدة</Badge>
+        <Badge variant="outline" className="text-xs border-success/40 text-success">{enabledCount} مفعّلة</Badge>
+        <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">{rules.length - enabledCount} معطّلة</Badge>
         <p className="text-xs text-muted-foreground mr-auto hidden md:block">
           الإشعارات التلقائية تُرسل عند وقوع الحدث المحدد تلقائياً
         </p>
@@ -162,7 +162,7 @@ export default function NotifAutomation() {
             <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/30 border-b border-border">
               <span className="text-base">{group.icon}</span>
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{group.label}</span>
-              <Badge variant="outline" className="text-[10px] mr-auto">
+              <Badge variant="outline" className="text-xs mr-auto">
                 {groupRules.filter(r => r.enabled).length}/{groupRules.length}
               </Badge>
             </div>
@@ -195,7 +195,7 @@ export default function NotifAutomation() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Bell className="w-3 h-3 text-primary shrink-0" />
                           <p className="text-xs font-semibold truncate">{rule.label}</p>
-                          <Badge variant="outline" className={cn('text-[10px]',
+                          <Badge variant="outline" className={cn('text-xs',
                             rule.priority === 'urgent' ? 'border-destructive/40 text-destructive' :
                             rule.priority === 'important' ? 'border-warning/40 text-warning' :
                             'border-muted-foreground/30 text-muted-foreground'
@@ -203,7 +203,7 @@ export default function NotifAutomation() {
                             {rule.priority === 'urgent' ? 'عاجل' : rule.priority === 'important' ? 'مهم' : 'عادي'}
                           </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">{rule.title_template}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{rule.title_template}</p>
                       </div>
 
                       {/* Expand / Edit */}
@@ -226,7 +226,7 @@ export default function NotifAutomation() {
                           <Label className="text-xs font-normal text-muted-foreground">العنوان</Label>
                           <Input value={editing.title_template} onChange={e => setEditing(prev => prev ? { ...prev, title_template: e.target.value } : prev)}
                             className="bg-background border-border h-9 text-sm" />
-                          <p className="text-[10px] text-muted-foreground">يدعم: {'{username}'}, {'{days}'}, {'{version}'}</p>
+                          <p className="text-xs text-muted-foreground">يدعم: {'{username}'}, {'{days}'}, {'{version}'}</p>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs font-normal text-muted-foreground">المحتوى</Label>
@@ -270,12 +270,12 @@ export default function NotifAutomation() {
                     {isExpanded && !isEditing && (
                       <div className="px-4 pb-4 bg-muted/10 border-t border-border space-y-2 pt-3">
                         <div className="flex gap-4 flex-wrap text-xs">
-                          <span><span className="text-muted-foreground">الحدث: </span><code className="bg-muted/60 px-1 rounded text-[10px] font-mono">{rule.trigger_event}</code></span>
+                          <span><span className="text-muted-foreground">الحدث: </span><code className="bg-muted/60 px-1 rounded text-xs font-mono">{rule.trigger_event}</code></span>
                           <span><span className="text-muted-foreground">الرابط: </span><span className="text-primary">{rule.action_url ?? '—'}</span></span>
                         </div>
                         <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
                           <p className="text-xs font-semibold flex items-center gap-1.5"><Zap className="w-3 h-3 text-primary" />{rule.title_template}</p>
-                          <p className="text-[11px] text-muted-foreground mt-1">{rule.body_template}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{rule.body_template}</p>
                         </div>
                       </div>
                     )}

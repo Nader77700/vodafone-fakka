@@ -34,7 +34,7 @@ export default function OfflineBanner() {
   return (
     <div
       dir="rtl"
-      className="fixed top-0 left-0 right-0 z-[9998] flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-[9998] flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-semibold transition-all duration-300"
       style={{
         // شفاف ومتوافق مع كلا الوضعين — لا hardcoded داكن
         background: isOnline

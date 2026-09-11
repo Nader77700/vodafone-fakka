@@ -212,7 +212,7 @@ export default function AdminFeatureManagement() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold">{feat.label}</p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium border ${
                             enabled
                               ? 'bg-success/10 text-success border-success/20'
                               : 'bg-muted text-muted-foreground border-border'
@@ -220,10 +220,10 @@ export default function AdminFeatureManagement() {
                             {enabled ? 'مفعَّل' : 'مُعطَّل'}
                           </span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{feat.desc}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">{feat.key}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{feat.desc}</p>
+                        <p className="text-xs font-mono text-muted-foreground/60 mt-0.5">{feat.key}</p>
                         {updatedAt && (
-                          <p className="text-[9px] text-muted-foreground/50 mt-0.5">آخر تعديل: {fmt(updatedAt)}</p>
+                          <p className="text-xs text-muted-foreground/50 mt-0.5">آخر تعديل: {fmt(updatedAt)}</p>
                         )}
                       </div>
                       <div className="shrink-0">
@@ -252,8 +252,8 @@ export default function AdminFeatureManagement() {
               .filter(([k]) => !search || k.toLowerCase().includes(search.toLowerCase()))
               .map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/40 last:border-0">
-                  <span className="text-[10px] font-mono text-muted-foreground truncate flex-1">{k}</span>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                  <span className="text-xs font-mono text-muted-foreground truncate flex-1">{k}</span>
+                  <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${
                     v.value === 'true' ? 'bg-success/10 text-success' :
                     v.value === 'false' ? 'bg-muted text-muted-foreground' :
                     'bg-primary/10 text-primary'

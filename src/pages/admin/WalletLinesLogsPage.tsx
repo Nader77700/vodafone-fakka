@@ -114,7 +114,7 @@ export default function WalletLinesLogsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-black text-white">سجل أخطاء الخطوط والمحافظ</h1>
-            <p className="text-[10px] text-muted-foreground">آخر 200 خطأ — للأدمن فقط</p>
+            <p className="text-xs text-muted-foreground">آخر 200 خطأ — للأدمن فقط</p>
           </div>
           <Button variant="ghost" size="icon" onClick={fetchLogs} disabled={loading}
             className="w-9 h-9 border border-white/10 bg-white/5 hover:bg-white/10 text-white">
@@ -135,7 +135,7 @@ export default function WalletLinesLogsPage() {
           ].map(s => (
             <div key={s.label} className="rounded-xl border border-white/8 bg-white/4 p-3">
               <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-              <p className="text-[11px] text-white/50 mt-0.5">{s.label}</p>
+              <p className="text-xs text-white/50 mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -184,7 +184,7 @@ export default function WalletLinesLogsPage() {
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-red-300 font-semibold">تعذر تحميل السجلات</p>
-              <p className="text-[11px] text-red-400/70 mt-0.5">{error}</p>
+              <p className="text-xs text-red-400/70 mt-0.5">{error}</p>
             </div>
           </div>
         )}
@@ -204,7 +204,7 @@ export default function WalletLinesLogsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-[11px] text-white/30">{filtered.length} نتيجة</p>
+            <p className="text-xs text-white/30">{filtered.length} نتيجة</p>
             {filtered.map(log => (
               <div key={log.id}
                 className="rounded-xl border border-white/8 bg-white/3 overflow-hidden">
@@ -213,7 +213,7 @@ export default function WalletLinesLogsPage() {
                   onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                   className="w-full flex items-start gap-3 p-3 text-right hover:bg-white/4 transition-colors">
                   {/* كود الخطأ */}
-                  <span className={`shrink-0 mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full border
+                  <span className={`shrink-0 mt-0.5 text-xs font-bold px-2 py-0.5 rounded-full border
                     ${ERROR_COLORS[log.error_code] ?? 'bg-gray-500/15 text-gray-300 border-gray-500/30'}`}>
                     {log.error_code}
                   </span>
@@ -223,7 +223,7 @@ export default function WalletLinesLogsPage() {
                         {ACTION_LABELS[log.action] ?? log.action}
                       </span>
                       {log.http_status && (
-                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded
+                        <span className={`text-xs font-mono px-1.5 py-0.5 rounded
                           ${log.http_status >= 500 ? 'bg-red-500/20 text-red-300' :
                             log.http_status >= 400 ? 'bg-yellow-500/20 text-yellow-300' :
                             'bg-white/10 text-white/50'}`}>
@@ -231,19 +231,19 @@ export default function WalletLinesLogsPage() {
                         </span>
                       )}
                       {log.phone_hint && (
-                        <span className="text-[10px] text-white/30 font-mono">***{log.phone_hint}</span>
+                        <span className="text-xs text-white/30 font-mono">***{log.phone_hint}</span>
                       )}
                     </div>
                     {log.message && (
-                      <p className="text-[11px] text-white/50 mt-0.5 truncate">{log.message}</p>
+                      <p className="text-xs text-white/50 mt-0.5 truncate">{log.message}</p>
                     )}
-                    <p className="text-[10px] text-white/25 mt-1 font-mono">{formatDate(log.created_at)}</p>
+                    <p className="text-xs text-white/25 mt-1 font-mono">{formatDate(log.created_at)}</p>
                   </div>
                 </button>
 
                 {/* تفاصيل موسعة */}
                 {expanded === log.id && (
-                  <div className="border-t border-white/8 px-3 pb-3 pt-2 space-y-2 text-[11px]">
+                  <div className="border-t border-white/8 px-3 pb-3 pt-2 space-y-2 text-xs">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       <Row label="الكود" value={log.error_code} mono />
                       <Row label="HTTP" value={log.http_status?.toString() ?? '—'} mono />
@@ -254,14 +254,14 @@ export default function WalletLinesLogsPage() {
                     </div>
                     {log.message && (
                       <div className="rounded-lg bg-white/5 p-2">
-                        <p className="text-[10px] text-white/40 mb-1">الرسالة</p>
+                        <p className="text-xs text-white/40 mb-1">الرسالة</p>
                         <p className="text-white/70 leading-relaxed">{log.message}</p>
                       </div>
                     )}
                     {log.extra && Object.keys(log.extra).length > 0 && (
                       <div className="rounded-lg bg-white/5 p-2">
-                        <p className="text-[10px] text-white/40 mb-1">بيانات إضافية</p>
-                        <pre className="text-[10px] text-white/50 whitespace-pre-wrap font-mono overflow-x-auto">
+                        <p className="text-xs text-white/40 mb-1">بيانات إضافية</p>
+                        <pre className="text-xs text-white/50 whitespace-pre-wrap font-mono overflow-x-auto">
                           {JSON.stringify(log.extra, null, 2)}
                         </pre>
                       </div>

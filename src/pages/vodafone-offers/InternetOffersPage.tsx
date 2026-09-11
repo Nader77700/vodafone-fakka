@@ -19,7 +19,7 @@ export default function InternetOffersPage() {
             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#f87171' }} />
             <p className="text-[12px] font-medium" style={{ color: '#fca5a5' }}>{actionError}</p>
-            <button onClick={clearError} className="text-[10px] mr-auto" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.50)' }}>إغلاق</button>
+            <button onClick={clearError} className="text-xs mr-auto" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.50)' }}>إغلاق</button>
           </div>
         )}
         {success && (
@@ -27,7 +27,7 @@ export default function InternetOffersPage() {
             style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
             <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#4ade80' }} />
             <p className="text-[12px] font-bold" style={{ color: '#86efac' }}>{success}</p>
-            <button onClick={clearSuccess} className="text-[10px] mr-auto" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.50)' }}>إغلاق</button>
+            <button onClick={clearSuccess} className="text-xs mr-auto" style={{ color: L ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.50)' }}>إغلاق</button>
           </div>
         )}
         {loading ? (
@@ -55,7 +55,7 @@ export default function InternetOffersPage() {
             </div>
             <div className="text-center px-4">
               <p className="text-sm font-black text-muted-foreground mb-1">لا توجد عروض إنترنت متاحة</p>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">لا توجد عروض إنترنت متاحة حالياً</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">لا توجد عروض إنترنت متاحة حالياً</p>
             </div>
           </div>
         ) : (

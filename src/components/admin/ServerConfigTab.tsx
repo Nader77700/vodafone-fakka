@@ -225,7 +225,7 @@ export default function ServerConfigTab({ adminEmail }: { adminEmail: string }) 
             <div className="flex items-center gap-2 bg-muted/40 px-4 py-2.5 border-b border-border">
               <Icon className="h-4 w-4 text-primary shrink-0" />
               <span className="font-bold text-sm">{meta.label}</span>
-              <Badge variant="secondary" className="text-[10px] ml-auto">{items.length} إعداد</Badge>
+              <Badge variant="secondary" className="text-xs ml-auto">{items.length} إعداد</Badge>
             </div>
 
             {/* الصفوف */}
@@ -238,11 +238,11 @@ export default function ServerConfigTab({ adminEmail }: { adminEmail: string }) 
                       <code className="text-xs font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                         {row.key}
                       </code>
-                      <Badge variant="outline" className="text-[9px] h-4">{row.value_type}</Badge>
+                      <Badge variant="outline" className="text-xs h-4">{row.value_type}</Badge>
                     </div>
                     {row.label && <p className="text-sm font-medium">{row.label}</p>}
                     {row.description && <p className="text-xs text-muted-foreground mt-0.5">{row.description}</p>}
-                    <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono">
+                    <p className="text-xs text-muted-foreground/60 mt-1 font-mono">
                       آخر تحديث: {new Date(row.updated_at).toLocaleString('ar-EG')}
                     </p>
                   </div>
@@ -310,7 +310,7 @@ export default function ServerConfigTab({ adminEmail }: { adminEmail: string }) 
               <div key={key} className="flex flex-col items-center gap-1 rounded-xl bg-muted/30 p-3 text-center">
                 <Icon className={`h-5 w-5 ${active ? activeColor : inactiveColor}`} />
                 <span className="text-xs font-medium">{label}</span>
-                <span className={`text-[10px] font-bold ${active ? activeColor : inactiveColor}`}>
+                <span className={`text-xs font-bold ${active ? activeColor : inactiveColor}`}>
                   {active ? '✓ مُفعَّل' : '✗ مُعطَّل'}
                 </span>
               </div>

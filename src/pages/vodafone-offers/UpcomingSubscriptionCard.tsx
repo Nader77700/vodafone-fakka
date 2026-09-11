@@ -50,18 +50,18 @@ export default function UpcomingSubscriptionCard({
             <p className="text-[13px] font-black text-foreground truncate">{displayName}</p>
             <div className="flex items-center gap-1.5 flex-wrap">
               {sub.price && (
-                <span className="text-[10px] font-bold text-muted-foreground">
+                <span className="text-xs font-bold text-muted-foreground">
                   {sub.price} جنيه
                 </span>
               )}
               {sub.type && sub.type !== sub.description && (
-                <span className="text-[10px] text-muted-foreground truncate">{sub.type}</span>
+                <span className="text-xs text-muted-foreground truncate">{sub.type}</span>
               )}
             </div>
           </div>
         </div>
         <span
-          className="text-[10px] font-black px-2 py-1 rounded-full shrink-0 mr-2"
+          className="text-xs font-black px-2 py-1 rounded-full shrink-0 mr-2"
           style={{ color: st.color, background: st.bg, border: `1px solid ${st.border}` }}
         >
           {st.label}
@@ -73,7 +73,7 @@ export default function UpcomingSubscriptionCard({
         {canRecharge && (
           <button
             onClick={() => onRecharge?.(sub)}
-            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50"
             style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80' }}
           >
             <Banknote className="w-3.5 h-3.5" />
@@ -84,7 +84,7 @@ export default function UpcomingSubscriptionCard({
           <button
             onClick={() => onCancel(sub)}
             disabled={isCancelling || !!cancellingId}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50"
             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
           >
             {isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}

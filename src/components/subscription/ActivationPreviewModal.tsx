@@ -38,7 +38,7 @@ function PreviewRow({ label, value, sub }: { label: string; value: React.ReactNo
       <span className="text-xs text-muted-foreground shrink-0">{label}</span>
       <div className="text-right">
         <span className="text-xs font-semibold">{value}</span>
-        {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
+        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -195,17 +195,17 @@ export default function ActivationPreviewModal({ open, onOpenChange, userId, onS
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex-1 text-center bg-card rounded-lg p-3 border border-border min-w-0">
                     <p className="text-xl font-black tabular-nums">{preview.currentDays}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">أيام حالية</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">أيام حالية</p>
                   </div>
                   <Plus className="w-4 h-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 text-center bg-primary/10 rounded-lg p-3 border border-primary/20 min-w-0">
                     <p className="text-xl font-black tabular-nums text-primary">{preview.newDays}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">أيام الكود</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">أيام الكود</p>
                   </div>
                   <ArrowLeft className="w-4 h-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 text-center bg-success/10 rounded-lg p-3 border border-success/20 min-w-0">
                     <p className="text-xl font-black tabular-nums text-success">{preview.totalDays}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">الإجمالي</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">الإجمالي</p>
                   </div>
                 </div>
 
@@ -253,13 +253,13 @@ export default function ActivationPreviewModal({ open, onOpenChange, userId, onS
                 </div>
 
                 {preview.currentDays > 0 && (
-                  <p className="text-[10px] text-success text-center">
+                  <p className="text-xs text-success text-center">
                     ✓ لن تفقد أيامك المتبقية — يتم الدمج تراكمياً
                   </p>
                 )}
 
                 {preview.expirationMode === 'BY_USAGE' && (
-                  <p className="text-[10px] text-warning text-center flex items-center justify-center gap-1">
+                  <p className="text-xs text-warning text-center flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3" />
                     ينتهي عند نفاد الحصة
                   </p>

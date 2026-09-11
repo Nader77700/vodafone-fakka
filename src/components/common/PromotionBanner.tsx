@@ -132,7 +132,7 @@ export default function PromotionBanner() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black text-foreground truncate">{promo.title}</p>
             {promo.description && (
-              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{promo.description}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{promo.description}</p>
             )}
           </div>
 
@@ -141,7 +141,7 @@ export default function PromotionBanner() {
             {(promo.internal_route || promo.external_url) && (
               <button
                 onClick={handleCTA}
-                className="h-7 px-2.5 rounded-lg text-[10px] font-black text-white transition-all active:scale-[0.97] flex items-center gap-1"
+                className="h-7 px-2.5 rounded-lg text-xs font-black text-white transition-all active:scale-[0.97] flex items-center gap-1"
                 style={{ background: `linear-gradient(90deg,${primaryColor},${promo.color_secondary || primaryColor})` }}>
                 {promo.cta_label || 'التفاصيل'}
                 {promo.external_url && !promo.internal_route && <ExternalLink className="w-2.5 h-2.5" />}

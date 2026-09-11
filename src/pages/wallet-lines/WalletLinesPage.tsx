@@ -82,12 +82,12 @@ export default function WalletLinesPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black" style={{ color: titleColor }}>خدمات الخطوط والمحافظ</h1>
-            <p className="text-[10px] text-muted-foreground">استعلام آمن عبر My NTRA</p>
+            <p className="text-xs text-muted-foreground">استعلام آمن عبر My NTRA</p>
           </div>
           {cfgLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" style={{ color: L ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.30)' }} />
           ) : (
-            <span className="text-[9px] font-black px-2 py-1 rounded-full"
+            <span className="text-xs font-black px-2 py-1 rounded-full"
               style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.25)' }}>
               BETA
             </span>
@@ -114,7 +114,7 @@ export default function WalletLinesPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-black mb-1" style={{ color: titleColor }}>خدمة رسمية من My NTRA</h2>
-              <p className="text-[11px] leading-relaxed" style={{ color: subColor }}>
+              <p className="text-xs leading-relaxed" style={{ color: subColor }}>
                 الاستعلام عن بيانات الخطوط والمحافظ المسجلة باسمك يتم مباشرةً عبر My NTRA
                 التابع للجهاز القومي لتنظيم الاتصالات في مصر.
               </p>
@@ -157,7 +157,7 @@ export default function WalletLinesPage() {
               <div key={f.label} className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-center"
                 style={{ border: `1px solid ${L ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`, background: L ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' }}>
                 <span style={{ color: f.color }}>{f.icon}</span>
-                <span className="text-[10px] font-bold" style={{ color: L ? 'rgba(0,0,0,0.60)' : 'rgba(255,255,255,0.70)' }}>{f.label}</span>
+                <span className="text-xs font-bold" style={{ color: L ? 'rgba(0,0,0,0.60)' : 'rgba(255,255,255,0.70)' }}>{f.label}</span>
               </div>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default function WalletLinesPage() {
             </div>
             <div className="flex-1 min-w-0 text-right">
               <p className="text-sm font-black" style={{ color: titleColor }}>تسجيل الدخول</p>
-              <p className="text-[11px] mt-0.5" style={{ color: subColor }}>لديك حساب مسبق؟ ادخل مباشرة</p>
+              <p className="text-xs mt-0.5" style={{ color: subColor }}>لديك حساب مسبق؟ ادخل مباشرة</p>
             </div>
             <ChevronLeftIcon L={L} />
           </button>
@@ -204,7 +204,7 @@ export default function WalletLinesPage() {
             </div>
             <div className="flex-1 min-w-0 text-right">
               <p className="text-sm font-black" style={{ color: titleColor }}>إنشاء حساب جديد</p>
-              <p className="text-[11px] mt-0.5" style={{ color: subColor }}>سجّل مجانًا وابدأ الاستعلام</p>
+              <p className="text-xs mt-0.5" style={{ color: subColor }}>سجّل مجانًا وابدأ الاستعلام</p>
             </div>
             <ChevronLeftIcon L={L} />
           </button>
@@ -214,7 +214,7 @@ export default function WalletLinesPage() {
         <div className="flex items-start gap-2.5 p-3 rounded-xl"
           style={{ border: `1px solid ${L ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`, background: L ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)' }}>
           <ShieldCheck className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-          <p className="text-[10px] leading-relaxed" style={{ color: subColor }}>
+          <p className="text-xs leading-relaxed" style={{ color: subColor }}>
             بياناتك محمية بالكامل ولا تُشارَك مع أي طرف ثالث. الاستعلام يتم بشكل آمن ومشفر.
           </p>
         </div>
