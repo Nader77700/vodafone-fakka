@@ -15,7 +15,7 @@ export const SecurityHeartbeat = () => {
   const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
   const [hasVerifiedWithServer, setHasVerifiedWithServer] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
-  const isOnline = useOnlineStatus();
+  const { isOnline } = useOnlineStatus();
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;

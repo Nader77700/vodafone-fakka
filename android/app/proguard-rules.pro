@@ -12,20 +12,76 @@
 -keep public class * extends android.preference.Preference
 -keep public class * extends android.view.View
 
-# Obfuscate our custom classes heavily
--repackageclasses ''
+# ── Obfuscation Aggressiveness ────────────────────────────────────────────────
+-repackageclasses 'vfp'
 -allowaccessmodification
--optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
 -optimizationpasses 5
+-optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
 
-# Keep Capacitor Plugins to prevent "Plugin is not implemented" errors
+# ── String Encryption & Class Name Hiding ────────────────────────────────────
+# Prevent exposing original class names in stack traces (release only)
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+
+# ── Capacitor Plugins — must NOT be obfuscated (reflection + JNI) ────────────
 -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
 -keep class * extends com.getcapacitor.Plugin { *; }
 -keepclassmembers class * extends com.getcapacitor.Plugin { *; }
--keep class com.naderakram.vodafonefakka.VodafoneDetectorPlugin { *; }
--keepclassmembers class com.naderakram.vodafonefakka.VodafoneDetectorPlugin { *; }
--keep class com.naderakram.vodafonefakka.ApkInstallerPlugin { *; }
--keep class com.naderakram.vodafonefakka.PrintPlugin { *; }
 
-# DO NOT KEEP MainActivity methods (Let them be obfuscated)
-# We want runNativeTamperSensor to be renamed to something like 'a'
+# ── App Custom Plugins — keep public API surface, obfuscate internals ─────────
+-keep class com.naderakram.vodafonefakka.VodafoneDetectorPlugin {
+    public *;
+}
+-keepclassmembers class com.naderakram.vodafonefakka.VodafoneDetectorPlugin {
+    @com.getcapacitor.annotation.PluginMethod public *;
+}
+-keep class com.naderakram.vodafonefakka.ApkInstallerPlugin {
+    public *;
+}
+-keepclassmembers class com.naderakram.vodafonefakka.ApkInstallerPlugin {
+    @com.getcapacitor.annotation.PluginMethod public *;
+}
+-keep class com.naderakram.vodafonefakka.PrintPlugin {
+    public *;
+}
+-keepclassmembers class com.naderakram.vodafonefakka.PrintPlugin {
+    @com.getcapacitor.annotation.PluginMethod public *;
+}
+
+# ── WebView JavaScript Bridge ─────────────────────────────────────────────────
+# أي method بـ @JavascriptInterface يجب الاحتفاظ باسمه (JS يستدعيه بالاسم)
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# ── Serialization & Reflection ───────────────────────────────────────────────
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# ── Kotlin Metadata (required for coroutines + reflection) ───────────────────
+-keep class kotlin.Metadata { *; }
+-dontwarn kotlin.**
+-dontwarn kotlinx.**
+
+# ── AndroidX / Jetpack ───────────────────────────────────────────────────────
+-keep class androidx.** { *; }
+-dontwarn androidx.**
+
+# ── OkHttp / Retrofit (if used by Capacitor HTTP plugin) ─────────────────────
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
+
+# ── Prevent exposing sensitive method names in MainActivity ───────────────────
+# MainActivity و runNativeTamperSensor لا يُحتفظ بها → تُعاد تسميتها تلقائياً

@@ -18,6 +18,10 @@ export default function MoneyTransferPage() {
   const navigate = useNavigate();
   const { config } = useRuntimeConfig();
 
+  // ── HotFix Kill Switch — تحويل الأموال ──────────────────────
+  const hotfixDisabled = config.security.hotfix_disable_money_transfer;
+  const hotfixMsg      = config.ui.hotfix_disable_money_transfer_message;
+
   // Status State
   const [networkName, setNetworkName] = useState('جاري التحقق...');
   const [isConnected, setIsConnected] = useState(false);
@@ -107,6 +111,11 @@ export default function MoneyTransferPage() {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    // ── HotFix Kill Switch ────────────────────────────────────
+    if (hotfixDisabled) {
+      toast.error(hotfixMsg || 'تحويل الأموال متوقف مؤقتاً. نعود قريباً.');
+      return;
+    }
     setIsSubmitting(true);
     setExecStatus('checking');
     setExecMessage(null);

@@ -125,16 +125,24 @@ export async function fetchLineInfo(phone: string): Promise<LineInfoResponse> {
   const normalized = normalizePhone(phone);
 
   try {
-    // 2. استدعاء Edge Function
+    // 2. استدعاء Edge Function — timeout 35 ثانية (الـ function تستغرق حتى 25 ثانية)
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 35_000);
+
     const { data, error } = await supabase.functions.invoke('line-info-query', {
       body: { phone: normalized },
-    });
+      signal: controller.signal,
+    } as Parameters<typeof supabase.functions.invoke>[1]);
+
+    clearTimeout(timeoutId);
 
     if (error) {
-      // استخراج رمز الخطأ من الـ context إن وُجد
-      const errCode = (error as { context?: { error?: string } }).context?.error ?? 'error';
-      const mapped  = mapErrorCode(errCode);
-      return { status: mapped.status, errorMessage: mapped.message };
+      // supabase-js يُحوّل HTTP 4xx/5xx إلى FunctionsHttpError — نقرأ الـ body منه
+      const httpBody = (error as any)?.context as Record<string, unknown> | undefined;
+      const errCode  = (httpBody?.error as string | undefined) ?? 'error';
+      const errMsg   = (httpBody?.message as string | undefined) ?? undefined;
+      const mapped   = mapErrorCode(errCode);
+      return { status: mapped.status, errorMessage: errMsg ?? mapped.message };
     }
 
     if (!data?.success || !data?.data) {
@@ -168,7 +176,14 @@ export async function fetchLineInfo(phone: string): Promise<LineInfoResponse> {
     saveLineInfoHistory({ phone: normalized, checkedAt: Date.now(), result });
 
     return { status: 'success', data: result };
-  } catch {
-    return { status: 'error', errorMessage: 'حدث خطأ غير متوقع، حاول مرة أخرى.' };
+  } catch (err) {
+    // تسجيل الخطأ الحقيقي في console للتشخيص
+    console.error('[LineInfoProvider] fetchLineInfo unexpected error:', err);
+    // AbortError = timeout
+    if (err instanceof Error && (err.name === 'AbortError' || err.message?.includes('aborted'))) {
+      return { status: 'timeout', errorMessage: 'انتهت مهلة الاتصال — الخدمة بطيئة حالياً، حاول مجدداً.' };
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    return { status: 'error', errorMessage: `خطأ غير متوقع: ${message}` };
   }
 }

@@ -18,26 +18,41 @@ export interface FeatureFlags {
   ff_notifications_enabled:    boolean;
   ff_maintenance_mode:         boolean;
   ff_card_feedback_enabled:    boolean;
-  ff_allow_browse_no_sub:      boolean; // تصفح بدون اشتراك (Guest Mode)
-  ff_preview_mode_enabled:     boolean; // Preview Mode — وضع المعاينة
+  ff_allow_browse_no_sub:      boolean;
+  ff_preview_mode_enabled:     boolean;
 }
 
 export interface VersionConfig {
-  version_min_supported:   number;
-  version_latest_code:     number;
-  version_latest_name:     string;
+  version_min_supported:    number;
+  version_latest_code:      number;
+  version_latest_name:      string;
   version_force_update_msg: string;
-  version_blocked_codes:   number[];
-  version_apk_url:         string;
+  version_blocked_codes:    number[];
+  version_apk_url:          string;
+}
+
+// ── HotFix Patch Type ────────────────────────────────────────────────────────
+export interface HotfixPatch {
+  id:         string;
+  type:       'disable_function' | 'show_banner' | 'force_message' | 'redirect_function';
+  target:     string;
+  message?:   string;
+  enabled:    boolean;
+  created_at: string;
 }
 
 export interface SecurityConfig {
-  sec_disabled_endpoints: string[];
-  sec_disabled_products:  string[];
-  sec_max_daily_ops:       number;
-  sec_require_active_sub:  boolean;
-  sec_seamless_url?:       string;
-  sec_seamless_client_id?: string;
+  sec_disabled_endpoints:      string[];
+  sec_disabled_products:       string[];
+  sec_max_daily_ops:           number;
+  sec_require_active_sub:      boolean;
+  sec_seamless_url?:           string;
+  sec_seamless_client_id?:     string;
+  // ── HotFix Kill Switches ─────────────────────────────────────────
+  hotfix_disable_all_recharge:   boolean;
+  hotfix_disable_line_info:      boolean;
+  hotfix_disable_money_transfer: boolean;
+  hotfix_patches:                HotfixPatch[];
 }
 
 export interface BusinessConfig {
@@ -53,6 +68,13 @@ export interface UIConfig {
   ui_announcement_type:     'info' | 'warning' | 'error' | 'success';
   ui_support_phone:         string;
   ui_support_whatsapp:      string;
+  // ── HotFix Messages ──────────────────────────────────────────────
+  hotfix_emergency_banner:               boolean;
+  hotfix_emergency_message:              string;
+  hotfix_emergency_type:                 'info' | 'warning' | 'error' | 'success';
+  hotfix_disable_recharge_message:       string;
+  hotfix_disable_line_info_message:      string;
+  hotfix_disable_money_transfer_message: string;
 }
 
 export interface RuntimeConfig {
@@ -78,8 +100,8 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     ff_notifications_enabled:  true,
     ff_maintenance_mode:       false,
     ff_card_feedback_enabled:  true,
-    ff_allow_browse_no_sub:    false, // مُعطَّل افتراضياً — يُفعَّل من لوحة التحكم
-    ff_preview_mode_enabled:   false, // Preview Mode معطّل افتراضياً
+    ff_allow_browse_no_sub:    false,
+    ff_preview_mode_enabled:   false,
   },
   version: {
     version_min_supported:    94,
@@ -90,10 +112,14 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     version_apk_url:          '',
   },
   security: {
-    sec_disabled_endpoints: [],
-    sec_disabled_products:  [],
-    sec_max_daily_ops:       100,
-    sec_require_active_sub:  true,
+    sec_disabled_endpoints:      [],
+    sec_disabled_products:       [],
+    sec_max_daily_ops:           100,
+    sec_require_active_sub:      true,
+    hotfix_disable_all_recharge:   false,
+    hotfix_disable_line_info:      false,
+    hotfix_disable_money_transfer: false,
+    hotfix_patches:                [],
   },
   business: {
     biz_default_profit_margin: 5,
@@ -107,18 +133,24 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     ui_announcement_type:    'info',
     ui_support_phone:        '',
     ui_support_whatsapp:     '',
+    hotfix_emergency_banner:               false,
+    hotfix_emergency_message:              '',
+    hotfix_emergency_type:                 'warning',
+    hotfix_disable_recharge_message:       'الشحن متوقف مؤقتاً لأعمال الصيانة. نعود قريباً 🔧',
+    hotfix_disable_line_info_message:      'خدمة معلومات الخط متوقفة مؤقتاً. نعود قريباً.',
+    hotfix_disable_money_transfer_message: 'تحويل الأموال متوقف مؤقتاً. نعود قريباً.',
   },
 };
 
-const CACHE_KEY  = 'vf_runtime_config_v1';
-const POLL_MS    = 5 * 60 * 1000; // 5 دقائق
+const CACHE_KEY = 'vf_runtime_config_v1';
+const POLL_MS   = 5 * 60 * 1000; // 5 دقائق
 
 // ── Context ──────────────────────────────────────────────────────────────────
 interface RuntimeConfigContextValue {
-  config:     RuntimeConfig;
-  isLoading:  boolean;
+  config:      RuntimeConfig;
+  isLoading:   boolean;
   lastFetched: string | null;
-  refresh:    () => Promise<void>;
+  refresh:     () => Promise<void>;
 }
 
 const RuntimeConfigContext = createContext<RuntimeConfigContextValue>({
@@ -139,7 +171,7 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
   });
   const [isLoading,   setIsLoading]   = useState(true);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
-  const etagRef = useRef<string>('');
+  const etagRef  = useRef<string>('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const parseValue = (value: string, type: string): unknown => {
@@ -160,22 +192,29 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
 
       const built: Record<string, Record<string, unknown>> = {
         feature_flags: {},
-        version: {},
-        security: {},
-        business: {},
-        ui: {},
+        version:       {},
+        security:      {},
+        business:      {},
+        ui:            {},
       };
 
       for (const row of (data ?? []) as { key: string; value: string; value_type: string }[]) {
+        const k = row.key;
         let cat = 'general';
-        if (row.key.startsWith('ff_')) cat = 'feature_flags';
-        else if (row.key.startsWith('version_')) cat = 'version';
-        else if (row.key.startsWith('sec_')) cat = 'security';
-        else if (row.key.startsWith('biz_')) cat = 'business';
-        else if (row.key.startsWith('ui_')) cat = 'ui';
-        
+        if      (k.startsWith('ff_'))       cat = 'feature_flags';
+        else if (k.startsWith('version_'))  cat = 'version';
+        else if (k.startsWith('sec_'))      cat = 'security';
+        else if (k.startsWith('biz_'))      cat = 'business';
+        else if (k.startsWith('ui_'))       cat = 'ui';
+        // hotfix_* — رُوِّت حسب نوعها
+        else if (k === 'hotfix_disable_all_recharge' ||
+                 k === 'hotfix_disable_line_info'    ||
+                 k === 'hotfix_disable_money_transfer' ||
+                 k === 'hotfix_patches')              cat = 'security';
+        else if (k.startsWith('hotfix_'))             cat = 'ui';
+
         if (!built[cat]) built[cat] = {};
-        built[cat][row.key] = parseValue(row.value, row.value_type);
+        built[cat][k] = parseValue(row.value, row.value_type);
       }
 
       const merged: RuntimeConfig = {
@@ -191,14 +230,13 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
     } catch (e) {
       console.warn('[RuntimeConfig] fetch failed — using cached/default:', e);
-      // Fallback: If network fails, do NOT lock the user out with a stale cached Maintenance Mode!
+      // Fallback: لا تُبقِ maintenance_mode مفعَّلاً لو الشبكة فشلت
       setConfig(prev => {
         if (prev.feature_flags.ff_maintenance_mode) {
           const safeConfig = {
             ...prev,
-            feature_flags: { ...prev.feature_flags, ff_maintenance_mode: false }
+            feature_flags: { ...prev.feature_flags, ff_maintenance_mode: false },
           };
-          // Also clear it from cache so it doesn't persist
           try { localStorage.setItem(CACHE_KEY, JSON.stringify(safeConfig)); } catch {}
           return safeConfig;
         }
@@ -213,11 +251,11 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
     fetchConfig();
     timerRef.current = setInterval(fetchConfig, POLL_MS);
 
-    // تفعيل Realtime لتحديث الإعدادات (مثل وضع الصيانة) فوراً بدون انتظار 5 دقائق
+    // Realtime — تحديث فوري عند تغيير أي إعداد (مثل hotfix أو maintenance)
     const channelName = `app_config_changes_${Math.random().toString(36).substring(2)}`;
     const channel = supabase.channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_config' }, () => {
-        console.log('[RuntimeConfig] Realtime update detected, fetching new config...');
+        console.log('[RuntimeConfig] Realtime update — fetching new config...');
         fetchConfig();
       })
       .subscribe();
@@ -229,7 +267,7 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
   }, [fetchConfig]);
 
   const contextValue = React.useMemo(() => ({
-    config, isLoading, lastFetched, refresh: fetchConfig
+    config, isLoading, lastFetched, refresh: fetchConfig,
   }), [config, isLoading, lastFetched, fetchConfig]);
 
   return (
@@ -257,4 +295,44 @@ export function useIsEndpointDisabled(endpoint: string): boolean {
 export function useIsProductDisabled(productId: string): boolean {
   const { sec_disabled_products } = useSecurityConfig();
   return sec_disabled_products.includes(productId);
+}
+
+/** هل الشحن مُعطَّل بـ HotFix؟ */
+export function useHotfixRechargeDisabled(): { disabled: boolean; message: string } {
+  const sec = useSecurityConfig();
+  const ui  = useUIConfig();
+  return {
+    disabled: sec.hotfix_disable_all_recharge,
+    message:  ui.hotfix_disable_recharge_message,
+  };
+}
+
+/** هل معلومات الخط مُعطَّلة بـ HotFix؟ */
+export function useHotfixLineInfoDisabled(): { disabled: boolean; message: string } {
+  const sec = useSecurityConfig();
+  const ui  = useUIConfig();
+  return {
+    disabled: sec.hotfix_disable_line_info,
+    message:  ui.hotfix_disable_line_info_message,
+  };
+}
+
+/** هل تحويل الأموال مُعطَّل بـ HotFix؟ */
+export function useHotfixMoneyTransferDisabled(): { disabled: boolean; message: string } {
+  const sec = useSecurityConfig();
+  const ui  = useUIConfig();
+  return {
+    disabled: sec.hotfix_disable_money_transfer,
+    message:  ui.hotfix_disable_money_transfer_message,
+  };
+}
+
+/** بانر الطوارئ العام */
+export function useHotfixEmergencyBanner(): { active: boolean; message: string; type: UIConfig['hotfix_emergency_type'] } {
+  const ui = useUIConfig();
+  return {
+    active:  ui.hotfix_emergency_banner,
+    message: ui.hotfix_emergency_message,
+    type:    ui.hotfix_emergency_type,
+  };
 }

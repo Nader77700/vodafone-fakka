@@ -103,7 +103,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix';
 
 interface TabMeta {
   id: AdminTab;
@@ -146,6 +146,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'red_packages',       label: 'باقات RED',        desc: 'إدارة باقات Vodafone RED ديناميكياً',   icon: Package },
   { id: 'promotions',         label: 'العروض والبانرات', desc: 'إنشاء وإدارة العروض والبانرات',          icon: Tag },
   { id: 'services_control',  label: 'التحكم في خدماتي', desc: 'إخفاء وتعطيل وصيانة أقسام الخدمات',      icon: Globe },
+  { id: 'hotfix',            label: '🔧 HotFix',         desc: 'تعطيل/تفعيل الخدمات فوراً بدون APK',      icon: ShieldAlert },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -1473,6 +1474,9 @@ function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'services_control') {
       navigate('/admin/services-control', { replace: true });
+    }
+    if (activeTab === 'hotfix') {
+      navigate('/admin/hotfix', { replace: true });
     }
   }, [activeTab, navigate]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);

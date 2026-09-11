@@ -19,7 +19,6 @@ import type { OpsCheckResult } from '@/lib/api';
 import {
   saveBalanceSession, getBalanceSession, clearBalanceSession,
   saveRememberedCredentials, getRememberedCredentials, clearRememberedCredentials,
-  saveVaultPin, getVaultPin, hasVaultPin, updateVaultPin, clearVaultPin,
   signOutBalance, sessionRemainingMinutes, sessionExpiryLabel, isBalanceSessionActive,
   getAllSessions, switchToSession, removeSession,
   sessionExpiryFullLabel, sessionProgressPercent, sessionRemainingLabel,
@@ -34,7 +33,7 @@ import {
   Zap, Loader2, CheckCircle2, XCircle, AlertTriangle,
   ChevronRight, RefreshCw, Clock, Shield, User, Info,
   Users, Plus, Trash2, ChevronLeft, SwitchCamera,
-  KeyRound, Pencil, Copy, CheckCheck,
+  Copy,
 } from 'lucide-react';
 import { fetchSeamlessToken } from '@/lib/seamless';
 import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
@@ -65,405 +64,6 @@ const C = {
   greenBg:     'rgba(34,197,94,0.10)',
   greenBd:     'rgba(34,197,94,0.22)',
 };
-
-// ══════════════════════════════════════════════════════════
-// مكوّن: خزنة الرقم السري للمحفظة (PinVaultMini)
-// toggle صغير تحت PIN input + panel مؤمَّن بكلمة السر
-// ══════════════════════════════════════════════════════════
-function PinVaultMini({
-  currentPin,
-  onUseSaved,
-}: {
-  currentPin: string;           // PIN المكتوب حالياً في الـ input
-  onUseSaved: (pin: string) => void; // callback لملء الـ input بالمحفوظ
-}) {
-  // hasSaved كـ state حتى يتحدث تلقائياً عند الحفظ/الحذف
-  const [hasSaved, setHasSaved] = useState(() => hasVaultPin());
-
-  // حالة الـ toggle
-  const [checked, setChecked] = useState(() => hasVaultPin());
-
-  // panel الخزنة (مفتوح/مغلق)
-  const [panelOpen, setPanelOpen] = useState(false);
-
-  // داخل الـ panel: مرحلة "unlock" ثم "view"
-  const [panelStep, setPanelStep] = useState<'unlock' | 'view' | 'edit'>('unlock');
-  const [unlockInput, setUnlockInput] = useState('');
-  const [unlockError, setUnlockError] = useState('');
-  const [showSaved, setShowSaved]   = useState(false);
-  const [editPin, setEditPin]       = useState('');
-  const [copied, setCopied]         = useState(false);
-
-  // مزامنة hasSaved + checked عند فتح/إغلاق الـ panel
-  useEffect(() => {
-    const v = hasVaultPin();
-    setHasSaved(v);
-    setChecked(v);
-  }, [panelOpen]);
-
-  const resetPanel = () => {
-    setPanelStep('unlock');
-    setUnlockInput('');
-    setUnlockError('');
-    setShowSaved(false);
-    setEditPin('');
-    setCopied(false);
-  };
-
-  const handleOpenPanel = () => { resetPanel(); setPanelOpen(true); };
-  const handleClosePanel = () => {
-    setPanelOpen(false);
-    resetPanel();
-    // إعادة مزامنة hasSaved بعد إغلاق panel
-    const v = hasVaultPin();
-    setHasSaved(v);
-    setChecked(v);
-  };
-
-  // فتح الخزنة: مطابقة PIN المدخل مع المحفوظ
-  const handleUnlock = () => {
-    const saved = getVaultPin();
-    if (!saved) { setUnlockError('لا يوجد رقم سري محفوظ'); return; }
-    if (unlockInput.trim() === saved) {
-      setUnlockError('');
-      setPanelStep('view');
-    } else {
-      setUnlockError('رقم سري غير صحيح');
-    }
-  };
-
-  // نسخ الرقم السري
-  const handleCopy = () => {
-    const saved = getVaultPin();
-    if (!saved) return;
-    navigator.clipboard?.writeText(saved).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // استخدام المحفوظ (ملء الـ input)
-  const handleUse = () => {
-    const saved = getVaultPin();
-    if (saved) { onUseSaved(saved); handleClosePanel(); }
-  };
-
-  // حفظ رقم جديد (تعديل)
-  const handleSaveEdit = () => {
-    if (editPin.length < 4) return;
-    updateVaultPin(editPin);
-    setHasSaved(true);
-    setChecked(true);
-    setPanelStep('view');
-    setEditPin('');
-  };
-
-  // حذف الخزنة
-  const handleDelete = () => {
-    clearVaultPin();
-    setHasSaved(false);
-    setChecked(false);
-    handleClosePanel();
-  };
-
-  // حفظ currentPin في الخزنة من الـ toggle
-  const handleSaveFromToggle = () => {
-    if (currentPin.length >= 4) {
-      saveVaultPin(currentPin);
-      setHasSaved(true);
-      setChecked(true);
-    }
-  };
-
-  // toggle: "حفظ" أو "استخدام المحفوظ"
-  const handleToggle = () => {
-    if (hasSaved) {
-      // يوجد محفوظ → toggle يعني "استخدام من الخزنة"
-      const newChecked = !checked;
-      setChecked(newChecked);
-      if (newChecked) {
-        const saved = getVaultPin();
-        if (saved) onUseSaved(saved);
-      }
-    } else {
-      // لا يوجد محفوظ → toggle "حفظ" (يحفظ currentPin إذا كان صالحاً)
-      if (!checked && currentPin.length >= 4) {
-        handleSaveFromToggle();
-      } else {
-        setChecked(v => !v);
-      }
-    }
-  };
-
-  const savedPin = getVaultPin();
-
-  return (
-    <>
-      {/* ── Toggle صغير ── */}
-      <div className="flex items-center justify-between px-1 py-0.5">
-        <button
-          type="button"
-          className="flex items-center gap-2 flex-1 min-w-0"
-          onClick={handleToggle}
-        >
-          {/* Checkbox مخصص */}
-          <div
-            className="w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all"
-            style={{
-              background: checked ? C.red : 'hsl(var(--muted))',
-              border: `1px solid ${checked ? C.red : 'hsl(var(--border))'}`,
-            }}
-          >
-            {checked && <CheckCheck className="w-2.5 h-2.5 text-white" />}
-          </div>
-          <span className="text-[11px] font-semibold truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            {hasSaved ? 'استخدام الرقم السري المحفوظ' : 'حفظ الرقم السري في الخزنة'}
-          </span>
-        </button>
-
-        {/* زر فتح الخزنة (يظهر دائماً) */}
-        <button
-          type="button"
-          onClick={handleOpenPanel}
-          className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all active:scale-95 shrink-0"
-          style={{
-            background: 'rgba(230,0,0,0.08)',
-            border: '1px solid rgba(230,0,0,0.18)',
-          }}
-          title="فتح الخزنة"
-        >
-          <KeyRound className="w-3 h-3" style={{ color: C.red }} />
-          <span className="text-[10px] font-bold" style={{ color: C.red }}>الخزنة</span>
-        </button>
-      </div>
-
-      {/* ── Panel الخزنة (Sheet) ── */}
-      <Sheet open={panelOpen} onOpenChange={v => { if (!v) handleClosePanel(); }}>
-        <SheetContent
-          side="bottom"
-          className="rounded-t-2xl p-0 max-h-[85dvh] overflow-y-auto"
-          style={{ background: 'hsl(var(--background))', border: `1px solid rgba(230,0,0,0.2)` }}
-        >
-          {/* هيدر الـ Sheet */}
-          <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-border" dir="rtl">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(230,0,0,0.1)', border: '1px solid rgba(230,0,0,0.2)' }}>
-              <KeyRound className="w-5 h-5" style={{ color: C.red }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-foreground">خزنة الرقم السري</p>
-              <p className="text-[11px] text-muted-foreground">Vodafone Cash PIN Vault</p>
-            </div>
-          </div>
-
-          <div className="px-5 pb-8 pt-4 space-y-4" dir="rtl">
-
-            {/* ─ مرحلة: لا يوجد محفوظ + حفظ جديد ─ */}
-            {!savedPin && panelStep !== 'edit' && (
-              <div className="space-y-4">
-                <div className="rounded-2xl p-4 text-center space-y-2"
-                  style={{ background: 'rgba(230,0,0,0.05)', border: '1px solid rgba(230,0,0,0.12)' }}>
-                  <KeyRound className="w-8 h-8 mx-auto" style={{ color: 'rgba(230,0,0,0.4)' }} />
-                  <p className="text-sm font-bold text-foreground">لا يوجد رقم سري محفوظ</p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    {currentPin.length >= 4
-                      ? 'اضغط "حفظ" لتخزين الرقم السري المُدخل في الخزنة'
-                      : 'أكمل عملية استعلام أو شحن ناجحة لحفظ الرقم السري تلقائياً، أو أدخله يدوياً ثم احفظه'}
-                  </p>
-                </div>
-                {currentPin.length >= 4 ? (
-                  <div className="space-y-3">
-                    <div className="rounded-xl p-3 flex items-center gap-3"
-                      style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
-                      <Lock className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 font-mono text-sm text-foreground tracking-widest">
-                        {'•'.repeat(currentPin.length)}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">{currentPin.length} أرقام</span>
-                    </div>
-                    <button
-                      className="w-full py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-                      style={{
-                        background: `linear-gradient(135deg,${C.red},${C.redDeep})`,
-                        color: '#fff',
-                        boxShadow: `0 4px 16px ${C.redGlow}`,
-                      }}
-                      onClick={() => {
-                        saveVaultPin(currentPin);
-                        setHasSaved(true);
-                        setChecked(true);
-                        handleClosePanel();
-                      }}
-                    >
-                      <KeyRound className="w-4 h-4" />حفظ الرقم السري في الخزنة
-                    </button>
-                  </div>
-                ) : (
-                  /* زر حفظ يدوي عبر التعديل */
-                  <button
-                    className="w-full py-2.5 rounded-xl text-xs font-bold border border-border text-muted-foreground flex items-center justify-center gap-2 transition-all active:scale-95"
-                    onClick={() => { setEditPin(''); setPanelStep('edit'); }}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />إدخال رقم سري جديد يدوياً
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* ─ مرحلة: فتح الخزنة (إدخال PIN للتحقق) ─ */}
-            {savedPin && panelStep === 'unlock' && (
-              <div className="space-y-4">
-                <div className="rounded-2xl p-3 flex items-center gap-3"
-                  style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.15)' }}>
-                  <Shield className="w-4 h-4 shrink-0" style={{ color: C.red }} />
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    أدخل الرقم السري المحفوظ للتحقق من هويتك وفتح الخزنة
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground">الرقم السري للتحقق</label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type={showSaved ? 'text' : 'password'}
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={unlockInput}
-                      onChange={e => { setUnlockInput(e.target.value.replace(/\D/g,'')); setUnlockError(''); }}
-                      className="w-full h-11 rounded-xl pr-10 pl-10 text-sm font-mono outline-none"
-                      style={{ background: 'hsl(var(--card))', border: `1px solid ${unlockError ? C.red : 'hsl(var(--border))'}`, color: 'hsl(var(--foreground))' }}
-                      placeholder="أدخل الرقم السري"
-                      dir="ltr"
-                    />
-                    <button type="button" className="absolute left-3 top-1/2 -translate-y-1/2"
-                      onClick={() => setShowSaved(v => !v)}>
-                      {showSaved
-                        ? <EyeOff className="w-4 h-4 text-muted-foreground" />
-                        : <Eye    className="w-4 h-4 text-muted-foreground" />}
-                    </button>
-                  </div>
-                  {unlockError && (
-                    <p className="text-[11px] flex items-center gap-1" style={{ color: C.red }}>
-                      <XCircle className="w-3 h-3 shrink-0" />{unlockError}
-                    </p>
-                  )}
-                </div>
-                <button
-                  className="w-full py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-                  disabled={unlockInput.length < 4}
-                  style={{
-                    background: unlockInput.length >= 4 ? `linear-gradient(135deg,${C.red},${C.redDeep})` : 'hsl(var(--muted))',
-                    color: unlockInput.length >= 4 ? '#fff' : 'hsl(var(--muted-foreground))',
-                    boxShadow: unlockInput.length >= 4 ? `0 4px 16px ${C.redGlow}` : 'none',
-                  }}
-                  onClick={handleUnlock}
-                >
-                  <KeyRound className="w-4 h-4" />فتح الخزنة
-                </button>
-              </div>
-            )}
-
-            {/* ─ مرحلة: عرض الرقم المحفوظ ─ */}
-            {savedPin && panelStep === 'view' && (
-              <div className="space-y-3">
-                {/* عرض الرقم */}
-                <div className="rounded-xl p-4 space-y-2"
-                  style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground font-semibold">الرقم السري المحفوظ</span>
-                    <button type="button" onClick={() => setShowSaved(v => !v)}
-                      className="p-1 rounded-lg" style={{ color: C.muted }}>
-                      {showSaved ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                  <p className="text-xl font-black font-mono tracking-[0.3em] text-foreground text-center py-1">
-                    {showSaved ? savedPin : '•'.repeat(savedPin.length)}
-                  </p>
-                </div>
-
-                {/* أزرار الإجراءات */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                    onClick={handleUse}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#4ade80' }} />
-                    استخدام
-                  </button>
-                  <button
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                    onClick={handleCopy}
-                  >
-                    {copied
-                      ? <><CheckCheck className="w-3.5 h-3.5" style={{ color: '#4ade80' }} />تم النسخ</>
-                      : <><Copy className="w-3.5 h-3.5" style={{ color: C.muted }} />نسخ</>
-                    }
-                  </button>
-                  <button
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                    onClick={() => { setEditPin(''); setPanelStep('edit'); }}
-                  >
-                    <Pencil className="w-3.5 h-3.5" style={{ color: C.muted }} />تعديل
-                  </button>
-                  <button
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-                    style={{ background: 'rgba(230,0,0,0.07)', border: '1px solid rgba(230,0,0,0.18)', color: C.red }}
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />حذف
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ─ مرحلة: تعديل الرقم السري ─ */}
-            {panelStep === 'edit' && (
-              <div className="space-y-4">
-                <p className="text-sm font-black text-foreground">
-                  {savedPin ? 'تعديل الرقم السري' : 'إضافة رقم سري جديد'}
-                </p>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground">الرقم السري الجديد</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={editPin}
-                    onChange={e => setEditPin(e.target.value.replace(/\D/g,''))}
-                    className="w-full h-11 rounded-xl px-4 text-sm font-mono outline-none tracking-widest"
-                    style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                    placeholder="أدخل الرقم الجديد (4-6 أرقام)"
-                    dir="ltr"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className="flex-1 py-2.5 rounded-xl text-xs font-bold border border-border text-muted-foreground transition-all"
-                    onClick={() => setPanelStep(savedPin ? 'view' : 'unlock')}
-                  >إلغاء</button>
-                  <button
-                    className="flex-[2] py-2.5 rounded-xl text-sm font-black transition-all active:scale-[0.97] flex items-center justify-center gap-1.5"
-                    disabled={editPin.length < 4}
-                    style={{
-                      background: editPin.length >= 4 ? `linear-gradient(135deg,${C.red},${C.redDeep})` : 'hsl(var(--muted))',
-                      color: editPin.length >= 4 ? '#fff' : 'hsl(var(--muted-foreground))',
-                    }}
-                    onClick={handleSaveEdit}
-                  >
-                    <KeyRound className="w-4 h-4" />حفظ الرقم الجديد
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
-  );
-}
 
 // ══════════════════════════════════════════════════════════
 // مكوّن: استعلام سريع عن رصيد المحفظة (Modal مدمج)
@@ -499,8 +99,6 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
         setMsisdn(res.msisdn ?? null);
         setQueriedAt(res.queried_at ?? null);
         setStatus('success');
-        // ── حفظ تلقائي في الخزنة بعد أول استعلام ناجح ──
-        saveVaultPin(pin);
       } else {
         setErrorMsg(res.message ?? 'تعذر الحصول على الرصيد');
         setStatus('failed');
@@ -588,11 +186,7 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
                 <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                 <span>رقم سري Vodafone Cash من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
               </p>
-              {/* ── خزنة الرقم السري ── */}
-              <PinVaultMini
-                currentPin={pin}
-                onUseSaved={(saved) => setPin(saved)}
-              />
+              {/* ── خزنة الرقم السري محذوفة — هذا قسم استعلام رصيد فودافون كاش ── */}
               {/* زر الاستعلام */}
               <button
                 onClick={handleQuery}
@@ -1439,7 +1033,7 @@ function BalanceExecuteDialog({
   const [isTrialMode, setIsTrialMode]     = useState(true);
 
   // اختصار رصيد المحفظة داخل الـ Dialog
-  const [walletShortcutOpen, setWalletShortcutOpen] = useState(false);
+  // اختصار رصيد المحفظة — محذوف (نُقل إلى HomePage)
 
   // PHASE 5: Cooldown بعد فشل رصيد
   const [cooldownUntil, setCooldownUntil] = useState(0);
@@ -1831,46 +1425,6 @@ function BalanceExecuteDialog({
                   >
                     <Zap className="w-4 h-4" />تأكيد الشحن
                   </button>
-                </div>
-
-                {/* ── اختصار: استعلام رصيد المحفظة ── */}
-                <button
-                  type="button"
-                  onClick={() => setWalletShortcutOpen(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all active:scale-[0.98]"
-                  style={{
-                    background: 'rgba(230,0,0,0.05)',
-                    border: '1px solid rgba(230,0,0,0.15)',
-                  }}
-                >
-                  <Wallet className="w-4 h-4 shrink-0" style={{ color: C.red }} />
-                  <span className="flex-1 text-right text-[11px] font-bold" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    استعلام رصيد محفظتك Vodafone Cash
-                  </span>
-                  <ChevronLeft className="w-3 h-3 shrink-0" style={{ color: 'rgba(230,0,0,0.4)' }} />
-                </button>
-                <WalletQuickBalanceModal
-                  open={walletShortcutOpen}
-                  onClose={() => setWalletShortcutOpen(false)}
-                />
-
-                {/* ── خزنة الرقم السري للمحفظة (ظاهر دائماً، يُفعَّل بعد أول شحن ناجح) ── */}
-                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(230,0,0,0.12)', background: 'rgba(230,0,0,0.03)' }}>
-                  <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
-                    <KeyRound className="w-3 h-3 shrink-0" style={{ color: C.red }} />
-                    <span className="text-[10px] font-bold" style={{ color: 'rgba(230,0,0,0.7)' }}>خزنة الرقم السري للمحفظة</span>
-                  </div>
-                  <div className="px-2 pb-2.5">
-                    <PinVaultMini
-                      currentPin=""
-                      onUseSaved={() => {}}
-                    />
-                  </div>
-                  {!hasVaultPin() && (
-                    <p className="text-[10px] text-center pb-2.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
-                      سيتم تفعيل الحفظ تلقائياً بعد أول استعلام ناجح
-                    </p>
-                  )}
                 </div>
               </>
             )}

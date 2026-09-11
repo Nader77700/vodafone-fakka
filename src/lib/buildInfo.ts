@@ -4,15 +4,21 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.22',
-  versionCode:    502,
+  appVersion:      '3.5.23',
+  versionCode:    503,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_22_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.5.22.apk',
-  bundleHash:     'apk_v3_5_22_code502',
-  apkHash:        'apk_v3_5_22_code502',
-  dbVersion:      'v3.5.22',
+  sourceHash:     'build_v3_5_23_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.5.23.apk',
+  bundleHash:     'apk_v3_5_23_code503',
+  apkHash:        'apk_v3_5_23_code503',
+  dbVersion:      'v3.5.23',
   releaseNotes: [
+    'v3.5.23: إصلاح سجل العمليات — vcc-recharge يُرجع الآن via:server + registered:true فتُسجَّل العمليات مرة واحدة فقط بدون تكرار أو ضياع',
+    'v3.5.23: إصلاح ana-balance-charge — إضافة via:server لكل responses (ناجحة/فاشلة/idempotent) لضمان التسجيل الصحيح',
+    'v3.5.23: إصلاح معلومات الخط — timeout 35 ثانية + معالجة صحيحة لـ FunctionsHttpError + رسالة timeout واضحة بدل "خطأ غير متوقع"',
+    'v3.5.23: إصلاح OfflineGate — ping متعدد المسارات (3 URLs) + عتبة فشلَيْن متتاليَيْن قبل إعلان الانقطاع',
+    'v3.5.23: إزالة PinVaultMini من صفحة الشحن من الرصيد (كانت في القسم الخطأ)',
+    'v3.5.23: نظام HotFix من السيرفر — تعطيل/تفعيل أي خدمة فوراً بدون رفع تحديث APK جديد',
     'v3.5.22: نظام خزنة الرقم السري PinVaultMini — حفظ PIN محفظة Vodafone Cash محلياً بأمان مع حفظ تلقائي بعد أول استعلام ناجح',
     'v3.5.22: OfflineGate احترافي — شاشة حجب كاملة عند انقطاع الإنترنت مع شعار ونصائح وأنيميشن',
     'v3.5.22: إصلاح كشف الاتصال — Web يستخدم navigator.onLine فقط (بدون CORS) والـ Native يستخدم ping حقيقي',

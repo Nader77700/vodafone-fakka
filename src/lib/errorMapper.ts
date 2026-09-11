@@ -28,6 +28,7 @@ export type ErrorType =
   | 'timeout'
   | 'server_unreachable'
   | 'service_unavailable'
+  | 'ops_limit_reached'
   | 'unknown';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +67,18 @@ export function extractOperationId(raw: string): string | null {
 function classifyError(raw: string): ErrorType {
   const t = raw.toLowerCase();
 
-  // حساب مقفول بسبب تكرار الرقم السري الخاطئ (يجب أن يكون قبل invalid_pin)
+  // استنفاد عمليات الباقة — يجب أن يكون أول فحص
+  if (
+    t.includes('استنفذت الحد الأقصى') ||
+    t.includes('استنفذت الحد') ||
+    t.includes('الحد الأقصى للعمليات') ||
+    t.includes('ops_limit_reached') ||
+    t.includes('ops limit') ||
+    t.includes('no_active_subscription') ||
+    t.includes('trial_limit_reached') ||
+    t.includes('subscription_ops_exhausted') ||
+    (t.includes('عمليات') && t.includes('باقت'))
+  ) return 'ops_limit_reached';
   if (
     t.includes('1118') ||
     t.includes('incorrect pin for 3') ||
@@ -228,6 +240,9 @@ export function parseApiError(rawError: string | null | undefined): MappedError 
     case 'service_unavailable':
       arabicMessage = 'السبب: خدمة Vodafone Cash غير متاحة مؤقتاً (صيانة أو انقطاع).\n\nالحل:\n• انتظر بضع دقائق وأعد المحاولة.\n• إذا استمر الخطأ تواصل مع الدعم.';
       break;
+    case 'ops_limit_reached':
+      arabicMessage = 'السبب: لقد استنفذت عدد العمليات المتاحة في باقتك الحالية.\n\nالحل:\n• قم بتجديد اشتراكك للحصول على عمليات جديدة.\n• تواصل مع الإدارة لتفعيل كود جديد.';
+      break;
     default:
       arabicMessage = raw && raw.trim().length > 0
         ? `السبب: ${raw.trim()}\n\nالحل:\n• أعد المحاولة مرة أخرى.\n• إذا استمر الخطأ تواصل مع الإدارة.`
@@ -243,6 +258,11 @@ export function parseApiError(rawError: string | null | undefined): MappedError 
 
 export function shouldShowNetworkTips(errorType: ErrorType): boolean {
   return ['wifi_detected', 'network_changed', 'data_disabled'].includes(errorType);
+}
+
+/** هل الخطأ بسبب استنفاد عمليات الباقة؟ */
+export function isOpsLimitReached(errorType: ErrorType): boolean {
+  return errorType === 'ops_limit_reached';
 }
 
 /** هل الخطأ بسبب قفل الحساب؟ */

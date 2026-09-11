@@ -4,7 +4,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useState, useEffect } from 'react';
 
 export default function OfflineBanner() {
-  const isOnline = useOnlineStatus();
+  const { isOnline } = useOnlineStatus();
   const [justReconnected, setJustReconnected] = useState(false);
   const [wasOffline, setWasOffline] = useState(false);
   const [visible, setVisible] = useState(false);

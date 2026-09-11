@@ -67,9 +67,9 @@ serve(async (req: Request) => {
       p_user_id: caller.id
     });
 
-    if (opError || !opData || !opData.success) {
-      console.log("[balance-charge] ops_limit fail");
-      return json({ success: false, error: opData?.error || "لقد استنفذت الحد الأقصى للعمليات في باقتك" }, 200);
+    if (opError || !opData || !opData.allowed) {
+      console.log("[balance-charge] ops_limit fail", { opError, opData });
+      return json({ success: false, error: "لقد استنفذت الحد الأقصى للعمليات في باقتك" }, 200);
     }
 
     let operationRefunded = false;
@@ -130,6 +130,7 @@ serve(async (req: Request) => {
           success:          existing.status === "success",
           message:          "✅ العملية مسجّلة بالفعل",
           operation_number: existing.operation_number,
+          via:              'server',
           registered:       true,
           idempotent:       true,
         });
@@ -226,6 +227,7 @@ serve(async (req: Request) => {
         message:          "✅ تم الشحن من الرصيد بنجاح!",
         operation_number: opNumber,
         performed_at:     performedAt,
+        via:              'server',
         registered:       true,
       });
     }
@@ -267,6 +269,7 @@ serve(async (req: Request) => {
       error:          friendly,
       error_code:     errCode,
       session_expired:isSessionExpired,
+      via:            'server',
       registered:     true,
     });
 

@@ -320,6 +320,8 @@ serve(async (req: Request) => {
         success: true,
         message: `تم شحن ${amount} جنيه إلى ${receiver} بنجاح ✅`,
         reference: txId,
+        via: 'server',
+        registered: true,
         debugSteps,
       });
     } else {

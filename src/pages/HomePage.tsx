@@ -27,7 +27,7 @@ import { BUILD_INFO } from '@/lib/buildInfo';
 
 import type { ChargeDebugStep } from '@/lib/api';
 import type { Subscription, Operation } from '@/types/types';
-import { parseApiError, shouldShowNetworkTips, getFirstLine, isPinLocked, isUnregisteredMsisdn } from '@/lib/errorMapper';
+import { parseApiError, shouldShowNetworkTips, getFirstLine, isPinLocked, isUnregisteredMsisdn, isOpsLimitReached } from '@/lib/errorMapper';
 import { formatEgyptTime, formatEgyptDate, formatReceiptDate, formatReceiptTime } from '@/lib/egyptTime';
 import InvoiceReceipt from '@/components/invoice/InvoiceReceipt';
 import PrintButton from '@/components/invoice/PrintButton';
@@ -71,6 +71,8 @@ import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 import { PhoneSuggestionsInput } from '@/components/vodafone-cash/PhoneSuggestionsInput';
 import LineInfoModal from '@/components/line-info/LineInfoModal';
 import { useWalletPins } from '@/hooks/useWalletPins';
+import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
+import { saveVaultPin } from '@/lib/balanceSession';
 
 
 // ══════════════════════════════════════════════════════════
@@ -627,7 +629,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       onClick={() => onSelect(product)}
       className="relative w-full overflow-hidden select-none"
       style={{
-        minHeight: 136,
+        minHeight: 112,
         borderRadius: 14,
         border: `1.5px solid ${L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)'}`,
         boxShadow: L ? '0 4px 18px rgba(0,0,0,0.12), 0 0 0 1px rgba(230,0,0,0.08)' : '0 4px 24px rgba(0,0,0,0.70)',
@@ -683,7 +685,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       )}
 
       {/* Layout: يسار = لوجو+توقيع، يمين = بيانات */}
-      <div className="relative z-10 flex flex-row h-full" style={{ minHeight: 136 }}>
+      <div className="relative z-10 flex flex-row h-full" style={{ minHeight: 112 }}>
 
         {/* الجانب الأيسر — لوجو + توقيع */}
         <div className="flex flex-col justify-between py-2 px-2" style={{ width: '36%', minWidth: 0 }}>
@@ -717,7 +719,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
           </div>
 
           {/* السعر الكبير */}
-          <p className="text-[28px] font-black tabular-nums leading-none mt-0.5"
+          <p className="text-[22px] font-black tabular-nums leading-none mt-0.5"
             style={{
               color: L ? '#1a1a2e' : '#ffffff',
               textShadow: L ? 'none' : '0 0 18px rgba(230,0,0,0.75), 0 2px 8px rgba(0,0,0,0.90)',
@@ -906,9 +908,9 @@ function ReceiptView({
 
 // ── Modal تنفيذ الطلب Premium — هوية Vodafone Fakka الكاملة ──
 function ExecuteModal({
-  product, open, onClose, onSuccess, isAdmin: _ignored_isAdmin = false, prefillPhone = '', logoUrl = '',
+  product, open, onClose, onSuccess, onOpsExhausted, isAdmin: _ignored_isAdmin = false, prefillPhone = '', logoUrl = '',
 }: {
-  product: VodafoneProduct | null; open: boolean; onClose: () => void; onSuccess: () => void; isAdmin?: boolean; prefillPhone?: string; logoUrl?: string;
+  product: VodafoneProduct | null; open: boolean; onClose: () => void; onSuccess: () => void; onOpsExhausted?: () => void; isAdmin?: boolean; prefillPhone?: string; logoUrl?: string;
 }) {
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
@@ -916,7 +918,52 @@ function ExecuteModal({
   const { config } = useRuntimeConfig();
   const L = useIsLight();
   const { savePin } = useWalletPins();
+  // ── HotFix Kill Switch — الشحن ──────────────────────────────
+  const hotfixRechargeDisabled = config.security.hotfix_disable_all_recharge;
+  const hotfixRechargeMsg      = config.ui.hotfix_disable_recharge_message;
   const [lineInfoOpen, setLineInfoOpen] = useState(false);
+  // ── حالة استعلام رصيد المحفظة ──
+  const [walletModalOpen, setWalletModalOpen]         = useState(false);
+  const [walletPin, setWalletPin]                     = useState('');
+  const [walletStatus, setWalletStatus]               = useState<'idle'|'loading'|'success'|'failed'>('idle');
+  const [walletBalance, setWalletBalance]             = useState<string|null>(null);
+  const [walletMsisdn, setWalletMsisdn]               = useState<string|null>(null);
+  const [walletQueriedAt, setWalletQueriedAt]         = useState<string|null>(null);
+  const [walletError, setWalletError]                 = useState<string|null>(null);
+
+  const resetWallet = () => {
+    setWalletPin(''); setWalletStatus('idle');
+    setWalletBalance(null); setWalletError(null);
+  };
+  const handleWalletClose = () => { resetWallet(); setWalletModalOpen(false); };
+
+  const handleWalletQuery = async () => {
+    if (walletPin.length < 4 || walletStatus === 'loading') return;
+    setWalletStatus('loading'); setWalletError(null);
+    try {
+      const seamlessClientId = config?.security?.sec_seamless_client_id || 'ana-vodafone-app-seamless';
+      const seamlessUrl      = config?.security?.sec_seamless_url;
+      const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
+      const res = await VodafoneCashService.getWalletBalance({
+        pin: walletPin,
+        seamless_token: seamless.token,
+        msisdn: seamless.msisdn,
+      });
+      if (res.success) {
+        setWalletBalance(res.balance ?? null);
+        setWalletMsisdn(res.msisdn ?? null);
+        setWalletQueriedAt(res.queried_at ?? null);
+        setWalletStatus('success');
+        saveVaultPin(walletPin);
+      } else {
+        setWalletError(res.message ?? 'تعذر الحصول على الرصيد');
+        setWalletStatus('failed');
+      }
+    } catch {
+      setWalletError('حدث خطأ غير متوقع');
+      setWalletStatus('failed');
+    }
+  };
   const [chargeForSelf, setChargeForSelf] = useState(false);
   const [phone, setPhone] = useState(prefillPhone);
   const [pin, setPin] = useState('');
@@ -1044,6 +1091,11 @@ function ExecuteModal({
   const handleExecute = async () => {
     try {
       if (!user || !product) return;
+      // ── HotFix Kill Switch — الشحن ──────────────────────────
+      if (hotfixRechargeDisabled) {
+        toast.error(hotfixRechargeMsg || 'الشحن متوقف مؤقتاً لأعمال الصيانة. نعود قريباً 🔧', { duration: 5000 });
+        return;
+      }
       // منع التنفيذ المزدوج — أي ضغطة أثناء التنفيذ تُهمَل فوراً
       if (executingRef.current) return;
       // cooldown 15 ثانية بعد آخر فشل — يمنع double-submit غير المقصود
@@ -1335,6 +1387,11 @@ function ExecuteModal({
       setLastErrorType(mapped.errorType);
       lastFailedAtRef.current = Date.now(); // بدء cooldown 15 ثانية
       toast.error('❌ فشل الشحن', { description: getFirstLine(mapped.arabicMessage), duration: 8000 });
+
+      // إذا انتهت الباقة → أبلّغ الـ parent لتحديث opsInfo
+      if (mapped.errorType === 'ops_limit_reached') {
+        onOpsExhausted?.();
+      }
     }
     } catch (err: any) {
       console.error(err);
@@ -1817,6 +1874,44 @@ function ExecuteModal({
                       onOpenChange={setLineInfoOpen}
                       initialPhone={phone}
                     />
+                    {/* ── زر استعلام رصيد المحفظة ── */}
+                    <button
+                      type="button"
+                      onClick={() => setWalletModalOpen(true)}
+                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
+                      style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.18)' }}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(230,0,0,0.14)', border: '1px solid rgba(230,0,0,0.25)' }}>
+                        <Wallet className="w-4 h-4" style={{ color: '#E60000' }} />
+                      </div>
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام رصيد المحفظة</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                          Vodafone Cash — اعرف رصيدك قبل الشحن
+                        </p>
+                      </div>
+                      <ChevronLeft className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
+                    </button>
+                    {/* ── زر خزنة الرقم السري ── */}
+                    <button
+                      type="button"
+                      onClick={() => setPinManagerOpen(true)}
+                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
+                      style={{ background: 'rgba(230,0,0,0.04)', border: '1px solid rgba(230,0,0,0.14)' }}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(230,0,0,0.10)', border: '1px solid rgba(230,0,0,0.20)' }}>
+                        <Key className="w-4 h-4" style={{ color: '#E60000' }} />
+                      </div>
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-sm font-black" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>خزنة الرقم السري</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
+                          احفظ واسترجع رقمك السري بأمان
+                        </p>
+                      </div>
+                      <ChevronLeft className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
+                    </button>
                   </>
                 )}
 
@@ -1824,11 +1919,12 @@ function ExecuteModal({
                 {lastError && !submitting && (() => {
                   const locked       = isPinLocked(lastErrorType);
                   const unregistered = isUnregisteredMsisdn(lastErrorType);
-                  const borderColor  = locked ? 'rgba(251,146,60,0.4)' : unregistered ? 'rgba(99,102,241,0.4)' : 'rgba(220,38,38,0.3)';
-                  const bgColor      = locked ? 'rgba(251,146,60,0.08)' : unregistered ? 'rgba(99,102,241,0.08)' : 'rgba(220,38,38,0.08)';
-                  const titleColor   = locked ? '#fb923c' : unregistered ? '#a5b4fc' : '#f87171';
-                  const Icon         = locked ? AlertTriangle : XCircle;
-                  const iconColor    = locked ? 'text-orange-400' : unregistered ? 'text-indigo-400' : 'text-red-400';
+                  const opsExhausted = isOpsLimitReached(lastErrorType);
+                  const borderColor  = locked ? 'rgba(251,146,60,0.4)' : unregistered ? 'rgba(99,102,241,0.4)' : opsExhausted ? 'rgba(168,85,247,0.4)' : 'rgba(220,38,38,0.3)';
+                  const bgColor      = locked ? 'rgba(251,146,60,0.08)' : unregistered ? 'rgba(99,102,241,0.08)' : opsExhausted ? 'rgba(168,85,247,0.08)' : 'rgba(220,38,38,0.08)';
+                  const titleColor   = locked ? '#fb923c' : unregistered ? '#a5b4fc' : opsExhausted ? '#c084fc' : '#f87171';
+                  const Icon         = locked ? AlertTriangle : opsExhausted ? AlertTriangle : XCircle;
+                  const iconColor    = locked ? 'text-orange-400' : unregistered ? 'text-indigo-400' : opsExhausted ? 'text-purple-400' : 'text-red-400';
 
                   // تقسيم الرسالة إلى السبب والحل
                   const parts         = lastError.split('\n\n');
@@ -1868,6 +1964,21 @@ function ExecuteModal({
                       {locked && (
                         <div className="pt-2 border-t" style={{ borderColor: 'rgba(251,146,60,0.2)' }}>
                           <p className="text-[11px] font-bold text-orange-300">⛔ لا تحاول مجدداً الآن — محاولات إضافية لن تُفيد.</p>
+                        </div>
+                      )}
+
+                      {/* زر تجديد الاشتراك عند استنفاد الباقة */}
+                      {opsExhausted && (
+                        <div className="pt-2.5 border-t" style={{ borderColor: 'rgba(168,85,247,0.2)' }}>
+                          <p className="text-[11px] font-bold text-purple-300 mb-2.5">⚡ الباقة الحالية مكتملة — جدّد لتواصل الشحن</p>
+                          <button
+                            onClick={() => { navigate('/activate'); }}
+                            className="w-full py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                            style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', color: '#c084fc' }}
+                          >
+                            <span>🎁</span>
+                            <span>تجديد الاشتراك الآن</span>
+                          </button>
                         </div>
                       )}
 
@@ -2218,6 +2329,90 @@ function ExecuteModal({
         </DialogContent>
       </Dialog>
       <PinManagerDialog open={pinManagerOpen} onClose={() => setPinManagerOpen(false)} />
+
+      {/* ══ Dialog: استعلام رصيد المحفظة ══ */}
+      <Dialog open={walletModalOpen} onOpenChange={v => { if (!v) handleWalletClose(); }}>
+        <DialogContent
+          className="max-w-[calc(100%-2rem)] md:max-w-sm rounded-2xl p-0 overflow-hidden border-0"
+          style={{ background: 'hsl(var(--card))', border: '1px solid rgba(230,0,0,0.25)' }}
+          dir="rtl"
+        >
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(230,0,0,0.12)', border: '1px solid rgba(230,0,0,0.25)' }}>
+              <Wallet className="w-5 h-5" style={{ color: '#E60000' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-foreground">استعلام رصيد المحفظة</p>
+              <p className="text-[11px] text-muted-foreground">Vodafone Cash</p>
+            </div>
+          </div>
+
+          <div className="px-4 pb-5 pt-3 space-y-4">
+            {walletStatus === 'success' && walletBalance !== null ? (
+              <div className="space-y-3">
+                <div className="rounded-2xl p-4 text-center space-y-1"
+                  style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
+                  <CheckCircle2 className="w-6 h-6 mx-auto text-green-400" />
+                  <p className="text-[11px] text-muted-foreground">رصيد المحفظة الحالي</p>
+                  <p className="text-2xl font-black text-green-400">
+                    {walletBalance} <span className="text-sm font-medium text-muted-foreground">جنيه</span>
+                  </p>
+                  {walletMsisdn && <p className="text-[11px] text-muted-foreground font-mono">{walletMsisdn}</p>}
+                  {walletQueriedAt && (
+                    <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {(() => { try { return new Date(walletQueriedAt).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }); } catch { return walletQueriedAt; } })()}
+                    </p>
+                  )}
+                </div>
+                <button onClick={resetWallet}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold border border-border text-muted-foreground hover:text-foreground transition-colors">
+                  استعلام جديد
+                </button>
+              </div>
+            ) : walletStatus === 'failed' ? (
+              <div className="space-y-3">
+                <div className="rounded-2xl p-4 text-center space-y-1"
+                  style={{ background: 'rgba(230,0,0,0.08)', border: '1px solid rgba(230,0,0,0.2)' }}>
+                  <XCircle className="w-6 h-6 mx-auto" style={{ color: '#E60000' }} />
+                  <p className="text-sm text-muted-foreground font-medium">{walletError}</p>
+                </div>
+                <button onClick={resetWallet}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold border border-border text-muted-foreground hover:text-foreground transition-colors">
+                  المحاولة مجدداً
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground text-center">أدخل الرقم السري لمحفظتك لعرض رصيدك فوراً</p>
+                <div className="rounded-2xl p-3 border border-border" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                  <PinInputBlock pin={walletPin} setPin={setWalletPin} submitting={walletStatus === 'loading'} />
+                </div>
+                <p className="text-[10px] text-amber-400/70 flex items-start gap-1.5">
+                  <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>رقم سري Vodafone Cash من 6 أرقام — بعد 3 محاولات خاطئة يُقفل الحساب</span>
+                </p>
+                <button
+                  onClick={handleWalletQuery}
+                  disabled={walletPin.length < 4 || walletStatus === 'loading'}
+                  className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all"
+                  style={{
+                    background: walletPin.length >= 4 && walletStatus !== 'loading' ? 'linear-gradient(135deg,#E60000,#c00000)' : 'hsl(var(--muted))',
+                    color: walletPin.length >= 4 && walletStatus !== 'loading' ? '#fff' : 'hsl(var(--muted-foreground))',
+                    boxShadow: walletPin.length >= 4 && walletStatus !== 'loading' ? '0 0 16px rgba(230,0,0,0.35)' : 'none',
+                  }}
+                >
+                  {walletStatus === 'loading'
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الاستعلام…</>
+                    : <><Wallet className="w-4 h-4" />عرض الرصيد</>}
+                </button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -2277,6 +2472,14 @@ function HomePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { getUrl } = useAssets();
+
+  // ── HotFix Kill Switch — الشحن ──────────────────────────────
+  const hotfixRechargeDisabled = config.security.hotfix_disable_all_recharge;
+  const hotfixRechargeMsg      = config.ui.hotfix_disable_recharge_message;
+  // ── HotFix Emergency Banner ──────────────────────────────────
+  const emergencyBannerActive  = config.ui.hotfix_emergency_banner;
+  const emergencyBannerMsg     = config.ui.hotfix_emergency_message;
+  const emergencyBannerType    = config.ui.hotfix_emergency_type;
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [opsInfo, setOpsInfo]            = useState<SubscriptionOpsInfo | null>(null);
@@ -2659,6 +2862,30 @@ function HomePage() {
       {/* ── شريط فترة السماح — يظهر للمستخدمين الذين انتهى اشتراكهم ولم تنته ساعة السماح ── */}
       {!isMerchantClient && subscription?.in_grace_period && subscription.grace_ends_at && (
         <GracePeriodBanner graceEndsAt={subscription.grace_ends_at} onRenew={() => navigate('/activate')} />
+      )}
+
+      {/* ── HotFix Emergency Banner — يظهر لكل المستخدمين فور التفعيل من السيرفر ── */}
+      {emergencyBannerActive && emergencyBannerMsg && (
+        <div className="mx-4 mt-2 flex items-start gap-2 rounded-xl px-4 py-3 text-sm"
+          style={{
+            background: emergencyBannerType === 'error'   ? 'rgba(239,68,68,0.12)'   :
+                        emergencyBannerType === 'warning' ? 'rgba(245,158,11,0.12)'  :
+                        emergencyBannerType === 'success' ? 'rgba(34,197,94,0.12)'   :
+                                                            'rgba(59,130,246,0.12)',
+            border: emergencyBannerType === 'error'   ? '1px solid rgba(239,68,68,0.35)'   :
+                    emergencyBannerType === 'warning' ? '1px solid rgba(245,158,11,0.35)'  :
+                    emergencyBannerType === 'success' ? '1px solid rgba(34,197,94,0.35)'   :
+                                                        '1px solid rgba(59,130,246,0.35)',
+            color: emergencyBannerType === 'error'   ? '#ef4444' :
+                   emergencyBannerType === 'warning' ? '#f59e0b' :
+                   emergencyBannerType === 'success' ? '#22c55e' :
+                                                       '#3b82f6',
+          }}>
+          <span className="mt-0.5 shrink-0 text-base">
+            {emergencyBannerType === 'error' ? '🚨' : emergencyBannerType === 'warning' ? '⚠️' : emergencyBannerType === 'success' ? '✅' : 'ℹ️'}
+          </span>
+          <span className="leading-relaxed">{emergencyBannerMsg}</span>
+        </div>
       )}
 
       {/* ══════════════════════════════════════
@@ -3175,7 +3402,9 @@ function HomePage() {
         subscription={subscription} activities={activities}
         onRenew={() => { setNotifOpen(false); setActivationOpen(true); }} />
       <ExecuteModal product={selectedProduct} open={sheetOpen}
-        onClose={() => setSheetOpen(false)} onSuccess={loadData} isAdmin={isAdmin}
+        onClose={() => setSheetOpen(false)} onSuccess={loadData}
+        onOpsExhausted={() => { if (user) getSubscriptionOpsInfo(user.id).then(ops => { if (ops) setOpsInfo(ops); }).catch(() => {}); }}
+        isAdmin={isAdmin}
         prefillPhone={prefillPhone} logoUrl={heroLogoUrl || headerLogoUrl || welcomeIconUrl || ''} />
 
       {/* ── Dialog: كارت موقف / صيانة / غير متوفر (ديناميكي من DB) ── */}

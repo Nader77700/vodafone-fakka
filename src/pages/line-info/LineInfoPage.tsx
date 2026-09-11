@@ -10,9 +10,11 @@ import {
   CreditCard, Copy, Check, CheckCircle2, XCircle, Loader2,
   CalendarClock, PackageOpen, ClipboardList, History,
   RotateCcw, WifiOff, ServerCrash, HelpCircle, Wifi,
+  ShieldOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsLight } from '@/contexts/ThemeContext';
+import { useHotfixLineInfoDisabled } from '@/contexts/RuntimeConfigContext';
 import {
   fetchLineInfo,
   getLineInfoHistory,
@@ -220,17 +222,23 @@ function HistoryPanel({ onSelect, L }: { onSelect: (entry: LineInfoHistoryEntry)
 export default function LineInfoPage() {
   const navigate = useNavigate();
   const L        = useIsLight();
+  const { disabled: lineInfoDisabled, message: lineInfoMsg } = useHotfixLineInfoDisabled();
 
   const [phone,   setPhone]   = useState('');
   const [status,  setStatus]  = useState<LineInfoStatus>('idle');
   const [result,  setResult]  = useState<LineInfoResult | null>(null);
   const [errMsg,  setErrMsg]  = useState<string | undefined>();
-  const [histKey, setHistKey] = useState(0); // لإعادة رسم History بعد فحص جديد
+  const [histKey, setHistKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
     const trimmed = phone.trim();
     if (!trimmed) { inputRef.current?.focus(); return; }
+    // ── HotFix Kill Switch ──────────────────────────────────────
+    if (lineInfoDisabled) {
+      toast.error(lineInfoMsg || 'خدمة معلومات الخط متوقفة مؤقتاً.');
+      return;
+    }
     setStatus('loading');
     setResult(null);
     setErrMsg(undefined);
@@ -242,6 +250,15 @@ export default function LineInfoPage() {
       setHistKey(k => k + 1);
     }
   };
+
+  // ── HotFix Banner — يظهر تحت الـ header مباشرة ────────────────
+  const hotfixBanner = lineInfoDisabled ? (
+    <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+      style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}>
+      <ShieldOff className="w-4 h-4 shrink-0" />
+      <span>{lineInfoMsg || 'خدمة معلومات الخط متوقفة مؤقتاً. نعود قريباً.'}</span>
+    </div>
+  ) : null;
 
   // زر "فحص رقم آخر" — تمسح النتيجة فقط
   const handleReset = () => {
@@ -291,6 +308,9 @@ export default function LineInfoPage() {
             <Info className="w-4 h-4" style={{ color: '#E60000' }} />
           </div>
         </div>
+
+      {/* ── HotFix Banner ── */}
+      {hotfixBanner}
       </div>
 
       <div className="px-4 pt-4 space-y-4">
