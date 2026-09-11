@@ -121,7 +121,8 @@ serve(async (req: Request) => {
   console.error("[seamless-proxy] all client_ids failed");
   return json({
     success: false,
-    error:   "تعذر التعرف على الشبكة. تأكد من تشغيل بيانات فودافون.",
+    error:   "تعذر التعرف على الشبكة — إذا كان الـ VPN مفعّلاً أوقفه ثم أعد المحاولة، وتأكد من تشغيل بيانات فودافون.",
     tried:   SEAMLESS_CLIENT_IDS,
+    hint:    "vpn_or_network",
   });
 });

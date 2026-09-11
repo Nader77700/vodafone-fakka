@@ -182,6 +182,12 @@ export default function RechargeBalancePage() {
 
     if (!seamless.token) {
       toast.dismiss(toastId);
+      // تحديد سبب الفشل: VPN أم مشكلة شبكة عامة
+      const vpnHint = seamless.error?.toLowerCase().includes('vpn') || seamless.error?.toLowerCase().includes('400');
+      const errMsg = vpnHint
+        ? 'تعذّر التعرف على خط فودافون — إذا كان الـ VPN مفعّلاً أوقفه ثم أعد المحاولة'
+        : `تعذّر التعرف على خط فودافون: ${seamless.error || 'تأكد من تشغيل بيانات فودافون'}`;
+      toast.error(errMsg, { duration: 7000 });
     } else {
       toast.loading('جاري تنفيذ عملية الشحن...', { id: toastId });
     }

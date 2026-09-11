@@ -32,11 +32,13 @@ export interface NetworkInfo {
   activeNetwork: string;
   isMobileDataActive: boolean;
   isWifiActive: boolean;
+  /** هل يوجد VPN نشط؟ (يمنع Seamless Token) */
+  isVpnActive: boolean;
   /** هل SIM الأولى فودافون؟ */
   isVodafoneSim: boolean;
   /** هل Active Data SIM فودافون؟ (القرار النهائي) */
   isVodafoneMobile: boolean;
-  /** canExecuteNative = isVodafoneMobile && isMobileDataActive */
+  /** canExecuteNative = isVodafoneMobile && isMobileDataActive && !isVpnActive */
   canExecuteNative: boolean;
   hasPhonePermission: boolean;
   deviceModel: string;

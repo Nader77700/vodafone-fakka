@@ -18,6 +18,7 @@ export class VodafoneDetectorWeb {
       activeNetwork:             navigator.onLine ? 'متصل (ويب)' : 'غير متصل',
       isMobileDataActive:        false,
       isWifiActive:              navigator.onLine,
+      isVpnActive:               false,
       isVodafoneSim:             false,
       isVodafoneMobile:          false,
       canExecuteNative:          false,

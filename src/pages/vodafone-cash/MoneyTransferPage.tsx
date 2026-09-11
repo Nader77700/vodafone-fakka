@@ -129,9 +129,15 @@ export default function MoneyTransferPage() {
     const seamless = await fetchSeamlessToken(seamlessClientId, seamlessUrl);
 
     if (!seamless.token) {
-       setExecLogs(prev => [...prev, { step: 'seamless', status: 'fail', detail: `فشل في استخراج التوكن: ${seamless.error || 'تأكد من إغلاق الـ Wi-Fi والـ VPN.'}`, timestamp: new Date().toISOString() }]);
+       const vpnHint = seamless.error?.toLowerCase().includes('vpn') || seamless.error?.toLowerCase().includes('400');
+       const errDetail = vpnHint
+         ? 'تعذّر التعرف على خط فودافون — إذا كان الـ VPN مفعّلاً أوقفه ثم أعد المحاولة'
+         : `فشل استخراج التوكن: ${seamless.error || 'تأكد من إغلاق الـ Wi-Fi والـ VPN'}`;
+       setExecLogs(prev => [...prev, { step: 'seamless', status: 'fail', detail: errDetail, timestamp: new Date().toISOString() }]);
        setExecStatus('failed');
-       setExecMessage('فشل المصادقة مع شبكة فودافون كاش. أغلق الواي فاي وجرب مرة أخرى.');
+       setExecMessage(vpnHint
+         ? 'الـ VPN مفعّل — أوقفه وأعد المحاولة'
+         : 'فشل المصادقة مع فودافون كاش. أغلق الواي فاي والـ VPN وجرب مرة أخرى.');
        setIsSubmitting(false);
        return;
     }

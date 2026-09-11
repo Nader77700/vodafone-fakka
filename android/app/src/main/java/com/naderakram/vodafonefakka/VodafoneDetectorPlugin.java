@@ -305,12 +305,13 @@ public class VodafoneDetectorPlugin extends Plugin {
             }
         }
 
-        // ── 4. ConnectivityManager — Active Network Type ──
+        // ── 4. ConnectivityManager — Active Network Type + VPN Detection ──
         ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
 
         String  activeNetworkType  = "غير متصل";
         boolean isMobileDataActive = false;
         boolean isWifiActive       = false;
+        boolean isVpnActive        = false;   // ← كشف VPN
 
         if (cm != null) {
             try {
@@ -318,6 +319,11 @@ public class VodafoneDetectorPlugin extends Plugin {
                 if (activeNet != null) {
                     NetworkCapabilities caps = cm.getNetworkCapabilities(activeNet);
                     if (caps != null) {
+                        // ── كشف VPN أولاً — لأنه يمكن أن يكون مع أي نوع آخر ──
+                        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                            isVpnActive = true;
+                        }
+
                         if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                             activeNetworkType  = "بيانات الجوال";
                             isMobileDataActive = true;
@@ -326,6 +332,22 @@ public class VodafoneDetectorPlugin extends Plugin {
                             isWifiActive      = true;
                         } else if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
                             activeNetworkType = "Ethernet";
+                        } else if (isVpnActive) {
+                            // VPN وحده بدون cellular/wifi معروف
+                            activeNetworkType = "VPN";
+                        }
+                    }
+                }
+
+                // ── فحص إضافي: جميع الشبكات المفعَّلة (VPN قد يكون شبكة منفصلة) ──
+                if (!isVpnActive) {
+                    Network[] allNets = cm.getAllNetworks();
+                    for (Network net : allNets) {
+                        NetworkCapabilities nc = cm.getNetworkCapabilities(net);
+                        if (nc != null && nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                            isVpnActive = true;
+                            Log.i(TAG, "VPN detected via getAllNetworks()");
+                            break;
                         }
                     }
                 }
@@ -345,8 +367,8 @@ public class VodafoneDetectorPlugin extends Plugin {
         boolean isVodafoneSim    = isVodafone(simOperatorNumeric, simOperatorName);
         boolean isVodafoneMobile = isVodafone(decisionNumeric, decisionName);
 
-        // canExecuteNative: Active Data SIM هي فودافون + بيانات جوال نشطة
-        boolean canExecuteNative = isVodafoneMobile && isMobileDataActive;
+        // canExecuteNative: Active Data SIM هي فودافون + بيانات جوال نشطة + لا يوجد VPN
+        boolean canExecuteNative = isVodafoneMobile && isMobileDataActive && !isVpnActive;
 
         // ── 6. معلومات الجهاز ──
         String deviceModel = Build.MANUFACTURER + " " + Build.MODEL;
@@ -369,6 +391,7 @@ public class VodafoneDetectorPlugin extends Plugin {
         result.put("activeNetwork",      activeNetworkType);
         result.put("isMobileDataActive", isMobileDataActive);
         result.put("isWifiActive",       isWifiActive);
+        result.put("isVpnActive",        isVpnActive);
         result.put("isVodafoneSim",      isVodafoneSim);
         result.put("isVodafoneMobile",   isVodafoneMobile);
         result.put("canExecuteNative",   canExecuteNative);
@@ -381,6 +404,7 @@ public class VodafoneDetectorPlugin extends Plugin {
             + " (" + activeDataSimNumeric + ")"
             + " | subId=" + activeDataSubId
             + " | Active=" + activeNetworkType
+            + " | isVpn=" + isVpnActive
             + " | isVfMobile=" + isVodafoneMobile
             + " | canExec=" + canExecuteNative);
 

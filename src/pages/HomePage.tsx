@@ -545,6 +545,7 @@ function NativeDebugPanel() {
             { k: 'Phone Permission',    v: info.hasPhonePermission ? 'GRANTED ✓' : 'DENIED ✗',           ok: info.hasPhonePermission },
             { k: 'Active Data SIM',     v: info.isVodafoneMobile  ? 'Vodafone EG ✓' : `${info.activeDataSimOperatorName}`, ok: info.isVodafoneMobile },
             { k: 'SIM1 (display only)', v: info.isVodafoneSim     ? 'Vodafone EG ✓' : `${info.simOperatorName}`,           ok: info.isVodafoneSim },
+            { k: 'VPN Active',          v: info.isVpnActive ? '🔒 VPN مفعّل ✗' : 'لا يوجد VPN ✓',       ok: !info.isVpnActive },
             { k: 'SubId',               v: String(info.activeDataSubId) },
             { k: 'Device',              v: info.deviceModel },
             { k: 'Android',             v: info.androidVersion },
@@ -579,10 +580,11 @@ function NativeDebugPanel() {
               </p>
               <p className="text-[11px] mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : '#ffffff55' }}>
                 {canExec
-                  ? 'Active Data SIM = Vodafone ✓  +  بيانات جوال ✓'
+                  ? 'Active Data SIM = Vodafone ✓  +  بيانات جوال ✓  +  لا VPN ✓'
                   : [
                     !info.isVodafoneMobile   && `Active Data SIM = ${info.activeDataSimOperatorName}`,
                     !info.isMobileDataActive && 'بيانات الجوال مطفية',
+                    info.isVpnActive         && '🔒 VPN مفعّل — يمنع التعرف',
                   ].filter(Boolean).join('  •  ')
                 }
               </p>
@@ -1001,7 +1003,8 @@ function ExecuteModal({
   const RETRY_COOLDOWN_MS = 15_000; // 15 ثانية بين المحاولات بعد الفشل
 
   const isNativeAPK = isNativeAndroid();
-  const isVodafoneReady = isNativeAPK && (networkInfo?.isVodafoneMobile ?? false) && (networkInfo?.isMobileDataActive ?? false);
+  const isVpnOn      = isNativeAPK && (networkInfo?.isVpnActive ?? false);
+  const isVodafoneReady = isNativeAPK && (networkInfo?.isVodafoneMobile ?? false) && (networkInfo?.isMobileDataActive ?? false) && !isVpnOn;
 
   // تحديث حالة الأزرار والـ UI لتشمل حالة عدم استخدام Native App (web)
   const canExecute = isVodafoneReady || !isNativeAPK;
@@ -1213,7 +1216,12 @@ function ExecuteModal({
       executingRef.current = false;
       setSubmitting(false);
       setLoadingStep(0);
-      toast.error(`فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`, { duration: 6000 });
+      // ── تحديد سبب الفشل بدقة ──
+      const isVpn = networkInfo?.isVpnActive ?? false;
+      const errMsg = isVpn
+        ? '🔒 تم اكتشاف VPN نشط\n\nالـ VPN يمنع التعرف التلقائي على رقم محفظتك.\nأوقف الـ VPN ثم أعد المحاولة.'
+        : `فشل التعرف التلقائي على المحفظة: ${sError || 'تأكد من تفعيل بيانات فودافون وإغلاق الـ WiFi'}`;
+      toast.error(errMsg, { duration: 7000 });
       return;
     }
 
@@ -1542,6 +1550,8 @@ function ExecuteModal({
                             <p className="text-xs font-bold text-red-400">
                               {networkInfo?.isWifiActive 
                                 ? 'يجب إيقاف الـ WiFi واستخدام بيانات فودافون'
+                                : networkInfo?.isVpnActive
+                                ? '🔒 VPN نشط — أوقف الـ VPN قبل تنفيذ العملية'
                                 : 'يجب تفعيل اتصال بيانات فودافون'}
                             </p>
                           </div>
@@ -1551,6 +1561,15 @@ function ExecuteModal({
                             style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
                             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                             <p className="text-xs text-amber-400">⚠️ الـ WiFi مفعّل — إذا فشل الشحن أوقفه وأعد المحاولة</p>
+                          </div>
+                        )}
+                        {isVpnOn && (
+                          <div className="flex items-center gap-2.5 p-3 rounded-xl border"
+                            style={{ background: 'rgba(168,85,247,0.06)', borderColor: 'rgba(168,85,247,0.30)' }}>
+                            <ShieldAlert className="w-4 h-4 shrink-0" style={{ color: '#a855f7' }} />
+                            <p className="text-xs font-bold" style={{ color: '#a855f7' }}>
+                              🔒 VPN نشط — يمنع التعرف على رقمك\nأوقف الـ VPN قبل تنفيذ العملية
+                            </p>
                           </div>
                         )}
                         {isAdmin && (
