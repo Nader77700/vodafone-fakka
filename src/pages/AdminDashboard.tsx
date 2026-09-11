@@ -2246,46 +2246,64 @@ function AdminDashboard() {
                             }`}>
                               {entry.is_banned ? 'محظور' : entry.profile.is_active !== false ? 'نشط' : 'موقوف'}
                             </span>
-                            {entry.subscription && (
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                entry.subscription.status === 'active'
-                                  ? 'text-primary bg-primary/10 border-primary/20'
-                                  : 'text-muted-foreground bg-muted/30 border-border'
-                              }`}>
-                                {entry.subscription.status === 'active' ? 'مشترك' : 'منتهي'}
-                              </span>
-                            )}
+                            {/* badge حالة الاشتراك — يظهر دائماً */}
+                            {(() => {
+                              const st = entry.subscription?.status;
+                              if (!st) return (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border text-muted-foreground bg-muted/30 border-border">
+                                  بدون اشتراك
+                                </span>
+                              );
+                              const cfg =
+                                st === 'active'    ? { cls: 'text-primary bg-primary/10 border-primary/20',         label: 'مشترك'  } :
+                                st === 'cancelled' ? { cls: 'text-destructive bg-destructive/10 border-destructive/20', label: 'ملغي'  } :
+                                st === 'suspended' ? { cls: 'text-warning bg-warning/10 border-warning/20',          label: 'معلق'  } :
+                                                    { cls: 'text-muted-foreground bg-muted/30 border-border',        label: 'منتهي' };
+                              return (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.cls}`}>
+                                  {cfg.label}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
 
-                        {/* ── الصف الثاني: الاشتراك + الكود ── */}
-                        {(entry.subscription || entry.license_code) && (
-                          <div className="mt-3 pt-3 border-t border-border/40 flex items-center gap-3 flex-wrap">
-                            {entry.license_code && (
-                              <div className="flex items-center gap-1.5">
-                                <Key className="w-3 h-3 text-primary shrink-0" />
-                                <span className="text-xs font-mono font-bold text-primary">{entry.license_code}</span>
-                              </div>
-                            )}
-                            {entry.subscription?.expires_at && (
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                                <span className={`text-xs font-semibold ${countdown?.expired ? 'text-destructive' : 'text-foreground'}`}>
-                                  {countdown ? (countdown.expired ? 'منتهي' : countdown.label) : '—'}
-                                </span>
-                              </div>
-                            )}
-                            {(entry.ops_count !== undefined) && (
-                              <div className="flex items-center gap-1.5 mr-auto">
-                                <Timer className="w-3 h-3 text-muted-foreground shrink-0" />
-                                <span className="text-xs text-muted-foreground">
-                                  {entry.ops_count ?? 0} عملية
-                                  {maxOps !== null && <span> / {maxOps}</span>}
-                                </span>
-                              </div>
+                        {/* ── الصف الثاني: الكود + الوقت المتبقي + العمليات — يظهر دائماً ── */}
+                        <div className="mt-3 pt-3 border-t border-border/40 flex items-center gap-3 flex-wrap">
+                          {/* كود التفعيل */}
+                          <div className="flex items-center gap-1.5">
+                            <Key className="w-3 h-3 text-primary shrink-0" />
+                            {entry.license_code
+                              ? <span className="text-xs font-mono font-bold text-primary">{entry.license_code}</span>
+                              : <span className="text-xs text-muted-foreground">—</span>
+                            }
+                          </div>
+                          {/* الوقت المتبقي أو تاريخ الانتهاء */}
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                            {entry.subscription?.expires_at ? (
+                              <span className={`text-xs font-semibold ${
+                                entry.subscription.status !== 'active' ? 'text-muted-foreground' :
+                                countdown?.expired ? 'text-destructive' : 'text-foreground'
+                              }`}>
+                                {entry.subscription.status !== 'active'
+                                  ? formatEgyptDate(entry.subscription.expires_at)
+                                  : countdown ? (countdown.expired ? 'منتهي' : countdown.label) : '—'
+                                }
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </div>
-                        )}
+                          {/* عدد العمليات */}
+                          <div className="flex items-center gap-1.5 mr-auto">
+                            <Timer className="w-3 h-3 text-muted-foreground shrink-0" />
+                            <span className="text-xs text-muted-foreground">
+                              {entry.ops_count ?? 0} عملية
+                              {maxOps !== null && <span> / {maxOps}</span>}
+                            </span>
+                          </div>
+                        </div>
 
                         {/* ── الأزرار ── */}
                         <div className="mt-3 flex items-center gap-2 flex-wrap">

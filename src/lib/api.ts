@@ -3360,7 +3360,7 @@ export async function getAllLinkedUsers(page = 1, search = ''): Promise<Paginate
   let q = supabase
     .from('profiles')
     .select('*', { count: 'exact' })
-    .is('merchant_id', null)   // فصل كامل: لا تظهر أعضاء التجار في قائمة المستخدمين الأساسيين
+    .is('merchant_id', null)
     .order('created_at', { ascending: false })
     .range(from, to);
 
@@ -3373,13 +3373,21 @@ export async function getAllLinkedUsers(page = 1, search = ''): Promise<Paginate
 
   const userIds = profiles.map(p => p.id);
 
+  // جلب آخر اشتراك لكل مستخدم بغض النظر عن الحالة (نشط/منتهي/ملغي)
   const [subsRes, opsRes] = await Promise.all([
-    supabase.from('subscriptions').select('*, license_keys(*)').in('user_id', userIds).eq('status', 'active'),
+    supabase
+      .from('subscriptions')
+      .select('*, license_keys(*)')
+      .in('user_id', userIds)
+      .order('created_at', { ascending: false }),
     supabase.from('operations').select('user_id', { count: 'exact' }).in('user_id', userIds),
   ]);
 
+  // احتفظ بآخر اشتراك لكل مستخدم (أحدث created_at)
   const subsMap = new Map<string, (Subscription & { license_keys?: LicenseKey | null })>();
-  (Array.isArray(subsRes.data) ? subsRes.data : []).forEach(s => subsMap.set(s.user_id, s));
+  (Array.isArray(subsRes.data) ? subsRes.data : []).forEach(s => {
+    if (!subsMap.has(s.user_id)) subsMap.set(s.user_id, s); // الأول هو الأحدث بسبب ORDER DESC
+  });
 
   const opsCountMap = new Map<string, number>();
   (Array.isArray(opsRes.data) ? opsRes.data : []).forEach(o => {
