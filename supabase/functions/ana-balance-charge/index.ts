@@ -63,8 +63,9 @@ serve(async (req: Request) => {
     console.log("[balance-charge] caller:", caller.id);
 
     // ── خصم العملية ذرياً ──
+    // استدعاء النسخة الجديدة صراحةً بـ p_is_trial لتجنب overload resolution للنسخة القديمة
     const { data: opData, error: opError } = await supabaseAdmin.rpc('atomic_consume_operation', {
-      p_user_id: caller.id
+      p_user_id: caller.id, p_is_trial: false
     });
 
     if (opError || !opData || !opData.allowed) {

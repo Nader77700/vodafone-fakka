@@ -126,15 +126,17 @@ export async function fetchLineInfo(phone: string): Promise<LineInfoResponse> {
 
   try {
     // 2. استدعاء Edge Function — timeout 35 ثانية (الـ function تستغرق حتى 25 ثانية)
-    const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), 35_000);
-
-    const { data, error } = await supabase.functions.invoke('line-info-query', {
+    // ملاحظة: supabase-js v2 لا يدعم AbortSignal في invoke مباشرة
+    // نستخدم Promise.race مع timeout يدوي بدلاً منه
+    const invokePromise = supabase.functions.invoke('line-info-query', {
       body: { phone: normalized },
-      signal: controller.signal,
-    } as Parameters<typeof supabase.functions.invoke>[1]);
+    });
 
-    clearTimeout(timeoutId);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new DOMException('Request timeout', 'AbortError')), 35_000)
+    );
+
+    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
 
     if (error) {
       // supabase-js يُحوّل HTTP 4xx/5xx إلى FunctionsHttpError — نقرأ الـ body منه

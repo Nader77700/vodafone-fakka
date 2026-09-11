@@ -112,9 +112,10 @@ serve(async (req: Request) => {
     }
 
     // ── Consume Operation ────────────────────────────────────────
+    // استدعاء النسخة الجديدة صراحةً بـ p_is_trial لتجنب overload resolution للنسخة القديمة
     const { data: consumeData, error: consumeError } = await opsAdminClient.rpc(
       "atomic_consume_operation",
-      { p_user_id: user.id }
+      { p_user_id: user.id, p_is_trial: false }
     );
     if (consumeError || !consumeData || !consumeData.allowed) {
       logStep("subscription", "fail", "ops limit reached");
