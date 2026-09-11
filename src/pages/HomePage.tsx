@@ -990,6 +990,7 @@ function ExecuteModal({
   // ── حالة الفاتورة الموحّدة بعد النجاح ──
   const [receipt, setReceipt] = useState<InvoiceData | null>(null);
   const [pinManagerOpen, setPinManagerOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     const handleOpenManager = () => setPinManagerOpen(true);
@@ -1512,29 +1513,28 @@ function ExecuteModal({
                   );
                 })()}
 
-                {/* ── بطاقة تفاصيل الكارت 2×2 ── */}
-                <div className="rounded-2xl overflow-hidden border"
-                  style={{ borderColor: 'rgba(230,0,0,0.2)', background: 'linear-gradient(135deg,rgba(230,0,0,0.06) 0%,transparent 60%)' }}>
-                  {/* اسم الكارت */}
-                  <div className="flex items-center gap-2 px-4 py-3 border-b"
-                    style={{ borderColor: 'rgba(230,0,0,0.12)', background: 'rgba(230,0,0,0.06)' }}>
+                {/* ── بطاقة تفاصيل الكارت — مضغوطة ── */}
+                <div className="rounded-xl overflow-hidden border"
+                  style={{ borderColor: 'rgba(230,0,0,0.2)', background: 'rgba(230,0,0,0.04)' }}>
+                  {/* صف واحد: أيقونة + الاسم + السعر */}
+                  <div className="flex items-center gap-2 px-3 py-2.5">
                     <ProductIcon type={product.type} className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
-                    <p className="text-sm font-black flex-1 min-w-0 truncate text-balance"
+                    <p className="text-sm font-black flex-1 min-w-0 truncate"
                       style={{ color: L ? '#1a1a2e' : '#ffffff' }}>{product.name}</p>
+                    <span className="text-base font-black tabular-nums shrink-0"
+                      style={{ color: accentColor }}>{product.priceLabel}</span>
                   </div>
-                  {/* شبكة 2×2 */}
-                  <div className="grid grid-cols-2">
+                  {/* صف ثانٍ: وحدات + صافي + صلاحية */}
+                  <div className="flex items-center gap-3 px-3 pb-2.5 border-t"
+                    style={{ borderColor: 'rgba(230,0,0,0.1)' }}>
                     {[
-                      { label: 'سعر الكارت',    value: product.priceLabel,  big: true },
-                      { label: 'عدد الوحدات',   value: product.unitsLabel,  big: false },
-                      { label: 'الرصيد الصافي', value: product.net_balance > 0 ? `${product.net_balance.toFixed(2)} ج` : '—', big: false },
-                      { label: 'مدة الصلاحية',  value: validity,            big: false },
-                    ].map((cell, i) => (
-                      <div key={i} className="p-3 text-right border-b border-l last:border-b-0"
-                        style={{ borderColor: 'rgba(230,0,0,0.1)' }}>
-                        <p className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{cell.label}</p>
-                        <p className={`font-black tabular-nums leading-none ${cell.big ? 'text-2xl' : 'text-sm'}`}
-                          style={{ color: accentColor }}>{cell.value}</p>
+                      { label: 'وحدات', value: product.unitsLabel },
+                      { label: 'صافي',  value: product.net_balance > 0 ? `${product.net_balance.toFixed(2)} ج` : '—' },
+                      { label: 'صالح',  value: validity },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-1 pt-2">
+                        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{item.label}:</span>
+                        <span className="text-xs font-bold" style={{ color: accentColor }}>{item.value}</span>
                       </div>
                     ))}
                   </div>
@@ -1802,27 +1802,14 @@ function ExecuteModal({
                   </div>
                 )}
 
-                {/* ── بطاقة التعليمات: رقم المحفظة يُقرأ تلقائياً ── */}
-                <div className="rounded-2xl border overflow-hidden"
-                  style={{ background: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.2)' }}>
-                  <div className="flex items-center gap-2 px-4 py-2.5 border-b"
-                    style={{ borderColor: 'rgba(34,197,94,0.15)', background: 'rgba(34,197,94,0.08)' }}>
-                    <Info className="w-3.5 h-3.5 shrink-0" style={{ color: '#4ade80' }} />
-                    <p className="text-xs font-black" style={{ color: '#4ade80' }}>سيتم التعرف على رقم المحفظة تلقائياً</p>
-                  </div>
-                  <ul className="px-4 py-3 space-y-1.5">
-                    {[
-                      'شغّل بيانات Vodafone من نفس الخط المرتبط بمحفظة Vodafone Cash.',
-                      'لا تستخدم بيانات من شريحة أخرى.',
-                      'في حالة استخدام WiFi أو بيانات خط آخر لن يتم التعرف على المحفظة.',
-                      'تأكد من صحة الرقم السري قبل التنفيذ.',
-                    ].map((tip, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: '#4ade80', opacity: 0.6 }} />
-                        <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{tip}</p>
-                      </li>
-                    ))}
-                  </ul>
+                {/* ── بانر التعليمات المضغوط ── */}
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl border"
+                  style={{ background: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.18)' }}>
+                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#4ade80' }} />
+                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    شغّل بيانات <span className="font-black text-green-400">Vodafone</span> من نفس الخط المرتبط بالمحفظة.
+                    تأكد من صحة الرقم السري قبل التنفيذ.
+                  </p>
                 </div>
 
                 {/* ── حقل رقم المستفيد ── */}
@@ -1926,25 +1913,6 @@ function ExecuteModal({
                         <p className="text-sm font-black" style={{ color: '#E60000' }}>استعلام رصيد المحفظة</p>
                         <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
                           Vodafone Cash — اعرف رصيدك قبل الشحن
-                        </p>
-                      </div>
-                      <ChevronLeft className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
-                    </button>
-                    {/* ── زر خزنة الرقم السري ── */}
-                    <button
-                      type="button"
-                      onClick={() => setPinManagerOpen(true)}
-                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.98]"
-                      style={{ background: 'rgba(230,0,0,0.04)', border: '1px solid rgba(230,0,0,0.14)' }}
-                    >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: 'rgba(230,0,0,0.10)', border: '1px solid rgba(230,0,0,0.20)' }}>
-                        <Key className="w-4 h-4" style={{ color: '#E60000' }} />
-                      </div>
-                      <div className="flex-1 min-w-0 text-right">
-                        <p className="text-sm font-black" style={{ color: L ? '#1a1a2e' : '#ffffff' }}>خزنة الرقم السري</p>
-                        <p className="text-xs mt-0.5" style={{ color: L ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.40)' }}>
-                          احفظ واسترجع رقمك السري بأمان
                         </p>
                       </div>
                       <ChevronLeft className="w-3.5 h-3.5 shrink-0" style={{ color: L ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)' }} />
@@ -2191,7 +2159,7 @@ function ExecuteModal({
                         opacity: isDisabled && !accountLocked ? 0.7 : 1,
                       }}
                       disabled={isDisabled}
-                      onClick={handleExecute}
+                      onClick={() => { if (!isDisabled) setConfirmOpen(true); }}
                     >
                       {submitting
                         ? <><Loader2 className="w-5 h-5 animate-spin" />جارٍ التنفيذ…</>
@@ -2203,7 +2171,7 @@ function ExecuteModal({
                               : <><AlertTriangle className="w-5 h-5" />الشبكة غير جاهزة للتنفيذ المباشر</>
                             : isRetry
                               ? <><Zap className="w-5 h-5" />إعادة المحاولة</>
-                              : <><Zap className="w-5 h-5" />{isVodafoneReady ? 'تنفيذ Native مباشر' : 'تنفيذ الشحن الآن'}</>}
+                              : <><Zap className="w-5 h-5" />{isVodafoneReady ? 'شحن فوري من الشبكة' : 'تنفيذ الشحن'}</>}
                     </button>
                   );
                 })()}
@@ -2221,6 +2189,94 @@ function ExecuteModal({
                 >
                   إلغاء
                 </button>
+
+                {/* ── نافذة تأكيد التنفيذ ── */}
+                {confirmOpen && product && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-end justify-center p-4"
+                    style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+                    onClick={() => setConfirmOpen(false)}
+                  >
+                    <div
+                      className="w-full max-w-sm rounded-2xl overflow-hidden"
+                      style={{ background: '#0d0000', border: '1px solid rgba(230,0,0,0.35)' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {/* هيدر */}
+                      <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.15)' }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.3)' }}>
+                            <Zap className="w-5 h-5" style={{ color: '#E60000' }} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black" style={{ color: '#ffffff' }}>تأكيد تنفيذ الشحن</p>
+                            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>راجع التفاصيل قبل المتابعة</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* تفاصيل العملية */}
+                      <div className="px-5 py-4 space-y-3">
+                        {/* نوع الكارت */}
+                        <div className="flex items-center justify-between py-2.5 px-3 rounded-xl"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>نوع الكارت</span>
+                          <span className="text-sm font-black" style={{ color: '#ffffff' }}>{product.name}</span>
+                        </div>
+                        {/* السعر */}
+                        <div className="flex items-center justify-between py-2.5 px-3 rounded-xl"
+                          style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.18)' }}>
+                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>قيمة الشحن</span>
+                          <span className="text-base font-black tabular-nums" style={{ color: '#E60000' }}>{product.priceLabel}</span>
+                        </div>
+                        {/* الرقم */}
+                        <div className="flex items-center justify-between py-2.5 px-3 rounded-xl"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>رقم الشحن</span>
+                          {chargeForSelf ? (
+                            <div className="flex items-center gap-1.5">
+                              {walletMsisdn ? (
+                                <span className="text-sm font-black font-mono" style={{ color: '#4ade80' }}>
+                                  {walletMsisdn}
+                                </span>
+                              ) : (
+                                <span className="text-xs font-medium" style={{ color: '#4ade80' }}>
+                                  سيُقرأ تلقائياً من الشبكة
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm font-black font-mono" style={{ color: '#ffffff' }}>{phone}</span>
+                          )}
+                        </div>
+
+                        {/* أزرار */}
+                        <div className="flex gap-2.5 pt-1">
+                          <button
+                            className="flex-1 h-11 rounded-xl font-medium text-sm transition-all active:scale-[0.97]"
+                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.55)' }}
+                            onClick={() => setConfirmOpen(false)}
+                          >
+                            إلغاء
+                          </button>
+                          <button
+                            className="flex-[2] h-11 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                            style={{
+                              background: 'linear-gradient(135deg,#E60000,#cc0000)',
+                              boxShadow: '0 0 20px rgba(230,0,0,0.4)',
+                              color: '#fff',
+                              border: '1px solid rgba(230,0,0,0.4)',
+                            }}
+                            onClick={() => { setConfirmOpen(false); handleExecute(); }}
+                          >
+                            <Zap className="w-4 h-4" />تأكيد وتنفيذ
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (

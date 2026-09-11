@@ -129,14 +129,14 @@ export function PinInputBlock({ pin, setPin, submitting }: PinInputBlockProps) {
           <button
             type="button"
             onClick={() => setManagerOpen(true)}
-            className="text-xs px-2 py-0.5 rounded-full transition-colors"
+            className="text-xs px-2.5 py-1 rounded-full font-bold transition-colors"
             style={{
-              background: L ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.07)',
-              border: `1px solid ${L ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'}`,
-              color: mutedColor,
+              background: 'rgba(230,0,0,0.12)',
+              border: '1px solid rgba(230,0,0,0.30)',
+              color: '#E60000',
             }}
           >
-            إدارة المحفوظ
+            إدارة كلمة السر
           </button>
         )}
       </div>
