@@ -1,71 +1,59 @@
-import { CapacitorHttp, Capacitor } from '@capacitor/core';
+import { supabase } from '@/db/supabase';
 
+/**
+ * fetchSeamlessToken
+ * يجلب Seamless Token عبر seamless-proxy Edge Function (سيرفر-سايد)
+ * بدلاً من الاتصال المباشر من التطبيق الذي كان يفشل بـ HTTP 400
+ *
+ * الـ Edge Function تجرب client_ids متعددة تلقائياً بالتسلسل.
+ * المعاملات clientId و customUrl محفوظة للتوافق مع المُستدعِين القدامى
+ * لكنها تُمرَّر للـ Edge Function كـ hints اختيارية.
+ */
 export async function fetchSeamlessToken(
-  clientId: string = "ana-vodafone-app-seamless",
-  customUrl?: string
+  _clientId?: string,
+  _customUrl?: string
 ): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
   try {
-    const baseUrl = customUrl || "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth";
-    const url = `${baseUrl}?client_id=${clientId}`;
-    
-    const headers = {
-      "User-Agent": "okhttp/4.12.0",
-      "Connection": "Keep-Alive",
-      "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157",
-      "x-agent-operatingsystem": "16",
-      "clientId": "AnaVodafoneAndroid",
-      "Accept-Language": "ar",
-      "x-agent-device": "OPPO CPH2701",
-      "x-agent-version": "2026.7.1",
-      "x-agent-build": "1176",
-      "digitalId": "",
-      "device-id": ""
-    };
+    // جلب access_token للمستخدم الحالي
+    const { data: sessionData } = await supabase.auth.getSession();
+    const authToken = sessionData?.session?.access_token ?? '';
 
-    if (Capacitor.isNativePlatform()) {
-      const response = await CapacitorHttp.get({ 
-        url, 
-        headers,
-        connectTimeout: 5000,
-        readTimeout: 5000 
-      });
-      if (response.status === 200 && response.data) {
-        const txt = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-        try {
-          const d = JSON.parse(txt);
-          if (d?.seamlessToken) {
-            return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
-          } else {
-            return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}` };
-          }
-        } catch(e: any) {
-          return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
-        }
-      } else {
-         return { token: null, msisdn: null, error: `HTTP ${response.status}` };
-      }
-    } else {
-      const ctrl = new AbortController();
-      const id = setTimeout(() => ctrl.abort(), 5000);
-      const r = await fetch(url, { method: "GET", headers, signal: ctrl.signal });
-      clearTimeout(id);
-      if (r.ok) {
-        const txt = await r.text();
-        try {
-          const d = JSON.parse(txt);
-          if (d?.seamlessToken) {
-             return { token: d.seamlessToken, msisdn: d?.msisdn ? String(d.msisdn) : null };
-          } else {
-             return { token: null, msisdn: null, error: `Invalid response format: ${txt.slice(0, 50)}` };
-          }
-        } catch (e: any) {
-           return { token: null, msisdn: null, error: `Parse error: ${e?.message} - ${txt.slice(0, 50)}` };
-        }
-      } else {
-         return { token: null, msisdn: null, error: `HTTP ${r.status}` };
-      }
+    const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+    const ctrl   = new AbortController();
+    const timerId = setTimeout(() => ctrl.abort(), 15_000);
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/seamless-proxy`, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': authToken ? `Bearer ${authToken}` : '',
+        'apikey':        supabaseAnon,
+        // headers الأمان الأساسية
+        'x-app-secure-token': 'vfp_secure_356_kill_switch',
+        'x-app-build':        '504',
+        'x-app-version':      '3.5.24',
+      },
+      body: JSON.stringify({}),
+    });
+    clearTimeout(timerId);
+
+    const txt = await res.text();
+    let data: { success: boolean; seamlessToken?: string; msisdn?: string; error?: string };
+    try { data = JSON.parse(txt); }
+    catch { return { token: null, msisdn: null, error: `Parse error: ${txt.slice(0, 60)}` }; }
+
+    if (data.success && data.seamlessToken) {
+      return { token: data.seamlessToken, msisdn: data.msisdn ?? null };
     }
+    return { token: null, msisdn: null, error: data.error ?? 'لم يُعثر على Token' };
+
   } catch (err: any) {
-    return { token: null, msisdn: null, error: `Fetch error: ${err?.message || 'Unknown'}` };
+    if (err?.name === 'AbortError') {
+      return { token: null, msisdn: null, error: 'انتهت مهلة جلب Token الشبكة' };
+    }
+    return { token: null, msisdn: null, error: `خطأ: ${err?.message ?? 'Unknown'}` };
   }
 }
