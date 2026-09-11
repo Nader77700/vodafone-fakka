@@ -62,7 +62,7 @@ import {
   AlertCircle, Pencil, Save, X as XIcon,
   Link as LinkIcon, ShieldCheck, ShieldAlert, ShieldX, Wallet,
   User, Share2, Check, Building2, ExternalLink,
-  FlaskConical,
+  FlaskConical, Terminal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,7 +103,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug';
 
 interface TabMeta {
   id: AdminTab;
@@ -147,6 +147,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'promotions',         label: 'العروض والبانرات', desc: 'إنشاء وإدارة العروض والبانرات',          icon: Tag },
   { id: 'services_control',  label: 'التحكم في خدماتي', desc: 'إخفاء وتعطيل وصيانة أقسام الخدمات',      icon: Globe },
   { id: 'hotfix',            label: '🔧 HotFix',         desc: 'تعطيل/تفعيل الخدمات فوراً بدون APK',      icon: ShieldAlert },
+  { id: 'line_info_debug',   label: '🔍 تشخيص معلومات الخط', desc: 'اختبار وتشخيص flow معلومات الخط خطوة بخطوة', icon: Terminal },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -1477,6 +1478,9 @@ function AdminDashboard() {
     }
     if (activeTab === 'hotfix') {
       navigate('/admin/hotfix', { replace: true });
+    }
+    if (activeTab === 'line_info_debug') {
+      navigate('/admin/line-info-debug', { replace: true });
     }
   }, [activeTab, navigate]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);
