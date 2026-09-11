@@ -15,13 +15,27 @@
 # ── Obfuscation Aggressiveness ────────────────────────────────────────────────
 -repackageclasses 'vfp'
 -allowaccessmodification
--optimizationpasses 5
--optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
+-optimizationpasses 7
+-optimizations !code/simplification/arithmetic,!field/*,!class/merging/*,!code/allocation/variable
 
-# ── String Encryption & Class Name Hiding ────────────────────────────────────
-# Prevent exposing original class names in stack traces (release only)
+# ── Hide all source info from stack traces (anti-reverse-engineering) ─────────
 -renamesourcefileattribute SourceFile
 -keepattributes SourceFile,LineNumberTable
+
+# ── Remove all logging in release build (prevents info leak) ─────────────────
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int i(...);
+    public static int w(...);
+    public static int d(...);
+    public static int e(...);
+    public static int wtf(...);
+}
+-assumenosideeffects class java.io.PrintStream {
+    public void println(...);
+    public void print(...);
+}
 
 # ── Capacitor Plugins — must NOT be obfuscated (reflection + JNI) ────────────
 -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
@@ -49,7 +63,6 @@
 }
 
 # ── WebView JavaScript Bridge ─────────────────────────────────────────────────
-# أي method بـ @JavascriptInterface يجب الاحتفاظ باسمه (JS يستدعيه بالاسم)
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
@@ -77,7 +90,7 @@
 -keep class androidx.** { *; }
 -dontwarn androidx.**
 
-# ── OkHttp / Retrofit (if used by Capacitor HTTP plugin) ─────────────────────
+# ── OkHttp / Retrofit ────────────────────────────────────────────────────────
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn javax.annotation.**

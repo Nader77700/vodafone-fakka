@@ -24,9 +24,11 @@ android {
     signingConfigs {
         release {
             storeFile file('../keystore.jks')
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: 'vodafone123'
-            keyAlias System.getenv("KEY_ALIAS") ?: 'vfkey'
-            keyPassword System.getenv("KEYSTORE_PASSWORD") ?: 'vodafone123'
+            // كلمات المرور تُقرأ من متغيرات البيئة فقط — لا fallback hardcoded
+            // اضبط KEYSTORE_PASSWORD و KEY_ALIAS و KEY_PASSWORD في CI/CD أو local.properties
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") ?: ""
+            keyAlias      System.getenv("KEY_ALIAS")         ?: project.findProperty("KEY_ALIAS")         ?: "vfkey"
+            keyPassword   System.getenv("KEY_PASSWORD")      ?: project.findProperty("KEY_PASSWORD")      ?: System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") ?: ""
         }
     }
     buildTypes {
