@@ -7,8 +7,11 @@ import { toast } from 'sonner';
 import {
   User, Shield, HeadphonesIcon, LogOut, Info, ChevronLeft,
   Pencil, Check, X, Calendar, Clock, Download,
-  Zap, Crown, Infinity
+  Zap, Crown, Infinity, ScrollText
 } from 'lucide-react';
+import DisclaimerModal from '@/components/common/DisclaimerModal';
+import { supabase } from '@/db/supabase';
+import type { DisclaimerConfig } from '@/hooks/useDisclaimer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,6 +88,34 @@ export default function SettingsPage() {
     }
   };
 
+  // ── إخلاء المسؤولية — وضع القراءة ──────────────────────────────────────
+  const [disclaimerReadOpen, setDisclaimerReadOpen] = useState(false);
+  const [disclaimerReadCfg,  setDisclaimerReadCfg]  = useState<DisclaimerConfig | null>(null);
+
+  const openDisclaimer = async () => {
+    try {
+      const { data } = await supabase
+        .from('core_app_config')
+        .select('key, value')
+        .in('key', [
+          'disclaimer_enabled','disclaimer_version','disclaimer_title',
+          'disclaimer_body','disclaimer_developer','disclaimer_show_policy','disclaimer_custom_days',
+        ]);
+      if (!data?.length) return;
+      const get = (k: string, fb = '') => data.find(r => r.key === k)?.value ?? fb;
+      setDisclaimerReadCfg({
+        enabled:    get('disclaimer_enabled','true') === 'true',
+        version:    parseInt(get('disclaimer_version','1'), 10),
+        title:      get('disclaimer_title','إخلاء مسؤولية'),
+        body:       get('disclaimer_body',''),
+        developer:  get('disclaimer_developer','Nader Akram'),
+        showPolicy: get('disclaimer_show_policy','once_per_version') as DisclaimerConfig['showPolicy'],
+        customDays: parseInt(get('disclaimer_custom_days','30'), 10),
+      });
+      setDisclaimerReadOpen(true);
+    } catch { toast.error('تعذّر تحميل إخلاء المسؤولية'); }
+  };
+
   const menuItems = [
     {
       icon: HeadphonesIcon,
@@ -94,6 +125,12 @@ export default function SettingsPage() {
         const msg = encodeURIComponent('مرحباً، أحتاج إلى مساعدة في تطبيق Vodafone Fakka Premium');
         window.open(`https://wa.me/201222692182?text=${msg}`, '_blank');
       },
+    },
+    {
+      icon: ScrollText,
+      label: 'إخلاء المسؤولية',
+      desc: 'اقرأ إخلاء مسؤولية التطبيق',
+      onClick: openDisclaimer,
     },
     {
       icon: Info,
@@ -402,6 +439,16 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* إخلاء المسؤولية — وضع القراءة */}
+      {disclaimerReadOpen && disclaimerReadCfg && (
+        <DisclaimerModal
+          open={disclaimerReadOpen}
+          mode="readonly"
+          config={disclaimerReadCfg}
+          onClose={() => setDisclaimerReadOpen(false)}
+        />
+      )}
     </div>
   );
 }

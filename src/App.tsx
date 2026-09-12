@@ -8,6 +8,8 @@ import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';
 import OfflineBanner from '@/components/common/OfflineBanner';
 import OfflineGate from '@/components/common/OfflineGate';
 import ForceUpdateScreen from '@/components/common/ForceUpdateScreen';
+import DisclaimerModal from '@/components/common/DisclaimerModal';
+import { useDisclaimer } from '@/hooks/useDisclaimer';
 import AnnouncementBanner from '@/components/common/AnnouncementBanner';
 import MaintenanceScreen from '@/components/common/MaintenanceScreen';
 import WhatsAppPopup from '@/components/common/WhatsAppPopup';
@@ -423,6 +425,9 @@ function AppInner() {
   // استثناء الأدمن من التحديث الإجباري
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
+  // ── نظام إخلاء المسؤولية ──────────────────────────────────────────────
+  const { shouldShow: showDisclaimer, config: disclaimerConfig, accept: acceptDisclaimer, reject: rejectDisclaimer } = useDisclaimer();
+
   // isColdStart: فقط إذا لم يكن للتطبيق نشاط حديث (خلال 30 دقيقة)
   const isColdStart = (() => {
     // نجبر الـ Splash تظهر دائمًا في الـ Cold Start أو لا
@@ -523,6 +528,17 @@ function AppInner() {
   return (
     <>
       <WhatsAppPopup />
+
+      {/* ── إخلاء المسؤولية الإجباري — يظهر فوق كل شيء بعد تسجيل الدخول ── */}
+      {showDisclaimer && disclaimerConfig && !isAdmin && (
+        <DisclaimerModal
+          open={showDisclaimer}
+          mode="mandatory"
+          config={disclaimerConfig}
+          onAccept={acceptDisclaimer}
+          onReject={rejectDisclaimer}
+        />
+      )}
 
       {blockingScreen ? blockingScreen : profileErrorScreen ? profileErrorScreen : (
         <>

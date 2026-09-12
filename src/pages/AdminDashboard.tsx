@@ -62,7 +62,7 @@ import {
   AlertCircle, Pencil, Save, X as XIcon,
   Link as LinkIcon, ShieldCheck, ShieldAlert, ShieldX, Wallet,
   User, Share2, Check, Building2, ExternalLink,
-  FlaskConical, Terminal,
+  FlaskConical, Terminal, ScrollText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,6 +88,7 @@ import NotifComposer from '@/components/admin/NotifComposer';
 import NavLinksManager from '@/components/admin/NavLinksManager';
 import NotifAutomation from '@/components/admin/NotifAutomation';
 import ServerConfigTab from '@/components/admin/ServerConfigTab';
+import AdminDisclaimerTab from '@/components/admin/AdminDisclaimerTab';
 import AdminSmartEngine from '@/components/admin/AdminSmartEngine';
 import AdminReferralManagement from '@/components/admin/AdminReferralManagement';
 import AdminReferralRewards from '@/components/admin/AdminReferralRewards';
@@ -103,7 +104,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer';
 
 interface TabMeta {
   id: AdminTab;
@@ -133,6 +134,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'notif_automation', label: 'إشعارات تلقائية', desc: 'قواعد الإشعارات الآلية',             icon: Cpu },
   { id: 'navlinks',       label: 'مدير الروابط',     desc: 'استعراض جميع روابط التطبيق',         icon: Link2 },
   { id: 'settings',       label: 'الإعدادات',        desc: 'إعدادات الحساب والنظام',            icon: Settings },
+  { id: 'disclaimer',     label: 'إخلاء المسؤولية', desc: 'إدارة نص وسياسة الإخلاء',          icon: ScrollText },
   { id: 'assets',         label: 'الأصول المرئية',   desc: 'إدارة الشعارات والصور الديناميكية', icon: Image },
   { id: 'product_config', label: 'إدارة الكروت',     desc: 'تفعيل وإيقاف وتعديل إعدادات الكروت', icon: Package },
   { id: 'giftbox',        label: 'صندوق الهدايا',    desc: 'إدارة الهدية الترحيبية للمستخدمين', icon: Gift },
@@ -3851,6 +3853,13 @@ function AdminDashboard() {
           ════════════════════════════════════ */}
           {activeTab === 'server_config' && (
             <ServerConfigTab adminEmail={profile?.email ?? 'admin'} />
+          )}
+
+          {/* ═══════════════════════════════════════
+              إخلاء المسؤولية
+          ══════════════════════════════════════════ */}
+          {activeTab === 'disclaimer' && (
+            <AdminDisclaimerTab />
           )}
 
           {activeTab === 'version_center' && (
