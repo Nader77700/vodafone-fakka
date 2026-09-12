@@ -325,7 +325,7 @@ function NavigationStateManager() {
 }
 
 // ─── AndroidBackHandler ────────────────────────────────────────────────────────
-function AndroidBackHandler() {
+function AndroidBackHandler({ disclaimerVisible }: { disclaimerVisible: boolean }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const lastBack  = useRef<number>(0);
@@ -334,6 +334,9 @@ function AndroidBackHandler() {
   useEffect(() => {
     if (!isAndroid) return;
     const handler = CapApp.addListener('backButton', () => {
+      // ── إذا كان الإخلاء مفتوحاً → امنع الرجوع تماماً ──
+      if (disclaimerVisible) return;
+
       if (location.pathname !== '/home') { navigate(-1); return; }
       const now = Date.now();
       if (now - lastBack.current < 2000) {
@@ -344,7 +347,7 @@ function AndroidBackHandler() {
       }
     });
     return () => { handler.then(h => h.remove()); };
-  }, [isAndroid, location.pathname, navigate]);
+  }, [isAndroid, location.pathname, navigate, disclaimerVisible]);
 
   return null;
 }
@@ -557,7 +560,7 @@ function AppInner() {
           )}
 
           <AppResumeHandler />
-          <AndroidBackHandler />
+          <AndroidBackHandler disclaimerVisible={showDisclaimer && !isAdmin} />
           <NotificationDeepLinkHandler />
           <NavigationStateManager />
           <IntersectObserver />
