@@ -22,6 +22,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { RuntimeConfigProvider, useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
 import { PreviewModeProvider } from '@/contexts/PreviewModeContext';
+import { ContentCardsProvider } from '@/contexts/ContentCardsContext';
 import { WifiOff } from 'lucide-react';
 import { RouteGuard } from '@/components/common/RouteGuard';
 import { insertOperation } from '@/lib/api';
@@ -65,6 +66,7 @@ import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 import { registerDeviceFingerprint } from '@/lib/api';
 import { MerchantProvider } from '@/contexts/MerchantContext';
 import { MerchantClientProvider, useMerchantClient } from '@/contexts/MerchantClientContext';
+import PromoCardOverlay from '@/components/promo/PromoCardOverlay';
 import { attachNetworkRecoveryListener, syncPendingOps, getPendingCount } from '@/lib/pendingOpsQueue';
 
 // ── استيراد كسول لكل الصفحات الأخرى (تُحمَّل عند الحاجة فقط) ──
@@ -559,7 +561,8 @@ function AppInner() {
       )}
 
       {blockingScreen ? blockingScreen : profileErrorScreen ? profileErrorScreen : (
-        <>
+        <ContentCardsProvider ready={!showSplash && !loading}>
+          <>
           {/* SplashOverlay خارج كل Route — إضافة حاجز أخطاء محلي يمنع كراش Sentry */}
           {showSplash && (
             <PageErrorBoundary pageName="splash-overlay">
@@ -571,6 +574,13 @@ function AppInner() {
           {navigateNow && (
             <PageErrorBoundary pageName="post-splash-nav">
               <PostSplashNavigator onNavigated={handleNavigated} isHotStart={!isColdStart} />
+            </PageErrorBoundary>
+          )}
+
+          {/* PromoCardOverlay — يظهر بعد الـ Splash فقط، فوق كل المحتوى عبر portal */}
+          {!showSplash && user && !isAdmin && (
+            <PageErrorBoundary pageName="promo-card-overlay">
+              <PromoCardOverlay />
             </PageErrorBoundary>
           )}
 
@@ -676,7 +686,8 @@ function AppInner() {
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="*"            element={<Navigate to="/home" replace />} />
       </Routes>
-        </>
+          </>
+        </ContentCardsProvider>
       )}
 
       {/* OfflineBanner — يظهر فقط بعد انتهاء SplashOverlay */}
@@ -891,6 +902,9 @@ const App: React.FC = () => {
     </Router>
   );
 };
+
+// ── AppWithGuardInner يحتاج showSplash لتمريره لـ ContentCardsProvider ──
+// لذا نرفع ContentCardsProvider داخل AppInner بعد حساب showSplash
 
 // AppWithGuard: يحمل profile من AuthContext ويطبق حماية DevTools
 function AppWithGuard() {
