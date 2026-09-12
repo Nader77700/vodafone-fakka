@@ -105,7 +105,7 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
         engineGetStatus(),
         supabase.from('app_versions').select('version_code,version').eq('is_latest', true).maybeSingle(),
         supabase.from('permanent_blocked_versions').select('version_code,version_name,reason').order('created_at', { ascending: false }),
-        supabase.from('app_config').select('key,value').in('key', ['version_force_update']),
+        supabase.from('core_app_config').select('key,value').in('key', ['version_force_update']),
       ]);
       setStatus(s);
       setMinCode(String(s.minVersion));
@@ -152,7 +152,7 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
         updates.push({ key: 'version_min_supported', value: '1', updated_at: now });
         updates.push({ key: 'version_min_code',      value: '1', updated_at: now });
       }
-      const { error } = await supabase.from('app_config').upsert(updates, { onConflict: 'key' });
+      const { error } = await supabase.from('core_app_config').upsert(updates, { onConflict: 'key' });
       if (error) throw error;
       setForceUpdateOn(enabled);
       toast.success(enabled

@@ -14,12 +14,13 @@ export interface EngineResult {
   details?: Record<string, unknown>;
 }
 
-// ── مساعد: تحديث app_config بقيمة واحدة ─────────────────────────────────────
+// ── مساعد: تحديث core_app_config بقيمة واحدة (الجدول الأصلي — VIEW لا يقبل الكتابة)
 async function setConfig(key: string, value: string, value_type = 'boolean'): Promise<void> {
-  await supabase.from('app_config').upsert(
+  const { error } = await supabase.from('core_app_config').upsert(
     { key, value, value_type, updated_at: new Date().toISOString() },
     { onConflict: 'key' },
   );
+  if (error) throw new Error(error.message);
 }
 
 // ── مساعد: تسجيل العملية في system_logs ──────────────────────────────────────
@@ -216,6 +217,7 @@ export interface SystemStatus {
 }
 
 export async function engineGetStatus(): Promise<SystemStatus> {
+  // قراءة من app_config (VIEW) — للقراءة فقط، لا مشكلة
   const { data } = await supabase.from('app_config').select('key,value,value_type');
   const rows = (Array.isArray(data) ? data : []) as { key: string; value: string; value_type: string }[];
   const get = (k: string, fallback: string) => rows.find(r => r.key === k)?.value ?? fallback;
