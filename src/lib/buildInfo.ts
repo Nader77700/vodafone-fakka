@@ -4,15 +4,20 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.5.24',
-  versionCode:    504,
+  appVersion:      '3.6.0',
+  versionCode:    506,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_5_24_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.5.24.apk',
-  bundleHash:     'apk_v3_5_24_code504',
-  apkHash:        'apk_v3_5_24_code504',
-  dbVersion:      'v3.5.24',
+  sourceHash:     'build_v3_6_0_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.6.0.apk',
+  bundleHash:     'apk_v3_6_0_code506',
+  apkHash:        'apk_v3_6_0_code506',
+  dbVersion:      'v3.6.0',
   releaseNotes: [
+    'v3.6.0: إضافة نظام إخلاء المسؤولية الاحترافي — يظهر إجبارياً لجميع المستخدمين عند أول فتح، لا يمكن تخطيه',
+    'v3.6.0: رفض الإخلاء يُخرج المستخدم تلقائياً، وعند إعادة الدخول يظهر الإخلاء مجدداً',
+    'v3.6.0: لوحة تحكم الأدمن — إدارة كاملة لنص الإخلاء وسياسة العرض وإصدار نسخة جديدة',
+    'v3.6.0: دعم سياسات العرض المتعددة: مرة واحدة، أسبوعي، شهري، كل شهرين، كل 3 أشهر، مخصص، دائماً',
+    'v3.6.0: إصلاح backButton على Android — لا يمكن الرجوع بزر الخلف أثناء ظهور الإخلاء',
     'v3.5.24: إصلاح جذري نهائي — حذف نسخة atomic_consume_operation القديمة التي كانت ترفض كل العمليات بسبب verify_request_signature',
     'v3.5.24: إصلاح "استنفذت الحد الأقصى" الوهمي — الاشتراك الفعال لم يكن يُستهلك بشكل صحيح بسبب تعارض الـ DB functions',
     'v3.5.24: إصلاح معلومات الخط — timeout يدوي 35s بدل AbortController غير المدعوم في supabase-js v2',
