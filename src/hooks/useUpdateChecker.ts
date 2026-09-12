@@ -44,11 +44,10 @@ export function useUpdateChecker() {
   const [installedVersion, setInstalledVersion] = useState<string>(BUILD_INFO.appVersion);
   const [installedCode,    setInstalledCode]    = useState<number>(BUILD_INFO.versionCode);
 
-  const minVersionCode    = config.version.version_min_supported || 0;
-  const blockedCodes      = config.version.version_blocked_codes || [];
-  // قراءة version_force_update مباشرة من config — هذا الـ flag يُفعَّل من لوحة التحكم
-  const versionForceUpdateFlag = (config as unknown as { version: { version_force_update?: boolean } })
-    .version.version_force_update ?? false;
+  const minVersionCode         = config.version.version_min_supported || 0;
+  const blockedCodes           = config.version.version_blocked_codes || [];
+  // قراءة version_force_update مباشرة من VersionConfig — لا يحتاج cast
+  const versionForceUpdateFlag = config.version.version_force_update ?? false;
 
   useEffect(() => {
     const check = async () => {
@@ -84,17 +83,15 @@ export function useUpdateChecker() {
     && isApkUpdate
     && latestVersion.version_code > installedCode;
 
-  const isBlocked   = blockedCodes.includes(installedCode);
-  const isBelowMin  = minVersionCode > 0 && installedCode < minVersionCode;
+  const isBlocked  = blockedCodes.includes(installedCode);
+  const isBelowMin = minVersionCode > 0 && installedCode < minVersionCode;
 
-  // version_force_update=true → يُجبر الجميع على التحديث فوراً حتى الأدمن
-  // لكن إذا لم يكن الأدمن محدَّثاً — هو أيضاً يرى شاشة التحديث
-  // للحماية: نعرضها للكل ما عدا الـ Admin (معالَج في App.tsx)
   const apkReady = apkExists === true;
 
+  // version_force_update=true → يُجبر الجميع فوراً بمجرد تحميل الـ config (لا ينتظر ready)
+  // isBelowMin/isBlocked يحتاجان ready لأنهما يعتمدان على الكود الفعلي للجهاز
   const forceUpdate = !configLoading
-    && ready
-    && (isBelowMin || isBlocked || versionForceUpdateFlag);
+    && (versionForceUpdateFlag || (ready && (isBelowMin || isBlocked)));
 
   const showBanner = hasUpdate && !dismissed && !forceUpdate;
 

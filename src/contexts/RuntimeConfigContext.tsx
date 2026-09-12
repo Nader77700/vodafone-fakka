@@ -228,7 +228,11 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
 
       setConfig(merged);
       setLastFetched(new Date().toISOString());
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
+      // نحذف الـ cache القديم أولاً لضمان عدم بقاء قيم version_force_update=false القديمة
+      try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(merged));
+      } catch { /* ignore */ }
     } catch (e) {
       console.warn('[RuntimeConfig] fetch failed — using cached/default:', e);
       // عند فشل الشبكة: نُبقي آخر قيمة (cache) كما هي — لا نُطفئ أي إعداد قسراً
@@ -243,9 +247,10 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
     timerRef.current = setInterval(fetchConfig, POLL_MS);
 
     // Realtime — تحديث فوري عند تغيير أي إعداد (مثل hotfix أو maintenance)
+    // ملاحظة: app_config هو VIEW — Realtime لا يعمل عليه، يجب الاستماع على الجدول الأصلي core_app_config
     const channelName = `app_config_changes_${Math.random().toString(36).substring(2)}`;
     const channel = supabase.channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_config' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'core_app_config' }, () => {
         console.log('[RuntimeConfig] Realtime update — fetching new config...');
         fetchConfig();
       })
