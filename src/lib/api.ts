@@ -6193,3 +6193,242 @@ export async function getCodeActivationInfo(
   };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ── مركز العروض والتحديثات — Content Cards API ─────────────────
+// ═══════════════════════════════════════════════════════════════
+
+export type CardType = 'offer' | 'feature' | 'section' | 'update' | 'announcement' | 'custom';
+export type CardStatus = 'draft' | 'active' | 'scheduled' | 'disabled' | 'ended';
+export type CtaType = 'internal' | 'whatsapp' | 'external' | 'none';
+export type RepeatPolicy = 'once' | 'every_open' | 'hourly' | 'daily' | 'weekly' | 'monthly';
+
+export interface ContentCard {
+  id:              string;
+  card_type:       CardType;
+  template_name:   string | null;
+  status:          CardStatus;
+  title:           string;
+  description:     string | null;
+  badge_text:      string | null;
+  badge_color:     string | null;
+  icon_name:       string | null;
+  image_url:       string | null;
+  // Offer fields
+  old_price:       string | null;
+  new_price:       string | null;
+  discount_value:  string | null;
+  offer_duration:  string | null;
+  details:         string | null;
+  // Feature/Section/Custom
+  feature_points:  string[];
+  section_route:   string | null;
+  // Update
+  version_name:    string | null;
+  changelog:       string[];
+  // CTA
+  cta_label:       string;
+  cta_type:        CtaType;
+  cta_destination: string | null;
+  // Scheduling
+  start_date:      string | null;
+  end_date:        string | null;
+  repeat_policy:   RepeatPolicy;
+  repeat_value:    number;
+  priority:        number;
+  sort_order:      number;
+  is_active:       boolean;
+  system_enabled:  boolean;
+  revision:        number;
+  parent_id:       string | null;
+  custom_fields:   Record<string, unknown>;
+  field_values:    Record<string, unknown>;
+  created_by:      string | null;
+  created_at:      string;
+  updated_at:      string;
+}
+
+export interface CardTemplate {
+  id:            string;
+  name:          string;
+  description:   string | null;
+  fields_config: TemplateField[];
+  is_active:     boolean;
+  created_by:    string | null;
+  created_at:    string;
+  updated_at:    string;
+}
+
+export interface TemplateField {
+  key:         string;
+  label:       string;
+  type:        'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'list';
+  required:    boolean;
+  visible:     boolean;
+  order:       number;
+  options?:    string[];
+  placeholder?: string;
+}
+
+// ── Admin: CRUD ──────────────────────────────────────────────
+export async function adminGetAllContentCards(): Promise<ContentCard[]> {
+  const { data, error } = await supabase
+    .from('content_cards')
+    .select('*')
+    .order('priority', { ascending: false })
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as ContentCard[];
+}
+
+export async function adminCreateContentCard(
+  card: Omit<ContentCard, 'id' | 'created_at' | 'updated_at'>
+): Promise<ContentCard> {
+  const { data, error } = await supabase
+    .from('content_cards')
+    .insert([{ ...card, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ContentCard;
+}
+
+export async function adminUpdateContentCard(
+  id: string,
+  updates: Partial<Omit<ContentCard, 'id' | 'created_at'>>
+): Promise<void> {
+  const { error } = await supabase
+    .from('content_cards')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function adminDeleteContentCard(id: string): Promise<void> {
+  const { error } = await supabase.from('content_cards').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function adminCloneContentCard(id: string): Promise<ContentCard> {
+  const { data: src, error: fetchErr } = await supabase
+    .from('content_cards')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchErr || !src) throw fetchErr ?? new Error('not found');
+  const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = src as ContentCard;
+  const clone = {
+    ...rest,
+    title: `${rest.title} — نسخة`,
+    status: 'draft' as CardStatus,
+    revision: 1,
+    parent_id: id,
+    is_active: false,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase
+    .from('content_cards')
+    .insert([clone])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ContentCard;
+}
+
+export async function adminBumpCardRevision(id: string): Promise<number> {
+  const { data: cur } = await supabase
+    .from('content_cards')
+    .select('revision')
+    .eq('id', id)
+    .single();
+  const newRev = ((cur as { revision: number } | null)?.revision ?? 1) + 1;
+  await supabase
+    .from('content_cards')
+    .update({ revision: newRev, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  await supabase.rpc('reset_card_view_for_revision', { p_card_id: id, p_revision: newRev });
+  return newRev;
+}
+
+export async function adminToggleSystemEnabled(enabled: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('content_cards')
+    .update({ system_enabled: enabled, updated_at: new Date().toISOString() })
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+  if (error) throw error;
+}
+
+// ── Card Templates ────────────────────────────────────────────
+export async function adminGetAllCardTemplates(): Promise<CardTemplate[]> {
+  const { data, error } = await supabase
+    .from('card_templates')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CardTemplate[];
+}
+
+export async function adminCreateCardTemplate(
+  tpl: Omit<CardTemplate, 'id' | 'created_at' | 'updated_at'>
+): Promise<CardTemplate> {
+  const { data, error } = await supabase
+    .from('card_templates')
+    .insert([{ ...tpl, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CardTemplate;
+}
+
+export async function adminUpdateCardTemplate(
+  id: string,
+  updates: Partial<Omit<CardTemplate, 'id' | 'created_at'>>
+): Promise<void> {
+  const { error } = await supabase
+    .from('card_templates')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function adminDeleteCardTemplate(id: string): Promise<void> {
+  const { error } = await supabase.from('card_templates').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── User: Card Views ──────────────────────────────────────────
+export async function markCardViewed(
+  cardId: string,
+  userId: string,
+  revision: number
+): Promise<void> {
+  await supabase.rpc('upsert_card_view', {
+    p_card_id:   cardId,
+    p_user_id:   userId,
+    p_revision:  revision,
+    p_dismissed: false,
+  });
+}
+
+export async function markCardDismissed(
+  cardId: string,
+  userId: string,
+  revision: number
+): Promise<void> {
+  await supabase.rpc('upsert_card_view', {
+    p_card_id:   cardId,
+    p_user_id:   userId,
+    p_revision:  revision,
+    p_dismissed: true,
+  });
+}
+
+export async function getUserCardViews(
+  userId: string
+): Promise<{ card_id: string; card_revision: number; view_count: number; dismissed: boolean; last_viewed_at: string; last_dismissed_at: string | null }[]> {
+  const { data } = await supabase
+    .from('card_views')
+    .select('card_id, card_revision, view_count, dismissed, last_viewed_at, last_dismissed_at')
+    .eq('user_id', userId);
+  return (data ?? []) as { card_id: string; card_revision: number; view_count: number; dismissed: boolean; last_viewed_at: string; last_dismissed_at: string | null }[];
+}
+
