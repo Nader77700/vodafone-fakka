@@ -140,6 +140,8 @@ const OtherOffersPage              = lazyImport(() => import('./pages/vodafone-o
 const UpcomingSubscriptionsPage    = lazyImport(() => import('./pages/vodafone-offers/UpcomingSubscriptionsPage'));
 const BalanceRechargeShortcutPage  = lazyImport(() => import('./pages/vodafone-offers/BalanceRechargeShortcutPage'));
 const AdminServicesControlPage     = lazyImport(() => import('./pages/admin/AdminServicesControlPage'));
+const AdminHotfixPage              = lazyImport(() => import('./pages/admin/AdminHotfixPage'));
+const AdminLineInfoDebugPage       = lazyImport(() => import('./pages/admin/AdminLineInfoDebugPage'));
 const LineInfoPage                 = lazyImport(() => import('./pages/line-info/LineInfoPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
@@ -665,6 +667,8 @@ function AppInner() {
         <Route path="/admin/legacy-flex" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-legacy-flex"><S><AdminLegacyFlexPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/wallet-lines-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-wl-logs"><S><WalletLinesLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/services-control"  element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-services-control"><S><AdminServicesControlPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/hotfix"            element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-hotfix"><S><AdminHotfixPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/line-info-debug"   element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-line-debug"><S><AdminLineInfoDebugPage /></S></PageErrorBoundary></RouteGuard>} />
 
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />
