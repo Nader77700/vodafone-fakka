@@ -439,8 +439,21 @@ function AppInner() {
   })();
 
   // نظهر الشاشة البدائية دائمًا لضمان تهيئة التطبيق
-  const [showSplash,  setShowSplash]  = useState(true);
-  const [navigateNow, setNavigateNow] = useState(false);
+  const [showSplash,     setShowSplash]     = useState(true);
+  const [splashDoneReq,  setSplashDoneReq]  = useState(false); // طلب الانتهاء من SplashOverlay
+  const [navigateNow,    setNavigateNow]    = useState(false);
+
+  // ── ربط انتهاء Splash بانتهاء Auth loading ────────────────────────────────
+  // SplashOverlay يُرسل إشارة "انتهيت" عبر splashDoneReq
+  // لكن لا نُخفيه إلا بعد أن ينتهي auth.loading أيضاً
+  // هذا يمنع ظهور شاشة "جاري التحميل" من RouteGuard بعد الـ Splash
+  useEffect(() => {
+    if (splashDoneReq && !loading) {
+      localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+      setShowSplash(false);
+      setNavigateNow(true);
+    }
+  }, [splashDoneReq, loading]);
 
   // ── فحص حظر الجهاز ─────────────────────────────────────────────────────
   const [deviceBan, setDeviceBan] = useState<{ banned: boolean; reason?: string; banned_at?: string } | null>(null);
@@ -453,10 +466,9 @@ function AppInner() {
   }, []);
 
   const handleSplashDone = () => {
-    // سجّل وقت الانتهاء من Splash في localStorage — يصمد بعد إعادة بناء WebView
-    localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
-    setShowSplash(false);
-    setNavigateNow(true);
+    // نرفع إشارة "الـ Splash اكتمل"
+    // لكن الإخفاء الفعلي يتم في useEffect بعد أن ينتهي auth.loading
+    setSplashDoneReq(true);
   };
   const handleNavigated  = () => { setNavigateNow(false); };
 
