@@ -86,12 +86,18 @@ export function useUpdateChecker() {
   const isBlocked  = blockedCodes.includes(installedCode);
   const isBelowMin = minVersionCode > 0 && installedCode < minVersionCode;
 
+  // هل المستخدم فعلاً على آخر إصدار؟
+  const isOnLatest = ready && latestVersion !== null && installedCode >= latestVersion.version_code;
+
   const apkReady = apkExists === true;
 
-  // version_force_update=true → يُجبر الجميع فوراً بمجرد تحميل الـ config (لا ينتظر ready)
-  // isBelowMin/isBlocked يحتاجان ready لأنهما يعتمدان على الكود الفعلي للجهاز
+  // version_force_update=true → يُجبر فقط من ليس على آخر إصدار
+  // من حدّث للإصدار الأخير → لا يرى الشاشة حتى لو الـ flag=true في DB
+  // isBelowMin/isBlocked/versionForceUpdateFlag كلهم يحتاجون ready لمعرفة الكود الفعلي
   const forceUpdate = !configLoading
-    && (versionForceUpdateFlag || (ready && (isBelowMin || isBlocked)));
+    && ready
+    && !isOnLatest
+    && (versionForceUpdateFlag || isBelowMin || isBlocked);
 
   const showBanner = hasUpdate && !dismissed && !forceUpdate;
 
