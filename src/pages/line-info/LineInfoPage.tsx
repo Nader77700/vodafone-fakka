@@ -62,10 +62,53 @@ function InfoRow({ icon, label, value, ct, L }: { icon: React.ReactNode; label: 
   );
 }
 
+// ── تعريب وحدة القياس ────────────────────────────────────────
+function arabicUnit(unit: string): string {
+  const map: Record<string, string> = {
+    'MB': 'ميجا', 'GB': 'جيجا', 'Unit': 'وحدة', 'Units': 'وحدة',
+    'Min': 'دقيقة', 'Minutes': 'دقيقة', 'Minute': 'دقيقة',
+    'SMS': 'رسالة', 'LE': 'جنيه',
+  };
+  return map[unit] ?? unit;
+}
+
 // ── فورمات الرقم المتبقي ──────────────────────────────────────
 function fmtAllowance(avail: number, unit: string): string {
   if (!unit) return String(avail);
-  return `${avail} ${unit}`;
+  // تنسيق الأرقام الكبيرة بفاصلة آلاف
+  const formatted = avail.toLocaleString('ar-EG');
+  return `${formatted} ${arabicUnit(unit)}`;
+}
+
+// ── تنسيق تاريخ انتهاء الكرت بشكل عربي واضح ──────────────────
+function fmtExpiry(resetDate: string): string {
+  if (!resetDate || resetDate === '—') return '—';
+  // محاولة تحويل التاريخ (مثل "12-Sep-26" أو "2026-09-12" أو غيرها)
+  try {
+    // نماذج شائعة: "12-Sep-26", "12-Sep-2026", "2026-09-12", "Sep 12, 2026"
+    const cleaned = resetDate.trim();
+    // تنسيق "DD-Mon-YY" مثل "12-Sep-26"
+    const dmyShort = cleaned.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
+    if (dmyShort) {
+      const [, d, m, y] = dmyShort;
+      const monthMap: Record<string, string> = {
+        Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+        Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12',
+      };
+      const mm = monthMap[m] ?? '01';
+      const fullYear = parseInt(y, 10) < 50 ? `20${y}` : `19${y}`;
+      const date = new Date(`${fullYear}-${mm}-${d.padStart(2,'0')}`);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+    }
+    // تنسيق ISO "YYYY-MM-DD" أو أي تنسيق آخر
+    const date = new Date(cleaned);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  } catch { /* تجاهل */ }
+  return resetDate; // إرجاع القيمة الأصلية لو فشل التحويل
 }
 
 // ── كارت باقة / فكة / مارد ───────────────────────────────────
@@ -87,15 +130,15 @@ function CardRow({ card, accentColor, L }: { card: CardItem; accentColor: string
       </div>
       <div className="grid grid-cols-3 gap-2">
         {[
-          { Icon: PackageOpen, label: 'المتبقي',  val: fmtAllowance(card.availableAllowance, card.unitCode) },
-          { Icon: PackageOpen, label: 'المستخدم', val: fmtAllowance(card.usedAllowance, card.unitCode) },
-          { Icon: CalendarClock, label: 'التجديد', val: card.resetDate || '—' },
+          { Icon: PackageOpen,   label: 'المتبقي',       val: fmtAllowance(card.availableAllowance, card.unitCode) },
+          { Icon: PackageOpen,   label: 'المستخدم',      val: fmtAllowance(card.usedAllowance, card.unitCode) },
+          { Icon: CalendarClock, label: 'انتهاء الكرت',  val: fmtExpiry(card.resetDate) },
         ].map(({ Icon, label, val }) => (
           <div key={label} className="rounded-xl p-2 text-center" style={{ background: innerBg, border: `1px solid ${innerBorder}` }}>
             <p className="text-xs mb-0.5 flex items-center justify-center gap-0.5" style={{ color: mutC }}>
               <Icon className="w-2.5 h-2.5" /> {label}
             </p>
-            <p className="text-xs font-black" style={{ color: textC }} dir="ltr">{val}</p>
+            <p className="text-xs font-black leading-tight" style={{ color: textC }}>{val}</p>
           </div>
         ))}
       </div>
@@ -123,7 +166,7 @@ function CardSection({ title, cards, accentColor, L }: { title: string; cards: C
             {cards.length}
           </span>
         </div>
-        <CopyBtn text={cards.map(c => `${c.name} | ${fmtAllowance(c.availableAllowance, c.unitCode)} | ${c.resetDate}`).join('\n')} label={title} L={L} />
+        <CopyBtn text={cards.map(c => `${c.name} | ${fmtAllowance(c.availableAllowance, c.unitCode)} | انتهاء: ${fmtExpiry(c.resetDate)}`).join('\n')} label={title} L={L} />
       </div>
       <div className="p-3 space-y-2">
         {cards.map((c, i) => <CardRow key={i} card={c} accentColor={accentColor} L={L} />)}

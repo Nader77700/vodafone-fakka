@@ -72,7 +72,7 @@ import { PhoneSuggestionsInput } from '@/components/vodafone-cash/PhoneSuggestio
 import LineInfoModal from '@/components/line-info/LineInfoModal';
 import { useWalletPins } from '@/hooks/useWalletPins';
 import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
-import { saveVaultPin } from '@/lib/balanceSession';
+import { saveVaultPin, loadWalletPinFromDb } from '@/lib/balanceSession';
 
 
 // ══════════════════════════════════════════════════════════
@@ -1050,10 +1050,14 @@ function ExecuteModal({
   useEffect(() => {
     if (!open) return;
     
-    // محاولة استرجاع الباسورد المحفوظ
-    const savedPin = localStorage.getItem('vcc_saved_pin') || '';
-    
-    setPhone(prefillPhone); setPin(savedPin); setSender(''); setLoadingStep(0);
+    // محاولة استرجاع الباسورد المحفوظ من DB أو المحلي كاحتياط
+    loadWalletPinFromDb().then(dbPin => {
+      setPin(dbPin || '');
+    }).catch(() => {
+      setPin('');
+    });
+
+    setPhone(prefillPhone); setSender(''); setLoadingStep(0);
     setLastError(null); setLastErrorType('unknown'); setDebugSteps([]);
     setBridgeActive(null); setNetworkInfo(null); setReceipt(null);
     executingRef.current = false;
@@ -1273,7 +1277,7 @@ function ExecuteModal({
 
     // ✅ حفظ الباسورد فقط عند نجاح العملية وتحديد المستخدم للحفظ مسبقاً
     if (result.success && localStorage.getItem('vcc_pending_save_pin') === trimPin) {
-      // استخدام savePin() الرسمي: يحدّث vcc_saved_pins + vcc_default_pin + React state معاً
+      // حفظ الـ PIN في DB مرتبط بالحساب (يصمد بعد حذف التطبيق أو تسجيل الخروج)
       savePin(trimPin);
       localStorage.removeItem('vcc_pending_save_pin');
     }

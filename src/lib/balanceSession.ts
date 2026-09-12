@@ -249,14 +249,14 @@ export function hasRememberedCredentials(): boolean {
 // يُحفظ PIN محفظة Vodafone Cash مشفَّراً XOR
 // ══════════════════════════════════════════════════════════
 
-const VAULT_KEY = 'avb_vault_pin_v1'; // مفتاح الخزنة في localStorage
+const VAULT_KEY = 'avb_vault_pin_v1'; // نسخة احتياطية محلية فقط
 
 export interface VaultPin {
   pin: string;      // مشفَّر XOR
   saved_at: number; // Unix ms
 }
 
-/** حفظ الرقم السري في الخزنة */
+/** حفظ الرقم السري في الخزنة (محلياً فقط — نسخة احتياطية) */
 export function saveVaultPin(pin: string): void {
   try {
     localStorage.setItem(VAULT_KEY, JSON.stringify({
@@ -266,7 +266,7 @@ export function saveVaultPin(pin: string): void {
   } catch { /* ignore */ }
 }
 
-/** استرجاع الرقم السري من الخزنة (null إذا لم يوجد) */
+/** استرجاع الرقم السري من الخزنة المحلية (null إذا لم يوجد) */
 export function getVaultPin(): string | null {
   try {
     const raw = localStorage.getItem(VAULT_KEY);
@@ -286,7 +286,93 @@ export function updateVaultPin(newPin: string): void {
   saveVaultPin(newPin);
 }
 
-/** حذف الرقم السري من الخزنة */
+/** حذف الرقم السري من الخزنة المحلية */
 export function clearVaultPin(): void {
   try { localStorage.removeItem(VAULT_KEY); } catch { /* ignore */ }
+}
+
+// ══════════════════════════════════════════════════════════
+// حفظ/استرجاع PIN في Supabase DB (مرتبط بحساب المستخدم)
+// يبقى محفوظاً حتى بعد حذف التطبيق أو تسجيل الخروج
+// ══════════════════════════════════════════════════════════
+
+import { supabase } from '@/db/supabase';
+
+/** حفظ PIN في DB مع حفظ نسخة محلية احتياطية */
+export async function saveWalletPinToDb(pin: string): Promise<void> {
+  // دائماً احفظ محلياً كنسخة احتياطية
+  saveVaultPin(pin);
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const pinHash = xorEncode(pin, ENCODE_KEY);
+
+    // أولاً: اجعل كل الـ PINs الأخرى is_default=false
+    await supabase
+      .from('user_wallet_pins')
+      .update({ is_default: false })
+      .eq('user_id', user.id)
+      .neq('pin_hash', pinHash);
+
+    // ثانياً: أدخل أو حدّث هذا الـ PIN كـ default
+    await supabase
+      .from('user_wallet_pins')
+      .upsert(
+        { user_id: user.id, pin_hash: pinHash, is_default: true },
+        { onConflict: 'user_id,pin_hash' },
+      );
+  } catch { /* فشل صامت — النسخة المحلية تضمن الاستمرارية */ }
+}
+
+/** استرجاع الـ PIN الافتراضي من DB ثم المحلية كاحتياط */
+export async function loadWalletPinFromDb(): Promise<string | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return getVaultPin();
+
+    const { data } = await supabase
+      .from('user_wallet_pins')
+      .select('pin_hash')
+      .eq('user_id', user.id)
+      .eq('is_default', true)
+      .maybeSingle();
+
+    if (data?.pin_hash) {
+      const pin = xorDecode(data.pin_hash, ENCODE_KEY);
+      if (pin) {
+        saveVaultPin(pin); // تحديث النسخة المحلية
+        return pin;
+      }
+    }
+  } catch { /* ignore */ }
+
+  return getVaultPin(); // fallback للمحلية
+}
+
+/** استرجاع كل الـ PINs المحفوظة في DB */
+export async function loadAllWalletPinsFromDb(): Promise<string[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const local = getVaultPin();
+      return local ? [local] : [];
+    }
+
+    const { data } = await supabase
+      .from('user_wallet_pins')
+      .select('pin_hash, is_default')
+      .eq('user_id', user.id)
+      .order('is_default', { ascending: false });
+
+    if (data?.length) {
+      return data
+        .map(r => xorDecode(r.pin_hash, ENCODE_KEY))
+        .filter((p): p is string => !!p);
+    }
+  } catch { /* ignore */ }
+
+  const local = getVaultPin();
+  return local ? [local] : [];
 }

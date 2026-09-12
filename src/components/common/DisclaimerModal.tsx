@@ -7,6 +7,7 @@
 import React, { useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FileText, ScrollText, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useIsLight } from '@/contexts/ThemeContext';
 import type { DisclaimerConfig } from '@/hooks/useDisclaimer';
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function DisclaimerModal({ open, mode, config, onAccept, onReject, onClose }: Props) {
+  const L = useIsLight();
   const [checked,    setChecked]    = useState(false);
   const [accepting,  setAccepting]  = useState(false);
   const [rejecting,  setRejecting]  = useState(false);
@@ -26,6 +28,14 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!open) return null;
+
+  // ألوان تتكيف مع الوضع الفاتح والداكن
+  const borderColorVar  = L ? 'rgba(230,0,0,0.20)'         : 'rgba(230,0,0,0.25)';
+  const dividerColor    = L ? 'rgba(0,0,0,0.08)'            : 'rgba(255,255,255,0.08)';
+  const checkBorderOff  = L ? 'rgba(0,0,0,0.30)'            : 'rgba(255,255,255,0.25)';
+  const btnDisabledBg   = L ? 'rgba(230,0,0,0.15)'          : 'rgba(230,0,0,0.20)';
+  const btnDisabledClr  = L ? 'rgba(0,0,0,0.30)'            : 'rgba(255,255,255,0.40)';
+  const rejectSectionBg = L ? 'rgba(230,0,0,0.05)'          : 'rgba(230,0,0,0.06)';
 
   // منع إغلاق الـ modal بالضغط على الخلفية في وضع إجباري
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -55,15 +65,17 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
       onClick={handleBackdropClick}
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* النافذة */}
       <div
         className="relative w-full md:max-w-lg max-h-[95dvh] md:max-h-[90dvh] flex flex-col rounded-t-3xl md:rounded-2xl overflow-hidden"
         style={{
           background: 'var(--background)',
-          border: '1px solid rgba(230,0,0,0.25)',
-          boxShadow: '0 0 40px rgba(230,0,0,0.15), 0 20px 60px rgba(0,0,0,0.5)',
+          border: `1px solid ${borderColorVar}`,
+          boxShadow: L
+            ? '0 0 40px rgba(230,0,0,0.10), 0 20px 60px rgba(0,0,0,0.18)'
+            : '0 0 40px rgba(230,0,0,0.15), 0 20px 60px rgba(0,0,0,0.5)',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -71,13 +83,18 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
         <div
           className="shrink-0 flex items-center gap-3 px-5 py-4"
           style={{
-            background: 'linear-gradient(135deg, rgba(230,0,0,0.12) 0%, rgba(230,0,0,0.04) 100%)',
-            borderBottom: '1px solid rgba(230,0,0,0.15)',
+            background: L
+              ? 'linear-gradient(135deg, rgba(230,0,0,0.07) 0%, rgba(230,0,0,0.02) 100%)'
+              : 'linear-gradient(135deg, rgba(230,0,0,0.12) 0%, rgba(230,0,0,0.04) 100%)',
+            borderBottom: `1px solid ${L ? 'rgba(230,0,0,0.10)' : 'rgba(230,0,0,0.15)'}`,
           }}
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.3)' }}
+            style={{
+              background: L ? 'rgba(230,0,0,0.10)' : 'rgba(230,0,0,0.15)',
+              border: `1px solid ${L ? 'rgba(230,0,0,0.20)' : 'rgba(230,0,0,0.30)'}`,
+            }}
           >
             <Shield className="w-5 h-5" style={{ color: '#E60000' }} />
           </div>
@@ -109,9 +126,12 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
           className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
           style={{ overscrollBehavior: 'contain' }}
         >
-          {/* أيقونة توضيحية */}
+          {/* شريط العنوان */}
           <div className="flex items-center gap-2.5 p-3 rounded-xl"
-            style={{ background: 'rgba(230,0,0,0.06)', border: '1px solid rgba(230,0,0,0.12)' }}>
+            style={{
+              background: L ? 'rgba(230,0,0,0.05)' : 'rgba(230,0,0,0.06)',
+              border: `1px solid ${L ? 'rgba(230,0,0,0.10)' : 'rgba(230,0,0,0.12)'}`,
+            }}>
             <FileText className="w-4 h-4 shrink-0" style={{ color: '#E60000' }} />
             <p className="text-xs font-bold" style={{ color: '#E60000' }}>
               Vodafone Fakka Premium · by {config.developer}
@@ -123,11 +143,41 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
             <p
               key={i}
               className="text-sm leading-relaxed"
-              style={{ color: 'var(--foreground)', opacity: 0.85 }}
+              style={{ color: 'var(--foreground)' }}
             >
               {para}
             </p>
           ))}
+
+          {/* ── نص الأمان والخصوصية ── */}
+          <div
+            className="rounded-xl p-3.5 mt-2"
+            style={{
+              background: L
+                ? 'linear-gradient(135deg, rgba(34,197,94,0.07) 0%, rgba(34,197,94,0.03) 100%)'
+                : 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%)',
+              border: `1px solid ${L ? 'rgba(34,197,94,0.20)' : 'rgba(34,197,94,0.25)'}`,
+            }}
+          >
+            <div className="flex items-start gap-2.5">
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                style={{
+                  background: L ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.15)',
+                  border: `1px solid ${L ? 'rgba(34,197,94,0.25)' : 'rgba(34,197,94,0.30)'}`,
+                }}>
+                <Shield className="w-3.5 h-3.5" style={{ color: '#16a34a' }} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-black" style={{ color: '#16a34a' }}>
+                  🔒 التطبيق آمن 100٪ — بياناتك محمية
+                </p>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+                  لا يتم تخزين أي بيانات شخصية، ولا يتم حفظ أي معلومات حساسة خارج جهازك.
+                  جميع العمليات تتم بشكل مشفّر وآمن تماماً.
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* رقم النسخة */}
           <div className="flex items-center justify-between pt-2 pb-1">
@@ -144,7 +194,7 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
         {mode === 'mandatory' && !showRejectConfirm && (
           <div
             className="shrink-0 px-5 py-4 space-y-3"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ borderTop: `1px solid ${dividerColor}` }}
           >
             {/* Checkbox الموافقة */}
             <label
@@ -154,7 +204,7 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
               <div
                 className="w-5 h-5 rounded-md flex items-center justify-center border-2 shrink-0 mt-0.5 transition-all"
                 style={{
-                  borderColor: checked ? '#E60000' : 'rgba(255,255,255,0.25)',
+                  borderColor: checked ? '#E60000' : checkBorderOff,
                   background:  checked ? '#E60000' : 'transparent',
                 }}
               >
@@ -175,8 +225,8 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
               disabled={!checked || accepting}
               onClick={handleAccept}
               style={{
-                background: checked ? '#E60000' : 'rgba(230,0,0,0.2)',
-                color: checked ? '#fff' : 'rgba(255,255,255,0.4)',
+                background: checked ? '#E60000' : btnDisabledBg,
+                color: checked ? '#fff' : btnDisabledClr,
                 border: 'none',
               }}
             >
@@ -209,8 +259,8 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
           <div
             className="shrink-0 px-5 py-5 space-y-4"
             style={{
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(230,0,0,0.06)',
+              borderTop: `1px solid ${dividerColor}`,
+              background: rejectSectionBg,
             }}
           >
             <div className="flex items-start gap-3">
@@ -251,7 +301,7 @@ export default function DisclaimerModal({ open, mode, config, onAccept, onReject
 
         {/* زر إغلاق الوضع القراءة في الأسفل */}
         {mode === 'readonly' && (
-          <div className="shrink-0 px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="shrink-0 px-5 py-4" style={{ borderTop: `1px solid ${dividerColor}` }}>
             <Button
               className="w-full h-11 rounded-xl"
               variant="outline"

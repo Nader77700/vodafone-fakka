@@ -13,6 +13,7 @@ import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { VodafoneDetector } from '@/lib/vodafoneDetector';
 import LineInfoModal from '@/components/line-info/LineInfoModal';
+import { saveWalletPinToDb } from '@/lib/balanceSession';
 
 // ── Shortcut: معلومات الخط (يُعرض فوق ملاحظات هامة) ─────────────
 function LineInfoShortcut({ receiverPhone }: { receiverPhone: string }) {
@@ -206,13 +207,11 @@ export default function RechargeBalancePage() {
       setExecMessage(res.message || 'تم الشحن بنجاح');
       setExecLogs(res.data?.debugSteps || []);
 
-      // حفظ الباسورد عند النجاح
+      // حفظ الباسورد عند النجاح — مرتبط بالحساب في DB
       const pendingPin = localStorage.getItem('vcc_pending_save_pin');
       if (pendingPin && pendingPin === pin) {
-        const existing = JSON.parse(localStorage.getItem('vcc_saved_pins') || '[]');
-        if (!existing.includes(pin)) { existing.push(pin); localStorage.setItem('vcc_saved_pins', JSON.stringify(existing)); }
-        localStorage.setItem('vcc_default_pin', pin);
         localStorage.removeItem('vcc_pending_save_pin');
+        saveWalletPinToDb(pin).catch(() => {});
         window.dispatchEvent(new Event('vcc_pins_updated'));
       }
 

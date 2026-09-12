@@ -10,9 +10,9 @@ import { useRuntimeConfig } from '../../contexts/RuntimeConfigContext';
 import { toast } from 'sonner';
 import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 import { Network } from '@capacitor/network';
-
 import { Capacitor } from '@capacitor/core';
 import { VodafoneDetector } from '@/lib/vodafoneDetector';
+import { saveWalletPinToDb } from '@/lib/balanceSession';
 
 export default function MoneyTransferPage() {
   const navigate = useNavigate();
@@ -163,13 +163,8 @@ export default function MoneyTransferPage() {
       
       const pendingPin = localStorage.getItem('vcc_pending_save_pin');
       if (pendingPin && pendingPin === pin) {
-        const existing = JSON.parse(localStorage.getItem('vcc_saved_pins') || '[]');
-        if (!existing.includes(pin)) {
-          existing.push(pin);
-          localStorage.setItem('vcc_saved_pins', JSON.stringify(existing));
-        }
-        localStorage.setItem('vcc_default_pin', pin);
         localStorage.removeItem('vcc_pending_save_pin');
+        saveWalletPinToDb(pin).catch(() => {});
         window.dispatchEvent(new Event('vcc_pins_updated'));
       }
     } else {
