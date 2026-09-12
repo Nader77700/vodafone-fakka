@@ -29,6 +29,7 @@ export interface VersionConfig {
   version_force_update_msg: string;
   version_blocked_codes:    number[];
   version_apk_url:          string;
+  version_force_update:     boolean; // تفعيل مباشر من لوحة التحكم
 }
 
 // ── HotFix Patch Type ────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ const DEFAULT_CONFIG: RuntimeConfig = {
     version_force_update_msg: 'يتوفر تحديث مهم. يرجى تحديث التطبيق للاستمرار.',
     version_blocked_codes:    [],
     version_apk_url:          '',
+    version_force_update:     false,
   },
   security: {
     sec_disabled_endpoints:      [],
@@ -206,7 +208,6 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
         else if (k.startsWith('sec_'))      cat = 'security';
         else if (k.startsWith('biz_'))      cat = 'business';
         else if (k.startsWith('ui_'))       cat = 'ui';
-        // hotfix_* — رُوِّت حسب نوعها
         else if (k === 'hotfix_disable_all_recharge' ||
                  k === 'hotfix_disable_line_info'    ||
                  k === 'hotfix_disable_money_transfer' ||
@@ -230,18 +231,8 @@ export function RuntimeConfigProvider({ children }: { children: React.ReactNode 
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
     } catch (e) {
       console.warn('[RuntimeConfig] fetch failed — using cached/default:', e);
-      // Fallback: لا تُبقِ maintenance_mode مفعَّلاً لو الشبكة فشلت
-      setConfig(prev => {
-        if (prev.feature_flags.ff_maintenance_mode) {
-          const safeConfig = {
-            ...prev,
-            feature_flags: { ...prev.feature_flags, ff_maintenance_mode: false },
-          };
-          try { localStorage.setItem(CACHE_KEY, JSON.stringify(safeConfig)); } catch {}
-          return safeConfig;
-        }
-        return prev;
-      });
+      // عند فشل الشبكة: نُبقي آخر قيمة (cache) كما هي — لا نُطفئ أي إعداد قسراً
+      // الأدمن فعَّل الصيانة أو الحظر عن قصد — شبكة ضعيفة لا يجب أن تُلغيه
     } finally {
       setIsLoading(false);
     }

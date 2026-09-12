@@ -1,6 +1,7 @@
 // فحص التحديثات التلقائي
-// FORCE-UPDATE: يقرأ min_version_code + blocked_codes من app_config
-// يعمل مع جميع إصدارات APK القديمة والجديدة — لا يعتمد على latestVersion لإطلاق الإجبار
+// FORCE-UPDATE: يقرأ min_version_code + blocked_codes + version_force_update من app_config
+// يعمل مع جميع إصدارات APK القديمة والجديدة
+// version_force_update=true → إجبار فوري بغض النظر عن الكود
 import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -21,7 +22,6 @@ export interface AppVersion {
 const STORAGE_KEY = 'vf_update_dismissed_v';
 
 export async function checkApkExists(url: string): Promise<boolean> {
-  // Ignore HEAD fetch for CORS reasons, trust the DB URL if it exists
   return !!url;
 }
 
@@ -44,8 +44,11 @@ export function useUpdateChecker() {
   const [installedVersion, setInstalledVersion] = useState<string>(BUILD_INFO.appVersion);
   const [installedCode,    setInstalledCode]    = useState<number>(BUILD_INFO.versionCode);
 
-  const minVersionCode = config.version.version_min_supported || 0;
-  const blockedCodes   = config.version.version_blocked_codes || [];
+  const minVersionCode    = config.version.version_min_supported || 0;
+  const blockedCodes      = config.version.version_blocked_codes || [];
+  // قراءة version_force_update مباشرة من config — هذا الـ flag يُفعَّل من لوحة التحكم
+  const versionForceUpdateFlag = (config as unknown as { version: { version_force_update?: boolean } })
+    .version.version_force_update ?? false;
 
   useEffect(() => {
     const check = async () => {
@@ -72,7 +75,7 @@ export function useUpdateChecker() {
       finally { setReady(true); }
     };
     check();
-  }, [minVersionCode, blockedCodes.join(',')]); // إعادة الفحص فوراً عند تغيير الإعدادات لضمان جلب رابط التحديث الجديد
+  }, [minVersionCode, blockedCodes.join(','), versionForceUpdateFlag]);
 
   const isApkUpdate = latestVersion?.update_type !== 'web';
 
@@ -84,11 +87,14 @@ export function useUpdateChecker() {
   const isBlocked   = blockedCodes.includes(installedCode);
   const isBelowMin  = minVersionCode > 0 && installedCode < minVersionCode;
 
+  // version_force_update=true → يُجبر الجميع على التحديث فوراً حتى الأدمن
+  // لكن إذا لم يكن الأدمن محدَّثاً — هو أيضاً يرى شاشة التحديث
+  // للحماية: نعرضها للكل ما عدا الـ Admin (معالَج في App.tsx)
   const apkReady = apkExists === true;
 
   const forceUpdate = !configLoading
     && ready
-    && (isBelowMin || isBlocked);
+    && (isBelowMin || isBlocked || versionForceUpdateFlag);
 
   const showBanner = hasUpdate && !dismissed && !forceUpdate;
 
@@ -97,5 +103,5 @@ export function useUpdateChecker() {
     setDismissed(true);
   };
 
-  return { hasUpdate, showBanner, forceUpdate, latestVersion, apkExists, dismiss, installedVersion, installedCode };
+  return { hasUpdate, showBanner, forceUpdate, latestVersion, apkExists: apkReady, dismiss, installedVersion, installedCode };
 }

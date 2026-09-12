@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Power, AlertTriangle, Shield, Bell, Zap,
+  AlertTriangle, Shield, Bell, Zap, Lock,
   RefreshCw, ChevronDown, ChevronUp, CheckCircle, XCircle,
   Loader2, Megaphone, Smartphone, ToggleLeft, ToggleRight,
 } from 'lucide-react';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/db/supabase';
 import {
   engineSetProduct, engineSetMaintenance, engineForceUpdate,
   engineBlockVersion, engineSetAnnouncement, engineSetFeature,
@@ -88,14 +89,38 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
   const [annoType,   setAnnoType]   = useState<'info' | 'warning' | 'error' | 'success'>('info');
   const [mainMsg,    setMainMsg]    = useState('');
 
+  // بيانات الإصدار الأحدث والإصدارات المحظورة نهائياً
+  const [latestCode,      setLatestCode]      = useState<number>(0);
+  const [latestName,      setLatestName]      = useState<string>('');
+  const [permanentBanned, setPermanentBanned] = useState<{ version_code: number; version_name: string; reason: string }[]>([]);
+  const [newBanCode,      setNewBanCode]      = useState('');
+  const [newBanName,      setNewBanName]      = useState('');
+  const [forceUpdateOn,   setForceUpdateOn]   = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const s = await engineGetStatus();
+      // حالة النظام + أحدث إصدار + القائمة الدائمة — بالتوازي
+      const [s, verRes, banRes, cfgRes] = await Promise.all([
+        engineGetStatus(),
+        supabase.from('app_versions').select('version_code,version').eq('is_latest', true).maybeSingle(),
+        supabase.from('permanent_blocked_versions').select('version_code,version_name,reason').order('created_at', { ascending: false }),
+        supabase.from('app_config').select('key,value').in('key', ['version_force_update']),
+      ]);
       setStatus(s);
       setMinCode(String(s.minVersion));
       setBlockCodes(s.blockedCodes.join(', '));
       setAnnoText(s.announcement.text);
+
+      if (verRes.data) {
+        setLatestCode(verRes.data.version_code);
+        setLatestName(verRes.data.version);
+      }
+      setPermanentBanned(Array.isArray(banRes.data) ? banRes.data : []);
+
+      const cfgMap: Record<string,string> = {};
+      (Array.isArray(cfgRes.data) ? cfgRes.data : []).forEach((r: { key: string; value: string }) => { cfgMap[r.key] = r.value; });
+      setForceUpdateOn(cfgMap['version_force_update'] === 'true' || cfgMap['version_force_update'] === '1');
     } finally { setLoading(false); }
   }, []);
 
@@ -108,6 +133,59 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
     else toast.error(res.message);
     await load();
     setBusy(null);
+  };
+
+  // تفعيل/إيقاف التحديث الإجباري الفوري (version_force_update)
+  const handleForceUpdateToggle = async (enabled: boolean) => {
+    setBusy('force_update_toggle');
+    try {
+      const now = new Date().toISOString();
+      const updates: { key: string; value: string; updated_at: string }[] = [
+        { key: 'version_force_update', value: String(enabled), updated_at: now },
+      ];
+      if (enabled && latestCode > 0) {
+        // الحد الأدنى = أحدث إصدار + 1 → يجبر حتى أصحاب أحدث إصدار لو أردنا
+        // أو = latest code مباشرة → يجبر فقط من أقل منه
+        updates.push({ key: 'version_min_supported', value: String(latestCode), updated_at: now });
+        updates.push({ key: 'version_min_code',      value: String(latestCode), updated_at: now });
+      } else if (!enabled) {
+        updates.push({ key: 'version_min_supported', value: '1', updated_at: now });
+        updates.push({ key: 'version_min_code',      value: '1', updated_at: now });
+      }
+      const { error } = await supabase.from('app_config').upsert(updates, { onConflict: 'key' });
+      if (error) throw error;
+      setForceUpdateOn(enabled);
+      toast.success(enabled
+        ? `🚨 التحديث الإجباري مُفعَّل — كل إصدار أقل من ${latestCode} سيُجبَر على التحديث`
+        : '✅ التحديث الإجباري مُعطَّل');
+      await load();
+    } catch (e) {
+      toast.error(`فشل: ${(e as Error).message}`);
+    } finally { setBusy(null); }
+  };
+
+  // إضافة إصدار للحظر الدائم
+  const handleAddPermanentBan = async () => {
+    const code = Number(newBanCode.trim());
+    if (!code || code <= 0) { toast.error('أدخل كود إصدار صحيح'); return; }
+    setBusy('perm_ban');
+    try {
+      const { error } = await supabase.rpc('add_permanent_block', {
+        p_version_code: code,
+        p_version_name: newBanName.trim() || String(code),
+        p_reason: 'حظر دائم من النظام الذكي',
+      });
+      if (error) throw error;
+      // أضفه أيضاً لـ version_blocked_codes لضمان التطبيق الفوري
+      const updated = [...new Set([...status!.blockedCodes, code])];
+      await engineBlockVersion(updated);
+      toast.success(`🔒 الإصدار ${code} محظور نهائياً ولا يمكن رفع الحظر عنه`);
+      setNewBanCode('');
+      setNewBanName('');
+      await load();
+    } catch (e) {
+      toast.error(`فشل: ${(e as Error).message}`);
+    } finally { setBusy(null); }
   };
 
   if (loading || !status) {
@@ -198,57 +276,136 @@ export default function AdminSmartEngine({ onNavigate }: Props) {
 
       {/* ── 4. التحديث الإجباري ── */}
       <Section icon={Shield} title="التحديث الإجباري" subtitle="حجب الإصدارات القديمة من الدخول">
-        <div className="space-y-2">
-          <label className="text-xs text-muted-foreground">الحد الأدنى للإصدار (code)</label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              placeholder="مثال: 100"
-              value={minCode}
-              onChange={e => setMinCode(e.target.value)}
-              className="text-sm"
-            />
-            <Button size="sm" variant="default" className="h-9 text-xs shrink-0 gap-1"
-              disabled={busy === 'force_update'}
-              onClick={() => run('force_update', () => engineForceUpdate(Number(minCode)))}>
-              {busy === 'force_update' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-              تطبيق
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">الحالي: كل إصدار أقدم من <strong>{status.minVersion}</strong> سيتم حجبه وإجباره على التحديث.</p>
-          <p className="text-xs text-destructive/80 mt-1">ملاحظة: هذا الرقم هو <b>الحد المسموح به</b>. إذا أردت إجبار إصدار 236 على التحديث، يجب كتابة 237 هنا.</p>
-        </div>
-        <div className="space-y-2 pt-2 border-t border-border/40">
-          <label className="text-xs text-muted-foreground">حجب إصدارات محددة (أرقام مفصولة بفاصلة)</label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="مثال: 95, 96, 98"
-              value={blockCodes}
-              onChange={e => setBlockCodes(e.target.value)}
-              className="text-sm font-mono"
-            />
-            <Button size="sm" variant="outline" className="h-9 text-xs shrink-0 border-border gap-1"
-              disabled={busy === 'block_codes'}
-              onClick={() => {
-                const codes = blockCodes.split(',').map(s => Number(s.trim())).filter(n => n > 0);
-                run('block_codes', () => engineBlockVersion(codes));
-              }}>
-              {busy === 'block_codes' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
-              حجب
-            </Button>
-          </div>
-          {status.blockedCodes.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs text-muted-foreground">محجوب الآن:</span>
-              {status.blockedCodes.map(c => (
-                <span key={c} className="text-xs font-mono font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">{c}</span>
-              ))}
-              <button className="text-xs text-muted-foreground underline"
-                onClick={() => run('unblock_all', () => engineBlockVersion([]))}>
-                إلغاء الكل
-              </button>
+        <div className="space-y-3">
+
+          {/* Toggle تفعيل فوري */}
+          <div className={cn(
+            'flex items-center justify-between p-3 rounded-xl border transition-all',
+            forceUpdateOn
+              ? 'bg-destructive/8 border-destructive/20'
+              : 'bg-card border-border',
+          )}>
+            <div className="min-w-0 flex-1">
+              <p className={cn('text-sm font-bold', forceUpdateOn ? 'text-destructive' : 'text-foreground')}>
+                {forceUpdateOn ? '🚨 التحديث الإجباري مُفعَّل' : 'تفعيل التحديث الإجباري'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {forceUpdateOn
+                  ? `كل إصدار أقل من ${status.minVersion} مُجبَر على التحديث`
+                  : latestCode > 0 ? `سيُعيَّن الحد الأدنى = ${latestCode} (أحدث إصدار: ${latestName})` : 'يطلب التحديث من كل المستخدمين'}
+              </p>
             </div>
-          )}
+            <button
+              disabled={busy === 'force_update_toggle'}
+              onClick={() => handleForceUpdateToggle(!forceUpdateOn)}
+              className="shrink-0 mr-2"
+            >
+              {busy === 'force_update_toggle'
+                ? <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                : forceUpdateOn
+                  ? <ToggleRight className="w-6 h-6 text-destructive" />
+                  : <ToggleLeft  className="w-6 h-6 text-muted-foreground" />
+              }
+            </button>
+          </div>
+
+          {/* حد أدنى يدوي */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">
+              الحد الأدنى للإصدار (code)
+              {latestCode > 0 && (
+                <button
+                  className="mr-2 text-primary underline text-xs"
+                  onClick={() => setMinCode(String(latestCode))}
+                >
+                  استخدم الأحدث ({latestCode})
+                </button>
+              )}
+            </label>
+            <div className="flex gap-2">
+              <Input type="number" placeholder="مثال: 100" value={minCode}
+                onChange={e => setMinCode(e.target.value)} className="text-sm" />
+              <Button size="sm" className="h-9 text-xs shrink-0 gap-1"
+                disabled={busy === 'force_update'}
+                onClick={() => run('force_update', () => engineForceUpdate(Number(minCode)))}>
+                {busy === 'force_update' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                تطبيق
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              الحالي: كل إصدار أقل من <strong>{status.minVersion}</strong> سيُجبَر على التحديث.
+            </p>
+            <p className="text-xs text-destructive/80">
+              ملاحظة: الرقم هو <b>الحد المسموح به</b>. لإجبار إصدار {status.minVersion - 1} اكتب {status.minVersion} هنا.
+            </p>
+          </div>
+
+          {/* حجب مؤقت (قابل للإلغاء) */}
+          <div className="space-y-1.5 pt-2 border-t border-border/40">
+            <label className="text-xs text-muted-foreground">حجب مؤقت (أرقام مفصولة بفاصلة)</label>
+            <div className="flex gap-2">
+              <Input placeholder="مثال: 95, 96" value={blockCodes}
+                onChange={e => setBlockCodes(e.target.value)} className="text-sm font-mono" />
+              <Button size="sm" variant="outline" className="h-9 text-xs shrink-0 border-border gap-1"
+                disabled={busy === 'block_codes'}
+                onClick={() => {
+                  const codes = blockCodes.split(',').map(s => Number(s.trim())).filter(n => n > 0);
+                  run('block_codes', () => engineBlockVersion(codes));
+                }}>
+                {busy === 'block_codes' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+                حجب
+              </Button>
+            </div>
+            {status.blockedCodes.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                <span className="text-xs text-muted-foreground">محجوب الآن:</span>
+                {status.blockedCodes.map(c => (
+                  <span key={c} className="text-xs font-mono font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">{c}</span>
+                ))}
+                <button className="text-xs text-muted-foreground underline"
+                  onClick={() => run('unblock_all', () => engineBlockVersion([]))}>
+                  إلغاء الكل
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── حظر دائم (لا يُلغى) ── */}
+          <div className="space-y-2 pt-2 border-t border-border/40">
+            <div className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-destructive" />
+              <label className="text-xs font-bold text-destructive">حظر نهائي (لا يمكن رفعه)</label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              يُحفظ في قاعدة البيانات بشكل دائم — حتى لو أُعيد تشغيل النظام أو مُسحت الإعدادات
+            </p>
+            <div className="flex gap-2">
+              <Input type="number" placeholder="كود الإصدار" value={newBanCode}
+                onChange={e => setNewBanCode(e.target.value)} className="text-sm font-mono w-28 shrink-0" />
+              <Input placeholder="اسم (اختياري)" value={newBanName}
+                onChange={e => setNewBanName(e.target.value)} className="text-sm flex-1" />
+              <Button size="sm" variant="destructive" className="h-9 text-xs shrink-0 gap-1"
+                disabled={busy === 'perm_ban' || !newBanCode.trim()}
+                onClick={handleAddPermanentBan}>
+                {busy === 'perm_ban' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Lock className="w-3 h-3" />}
+                حجب
+              </Button>
+            </div>
+            {permanentBanned.length > 0 && (
+              <div className="space-y-1 mt-1">
+                <p className="text-xs text-muted-foreground">محظور نهائياً ({permanentBanned.length}):</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {permanentBanned.map(b => (
+                    <span key={b.version_code}
+                      className="text-xs font-mono font-black bg-destructive/15 text-destructive border border-destructive/30 px-2 py-0.5 rounded-full">
+                      {b.version_code}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
       </Section>
 
