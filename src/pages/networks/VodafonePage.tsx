@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   ChevronRight, Wifi, Phone, Zap, Star, MessageCircle,
   Info, RefreshCw, Loader2, CheckCircle, Clock, Lock,
+  Gift, CalendarDays, AlertCircle, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -264,6 +265,78 @@ export default function VodafonePage() {
         </div>
       </div>
 
+      {/* ── بانر الحجز المتاح ── */}
+      <div className="px-4 mb-4">
+        <div className="rounded-2xl p-4"
+          style={{ background: 'linear-gradient(135deg,rgba(230,0,0,0.18),rgba(180,0,0,0.10))', border: '1.5px solid rgba(230,0,0,0.35)' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-base">🔥</span>
+            <p className="text-sm font-black" style={{ color: '#E60000' }}>باقات RED متاحة للحجز الآن</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            احجز باقتك دلوقتي واستفيد من الهدايا الفورية 🎁
+          </p>
+        </div>
+      </div>
+
+      {/* ── هدايا فورية ── */}
+      <div className="px-4 mb-4">
+        <div className="rounded-2xl p-4"
+          style={{ background: 'linear-gradient(135deg,rgba(247,201,72,0.12),rgba(247,201,72,0.05))', border: '1.5px solid rgba(247,201,72,0.35)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Gift className="w-4 h-4" style={{ color: '#F7C948' }} />
+            <p className="text-sm font-black" style={{ color: '#F7C948' }}>هدايا فورية مع الحجز 🎁</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl p-2.5 text-center"
+              style={{ background: 'rgba(247,201,72,0.10)', border: '1px solid rgba(247,201,72,0.25)' }}>
+              <p className="text-base font-black" style={{ color: '#F7C948' }}>1000</p>
+              <p className="text-xs text-muted-foreground">دقيقة هدية</p>
+            </div>
+            <div className="rounded-xl p-2.5 text-center"
+              style={{ background: 'rgba(247,201,72,0.10)', border: '1px solid rgba(247,201,72,0.25)' }}>
+              <p className="text-base font-black" style={{ color: '#F7C948' }}>3000</p>
+              <p className="text-xs text-muted-foreground">ميجا هدية</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            الهدايا بتنزل فور إتمام الحجز ✅
+          </p>
+        </div>
+      </div>
+
+      {/* ── مواعيد التفعيل ── */}
+      <div className="px-4 mb-4">
+        <div className="rounded-2xl p-4"
+          style={{ background: 'rgba(99,179,237,0.08)', border: '1.5px solid rgba(99,179,237,0.25)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarDays className="w-4 h-4" style={{ color: '#63B3ED' }} />
+            <p className="text-sm font-black" style={{ color: '#63B3ED' }}>مواعيد التفعيل 📅</p>
+          </div>
+          <div className="flex items-center gap-2 justify-center mb-3">
+            {['7', '11', '25'].map((day, i) => (
+              <div key={day} className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm"
+                  style={{ background: 'rgba(99,179,237,0.15)', border: '1px solid rgba(99,179,237,0.30)', color: '#63B3ED' }}>
+                  {day}
+                </div>
+                {i < 2 && <span className="text-muted-foreground text-xs">أو</span>}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            الحجز متاح طوال الشهر — التفعيل في أقرب موعد لموعد تجديد خطك
+          </p>
+          <div className="mt-2 rounded-lg p-2"
+            style={{ background: 'rgba(99,179,237,0.06)', border: '1px solid rgba(99,179,237,0.15)' }}>
+            <p className="text-xs text-muted-foreground leading-relaxed text-center">
+              💡 احجز دلوقتي، وسيتم التفعيل في أقرب موعد من المواعيد المحددة حسب موعد تجديد خطك، لضمان استمرار الباقة بدون انتظار
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── الباقات ── */}
       <div className="px-4 space-y-4">
         <div className="flex items-center gap-2">
           <Wifi className="w-4 h-4" style={{ color: '#E60000' }} />
@@ -292,6 +365,51 @@ export default function VodafonePage() {
           </div>
         )}
       </div>
+
+      {/* ── الشروط والأحكام ── */}
+      <div className="px-4 mt-4">
+        <div className="rounded-2xl p-4"
+          style={{ background: 'rgba(0,200,150,0.06)', border: '1.5px solid rgba(0,200,150,0.20)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="w-4 h-4" style={{ color: '#00C896' }} />
+            <p className="text-sm font-black" style={{ color: '#00C896' }}>الشروط والأحكام ✅</p>
+          </div>
+          <div className="space-y-2">
+            {[
+              'أي رقم Vodafone RED ينفع',
+              'لا توجد مديونية على الخط',
+              'لازم يكون معاك 1 جنيه رصيد وقت التفعيل',
+              'التفعيل باستخدام رقم الخط + الباسورد',
+              'الهدايا بتنزل فور إتمام الحجز وتقدر تستخدمها خلال فترة الحجز',
+            ].map(t => (
+              <div key={t} className="flex items-start gap-2">
+                <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: '#00C896' }} />
+                <p className="text-xs text-muted-foreground">{t}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── تنبيه مهم ── */}
+      <div className="px-4 mt-3 mb-2">
+        <div className="rounded-2xl p-4"
+          style={{ background: 'rgba(230,0,0,0.06)', border: '1.5px solid rgba(230,0,0,0.18)' }}>
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#E60000' }} />
+            <div>
+              <p className="text-xs font-bold mb-1" style={{ color: '#E60000' }}>مهم جداً 📅</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                الحجز متاح طوال الشهر، لكن التفعيل بيتم في أقرب موعد تجديد متاح لخطك (7 أو 11 أو 25 من كل شهر).
+              </p>
+              <p className="text-xs font-semibold mt-1.5" style={{ color: '#E60000' }}>
+                📲 للحجز والاستفسار: 01222692182
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <AppFooter />
     </div>
   );
