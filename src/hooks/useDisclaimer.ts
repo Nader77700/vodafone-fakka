@@ -1,9 +1,9 @@
 /**
  * useDisclaimer — نظام إخلاء المسؤولية
- * مسؤول عن قرار واحد فقط: "هل يجب إظهار الإخلاء الآن؟"
- * - يظهر لكل المستخدمين (جدد وقدامى) عند أول دخول بعد التسجيل
- * - لا يمكن تخطيه: لا back، لا backdrop، لا route change
- * - رفض → logout فوري، دخول مرة ثانية → يظهر مجدداً
+ * القاعدة: يظهر مرة واحدة فقط لكل نسخة (once_per_version) حتى لو سجّل الخروج وعاد.
+ * يعتمد على جدول disclaimer_consents في السيرفر — لا localStorage.
+ * - upsert صح بـ onConflict: 'user_id,version'
+ * - UNIQUE constraint على (user_id, version) موجود في DB
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/db/supabase';
@@ -72,14 +72,22 @@ export function useDisclaimer(): DisclaimerState {
 
   const checkDisclaimer = useCallback(async (uid: string) => {
     try {
-      const { data: configRows } = await supabase
-        .from('core_app_config')
-        .select('key, value')
-        .in('key', [
-          'disclaimer_enabled', 'disclaimer_version', 'disclaimer_title',
-          'disclaimer_body', 'disclaimer_developer', 'disclaimer_show_policy',
-          'disclaimer_custom_days',
-        ]);
+      // جلب الـ config والـ consent معاً بالتوازي
+      const [{ data: configRows }, { data: consents }] = await Promise.all([
+        supabase
+          .from('core_app_config')
+          .select('key, value')
+          .in('key', [
+            'disclaimer_enabled', 'disclaimer_version', 'disclaimer_title',
+            'disclaimer_body', 'disclaimer_developer', 'disclaimer_show_policy',
+            'disclaimer_custom_days',
+          ]),
+        supabase
+          .from('disclaimer_consents')
+          .select('version, accepted, accepted_at')
+          .eq('user_id', uid)
+          .order('version', { ascending: false }),
+      ]);
 
       if (!configRows?.length) { setLoading(false); return; }
 
@@ -88,21 +96,17 @@ export function useDisclaimer(): DisclaimerState {
 
       if (!disclaimerCfg.enabled) { setShouldShow(false); setLoading(false); return; }
 
-      const { data: consent } = await supabase
-        .from('disclaimer_consents')
-        .select('version, accepted_at')
-        .eq('user_id', uid)
-        .eq('accepted', true)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // أحدث موافقة مقبولة على نفس الـ version الحالية
+      const consent = consents?.find(
+        c => c.version === disclaimerCfg.version && c.accepted === true,
+      ) ?? null;
 
       let show = false;
       if (!consent) {
-        show = true;
-      } else if (consent.version < disclaimerCfg.version) {
+        // لم يوافق بعد على هذه النسخة
         show = true;
       } else if (isExpiredByPolicy(disclaimerCfg.showPolicy, disclaimerCfg.customDays, consent.accepted_at)) {
+        // انتهت صلاحية الموافقة حسب سياسة العرض
         show = true;
       }
 
@@ -135,17 +139,19 @@ export function useDisclaimer(): DisclaimerState {
 
   const accept = useCallback(async () => {
     if (!user || !cfg) return;
-    await supabase.from('disclaimer_consents').upsert(
+    // upsert صح — يعتمد على UNIQUE(user_id, version) في DB
+    const { error } = await supabase.from('disclaimer_consents').upsert(
       {
         user_id:     user.id,
         version:     cfg.version,
         accepted:    true,
         accepted_at: new Date().toISOString(),
         rejected_at: null,
+        updated_at:  new Date().toISOString(),
       },
       { onConflict: 'user_id,version' },
     );
-    setShouldShow(false);
+    if (!error) setShouldShow(false);
   }, [user, cfg]);
 
   const reject = useCallback(async () => {
@@ -156,6 +162,7 @@ export function useDisclaimer(): DisclaimerState {
         version:     cfg.version,
         accepted:    false,
         rejected_at: new Date().toISOString(),
+        updated_at:  new Date().toISOString(),
       },
       { onConflict: 'user_id,version' },
     );
