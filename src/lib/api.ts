@@ -382,23 +382,7 @@ export async function activateLicenseKey(
   code: string,
   options?: DeviceFingerprintOptions,
 ): Promise<{ success: boolean; error?: string; errorCode?: string; isTrial?: boolean; blockerUsername?: string }> {
-  // ── قبل التفعيل: احفظ الأيام المتبقية ثم سجّل الاشتراك القديم كـ replaced ──
-  const { data: oldSub } = await supabase
-    .from('subscriptions')
-    .select('id, expires_at')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .maybeSingle();
-  if (oldSub?.id && oldSub.expires_at) {
-    const msLeft = Math.max(0, new Date(oldSub.expires_at).getTime() - Date.now());
-    const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-    await supabase.from('subscriptions')
-      .update({ days_remaining: daysLeft, status: 'replaced', updated_at: new Date().toISOString() })
-      .eq('id', oldSub.id);
-  }
-  await syncHistoryStatus(userId, 'replaced', 'replaced_by_new_subscription');
-
-  // ── كل التفعيل يتم عبر RPC المحدث ──
+  // ── كل التفعيل يتم عبر RPC — الـ RPC نفسه يتحكم في الاشتراك السابق ──
   const { data, error } = await supabase.rpc('activate_license_key', {
     p_user_id: userId,
     p_code: code,
@@ -413,12 +397,13 @@ export async function activateLicenseKey(
   const result = typeof data === 'string' ? JSON.parse(data) : data;
   const success = !!result?.success;
 
-  // عند التفعيل الناجح: خروج المستخدم من Preview Mode إلى Subscribed
-  if (success) {
+  // عند التفعيل الناجح بكود مدفوع/تعويض (ليس trial/gift):
+  // نطلب من السيرفر تحديث access_mode فقط — بدون إلغاء أي اشتراك
+  if (success && !result?.isTrial) {
     try {
       await supabase.rpc('convert_preview_to_subscribed', { p_user_id: userId });
     } catch {
-      // نتجاهل الخطأ لأن التفعيل نجح بالفعل
+      // نتجاهل — التفعيل نجح بالفعل
     }
   }
 
