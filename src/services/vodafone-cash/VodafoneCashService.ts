@@ -153,22 +153,53 @@ export class VodafoneCashService {
     }
   }
 
-  static async getTransferHistory(userId: string): Promise<MoneyTransfer[]> {
-    return [];
+  static async getTransferHistory(userId?: string): Promise<MoneyTransfer[]> {
+    let query = supabase
+      .from('vcc_transfers')
+      .select('*, profiles(full_name, username, phone)')
+      .order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data as MoneyTransfer[];
   }
 
-  static async getRechargeHistory(userId: string): Promise<RechargeBalance[]> {
-    return [];
+  static async getRechargeHistory(userId?: string): Promise<RechargeBalance[]> {
+    let query = supabase
+      .from('vcc_recharges')
+      .select('*, profiles(full_name, username, phone)')
+      .order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data as RechargeBalance[];
   }
 
   static async getAdminStats(): Promise<VodafoneCashCenterStats> {
+    const [{ data: transfers }, { data: recharges }] = await Promise.all([
+      supabase.from('vcc_transfers').select('amount, status'),
+      supabase.from('vcc_recharges').select('amount, status'),
+    ]);
+
+    const allOps = [...(transfers || []), ...(recharges || [])];
+    const successful_operations = allOps.filter(r => r.status === 'completed').length;
+    const failed_operations     = allOps.filter(r => r.status === 'failed').length;
+
+    const total_amount_transferred = (transfers || [])
+      .filter(r => r.status === 'completed')
+      .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+
+    const total_amount_recharged = (recharges || [])
+      .filter(r => r.status === 'completed')
+      .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+
     return {
-      total_transfers: 0,
-      total_recharges: 0,
-      successful_operations: 0,
-      failed_operations: 0,
-      total_amount_transferred: 0,
-      total_amount_recharged: 0,
+      total_transfers:          (transfers || []).length,
+      total_recharges:          (recharges || []).length,
+      successful_operations,
+      failed_operations,
+      total_amount_transferred,
+      total_amount_recharged,
     };
   }
 }
