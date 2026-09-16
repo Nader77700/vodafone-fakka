@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/db/supabase';
 import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
+import BulkGiftPanel from '@/components/admin/BulkGiftPanel';
 import { ShieldAlert, Zap, Wifi, ArrowLeftRight, AlertTriangle, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 // ── الإعدادات القابلة للتعديل ─────────────────────────────────────────────
@@ -213,6 +214,15 @@ export default function AdminHotfixPage() {
       <p className="text-xs text-muted-foreground text-center pb-4">
         التغييرات تظهر فوراً لكل المستخدمين عبر Realtime — بدون تحديث APK
       </p>
+
+      <Separator />
+
+      {/* ── الهدايا والتعويضات الجماعية ── */}
+      <Card>
+        <CardContent className="pt-5">
+          <BulkGiftPanel />
+        </CardContent>
+      </Card>
     </div>
   );
 }

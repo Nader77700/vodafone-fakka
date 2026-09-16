@@ -1,20 +1,37 @@
 /**
- * bulk-activate-and-notify
+ * bulk-activate-and-notify  v2
  * ─────────────────────────────────────────────────────────────────
- * تفعيل اشتراك تعويضي 48 ساعة لكل المستخدمين غير المشتركين
- * + إرسال إشعار FCM لكل المستخدمين (مشتركين وغير مشتركين)
+ * يدعم 3 سيناريوهات مستقلة أو دفعة واحدة (all_three):
+ *
+ *  mode = "unsubscribed"  → يومين للمستخدمين غير المشتركين
+ *  mode = "unlimited"     → يضيف يومين للمشتركين اشتراك غير محدود
+ *  mode = "limited_ops"   → يضيف 10 عمليات للمشتركين المحدودي العمليات
+ *  mode = "all_three"     → ينفذ الثلاثة معاً (افتراضي)
  *
  * POST /bulk-activate-and-notify
  * Authorization: Bearer <SERVICE_ROLE_KEY or admin JWT>
  * Body: {
- *   duration_hours?: number,     // مدة الاشتراك (افتراضي: 48)
- *   notify_title?: string,
- *   notify_body?: string,
- *   dry_run?: boolean            // true = حساب فقط بدون تنفيذ
+ *   mode?: "all_three" | "unsubscribed" | "unlimited" | "limited_ops",
+ *   dry_run?: boolean,
+ *   // إشعارات مخصصة لكل فئة (اختيارية)
+ *   notif_unsubscribed?: { title: string; body: string },
+ *   notif_unlimited?:    { title: string; body: string },
+ *   notif_limited_ops?:  { title: string; body: string },
  * }
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+
+// ── types ─────────────────────────────────────────────────────────────────
+type Mode = "all_three" | "unsubscribed" | "unlimited" | "limited_ops";
+interface NotifText { title: string; body: string; }
+interface RequestBody {
+  mode?: Mode;
+  dry_run?: boolean;
+  notif_unsubscribed?: NotifText;
+  notif_unlimited?: NotifText;
+  notif_limited_ops?: NotifText;
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -78,7 +95,7 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
 async function sendFCM(
   accessToken: string, projectId: string,
   token: string, title: string, body: string,
-  notifId: string
+  notifId: string, type = "compensation"
 ): Promise<boolean> {
   const res = await fetch(
     `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
@@ -92,7 +109,7 @@ async function sendFCM(
         message: {
           token,
           notification: { title, body },
-          data: { type: "compensation", notification_id: notifId, action_url: "/home" },
+          data: { type, notification_id: notifId, action_url: "/home" },
           android: {
             priority: "high",
             notification: { sound: "default", channel_id: "default" },
@@ -125,7 +142,6 @@ Deno.serve(async (req) => {
   const isInternalKey = internalKey && internalHeader === internalKey;
 
   if (!isServiceRole && !isInternalKey) {
-    // فحص صلاحية admin
     const callerClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -140,153 +156,215 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const durationHours: number = body.duration_hours ?? 48;
-    const dryRun: boolean = body.dry_run ?? false;
-    const notifyTitle: string = body.notify_title ?? "🎁 هدية خاصة من Vodafone Fakka Premium";
-    const notifyBody: string = body.notify_body ?? `تم تفعيل اشتراك مجاني لمدة ${durationHours} ساعة لك! افتح التطبيق الآن واستمتع بجميع الخدمات 🚀`;
+    const rawBody: RequestBody = await req.json().catch(() => ({}));
+    const mode: Mode   = rawBody.mode ?? "all_three";
+    const dryRun       = rawBody.dry_run ?? false;
+    const now          = new Date();
+    const expiresAt48h = new Date(now.getTime() + 48 * 3_600_000).toISOString();
 
-    const expiresAt = new Date(Date.now() + durationHours * 3_600_000).toISOString();
+    // ── نصوص الإشعارات الافتراضية ──────────────────────────────────────────
+    const DEFAULT_NOTIF: Record<Mode, NotifText> = {
+      unsubscribed: {
+        title: "🎁 هدية خاصة لك من Vodafone Fakka!",
+        body:  "تم تفعيل اشتراك مجاني لمدة 48 ساعة 🚀 افتح التطبيق الآن واستمتع بجميع الخدمات مجاناً!",
+      },
+      unlimited: {
+        title: "🎉 تمديد اشتراكك مجاناً!",
+        body:  "تمت إضافة يومين إضافيين لاشتراكك غير المحدود 💎 استمتع بالخدمات بدون حدود!",
+      },
+      limited_ops: {
+        title: "⚡ رصيد عمليات مجاني!",
+        body:  "تمت إضافة 10 عمليات إضافية مجانية لاشتراكك 🔥 استخدمها الآن!",
+      },
+      all_three: { title: "", body: "" }, // غير مستخدم مباشرة
+    };
 
-    // ── 1. جلب كل المستخدمين غير المشتركين ──────────────────────────────────
-    const { data: allUsers } = await supabase
-      .from("core_profiles")
-      .select("id")
-      .eq("role", "user");
+    const notifUnsubscribed: NotifText = rawBody.notif_unsubscribed ?? DEFAULT_NOTIF.unsubscribed;
+    const notifUnlimited: NotifText    = rawBody.notif_unlimited    ?? DEFAULT_NOTIF.unlimited;
+    const notifLimitedOps: NotifText   = rawBody.notif_limited_ops  ?? DEFAULT_NOTIF.limited_ops;
 
-    const { data: activeSubUsers } = await supabase
-      .from("subscriptions")
-      .select("user_id")
-      .eq("status", "active")
-      .neq("code_type", "trial");
+    // ── جلب البيانات المطلوبة ─────────────────────────────────────────────
+    const [
+      { data: allUsers },
+      { data: activeSubs },
+    ] = await Promise.all([
+      supabase.from("core_profiles").select("id").eq("role", "user"),
+      supabase.from("subscriptions")
+        .select("id, user_id, ops_limit, ops_remaining")
+        .eq("status", "active"),
+    ]);
 
-    const activeSet = new Set((activeSubUsers ?? []).map((s: { user_id: string }) => s.user_id));
-    const nonSubscribers = (allUsers ?? [])
-      .map((u: { id: string }) => u.id)
-      .filter((id: string) => !activeSet.has(id));
+    const allUserIds: string[] = (allUsers ?? []).map((u: { id: string }) => u.id);
 
-    console.log(`Total users: ${allUsers?.length ?? 0}, Active subscribers: ${activeSet.size}, Non-subscribers: ${nonSubscribers.length}`);
+    // فصل المشتركين حسب نوع الاشتراك
+    const unlimitedSubs   = (activeSubs ?? []).filter((s: { ops_limit: number | null }) => !s.ops_limit);
+    const limitedOpsSubs  = (activeSubs ?? []).filter((s: { ops_limit: number | null }) => !!s.ops_limit);
+    const subscribedIds   = new Set((activeSubs ?? []).map((s: { user_id: string }) => s.user_id));
+    const nonSubscriberIds = allUserIds.filter((id: string) => !subscribedIds.has(id));
 
-    let activatedCount = 0;
+    console.log(`Users: ${allUserIds.length} | Unsubscribed: ${nonSubscriberIds.length} | Unlimited: ${unlimitedSubs.length} | LimitedOps: ${limitedOpsSubs.length}`);
 
-    if (!dryRun && nonSubscribers.length > 0) {
-      // ── 2. إلغاء أي compensation subscription قديم لنفس المستخدمين ─────────
+    const stats: Record<string, number> = {
+      total_users: allUserIds.length,
+      unsubscribed_count: nonSubscriberIds.length,
+      unlimited_count:    unlimitedSubs.length,
+      limited_ops_count:  limitedOpsSubs.length,
+      activated_unsubscribed: 0,
+      extended_unlimited:     0,
+      added_ops_limited:      0,
+      fcm_unsubscribed:       0,
+      fcm_unlimited:          0,
+      fcm_limited_ops:        0,
+    };
+
+    const shouldRun = (m: Mode) => mode === "all_three" || mode === m;
+
+    // ════════════════════════════════════════════════════════════════
+    // 1. غير المشتركين — تفعيل اشتراك 48 ساعة جديد
+    // ════════════════════════════════════════════════════════════════
+    if (!dryRun && shouldRun("unsubscribed") && nonSubscriberIds.length > 0) {
+      // إلغاء أي compensation قديم
       await supabase
         .from("subscriptions")
-        .update({ status: "replaced", replace_reason: "تجديد اشتراك تعويضي", updated_at: new Date().toISOString() })
-        .in("user_id", nonSubscribers)
+        .update({ status: "replaced", replace_reason: "تجديد اشتراك تعويضي", updated_at: now.toISOString() })
+        .in("user_id", nonSubscriberIds)
         .eq("code_type", "compensation")
         .eq("status", "active");
 
-      // ── 3. إدراج subscriptions تعويضية دفعة واحدة ───────────────────────────
+      // إدراج اشتراكات جديدة على دفعات
       const BATCH = 200;
-      for (let i = 0; i < nonSubscribers.length; i += BATCH) {
-        const batch = nonSubscribers.slice(i, i + BATCH);
+      for (let i = 0; i < nonSubscriberIds.length; i += BATCH) {
+        const batch = nonSubscriberIds.slice(i, i + BATCH);
         const rows = batch.map((userId: string) => ({
-          user_id:      userId,
-          status:       "active",
-          code_type:    "compensation",
-          code_used:    "ADMIN_COMPENSATION_48H",
-          activated_at: new Date().toISOString(),
-          expires_at:   expiresAt,
-          ops_count:    0,
-          ops_limit:    null,          // غير محدود
-          duration_days: Math.ceil(durationHours / 24),
-          created_at:   new Date().toISOString(),
-          updated_at:   new Date().toISOString(),
+          user_id:       userId,
+          status:        "active",
+          code_type:     "compensation",
+          code_used:     "ADMIN_GIFT_48H",
+          activated_at:  now.toISOString(),
+          expires_at:    expiresAt48h,
+          ops_count:     0,
+          ops_limit:     null,
+          ops_remaining: null,
+          duration_days: 2,
+          created_at:    now.toISOString(),
+          updated_at:    now.toISOString(),
         }));
-        const { error: insertErr } = await supabase.from("subscriptions").insert(rows);
-        if (insertErr) {
-          console.error("Insert batch error:", insertErr.message);
-        } else {
-          activatedCount += batch.length;
-        }
+        const { error: e } = await supabase.from("subscriptions").insert(rows);
+        if (!e) stats.activated_unsubscribed += batch.length;
+        else console.error("Insert unsubscribed batch:", e.message);
       }
     }
 
-    // ── 4. إرسال إشعار عام لكل المستخدمين ──────────────────────────────────
-    let fcmSent = 0;
-    let notifId = "";
+    // ════════════════════════════════════════════════════════════════
+    // 2. المشتركون اشتراك غير محدود — إضافة يومين لـ expires_at
+    // ════════════════════════════════════════════════════════════════
+    if (!dryRun && shouldRun("unlimited") && unlimitedSubs.length > 0) {
+      const BATCH = 100;
+      for (let i = 0; i < unlimitedSubs.length; i += BATCH) {
+        const batch = unlimitedSubs.slice(i, i + BATCH);
+        await Promise.all(batch.map(async (sub: { id: string }) => {
+          // نجلب expires_at الحالي ثم نضيف 48 ساعة
+          const { data: current } = await supabase
+            .from("subscriptions").select("expires_at").eq("id", sub.id).single();
+          const base = current?.expires_at ? new Date(current.expires_at) : now;
+          // لا نعيد تمديد اشتراك منتهي — نبدأ من الآن إذا كان منتهياً
+          const baseMs = Math.max(base.getTime(), now.getTime());
+          const newExpiry = new Date(baseMs + 48 * 3_600_000).toISOString();
+          await supabase.from("subscriptions")
+            .update({ expires_at: newExpiry, updated_at: now.toISOString() })
+            .eq("id", sub.id);
+        }));
+        stats.extended_unlimited += batch.length;
+      }
+    }
 
-    if (!dryRun) {
-      // إدراج إشعار global في notifications
-      const { data: notif } = await supabase
-        .from("notifications")
-        .insert({
-          title:     notifyTitle,
-          body:      notifyBody,
-          type:      "compensation",
-          priority:  "important",
-          is_global: true,
-          action_url: "/home",
-        })
-        .select("id").single();
+    // ════════════════════════════════════════════════════════════════
+    // 3. المشتركون اشتراك محدود بعمليات — إضافة 10 عمليات
+    // ════════════════════════════════════════════════════════════════
+    if (!dryRun && shouldRun("limited_ops") && limitedOpsSubs.length > 0) {
+      const BATCH = 100;
+      for (let i = 0; i < limitedOpsSubs.length; i += BATCH) {
+        const batch = limitedOpsSubs.slice(i, i + BATCH);
+        await Promise.all(batch.map(async (sub: { id: string; ops_remaining: number | null; ops_limit: number | null }) => {
+          const newRemaining = (sub.ops_remaining ?? 0) + 10;
+          const newLimit     = (sub.ops_limit ?? 0) + 10;
+          await supabase.from("subscriptions")
+            .update({ ops_remaining: newRemaining, ops_limit: newLimit, updated_at: now.toISOString() })
+            .eq("id", sub.id);
+        }));
+        stats.added_ops_limited += batch.length;
+      }
+    }
 
-      notifId = notif?.id ?? "";
+    // ════════════════════════════════════════════════════════════════
+    // 4. إرسال إشعارات FCM مخصصة لكل فئة
+    // ════════════════════════════════════════════════════════════════
+    const serviceAccountJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON") ?? "";
 
-      // إرسال FCM لكل الأجهزة النشطة
-      const serviceAccountJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON") ?? "";
-      if (serviceAccountJson && notifId) {
-        try {
-          const sa = JSON.parse(serviceAccountJson);
-          const accessToken = await getAccessToken(serviceAccountJson);
+    if (!dryRun && serviceAccountJson) {
+      try {
+        const sa = JSON.parse(serviceAccountJson);
+        const accessToken = await getAccessToken(serviceAccountJson);
 
-          // جلب كل FCM tokens نشطة
-          const { data: tokens } = await supabase
-            .from("fcm_tokens")
-            .select("token, user_id")
-            .eq("is_active", true);
+        // جلب FCM tokens مع user_id
+        const { data: allTokens } = await supabase
+          .from("fcm_tokens").select("token, user_id").eq("is_active", true);
+        const tokenList: { token: string; user_id: string }[] = allTokens ?? [];
 
-          const tokenList = tokens ?? [];
-          console.log(`Sending FCM to ${tokenList.length} devices...`);
+        // تصنيف tokens
+        const unlimitedIds  = new Set(unlimitedSubs.map((s: { user_id: string }) => s.user_id));
+        const limitedOpsIds = new Set(limitedOpsSubs.map((s: { user_id: string }) => s.user_id));
 
-          // إرسال على دفعات لتجنب timeout
+        const groups: { ids: Set<string>; notif: NotifText; type: string; statKey: string }[] = [
+          ...(shouldRun("unsubscribed") ? [{ ids: new Set(nonSubscriberIds), notif: notifUnsubscribed, type: "gift_48h",    statKey: "fcm_unsubscribed" }] : []),
+          ...(shouldRun("unlimited")    ? [{ ids: unlimitedIds,              notif: notifUnlimited,    type: "gift_2days",  statKey: "fcm_unlimited"    }] : []),
+          ...(shouldRun("limited_ops")  ? [{ ids: limitedOpsIds,             notif: notifLimitedOps,   type: "gift_10ops",  statKey: "fcm_limited_ops"  }] : []),
+        ];
+
+        for (const group of groups) {
+          const groupTokens = tokenList.filter((t) => group.ids.has(t.user_id));
+          if (groupTokens.length === 0) continue;
+
+          // إدراج إشعار واحد لكل فئة
+          const { data: notif } = await supabase.from("notifications").insert({
+            title:      group.notif.title,
+            body:       group.notif.body,
+            type:       group.type,
+            priority:   "important",
+            is_global:  false,
+            action_url: "/home",
+          }).select("id").single();
+          const notifId = notif?.id ?? "";
+
+          // إرسال FCM على دفعات
           const FCM_BATCH = 50;
-          for (let i = 0; i < tokenList.length; i += FCM_BATCH) {
-            const batch = tokenList.slice(i, i + FCM_BATCH);
+          let sent = 0;
+          for (let i = 0; i < groupTokens.length; i += FCM_BATCH) {
+            const batch = groupTokens.slice(i, i + FCM_BATCH);
             const results = await Promise.allSettled(
-              batch.map((t: { token: string; user_id: string }) =>
-                sendFCM(accessToken, sa.project_id, t.token, notifyTitle, notifyBody, notifId)
-              )
+              batch.map((t) => sendFCM(accessToken, sa.project_id, t.token, group.notif.title, group.notif.body, notifId, group.type))
             );
-            fcmSent += results.filter(
+            sent += results.filter(
               (r) => r.status === "fulfilled" && (r as PromiseFulfilledResult<boolean>).value
             ).length;
           }
+          (stats as Record<string, number>)[group.statKey] = sent;
 
           // تسجيل التسليم
-          if (tokenList.length > 0) {
-            const deliveries = tokenList.map((t: { token: string; user_id: string }, i: number) => ({
-              notification_id: notifId,
-              user_id: t.user_id,
-              push_sent: true,
-            }));
-            // deduplicate by user_id for upsert
-            const uniqueDeliveries = Array.from(
-              new Map(deliveries.map((d: { notification_id: string; user_id: string; push_sent: boolean }) => [d.user_id, d])).values()
+          if (notifId && groupTokens.length > 0) {
+            const unique = Array.from(
+              new Map(groupTokens.map((t) => [t.user_id, { notification_id: notifId, user_id: t.user_id, push_sent: true }])).values()
             );
             await supabase.from("notification_deliveries")
-              .upsert(uniqueDeliveries, { onConflict: "notification_id,user_id" });
+              .upsert(unique, { onConflict: "notification_id,user_id" });
           }
-        } catch (fcmErr) {
-          console.error("FCM batch error:", fcmErr);
         }
+      } catch (fcmErr) {
+        console.error("FCM error:", fcmErr);
       }
     }
 
-    return json({
-      success: true,
-      dry_run: dryRun,
-      stats: {
-        total_users:       allUsers?.length ?? 0,
-        active_subscribers: activeSet.size,
-        non_subscribers:   nonSubscribers.length,
-        activated:         activatedCount,
-        fcm_sent:          fcmSent,
-        expires_at:        expiresAt,
-        notification_id:   notifId,
-      },
-    });
+    return json({ success: true, dry_run: dryRun, mode, stats, expires_at_48h: expiresAt48h });
 
   } catch (err) {
     console.error("bulk-activate-and-notify error:", err);
