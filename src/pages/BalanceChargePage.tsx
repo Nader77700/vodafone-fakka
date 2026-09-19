@@ -47,10 +47,35 @@ import { Badge } from '@/components/ui/badge';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
 
 // ── استدعاء Edge Function مباشرة بـ CapacitorHttp (native) أو fetch (web) ──
-// supabase.functions.invoke يمر على customFetch لكن بيبعت body كـ JSON string
-// CapacitorHttp يتعامل مع JSON string بشكل غلط — نستخدم CapacitorHttp.request مباشرة
+// لا نستخدم supabase.functions.invoke لأنه يمر على customFetch
+// لا نستخدم supabase.auth.getSession() لأنه يمر على customFetch أيضاً
+// نقرأ الـ JWT مباشرة من localStorage (secureStorage) بدون أي network call
 const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const STORAGE_KEY   = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+const ENC_KEY       = SUPABASE_ANON + 'com.naderakram.vodafonefakka_VFP_SECURE_STORAGE';
+
+function getStoredJWT(): string {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return SUPABASE_ANON;
+
+    let jsonStr = raw;
+    // إذا مش JSON مباشرة → مشفّر بـ XOR+Base64
+    if (!raw.startsWith('{') && !raw.startsWith('[')) {
+      const decoded = atob(raw);
+      let result = '';
+      for (let i = 0; i < decoded.length; i++) {
+        result += String.fromCharCode(decoded.charCodeAt(i) ^ ENC_KEY.charCodeAt(i % ENC_KEY.length));
+      }
+      jsonStr = decodeURIComponent(escape(result));
+    }
+    const parsed = JSON.parse(jsonStr);
+    return parsed?.access_token ?? SUPABASE_ANON;
+  } catch {
+    return SUPABASE_ANON;
+  }
+}
 
 async function invokeEdgeFunction<T>(
   functionName: string,
@@ -58,35 +83,29 @@ async function invokeEdgeFunction<T>(
   extraHeaders: Record<string, string> = {},
 ): Promise<{ data: T | null; error: string | null }> {
   const url = `${SUPABASE_URL}/functions/v1/${functionName}`;
-
-  // جلب الـ session token
-  const { data: { session } } = await supabase.auth.getSession();
-  const authToken = session?.access_token ?? '';
+  const jwt = getStoredJWT();
 
   const headers: Record<string, string> = {
     'Content-Type':  'application/json',
     'apikey':        SUPABASE_ANON,
-    'Authorization': `Bearer ${authToken}`,
+    'Authorization': `Bearer ${jwt}`,
     ...extraHeaders,
   };
 
-  const bodyStr = JSON.stringify(body);
-
-  console.log('[invokeEdgeFunction]', functionName, '→ native:', Capacitor.isNativePlatform());
+  console.log('[invokeEdgeFunction]', functionName, '→ native:', Capacitor.isNativePlatform(), '| jwt:', jwt.length > 20 ? jwt.slice(0,20)+'...' : 'anon');
 
   if (Capacitor.isNativePlatform()) {
     try {
-      // CapacitorHttp.request مع data كـ object (مش string) لضمان serialization صحيح
       const res = await CapacitorHttp.request({
         url,
         method:          'POST',
         headers,
-        data:            body,          // object مباشرة — CapacitorHttp يعمل JSON.stringify داخلياً
+        data:            body,
         responseType:    'json',
         connectTimeout:  30_000,
         readTimeout:     30_000,
       });
-      console.log('[invokeEdgeFunction]', functionName, 'status:', res.status, 'data:', JSON.stringify(res.data).slice(0, 100));
+      console.log('[invokeEdgeFunction]', functionName, 'status:', res.status, 'data:', JSON.stringify(res.data).slice(0, 200));
       if (res.status >= 400) {
         const errMsg = (res.data as any)?.error ?? `HTTP ${res.status}`;
         return { data: null, error: errMsg };
@@ -101,7 +120,7 @@ async function invokeEdgeFunction<T>(
 
   // Web fallback
   try {
-    const res = await fetch(url, { method: 'POST', headers, body: bodyStr });
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
     const json = await res.json();
     if (!res.ok) return { data: null, error: json?.error ?? `HTTP ${res.status}` };
     return { data: json as T, error: null };
