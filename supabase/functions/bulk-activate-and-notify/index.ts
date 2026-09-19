@@ -223,35 +223,51 @@ Deno.serve(async (req) => {
     // 1. غير المشتركين — تفعيل اشتراك 48 ساعة جديد
     // ════════════════════════════════════════════════════════════════
     if (!dryRun && shouldRun("unsubscribed") && nonSubscriberIds.length > 0) {
-      // إلغاء أي compensation قديم
-      await supabase
+      // ★ FIX: نعيد فحص المشتركين مباشرةً قبل الإدراج لضمان الدقة
+      // (يحمي من حالة تغيّر الاشتراك بين fetch الأولى وهنا)
+      const { data: freshActiveSubs } = await supabase
         .from("subscriptions")
-        .update({ status: "replaced", replace_reason: "تجديد اشتراك تعويضي", updated_at: now.toISOString() })
-        .in("user_id", nonSubscriberIds)
-        .eq("code_type", "compensation")
-        .eq("status", "active");
+        .select("user_id")
+        .eq("status", "active")
+        .gt("expires_at", now.toISOString());
+      const freshSubscribedIds = new Set((freshActiveSubs ?? []).map((s: { user_id: string }) => s.user_id));
+      const safeNonSubscriberIds = nonSubscriberIds.filter((id: string) => !freshSubscribedIds.has(id));
 
-      // إدراج اشتراكات جديدة على دفعات
-      const BATCH = 200;
-      for (let i = 0; i < nonSubscriberIds.length; i += BATCH) {
-        const batch = nonSubscriberIds.slice(i, i + BATCH);
-        const rows = batch.map((userId: string) => ({
-          user_id:       userId,
-          status:        "active",
-          code_type:     "compensation",
-          code_used:     "ADMIN_GIFT_48H",
-          activated_at:  now.toISOString(),
-          expires_at:    expiresAt48h,
-          ops_count:     0,
-          ops_limit:     null,
-          ops_remaining: null,
-          duration_days: 2,
-          created_at:    now.toISOString(),
-          updated_at:    now.toISOString(),
-        }));
-        const { error: e } = await supabase.from("subscriptions").insert(rows);
-        if (!e) stats.activated_unsubscribed += batch.length;
-        else console.error("Insert unsubscribed batch:", e.message);
+      console.log(`Safe non-subscribers after re-check: ${safeNonSubscriberIds.length}`);
+
+      if (safeNonSubscriberIds.length > 0) {
+        // إلغاء أي compensation قديم منتهٍ (لا نلغي النشطة)
+        await supabase
+          .from("subscriptions")
+          .update({ status: "replaced", replace_reason: "تجديد اشتراك تعويضي", updated_at: now.toISOString() })
+          .in("user_id", safeNonSubscriberIds)
+          .eq("code_type", "compensation")
+          .eq("status", "active")
+          .lt("expires_at", now.toISOString()); // ★ فقط المنتهية
+
+        // ★ FIX: إدراج اشتراكات جديدة بـ ON CONFLICT DO NOTHING لمنع التكرار
+        const BATCH = 200;
+        for (let i = 0; i < safeNonSubscriberIds.length; i += BATCH) {
+          const batch = safeNonSubscriberIds.slice(i, i + BATCH);
+          const rows = batch.map((userId: string) => ({
+            user_id:       userId,
+            status:        "active",
+            code_type:     "compensation",
+            code_used:     "GIFT-2DAYS-FREE",
+            activated_at:  now.toISOString(),
+            // ★ FIX: دائماً now() + 48h — لا نعتمد على expires_at سابق
+            expires_at:    expiresAt48h,
+            ops_count:     0,
+            ops_limit:     null,
+            ops_remaining: null,
+            duration_days: 2,
+            created_at:    now.toISOString(),
+            updated_at:    now.toISOString(),
+          }));
+          const { error: e } = await supabase.from("subscriptions").insert(rows);
+          if (!e) stats.activated_unsubscribed += batch.length;
+          else console.error("Insert unsubscribed batch:", e.message);
+        }
       }
     }
 

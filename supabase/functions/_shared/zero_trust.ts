@@ -94,54 +94,85 @@ export async function zeroTrustCheck(req: Request) {
   const cfgMap: Record<string, string> = {};
   for (const c of configs ?? []) cfgMap[c.key] = c.value;
 
-  // ── 3. وضع الصيانة ───────────────────────────────────────────
-  const isMaintenanceMode = cfgMap['ff_maintenance_mode'] === 'true';
+  // ── 3. Authorization header مطلوب (قبل فحص الصيانة — نحتاجه للتحقق من الأدمن) ──
   const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return { error: "Missing Authorization header", status: 401 };
 
-  if (isMaintenanceMode) {
-    let userId = null, username = 'Unknown';
-    if (authHeader) {
-      const callerClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-      const { data: { user } } = await callerClient.auth.getUser();
-      if (user) {
-        userId = user.id;
-        const { data: p } = await supabaseAdmin.from("profiles").select("username, full_name").eq("id", user.id).maybeSingle();
-        username = p?.username || p?.full_name || 'Unknown';
-      }
+  // ── 3b. تحديد هوية المستخدم مبكراً (لفحص admin bypass) ────────
+  const earlyCallerClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user: earlyUser } } = await earlyCallerClient.auth.getUser();
+
+  // ── 3c. فحص دور المستخدم مبكراً لمنح bypass للأدمن ───────────
+  let earlyIsAdmin = false;
+  if (earlyUser) {
+    const { data: earlyProf } = await supabaseAdmin
+      .from("core_profiles")
+      .select("role")
+      .eq("id", earlyUser.id)
+      .single();
+    earlyIsAdmin = ["admin", "super_admin"].includes(earlyProf?.role ?? "");
+  }
+
+  // ── 4. وضع الصيانة — الأدمن مُستثنى تماماً ─────────────────
+  const isMaintenanceMode = cfgMap['ff_maintenance_mode'] === 'true';
+
+  if (isMaintenanceMode && !earlyIsAdmin) {
+    // تسجيل المحاولة في maintenance_logs
+    let userId = earlyUser?.id ?? null;
+    let username = 'Unknown';
+    if (earlyUser) {
+      const { data: p } = await supabaseAdmin
+        .from("profiles")
+        .select("username, full_name")
+        .eq("id", earlyUser.id)
+        .maybeSingle();
+      username = p?.username || p?.full_name || 'Unknown';
     }
     await supabaseAdmin.from("maintenance_logs").insert({
-      user_id: userId, username,
-      device_id:     deviceId,
-      build_version: req.headers.get("x-app-version") || 'unknown',
-      version_code:  req.headers.get("x-app-build")   || 'unknown',
-      build_hash:    req.headers.get("x-build-hash")   || 'unknown',
-      ip_address:    ip,
-      endpoint:      req.url,
-      user_agent:    req.headers.get("user-agent") || 'unknown',
+      user_id:          userId,
+      username,
+      device_id:        deviceId,
+      build_version:    req.headers.get("x-app-version") || 'unknown',
+      version_code:     req.headers.get("x-app-build")   || 'unknown',
+      build_hash:       req.headers.get("x-build-hash")   || 'unknown',
+      ip_address:       ip,
+      endpoint:         req.url,
+      user_agent:       req.headers.get("user-agent") || 'unknown',
       rejection_result: "Blocked by Maintenance Mode"
     });
     return { error: "الخدمة متوقفة مؤقتًا للصيانة.", status: 503 };
   }
 
-  // ── 4. Authorization header مطلوب ────────────────────────────
-  if (!authHeader) return { error: "Missing Authorization header", status: 401 };
+  // إذا كان أدمن مُعرَّف مبكراً → تجاوز كل الفحوصات الأمنية
+  if (earlyIsAdmin && earlyUser) {
+    const { data: adminProf } = await supabaseAdmin
+      .from("profiles")
+      .select("role, is_active, device_id, vodafone_pin_locked_at, access_mode")
+      .eq("id", earlyUser.id)
+      .single();
+    return {
+      user:         earlyUser,
+      isAdmin:      true,
+      profile:      adminProf ?? { role: "admin", is_active: true },
+      supabaseAdmin,
+    };
+  }
 
   // ── 5. فحص الإصدار الأدنى ────────────────────────────────────
   const appBuild       = parseInt(req.headers.get("x-app-build") ?? "0", 10);
   const minBuild       = cfgMap['version_min_supported'] ? parseInt(cfgMap['version_min_supported'], 10) : 330;
   if (appBuild < minBuild) return { error: "Update Required: Version too old", status: 426 };
 
-  // ── 6. Secure Token — فحص صارم (anti-replay + version pinning) ──
+  // ── 6. Secure Token ───────────────────────────────────────────
   const secureToken = req.headers.get("x-app-secure-token");
   const validTokens = new Set([
     'vfp_secure_356_kill_switch',
     'vfp_secure_355_kill_switch',
   ]);
-  // debug_sig مسموح فقط في dev (build < 400)
   if (appBuild < 400) validTokens.add('debug_sig');
 
   if (!secureToken || !validTokens.has(secureToken)) {
@@ -169,13 +200,9 @@ export async function zeroTrustCheck(req: Request) {
   }
 
   // ── 8. التحقق من هوية المستخدم ───────────────────────────────
-  const callerClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
-  const { data: { user }, error: authErr } = await callerClient.auth.getUser();
-  if (authErr || !user) return { error: "Invalid Session", status: 401 };
+  // نستخدم earlyUser إذا كان محدداً (تم جلبه بالفعل في خطوة 3b)
+  const user = earlyUser;
+  if (!user) return { error: "Invalid Session", status: 401 };
 
   // ── 9. فحص الحساب + Device Binding ──────────────────────────
   const { data: prof } = await supabaseAdmin

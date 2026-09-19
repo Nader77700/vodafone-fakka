@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-"""
-Theme template lookup — first-priority path when user picks a named template.
+"""Baseline theme css lookup — first-priority path when user picks a named template.
+Mirrors system/visual-design-director/scripts/theme_search.py.
 
 Flow:
 1. Read template_name (from user message <AESTHETIC_TEMPLATE>...</AESTHETIC_TEMPLATE>)
-2. If template_name in {"自动", "auto", "automatic"} or empty → exit 1 (fallback to Step 2)
+2. If template_name in {"Auto", "自动", "auto", "automatic"} or empty → exit 1 (fallback to Step 2)
 3. Open data/theme.xlsx, filter rows where:
    - data.is_published_to_prod == True
    - data.title == template_name
    - data.support_app_types contains app_type (case-insensitive substring)
 4. If --output is given, write data.context to that path; always print to stdout
-5. Exit codes:
+5. For vite-stack app types, also write the matching baseline theme css from
+   data/css/vite/<template>.css over the scaffold's src/index.css, so the coding
+   agent starts from a palette that already matches the template instead of
+   inventing one. Best-effort: any failure only warns, exit code is unaffected.
+6. Exit codes:
    - 0: hit, context printed to stdout (and written to --output if given)
    - 1: miss (auto/empty, template not found, or app_type incompatible — reason on stderr)
 """
@@ -21,13 +25,16 @@ from pathlib import Path
 
 import openpyxl
 
+from theme_css import format_css_block, write_theme_css
+
 THEME_XLSX = Path(__file__).resolve().parent.parent / "data" / "theme.xlsx"
 
+# The CMS placeholder row's title is literally the Chinese string "自动" in
+# theme.xlsx (data value, not a translation gap) — keep it alongside the
+# English spellings so the auto/empty check still matches.
 AUTO_VALUES = {"", "自动", "auto", "automatic"}
 
-# PRD app_type → xlsx support_app_types lookup value.
-# xlsx only has: Web, Mobile App, MiniProgram.
-# H5/Tool/Questionnaire/Others all use Web templates.
+
 _APP_TYPE_TO_XLSX = {
     "web": "web",
     "h5": "web",
@@ -68,11 +75,11 @@ def _dir_state(output_path) -> str:
     return "ready" if output_path else "skipped"
 
 
-def _theme_status(written: bool, output_path) -> str:
+def _theme_status(written: bool, output_path, css_state: str) -> str:
     next_step = "no_read" if written else "content_below"
     return (
         f"written={str(written).lower()} | dir={_dir_state(output_path)} | "
-        f"{next_step}"
+        f"css={css_state} | {next_step}"
     )
 
 
@@ -141,12 +148,17 @@ def main() -> int:
                 out.write_text(context, encoding="utf-8")
                 print(f"[theme_search] written to {out}", file=sys.stderr)
                 written = True
+            css_state, css_entry, css_text = write_theme_css(
+                template_name, app_type, args.output, "[theme_search]"
+            )
             print("## Matched Template")
-            print(f"**{template_name}** | {_theme_status(written, args.output)}")
+            print(f"**{template_name}** | {_theme_status(written, args.output, css_state)}")
             print("")
             print("--- DESIGN.md current content begin ---")
             print(context)
             print("--- DESIGN.md current content end ---")
+            for line in format_css_block(css_state, css_entry, css_text):
+                print(line)
             return 0
 
     if title_seen:

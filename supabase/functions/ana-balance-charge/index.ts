@@ -85,8 +85,37 @@ serve(async (req: Request) => {
     const { data: sub } = await supabaseAdmin
       .from("subscriptions").select("status, expires_at, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
 
-    // ── استقبال بيانات الطلب ──
-    const { product_id, receiver, access_token, msisdn, tx_uuid } = await req.json();
+    // نقبل active أو suspended (paused) — الأدمن دائماً مقبول
+    if (!isAdmin) {
+      const allowedStatuses = ["active", "suspended"];
+      const statusOk = sub && allowedStatuses.includes(sub.status);
+      const notExpired = sub?.expires_at ? new Date(sub.expires_at) > new Date() : false;
+      if (!statusOk || !notExpired) {
+        return await abortAndRefund({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" });
+      }
+    }
+
+    const { product_id, receiver, access_token: clientToken, msisdn, tx_uuid } = await req.json();
+
+    // ── fallback: لو token الفرونت منتهي نجلب من DB ──
+    // token فودافون ينتهي بعد ~ساعة لكن جلستنا 23 ساعة
+    // نحاول دائماً token DB أولاً لضمان حداثته
+    let access_token = clientToken;
+    const { data: dbSession } = await supabaseAdmin
+      .from("ana_vodafone_sessions")
+      .select("access_token, expires_at")
+      .eq("user_id", caller.id)
+      .maybeSingle();
+    if (dbSession?.access_token && dbSession?.expires_at) {
+      const dbExpiry = new Date(dbSession.expires_at);
+      if (dbExpiry > new Date()) {
+        access_token = dbSession.access_token; // استخدم token DB دائماً لو صالح
+        console.log("[balance-charge] using DB session token (expires:", dbSession.expires_at, ")");
+      }
+    }
+    if (!access_token) {
+      return await abortAndRefund({ success: false, error: "انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً", session_expired: true });
+    }
 
     // ── LAYER 14 & 15: Validate product against Database ──
     const { data: productConfig } = await supabaseAdmin

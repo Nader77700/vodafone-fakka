@@ -6,7 +6,7 @@ const MULTI_KEY   = 'avb_multi_v2';    // مخزن الجلسات المتعدد
 const ACTIVE_KEY  = 'avb_active_v2';   // الحساب النشط حالياً
 const REMEMBER_KEY = 'avb_remember_v2'; // بيانات "تذكرني" آخر حساب
 
-const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 ساعة
+const SESSION_DURATION_MS = 23 * 60 * 60 * 1000; // 23 ساعة — مطابق لـ Edge Function
 
 export interface BalanceSession {
   access_token: string;

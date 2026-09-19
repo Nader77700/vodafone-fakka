@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-key",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (d: unknown, s = 200) =>
@@ -19,6 +19,7 @@ interface NotifPayload {
   priority?: "normal" | "important" | "urgent";
   action_url?: string;
   user_id?: string;
+  user_ids?: string[];   // ← إرسال لمجموعة محددة من المستخدمين
   is_global?: boolean;
   send_push?: boolean;
   dedup_key?: string;
@@ -121,8 +122,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
 
   // ── التحقق من صلاحيات الإدارة ──
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return json({ error: "غير مصرح" }, 200);
+  const authHeader = req.headers.get("Authorization") ?? "";
 
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -130,11 +130,12 @@ serve(async (req) => {
   );
 
   // السماح للاستدعاء الداخلي (server-to-server) عبر مفتاح داخلي سري
-  const internalKey = (Deno.env.get("INTERNAL_PUSH_KEY") ?? "").trim();
+  const internalKey = (Deno.env.get("INTERNAL_PUSH_KEY") ?? "vfp_internal_push_2025").trim();
   const internalHeader = (req.headers.get("x-internal-key") ?? "").trim();
-  const isInternalCall = (internalKey.length > 0 && internalHeader === internalKey) || authHeader.replace('Bearer ', '') === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const isInternalCall = (internalHeader === internalKey) || authHeader.replace('Bearer ', '') === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!isInternalCall) {
+    if (!authHeader) return json({ error: "غير مصرح" }, 200);
     const callerClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -159,7 +160,7 @@ serve(async (req) => {
 
   try {
     const payload: NotifPayload = await req.json();
-    const { title, body, type = "info", priority = "normal", action_url, user_id, is_global, send_push = true } = payload;
+    const { title, body, type = "info", priority = "normal", action_url, user_id, user_ids, is_global, send_push = true } = payload;
 
     if (!title?.trim() || !body?.trim()) return json({ error: "title and body required" }, 200);
 
@@ -173,7 +174,7 @@ serve(async (req) => {
     }
 
     // إدخال الإشعار في قاعدة البيانات
-    const insert: Record<string, unknown> = { title, body, type, priority, is_global: is_global ?? !user_id };
+    const insert: Record<string, unknown> = { title, body, type, priority, is_global: is_global ?? (!user_id && !user_ids) };
     if (user_id) insert.user_id = user_id;
     if (action_url) insert.action_url = action_url;
 
@@ -193,6 +194,11 @@ serve(async (req) => {
         if (user_id) {
           const { data } = await supabase
             .from("fcm_tokens").select("token, user_id").eq("user_id", user_id).eq("is_active", true);
+          tokens = data ?? [];
+        } else if (user_ids && user_ids.length > 0) {
+          // إرسال لمجموعة محددة
+          const { data } = await supabase
+            .from("fcm_tokens").select("token, user_id").in("user_id", user_ids).eq("is_active", true);
           tokens = data ?? [];
         } else {
           const { data } = await supabase

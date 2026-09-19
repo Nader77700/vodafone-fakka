@@ -4,15 +4,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.6.2',
-  versionCode:    508,
+  appVersion:      '3.6.3',
+  versionCode:    509,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_6_2_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.6.2.apk',
-  bundleHash:     'apk_v3_6_2_code508',
-  apkHash:        'apk_v3_6_2_code508',
-  dbVersion:      'v3.6.2',
+  sourceHash:     'build_v3_6_3_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.6.3.apk',
+  bundleHash:     'apk_v3_6_3_code509',
+  apkHash:        'apk_v3_6_3_code509',
+  dbVersion:      'v3.6.3',
   releaseNotes: [
+    'v3.6.3: إصلاح جذري لشحن رصيد مارد/فكة — تعذر الاتصال بالخادم محلول',
+    'v3.6.3: استبدال fetch()+AbortController بـ supabase.functions.invoke (متوافق مع CapacitorHttp)',
+    'v3.6.3: إيقاف وضع الصيانة — كل المستخدمين يقدرون يشحنوا مرة أخرى',
     'v3.6.2: إصلاح حرج — التحديث الإجباري يظهر لمن على آخر إصدار بشكل خاطئ',
     'v3.6.2: من حدّث للإصدار الأخير لا يرى شاشة التحديث أبداً حتى لو version_force_update=true',
     'v3.6.2: إصلاح Realtime listener — كان يستمع على VIEW بدلاً من الجدول الأصلي core_app_config',

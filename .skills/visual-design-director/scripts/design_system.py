@@ -15,6 +15,7 @@ import sys
 import colorsys
 from pathlib import Path
 from core import BM25, search
+from theme_css import format_css_block, write_theme_css
 
 ANTI_SLOP_FILE = (
     Path(__file__).parent.parent / "data" / "anti-slop.md"
@@ -208,18 +209,21 @@ def _dir_state(output_path: str) -> str:
     return "ready" if output_path else "skipped"
 
 
-def _theme_status(written: bool, output_path: str) -> str:
+def _theme_status(written: bool, output_path: str, css_state: str) -> str:
     next_step = "no_read" if written else "content_below"
     return (
         f"written={str(written).lower()} | dir={_dir_state(output_path)} | "
-        f"{next_step}"
+        f"css={css_state} | {next_step}"
     )
 
 
-def _format_theme_hit(theme: dict, anti_slop: list, written: bool, output_path: str) -> str:
+def _format_theme_hit(theme: dict, anti_slop: list, written: bool, output_path: str,
+                      css_state: str = "skipped_no_out", css_entry=None,
+                      css_text=None) -> str:
     lines = [
         "## Matched Template",
-        f"**{theme['title']}** [score={theme['score']:.2f}] | {_theme_status(written, output_path)}",
+        f"**{theme['title']}** [score={theme['score']:.2f}] | "
+        f"{_theme_status(written, output_path, css_state)}",
     ]
     # 两种分支都把 context 放进模型上下文：写盘时避免模型回头 read 文件，未写盘时供其写入。
     lines += [
@@ -229,6 +233,8 @@ def _format_theme_hit(theme: dict, anti_slop: list, written: bool, output_path: 
         "--- DESIGN.md current content end ---",
         "",
     ]
+    # Echo the baseline css when matched and available, same contract as theme_search.py.
+    lines += format_css_block(css_state, css_entry, css_text)
     if anti_slop:
         lines.append("## Anti-Slop Rules")
         lines.extend(f"- {r}" for r in anti_slop)
@@ -722,7 +728,11 @@ def generate(
                 theme["context"], encoding="utf-8"
             )
             written = True
-        return _format_theme_hit(theme, anti_slop, written, output_path)
+        css_state, css_entry, css_text = write_theme_css(
+            theme["title"], app_type, output_path, "[design]"
+        )
+        return _format_theme_hit(theme, anti_slop, written, output_path,
+                                 css_state, css_entry, css_text)
 
     # ── Mobile App 未命中：自配色/布局，只取字体候选 ──────────────────────────
     if app_type.strip().lower() == "mobile app":

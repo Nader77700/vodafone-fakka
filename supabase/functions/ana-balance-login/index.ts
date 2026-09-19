@@ -53,10 +53,19 @@ serve(async (req: Request) => {
     if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 200);
 
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
-    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
-    const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
-    if (!hasActive) return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);
+      .from("subscriptions").select("status, expires_at, is_paused").eq("user_id", caller.id).maybeSingle();
+    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role ?? "");
+
+    // الأدمن يتجاوز فحص الاشتراك دائماً
+    // المستخدم العادي: نقبل active أو suspended (paused) — الرفض فقط لمنتهي الصلاحية حقاً
+    if (!isAdmin) {
+      const allowedStatuses = ["active", "suspended"];
+      const statusOk = sub && allowedStatuses.includes(sub.status);
+      const notExpired = sub?.expires_at ? new Date(sub.expires_at) > new Date() : false;
+      if (!statusOk || !notExpired) {
+        return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);
+      }
+    }
 
     // ── استقبال بيانات تسجيل الدخول ──
     const { phone, password } = await req.json();
@@ -111,21 +120,39 @@ serve(async (req: Request) => {
     }
 
     // نجاح تسجيل الدخول
-    const accessToken = String(loginData.access_token);
+    const accessToken  = String(loginData.access_token);
     const refreshToken = String(loginData.refresh_token ?? "");
-    const expiresIn = Number(loginData.expires_in ?? 3600);
-    const expiresAt = Date.now() + expiresIn * 1000;
+    // فودافون ترجع expires_in بالثواني (≈3600) — نمنح 23 ساعة للجلسة
+    // حتى لا تنتهي بعد ساعة وتضطر للدخول مجدداً
+    const vodafoneExpiresIn = Number(loginData.expires_in ?? 3600);
+    const SESSION_HOURS = 23; // 23 ساعة — يجدد تلقائياً قبل الانتهاء
+    const expiresAt = Date.now() + SESSION_HOURS * 60 * 60 * 1000;
 
-    console.log("[balance-login] success, expires_in:", expiresIn);
+    console.log("[balance-login] success, vf_expires_in:", vodafoneExpiresIn, "session_hours:", SESSION_HOURS);
+
+    // حفظ بيانات الجلسة في DB للاستمرارية عبر الأجهزة
+    await supabaseAdmin
+      .from("ana_vodafone_sessions")
+      .upsert({
+        user_id:       caller.id,
+        phone,
+        access_token:  accessToken,
+        refresh_token: refreshToken,
+        expires_at:    new Date(expiresAt).toISOString(),
+        updated_at:    new Date().toISOString(),
+      }, { onConflict: "user_id" })
+      .then(() => {})
+      .catch((e: unknown) => console.warn("[balance-login] session upsert warn:", String(e)));
 
     // msisdn: الرقم كما أُدخل (مع الصفر) — يُستخدم في كل طلبات الشحن
     const msisdn = phone;
 
     return json({
-      success: true,
+      success:      true,
       access_token: accessToken,
       refresh_token: refreshToken,
-      expires_at: expiresAt,
+      expires_at:   expiresAt,
+      expires_in:   SESSION_HOURS * 3600, // للفرونت ليعرف المدة
       msisdn,
       phone,
     });

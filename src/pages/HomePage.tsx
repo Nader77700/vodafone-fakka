@@ -2634,18 +2634,23 @@ function HomePage() {
   const loadData = () => {
     if (!user) return;
     if (!profile) {
-      setLoading(false);
+      // ★ لا نضع setLoading(false) هنا — ننتظر profile ثم نُعيد التحميل
+      // (profile يأتي من context وقد يتأخر قليلاً عند أول فتح)
       return;
     }
     let isMounted = true;
 
     // ── cache-first: اعرض البيانات المخزنة فوراً قبل أي network call ──
+    // ★ لا نعرض الكاش إذا كانت حالة الاشتراك فيه expired/cancelled
+    //   لأن الكاش القديم قد يُظهر ExpiryModal قبل أن يصل الجواب الصحيح من DB
     Promise.all([
       cacheGetStale<ReturnType<typeof getUserSubscription> extends Promise<infer T> ? T : never>(`cache_subscription_${user.id}`),
       cacheGetStale<{ data: Operation[]; count: number }>(`cache_ops_p1_${user.id}`),
     ]).then(([cachedSub, cachedOps]) => {
       if (!isMounted) return;
-      if (cachedSub !== null) { setSubscription(cachedSub); setLoading(false); }
+      // ★ الإصلاح: تجاهل الكاش إذا كان يحمل حالة expired/cancelled — انتظر DB دائماً
+      const cachedSubSafe = (cachedSub && cachedSub.status === 'active') ? cachedSub : null;
+      if (cachedSubSafe !== null) { setSubscription(cachedSubSafe); setLoading(false); }
       if (cachedOps !== null) { setLastOp(cachedOps.data[0] ?? null); setOpsCount(cachedOps.count); }
     }).catch(() => {});
 
@@ -2799,7 +2804,11 @@ function HomePage() {
     return () => clearInterval(interval);
   }, [subscription?.expires_at, subActive]); // eslint-disable-line react-hooks/exhaustive-deps
   const isSuspendedSub = subscription?.status === 'suspended';
-  const isExpired      = subscription?.status !== 'active' && !isSuspendedSub;
+  // ★ الإصلاح: isExpired = true فقط بعد انتهاء loading
+  //   لأن subscription=null أثناء loading يعني "لم نعرف بعد" لا "منتهٍ"
+  const isExpired = !loading
+    && subscription?.status !== 'active'
+    && !isSuspendedSub;
 
   // P3: badge نوع الاشتراك — يعرض الاسم الحقيقي للخطة من planLabel + PHASE 12 كل الحالات
   const subBadge: { label: string; color: string; bg: string } = (() => {

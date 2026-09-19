@@ -79,62 +79,56 @@ serve(async (req: Request) => {
       );
     }
 
-    // حالة الاشتراك الحقيقية من جدول subscriptions
+    // ── حالة الاشتراك الحقيقية من جدول subscriptions ──────────────
+    // ★ المصدر الوحيد للحقيقة: جدول subscriptions مباشرة
+    // ★ لا نعتمد على access_mode لتحديد ما إذا كان المستخدم مشتركاً
     const { data: subRows } = await supabaseAdmin
       .from("subscriptions")
       .select("status, expires_at")
       .eq("user_id", user.id)
-      .in("status", ["active", "expired", "grace_period"])
-      .order("created_at", { ascending: false })
+      .eq("status", "active")          // فقط active — لا expired ولا grace_period
+      .order("expires_at", { ascending: false })   // الأحدث انتهاءً أولاً
       .limit(1);
 
     const sub = subRows?.[0];
-    let hasActiveSub = false;
-    if (sub?.status === "active") {
-      // اشتراك بدون expires_at = غير محدود المدة → نشط دائماً
-      if (!sub.expires_at) {
-        hasActiveSub = true;
-      } else {
-        hasActiveSub = new Date(sub.expires_at).getTime() > Date.now();
-      }
-    }
+    // اشتراك نشط = status=active AND (expires_at IS NULL OR expires_at > now)
+    const hasActiveSub = !!sub && (
+      !sub.expires_at || new Date(sub.expires_at).getTime() > Date.now()
+    );
 
     const accessMode = svc.access_mode as "all" | "subscribers_only" | "preview_available";
 
-    // المشترك النشط يمر دائماً (باستثناء الحالات أعلاه)
+    // ★ الأولوية القصوى: اشتراك نشط → مسموح دائماً بغض النظر عن access_mode
     if (hasActiveSub) {
+      // تصحيح تلقائي: إذا كان access_mode لا يزال 'preview' رغم وجود اشتراك → نصحح في الخلفية
+      if (profile.access_mode !== "subscribed") {
+        supabaseAdmin
+          .from("core_profiles")
+          .update({ access_mode: "subscribed", updated_at: new Date().toISOString() })
+          .eq("id", user.id)
+          .then(() => {}) // fire-and-forget
+          .catch(() => {});
+      }
       return new Response(
         JSON.stringify({ allowed: true, reason: "ACTIVE_SUBSCRIPTION", message: "اشتراك نشط." }),
         { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    // المستخدم في Preview Mode
-    if (profile.access_mode === "preview") {
-      if (!previewModeEnabled) {
-        return new Response(
-          JSON.stringify({ allowed: false, reason: "PREVIEW_DISABLED", message: "تم إيقاف وضع المعاينة." }),
-          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
-        );
-      }
+    // ── لا يوجد اشتراك نشط ─────────────────────────────────────────
 
-      if (accessMode === "preview_available") {
-        return new Response(
-          JSON.stringify({ allowed: true, reason: "PREVIEW", message: "متاح للمعاينة." }),
-          { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ allowed: false, reason: "SUBSCRIPTION_REQUIRED", message: "هذه الخدمة متاحة للمشتركين فقط." }),
-        { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
-      );
-    }
-
-    // مستخدم عادي غير مشترك
+    // قسم متاح للجميع
     if (accessMode === "all") {
       return new Response(
         JSON.stringify({ allowed: true, reason: "PUBLIC", message: "متاح للجميع." }),
+        { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // قسم يدعم المعاينة — فقط إذا كان Preview Mode مفعّلاً
+    if (accessMode === "preview_available" && previewModeEnabled) {
+      return new Response(
+        JSON.stringify({ allowed: true, reason: "PREVIEW", message: "متاح للمعاينة." }),
         { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }

@@ -704,49 +704,53 @@ function BalanceLoginDialog({
     if (!trimPass) { setError('أدخل كلمة المرور'); return; }
     setLoading(true); setError(null);
 
-    // استخدام fetch() مباشر بدلاً من supabase.functions.invoke لتجاوز CapacitorHttp
-    // تمرير Authorization header مطلوب من قِبَل edge function للتحقق من هوية المستخدم
-    const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const authSession  = (await supabase.auth.getSession()).data.session;
-    const authToken    = authSession?.access_token ?? '';
+    // استخدام supabase.functions.invoke بدلاً من fetch() المباشر
+    // السبب: CapacitorHttp enabled=true + AbortController signal = exception فوري على الأجهزة
+    // supabase.functions.invoke يتعامل مع CapacitorHttp بشكل صحيح تلقائياً
     type LoginResult = { success: boolean; access_token?: string; expires_in?: number; error?: string; };
     let data: LoginResult | null = null;
     let loginNetworkErr = false;
     try {
-      const ctrl = new AbortController();
-      const timerId = setTimeout(() => ctrl.abort(), 20_000);
       const nonce = securityManager.generateNonce();
-      const payloadString = JSON.stringify({ phone: trimPhone, password: trimPass });
-      const signature = await securityManager.signRequest(payloadString, nonce);
+      const payloadObj = { phone: trimPhone, password: trimPass };
+      const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
       const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/ana-balance-login`, {
-        method: 'POST', signal: ctrl.signal,
-        headers: {
-          'Content-Type':  'application/json',
-          'apikey':        supabaseAnon,
-          'Authorization': `Bearer ${authToken}`,
-          ...ztHeaders
-        },
-        body: payloadString,
-      });
-      clearTimeout(timerId);
-      const txt = await res.text();
-      try { data = JSON.parse(txt) as LoginResult; } catch { loginNetworkErr = true; }
+      const { data: fnData, error: fnErr } = await supabase.functions.invoke<LoginResult>(
+        'ana-balance-login',
+        {
+          body: payloadObj,
+          headers: ztHeaders,
+        }
+      );
+      if (fnErr) {
+        // 503 = صيانة
+        const errMsg = (fnErr as any)?.context?.json?.error ?? fnErr.message ?? '';
+        const isMaintenance = errMsg.includes('صيانة') || errMsg.includes('متوقفة');
+        setError(isMaintenance ? `🔧 ${errMsg}` : 'تعذر الاتصال بالخادم — تأكد من الإنترنت');
+        setLoading(false); return;
+      }
+      data = fnData;
     } catch { loginNetworkErr = true; }
 
     if (loginNetworkErr || !data?.success || !data.access_token) {
-      const errText = loginNetworkErr ? 'تعذر الاتصال بالخادم — تأكد من الإنترنت'
-        : (data?.error ?? 'رقم الهاتف أو كلمة المرور غير صحيحة');
+      const rawErr = data?.error ?? '';
+      const isMaintenance = rawErr.includes('صيانة') || rawErr.includes('متوقفة');
+      const errText = loginNetworkErr
+        ? 'تعذر الاتصال بالخادم — تأكد من الإنترنت'
+        : isMaintenance
+          ? `🔧 ${rawErr}`
+          : (rawErr || 'رقم الهاتف أو كلمة المرور غير صحيحة');
       setError(errText); setLoading(false); return;
     }
 
+    // expires_in من السيرفر = 23 ساعة (82800 ثانية) — نحفظها كما وردت
+    const sessionExpiresMs = (data.expires_in ?? 82800) * 1000;
     const session: BalanceSession = {
       access_token: data.access_token,
       refresh_token: '',
       phone: trimPhone, msisdn: trimPhone,
-      expires_at: Date.now() + (data.expires_in ?? 86400) * 1000,
+      expires_at: Date.now() + sessionExpiresMs,
       created_at: Date.now(),
     };
     saveBalanceSession(session);
@@ -1128,21 +1132,14 @@ function BalanceExecuteDialog({
       operation_source: 'ana_vodafone_balance',
     });
 
-    // ══ استدعاء Edge Function بـ fetch() مباشر بدلاً من supabase.functions.invoke ══
-    // السبب: CapacitorHttp يعمل intercept لـ fetch() ويتسبب في fnErr مع supabase-js
-    // الحل: استخدام fetch() المباشر مع تحديد كل headers يدوياً + timeout صريح
-    const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const authToken    = (await supabase.auth.getSession()).data.session?.access_token ?? '';
-
+    // ══ استدعاء Edge Function بـ supabase.functions.invoke ══
+    // تم التبديل من fetch() المباشر لأن CapacitorHttp + AbortController signal
+    // يسبب exception فوري على الأجهزة (Capacitor 8) = "تعذر الاتصال"
     type ChargeResult = { success: boolean; error?: string; session_expired?: boolean; operation_number?: number | null; registered?: boolean; };
     let data: ChargeResult | null = null;
     let fetchErrorMsg: string | null = null;
 
     try {
-      const ctrl = new AbortController();
-      const timerId = setTimeout(() => ctrl.abort(), 30_000); // 30 ثانية timeout
-      
       const nonce = securityManager.generateNonce();
       const payloadObj = {
           product_id:   product.product_id,
@@ -1154,27 +1151,24 @@ function BalanceExecuteDialog({
       const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
       const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/ana-balance-charge`, {
-        method:  'POST',
-        signal:  ctrl.signal,
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'apikey':        supabaseAnon,
-          ...ztHeaders
-        },
-        body: JSON.stringify(payloadObj),
-      });
-      clearTimeout(timerId);
-      const txt = await res.text();
-      try { data = JSON.parse(txt) as ChargeResult; }
-      catch { fetchErrorMsg = `استجابة غير صالحة من الخادم (${res.status})`; }
-    } catch (fetchErr: unknown) {
-      if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
-        fetchErrorMsg = 'انتهت مهلة الاتصال — تأكد من الإنترنت وأعد المحاولة';
+      const { data: fnData, error: fnErr } = await supabase.functions.invoke<ChargeResult>(
+        'ana-balance-charge',
+        {
+          body: payloadObj,
+          headers: ztHeaders,
+        }
+      );
+      if (fnErr) {
+        const errMsg = (fnErr as any)?.context?.json?.error ?? fnErr.message ?? '';
+        const isMaintenance = errMsg.includes('صيانة') || errMsg.includes('متوقفة');
+        fetchErrorMsg = isMaintenance
+          ? `🔧 ${errMsg}`
+          : 'تعذر الاتصال بالخادم — تأكد من الإنترنت وأعد المحاولة';
       } else {
-        fetchErrorMsg = 'تعذر الاتصال بالخادم — تأكد من الإنترنت وأعد المحاولة';
+        data = fnData;
       }
+    } catch {
+      fetchErrorMsg = 'تعذر الاتصال بالخادم — تأكد من الإنترنت وأعد المحاولة';
     }
 
     const now = new Date();
@@ -1187,7 +1181,9 @@ function BalanceExecuteDialog({
     if (fetchErrorMsg) {
       errorMsg = fetchErrorMsg;
     } else if (!data?.success) {
-      errorMsg = data?.error ?? 'فشل الشحن من الرصيد';
+      const rawErr = data?.error ?? 'فشل الشحن من الرصيد';
+      // رسالة الصيانة من zero_trust — نعرضها مباشرة بدل "تعذر الاتصال"
+      errorMsg = rawErr.includes('صيانة') || rawErr.includes('متوقفة') ? `🔧 ${rawErr}` : rawErr;
       if (data?.session_expired) {
         clearBalanceSession();
         toast.error('انتهت صلاحية جلسة تسجيل الدخول — يرجى تسجيل الدخول مرة أخرى');

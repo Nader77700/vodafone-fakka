@@ -281,31 +281,42 @@ export async function getVodafoneChargeEnabled(): Promise<boolean> {
   }
   return data.value === 'true';
 }
-// ── getUserSubscription: يجلب الاشتراك ويحسب الحالة الفعلية دائماً ──────────
-// لا يعتمد على القيمة المخزنة في حقل status فقط:
-// - إذا كان status='active' لكن expires_at < الآن → ينتهي تلقائياً ويحدّث DB
-// - إذا كانت الحصة نفدت (BY_USAGE) → ينتهي تلقائياً
-// - إذا كان status='expired' لكن expires_at لا يزال مستقبلياً → يُصلح تلقائياً (timezone bug fix)
+// ── getUserSubscription: يجلب الاشتراك النشط أولاً ثم الأحدث ──────────────
+// ★ الإصلاح الجذري: نجلب الاشتراك النشط (status=active, expires_at > now) أولاً
+//   وليس فقط الأحدث created_at — لأن بعض المستخدمين لهم صفوف قديمة بـ created_at أقدم
+//   ويتم تحديثها بدلاً من إنشاء صف جديد
 export async function getUserSubscription(userId: string): Promise<Subscription | null> {
-  const { data } = await supabase
+  // ★ الأولوية 1: ابحث عن اشتراك نشط صريح (status=active + لم ينتهِ بعد)
+  const { data: activeData } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .eq('status', 'active')
+    .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
+    .order('expires_at', { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
+
+  // ★ الأولوية 2: إذا لم يُجد اشتراكاً نشطاً → جلب الأحدث مهما كانت حالته
+  const { data } = activeData
+    ? { data: activeData }
+    : await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
   if (!data) return null;
 
   const now = Date.now();
 
   // ══ إصلاح timezone bug: status='expired' لكن expires_at مستقبلي ══
-  // السبب الحقيقي: عملية إدارية أو مزامنة أخطأت في ضبط الحالة
   if (data.status === 'expired' && data.expires_at) {
     const expiresAt = new Date(data.expires_at).getTime();
     const opsExhausted = data.ops_limit != null && (data.ops_count ?? 0) >= data.ops_limit;
     if (expiresAt > now && !opsExhausted) {
-      // الاشتراك لا يزال صالحاً — إصلاح DB فوراً
       await supabase.from('subscriptions').update({
         status: 'active',
         in_grace_period: false,
@@ -323,10 +334,10 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
   }
 
   // ── فحص انتهاء الوقت: إذا status='active' لكن expires_at مضى ──
-  if (data.status === 'active' && data.expires_at) {
+  // ★ لا نُطبّق هذا إلا إذا لم يكن هناك اشتراك نشط آخر (لمنع الإنهاء الخاطئ)
+  if (data.status === 'active' && data.expires_at && !activeData) {
     const expiresAt = new Date(data.expires_at).getTime();
     if (expiresAt < now) {
-      // الاشتراك انتهى — أصلح DB وابدأ فترة السماح إن لم تكن بدأت
       const graceEnds = new Date(now + 60 * 60 * 1000);
       await supabase.from('subscriptions').update({
         status: 'expired',
