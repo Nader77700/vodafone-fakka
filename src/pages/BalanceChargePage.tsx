@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { fetchSeamlessToken } from '@/lib/seamless';
 import { VodafoneCashService } from '@/services/vodafone-cash/VodafoneCashService';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { VodafoneDetector } from '@/lib/vodafoneDetector';
 import { PinInputBlock } from '@/components/vodafone-cash/PinInputBlock';
 import { useRuntimeConfig } from '@/contexts/RuntimeConfigContext';
@@ -45,6 +45,72 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { useMerchantClient } from '@/contexts/MerchantClientContext';
+
+// ── استدعاء Edge Function مباشرة بـ CapacitorHttp (native) أو fetch (web) ──
+// supabase.functions.invoke يمر على customFetch لكن بيبعت body كـ JSON string
+// CapacitorHttp يتعامل مع JSON string بشكل غلط — نستخدم CapacitorHttp.request مباشرة
+const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+async function invokeEdgeFunction<T>(
+  functionName: string,
+  body: Record<string, unknown>,
+  extraHeaders: Record<string, string> = {},
+): Promise<{ data: T | null; error: string | null }> {
+  const url = `${SUPABASE_URL}/functions/v1/${functionName}`;
+
+  // جلب الـ session token
+  const { data: { session } } = await supabase.auth.getSession();
+  const authToken = session?.access_token ?? '';
+
+  const headers: Record<string, string> = {
+    'Content-Type':  'application/json',
+    'apikey':        SUPABASE_ANON,
+    'Authorization': `Bearer ${authToken}`,
+    ...extraHeaders,
+  };
+
+  const bodyStr = JSON.stringify(body);
+
+  console.log('[invokeEdgeFunction]', functionName, '→ native:', Capacitor.isNativePlatform());
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // CapacitorHttp.request مع data كـ object (مش string) لضمان serialization صحيح
+      const res = await CapacitorHttp.request({
+        url,
+        method:          'POST',
+        headers,
+        data:            body,          // object مباشرة — CapacitorHttp يعمل JSON.stringify داخلياً
+        responseType:    'json',
+        connectTimeout:  30_000,
+        readTimeout:     30_000,
+      });
+      console.log('[invokeEdgeFunction]', functionName, 'status:', res.status, 'data:', JSON.stringify(res.data).slice(0, 100));
+      if (res.status >= 400) {
+        const errMsg = (res.data as any)?.error ?? `HTTP ${res.status}`;
+        return { data: null, error: errMsg };
+      }
+      return { data: res.data as T, error: null };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error('[invokeEdgeFunction] CapacitorHttp FAILED:', msg, err);
+      return { data: null, error: msg };
+    }
+  }
+
+  // Web fallback
+  try {
+    const res = await fetch(url, { method: 'POST', headers, body: bodyStr });
+    const json = await res.json();
+    if (!res.ok) return { data: null, error: json?.error ?? `HTTP ${res.status}` };
+    return { data: json as T, error: null };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.error('[invokeEdgeFunction] fetch FAILED:', msg);
+    return { data: null, error: msg };
+  }
+}
 
 // ── ألوان هوية التطبيق الأحمر/الأسود — bg يتكيف مع الوضع ──
 const C = {
@@ -704,9 +770,7 @@ function BalanceLoginDialog({
     if (!trimPass) { setError('أدخل كلمة المرور'); return; }
     setLoading(true); setError(null);
 
-    // استخدام supabase.functions.invoke بدلاً من fetch() المباشر
-    // السبب: CapacitorHttp enabled=true + AbortController signal = exception فوري على الأجهزة
-    // supabase.functions.invoke يتعامل مع CapacitorHttp بشكل صحيح تلقائياً
+    // ── استدعاء Edge Function مباشرة بـ invokeEdgeFunction (CapacitorHttp native / fetch web) ──
     type LoginResult = { success: boolean; access_token?: string; expires_in?: number; error?: string; };
     let data: LoginResult | null = null;
     let loginNetworkErr = false;
@@ -716,29 +780,12 @@ function BalanceLoginDialog({
       const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
       const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
-      console.log('[login] invoking ana-balance-login...');
-      const { data: fnData, error: fnErr } = await supabase.functions.invoke<LoginResult>(
-        'ana-balance-login',
-        {
-          body: payloadObj,
-          headers: ztHeaders,
-        }
+      const { data: fnData, error: fnErr } = await invokeEdgeFunction<LoginResult>(
+        'ana-balance-login', payloadObj, ztHeaders,
       );
-      console.log('[login] fnData:', JSON.stringify(fnData), '| fnErr:', fnErr ? String(fnErr) : 'null');
       if (fnErr) {
-        const rawFnErr = fnErr as any;
-        const errMsg = rawFnErr?.context?.json?.error
-          ?? rawFnErr?.message
-          ?? rawFnErr?.context
-          ?? String(fnErr);
-        console.error('[login] fnErr details:', {
-          message: rawFnErr?.message,
-          status:  rawFnErr?.status,
-          context: rawFnErr?.context,
-          name:    rawFnErr?.name,
-        });
-        const isMaintenance = errMsg.includes('صيانة') || errMsg.includes('متوقفة');
-        setError(isMaintenance ? `🔧 ${errMsg}` : `خطأ: ${errMsg}`);
+        const isMaintenance = fnErr.includes('صيانة') || fnErr.includes('متوقفة');
+        setError(isMaintenance ? `🔧 ${fnErr}` : `خطأ: ${fnErr}`);
         setLoading(false); return;
       }
       data = fnData;
@@ -1147,9 +1194,7 @@ function BalanceExecuteDialog({
       operation_source: 'ana_vodafone_balance',
     });
 
-    // ══ استدعاء Edge Function بـ supabase.functions.invoke ══
-    // تم التبديل من fetch() المباشر لأن CapacitorHttp + AbortController signal
-    // يسبب exception فوري على الأجهزة (Capacitor 8) = "تعذر الاتصال"
+    // ── استدعاء Edge Function مباشرة بـ invokeEdgeFunction (CapacitorHttp native / fetch web) ──
     type ChargeResult = { success: boolean; error?: string; session_expired?: boolean; operation_number?: number | null; registered?: boolean; };
     let data: ChargeResult | null = null;
     let fetchErrorMsg: string | null = null;
@@ -1166,42 +1211,20 @@ function BalanceExecuteDialog({
       const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
       const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
-      console.log('[charge] invoking ana-balance-charge...');
-      const { data: fnData, error: fnErr } = await supabase.functions.invoke<ChargeResult>(
-        'ana-balance-charge',
-        {
-          body: payloadObj,
-          headers: ztHeaders,
-        }
+      const { data: fnData, error: fnErr } = await invokeEdgeFunction<ChargeResult>(
+        'ana-balance-charge', payloadObj, ztHeaders,
       );
-      console.log('[charge] fnData:', JSON.stringify(fnData), '| fnErr:', fnErr ? String(fnErr) : 'null');
       if (fnErr) {
-        const rawFnErr = fnErr as any;
-        // استخراج الرسالة من كل المصادر الممكنة
-        const errMsg = rawFnErr?.context?.json?.error
-          ?? rawFnErr?.message
-          ?? rawFnErr?.context
-          ?? String(fnErr);
-        console.error('[charge] fnErr details:', {
-          message:    rawFnErr?.message,
-          status:     rawFnErr?.status,
-          context:    rawFnErr?.context,
-          name:       rawFnErr?.name,
-          stack:      rawFnErr?.stack,
-        });
-        const isMaintenance = errMsg.includes('صيانة') || errMsg.includes('متوقفة');
-        fetchErrorMsg = isMaintenance
-          ? `🔧 ${errMsg}`
-          : `خطأ: ${errMsg}`;
+        const isMaintenance = fnErr.includes('صيانة') || fnErr.includes('متوقفة');
+        fetchErrorMsg = isMaintenance ? `🔧 ${fnErr}` : fnErr;
       } else {
         data = fnData;
       }
     } catch (rawCatch: unknown) {
-      const catchMsg = rawCatch instanceof Error
+      fetchErrorMsg = rawCatch instanceof Error
         ? `${rawCatch.name}: ${rawCatch.message}`
         : String(rawCatch);
-      console.error('[charge] CATCH exception:', catchMsg, rawCatch);
-      fetchErrorMsg = `خطأ في الاتصال: ${catchMsg}`;
+      console.error('[charge] CATCH:', fetchErrorMsg);
     }
 
     const now = new Date();

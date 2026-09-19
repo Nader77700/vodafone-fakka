@@ -4,16 +4,19 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.6.5',
-  versionCode:    511,
+  appVersion:      '3.6.6',
+  versionCode:    512,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_6_5_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.6.5.apk',
-  bundleHash:     'apk_v3_6_5_code511',
-  apkHash:        'apk_v3_6_5_code511',
-  dbVersion:      'v3.6.5',
+  sourceHash:     'build_v3_6_6_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.6.6.apk',
+  bundleHash:     'apk_v3_6_6_code512',
+  apkHash:        'apk_v3_6_6_code512',
+  dbVersion:      'v3.6.6',
   releaseNotes: [
-    'v3.6.5: تشخيص تفصيلي لمشكلة الشحن — عرض الخطأ الحقيقي بدل رسالة عامة',
+    'v3.6.6: إصلاح جذري نهائي — استدعاء Edge Function مباشرة بـ CapacitorHttp (تجاوز supabase-js)',
+    'v3.6.6: supabase.functions.invoke كان يبعت JSON string → CapacitorHttp يفشل في serialize',
+    'v3.6.6: invokeEdgeFunction الجديدة تبعت body كـ object مباشرة → native bridge يعمل صح',
+    'v3.6.5: تشخيص تفصيلي لمشكلة الشحن — عرض الخطأ الحقيقي',
     'v3.6.4: إصلاح native bridge — استخدام CapacitorHttp.request() مباشرة',
     'v3.6.3: إصلاح شحن الرصيد — استبدال fetch+AbortController بـ supabase.functions.invoke',
     'v3.6.3: إيقاف وضع الصيانة — كل المستخدمين يقدرون يشحنوا مرة أخرى',
