@@ -1,41 +1,38 @@
-// P6: مراقبة حالة الشبكة — Offline First (نسخة محسّنة v2)
-// ✅ يُرجع { isOnline, recheckNow } بدل قيمة مجردة
-// ✅ multi-URL ping: يحاول 3 عناوين، يكفي نجاح واحد
+// P6: مراقبة حالة الشبكة — Offline First (نسخة محسّنة v3)
+// ✅ native: ping لـ Supabase REST (بدون no-cors — مدعوم في WebView)
+// ✅ web: navigator.onLine كافٍ (no-cors يفشل في browser بـ CORS)
 // ✅ فشل الـ ping لا يعني offline — يتطلب فشل متكرر قبل إعلان offline
-// ✅ navigator.onLine = false → offline فوري (بلا ping)
 // ✅ فحص دوري + Page Visibility + Network events
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-const PING_TIMEOUT  = 4_000;  // 4 ثوانٍ لكل محاولة
+const PING_TIMEOUT  = 6_000;  // 6 ثوانٍ (زيادة عن 4 لضمان نجاح أول اتصال)
 const POLL_INTERVAL = 15_000; // فحص دوري كل 15 ثانية في Capacitor
 
-// عناوين متعددة — يكفي نجاح واحد لتأكيد الاتصال
-const PING_URLS = [
-  'https://www.gstatic.com/generate_204',
-  'https://connectivitycheck.gstatic.com/generate_204',
-  'https://clients3.google.com/generate_204',
-];
-
-// فحص الإنترنت الحقيقي — يجرب عدة عناوين بالتوازي
+// فحص الإنترنت الحقيقي
 async function checkRealInternet(): Promise<boolean> {
-  // في الويب — navigator.onLine كافٍ (ping يفشل بـ CORS في browser/iframe)
+  // في الويب — navigator.onLine كافٍ (no-cors يفشل في iframe/browser)
   if (!Capacitor.isNativePlatform()) return navigator.onLine;
   // Wi-Fi/Mobile غير متصل → offline فوراً
   if (!navigator.onLine) return false;
 
-  // جرّب كل العناوين بالتوازي — يكفي نجاح واحد
-  const results = await Promise.allSettled(
-    PING_URLS.map(url => {
-      const ctrl  = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT);
-      return fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: ctrl.signal })
-        .then(res => { clearTimeout(timer); return res.type === 'opaque' || res.ok; })
-        .catch(() => { clearTimeout(timer); return false; });
-    })
-  );
-  // يكفي نجاح واحد من الثلاثة
-  return results.some(r => r.status === 'fulfilled' && r.value === true);
+  // Native: ping لـ Supabase REST API — يعمل دائماً في WebView بدون no-cors
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT);
+    const res = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: 'HEAD',
+      cache:  'no-store',
+      signal: ctrl.signal,
+      headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+    });
+    clearTimeout(timer);
+    // أي رد من السيرفر (حتى 401/404) يعني الإنترنت شغّال
+    return res.status < 600;
+  } catch {
+    return false;
+  }
 }
 
 interface OnlineStatusResult {
