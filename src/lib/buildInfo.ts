@@ -4,17 +4,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.6.4',
-  versionCode:    510,
+  appVersion:      '3.6.5',
+  versionCode:    511,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_6_4_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.6.4.apk',
-  bundleHash:     'apk_v3_6_4_code510',
-  apkHash:        'apk_v3_6_4_code510',
-  dbVersion:      'v3.6.4',
+  sourceHash:     'build_v3_6_5_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.6.5.apk',
+  bundleHash:     'apk_v3_6_5_code511',
+  apkHash:        'apk_v3_6_5_code511',
+  dbVersion:      'v3.6.5',
   releaseNotes: [
-    'v3.6.4: إصلاح جذري نهائي لشحن رصيد مارد/فكة — استخدام CapacitorHttp.request() مباشرة',
-    'v3.6.4: حل مشكلة native bridge في Capacitor 8 — fetch() كان يفشل مع CapacitorHttp enabled',
+    'v3.6.5: تشخيص تفصيلي لمشكلة الشحن — عرض الخطأ الحقيقي بدل رسالة عامة',
+    'v3.6.4: إصلاح native bridge — استخدام CapacitorHttp.request() مباشرة',
     'v3.6.3: إصلاح شحن الرصيد — استبدال fetch+AbortController بـ supabase.functions.invoke',
     'v3.6.3: إيقاف وضع الصيانة — كل المستخدمين يقدرون يشحنوا مرة أخرى',
     'v3.6.2: إصلاح حرج — التحديث الإجباري يظهر لمن على آخر إصدار بشكل خاطئ',

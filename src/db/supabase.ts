@@ -129,6 +129,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         }
       }
 
+      console.log('[customFetch] CapacitorHttp.request →', method, urlStr.replace(/https?:\/\/[^/]+/, ''));
       const capRes = await CapacitorHttp.request({
         url:             urlStr,
         method,
@@ -138,6 +139,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         connectTimeout:  30_000,
         readTimeout:     30_000,
       });
+      console.log('[customFetch] CapacitorHttp status:', capRes.status);
 
       // تحويل CapacitorHttp response → standard Response
       const bodyText = typeof capRes.data === 'string'
@@ -149,7 +151,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         headers: capRes.headers as HeadersInit,
       });
     } catch (capErr) {
-      console.error('[customFetch] CapacitorHttp failed, falling back to fetch:', capErr);
+      console.error('[customFetch] CapacitorHttp FAILED:', capErr instanceof Error ? `${capErr.name}: ${capErr.message}` : String(capErr), capErr);
       // fallback لـ web fetch في حالة فشل CapacitorHttp
     }
   }

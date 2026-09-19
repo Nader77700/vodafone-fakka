@@ -716,6 +716,7 @@ function BalanceLoginDialog({
       const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
       const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
+      console.log('[login] invoking ana-balance-login...');
       const { data: fnData, error: fnErr } = await supabase.functions.invoke<LoginResult>(
         'ana-balance-login',
         {
@@ -723,15 +724,29 @@ function BalanceLoginDialog({
           headers: ztHeaders,
         }
       );
+      console.log('[login] fnData:', JSON.stringify(fnData), '| fnErr:', fnErr ? String(fnErr) : 'null');
       if (fnErr) {
-        // 503 = صيانة
-        const errMsg = (fnErr as any)?.context?.json?.error ?? fnErr.message ?? '';
+        const rawFnErr = fnErr as any;
+        const errMsg = rawFnErr?.context?.json?.error
+          ?? rawFnErr?.message
+          ?? rawFnErr?.context
+          ?? String(fnErr);
+        console.error('[login] fnErr details:', {
+          message: rawFnErr?.message,
+          status:  rawFnErr?.status,
+          context: rawFnErr?.context,
+          name:    rawFnErr?.name,
+        });
         const isMaintenance = errMsg.includes('صيانة') || errMsg.includes('متوقفة');
-        setError(isMaintenance ? `🔧 ${errMsg}` : 'تعذر الاتصال بالخادم — تأكد من الإنترنت');
+        setError(isMaintenance ? `🔧 ${errMsg}` : `خطأ: ${errMsg}`);
         setLoading(false); return;
       }
       data = fnData;
-    } catch { loginNetworkErr = true; }
+    } catch (rawCatch: unknown) {
+      const catchMsg = rawCatch instanceof Error ? `${rawCatch.name}: ${rawCatch.message}` : String(rawCatch);
+      console.error('[login] CATCH exception:', catchMsg, rawCatch);
+      loginNetworkErr = true;
+    }
 
     if (loginNetworkErr || !data?.success || !data.access_token) {
       const rawErr = data?.error ?? '';
@@ -1151,6 +1166,7 @@ function BalanceExecuteDialog({
       const signature = await securityManager.signRequest(JSON.stringify(payloadObj), nonce);
       const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
+      console.log('[charge] invoking ana-balance-charge...');
       const { data: fnData, error: fnErr } = await supabase.functions.invoke<ChargeResult>(
         'ana-balance-charge',
         {
@@ -1158,17 +1174,34 @@ function BalanceExecuteDialog({
           headers: ztHeaders,
         }
       );
+      console.log('[charge] fnData:', JSON.stringify(fnData), '| fnErr:', fnErr ? String(fnErr) : 'null');
       if (fnErr) {
-        const errMsg = (fnErr as any)?.context?.json?.error ?? fnErr.message ?? '';
+        const rawFnErr = fnErr as any;
+        // استخراج الرسالة من كل المصادر الممكنة
+        const errMsg = rawFnErr?.context?.json?.error
+          ?? rawFnErr?.message
+          ?? rawFnErr?.context
+          ?? String(fnErr);
+        console.error('[charge] fnErr details:', {
+          message:    rawFnErr?.message,
+          status:     rawFnErr?.status,
+          context:    rawFnErr?.context,
+          name:       rawFnErr?.name,
+          stack:      rawFnErr?.stack,
+        });
         const isMaintenance = errMsg.includes('صيانة') || errMsg.includes('متوقفة');
         fetchErrorMsg = isMaintenance
           ? `🔧 ${errMsg}`
-          : 'تعذر الاتصال بالخادم — تأكد من الإنترنت وأعد المحاولة';
+          : `خطأ: ${errMsg}`;
       } else {
         data = fnData;
       }
-    } catch {
-      fetchErrorMsg = 'تعذر الاتصال بالخادم — تأكد من الإنترنت وأعد المحاولة';
+    } catch (rawCatch: unknown) {
+      const catchMsg = rawCatch instanceof Error
+        ? `${rawCatch.name}: ${rawCatch.message}`
+        : String(rawCatch);
+      console.error('[charge] CATCH exception:', catchMsg, rawCatch);
+      fetchErrorMsg = `خطأ في الاتصال: ${catchMsg}`;
     }
 
     const now = new Date();
