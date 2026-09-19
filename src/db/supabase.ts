@@ -86,7 +86,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
   if (!options) options = {};
   if (!options.headers) options.headers = {};
 
-  // ── تجميع الـ headers في plain object (مطلوب لـ CapacitorHttp) ──
+  // ── تجميع الـ headers في plain object ──
   let flatHeaders: Record<string, string> = {};
   if (options.headers instanceof Headers) {
     options.headers.forEach((v, k) => { flatHeaders[k] = v; });
@@ -110,26 +110,28 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       flatHeaders['x-app-package']   = appPackageName;
     } catch (err) { console.error('Error generating signature', err); }
 
-    // ── استخدام CapacitorHttp.request() مباشرة لتجنب مشكلة native bridge ──
-    // fetch() + CapacitorHttp enabled=true يسبب exception في Capacitor 8
-    // CapacitorHttp.request() هو الـ API الصحيح للاستخدام المباشر
     try {
       const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as Request).url;
       const method = (options.method ?? 'GET').toUpperCase();
 
-      // CapacitorHttp يقبل body كـ string أو object
+      // ── تحويل body لـ object أو string صحيح — String() ممنوع لأنه ينتج "[object Object]" ──
       let data: string | Record<string, unknown> | undefined;
       if (options.body) {
         if (typeof options.body === 'string') {
-          data = options.body;
+          // body هو JSON string → حوّله لـ object عشان CapacitorHttp يرسله صح
+          try {
+            data = JSON.parse(options.body) as Record<string, unknown>;
+          } catch {
+            data = options.body; // مش JSON → ابعته كـ string (form data مثلاً)
+          }
         } else if (options.body instanceof URLSearchParams) {
           data = options.body.toString();
-        } else {
-          data = String(options.body);
+        } else if (options.body instanceof FormData) {
+          data = options.body.toString();
         }
+        // أي نوع آخر (ReadableStream, Blob, etc.) → نتجاهله ونستخدم web fetch
       }
 
-      console.log('[customFetch] CapacitorHttp.request →', method, urlStr.replace(/https?:\/\/[^/]+/, ''));
       const capRes = await CapacitorHttp.request({
         url:             urlStr,
         method,
@@ -139,9 +141,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         connectTimeout:  30_000,
         readTimeout:     30_000,
       });
-      console.log('[customFetch] CapacitorHttp status:', capRes.status);
 
-      // تحويل CapacitorHttp response → standard Response
       const bodyText = typeof capRes.data === 'string'
         ? capRes.data
         : JSON.stringify(capRes.data);
@@ -151,8 +151,8 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         headers: capRes.headers as HeadersInit,
       });
     } catch (capErr) {
-      console.error('[customFetch] CapacitorHttp FAILED:', capErr instanceof Error ? `${capErr.name}: ${capErr.message}` : String(capErr), capErr);
-      // fallback لـ web fetch في حالة فشل CapacitorHttp
+      console.error('[customFetch] CapacitorHttp FAILED:', capErr instanceof Error ? `${capErr.name}: ${capErr.message}` : String(capErr));
+      // fallback لـ web fetch
     }
   }
 
