@@ -92,41 +92,20 @@ async function invokeEdgeFunction<T>(
     ...extraHeaders,
   };
 
-  console.log('[invokeEdgeFunction]', functionName, '→ native:', Capacitor.isNativePlatform(), '| jwt:', jwt.length > 20 ? jwt.slice(0,20)+'...' : 'anon');
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const res = await CapacitorHttp.request({
-        url,
-        method:          'POST',
-        headers,
-        data:            body,
-        responseType:    'json',
-        connectTimeout:  30_000,
-        readTimeout:     30_000,
-      });
-      console.log('[invokeEdgeFunction]', functionName, 'status:', res.status, 'data:', JSON.stringify(res.data).slice(0, 200));
-      if (res.status >= 400) {
-        const errMsg = (res.data as any)?.error ?? `HTTP ${res.status}`;
-        return { data: null, error: errMsg };
-      }
-      return { data: res.data as T, error: null };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      console.error('[invokeEdgeFunction] CapacitorHttp FAILED:', msg, err);
-      return { data: null, error: msg };
-    }
-  }
-
-  // Web fallback
+  // استخدام fetch العادي (WebView) — يعمل مثل المتصفح تماماً
+  // CapacitorHttp.request() تم إلغاؤه — كان يسبب SSL failure على بعض الأجهزة
   try {
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    const res = await fetch(url, {
+      method:  'POST',
+      headers,
+      body:    JSON.stringify(body),
+    });
     const json = await res.json();
     if (!res.ok) return { data: null, error: json?.error ?? `HTTP ${res.status}` };
     return { data: json as T, error: null };
   } catch (err: unknown) {
     const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    console.error('[invokeEdgeFunction] fetch FAILED:', msg);
+    console.error('[invokeEdgeFunction] FAILED:', msg);
     return { data: null, error: msg };
   }
 }

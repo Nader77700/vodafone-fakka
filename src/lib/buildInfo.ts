@@ -4,18 +4,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.6.8',
-  versionCode:    514,
+  appVersion:      '3.6.9',
+  versionCode:    515,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_6_8_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.6.8.apk',
-  bundleHash:     'apk_v3_6_8_code514',
-  apkHash:        'apk_v3_6_8_code514',
-  dbVersion:      'v3.6.8',
+  sourceHash:     'build_v3_6_9_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.6.9.apk',
+  bundleHash:     'apk_v3_6_9_code515',
+  apkHash:        'apk_v3_6_9_code515',
+  dbVersion:      'v3.6.9',
   releaseNotes: [
-    'v3.6.8: إصلاح جذري — customFetch يحوّل JSON string لـ object قبل إرساله لـ CapacitorHttp',
-    'v3.6.7: إصلاح JWT — قراءة token مباشرة من localStorage',
-    'v3.6.6: استدعاء Edge Function مباشرة بـ CapacitorHttp',
+    'v3.6.9: إصلاح جذري نهائي — إلغاء CapacitorHttp تماماً + WebView fetch مباشرة',
+    'v3.6.9: CapacitorHttp enabled=false — كان يعمل intercept ويكسر SSL على بعض الأجهزة',
+    'v3.6.8: إصلاح customFetch JSON parsing',
     'v3.6.3: إصلاح شحن الرصيد — استبدال fetch+AbortController بـ supabase.functions.invoke',
     'v3.6.3: إيقاف وضع الصيانة — كل المستخدمين يقدرون يشحنوا مرة أخرى',
     'v3.6.2: إصلاح حرج — التحديث الإجباري يظهر لمن على آخر إصدار بشكل خاطئ',

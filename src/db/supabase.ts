@@ -82,6 +82,9 @@ setInterval(() => {
   }
 }, 7000);
 
+// customFetch: يضيف security headers فقط، ثم يستخدم fetch العادي
+// CapacitorHttp.request() تم إلغاؤه — كان يسبب SSL failure على بعض الأجهزة
+// WebView fetch يعمل بنفس طريقة المتصفح = يشتغل دايماً
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
   if (!options) options = {};
   if (!options.headers) options.headers = {};
@@ -96,67 +99,21 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
     flatHeaders = { ...(options.headers as Record<string, string>) };
   }
 
+  // ── إضافة security headers على الأجهزة فقط ──
   if (Capacitor.isNativePlatform()) {
     try {
       const { signature, timestamp } = await generateRequestSignature();
-      if (!cachedSignature || !cachedBuildHash) {
-        cachedSignature = 'debug_sig';
-        cachedBuildHash = 'debug_hash';
-      }
-      flatHeaders['x-app-signature'] = cachedSignature;
-      flatHeaders['x-build-hash']    = cachedBuildHash;
+      flatHeaders['x-app-signature'] = cachedSignature || 'debug_sig';
+      flatHeaders['x-build-hash']    = cachedBuildHash  || 'debug_hash';
       flatHeaders['x-hmac-signature']= signature;
       flatHeaders['x-timestamp']     = timestamp;
       flatHeaders['x-app-package']   = appPackageName;
-    } catch (err) { console.error('Error generating signature', err); }
-
-    try {
-      const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as Request).url;
-      const method = (options.method ?? 'GET').toUpperCase();
-
-      // ── تحويل body لـ object أو string صحيح — String() ممنوع لأنه ينتج "[object Object]" ──
-      let data: string | Record<string, unknown> | undefined;
-      if (options.body) {
-        if (typeof options.body === 'string') {
-          // body هو JSON string → حوّله لـ object عشان CapacitorHttp يرسله صح
-          try {
-            data = JSON.parse(options.body) as Record<string, unknown>;
-          } catch {
-            data = options.body; // مش JSON → ابعته كـ string (form data مثلاً)
-          }
-        } else if (options.body instanceof URLSearchParams) {
-          data = options.body.toString();
-        } else if (options.body instanceof FormData) {
-          data = options.body.toString();
-        }
-        // أي نوع آخر (ReadableStream, Blob, etc.) → نتجاهله ونستخدم web fetch
-      }
-
-      const capRes = await CapacitorHttp.request({
-        url:             urlStr,
-        method,
-        headers:         flatHeaders,
-        data,
-        responseType:    'text',
-        connectTimeout:  30_000,
-        readTimeout:     30_000,
-      });
-
-      const bodyText = typeof capRes.data === 'string'
-        ? capRes.data
-        : JSON.stringify(capRes.data);
-
-      return new Response(bodyText, {
-        status:  capRes.status,
-        headers: capRes.headers as HeadersInit,
-      });
-    } catch (capErr) {
-      console.error('[customFetch] CapacitorHttp FAILED:', capErr instanceof Error ? `${capErr.name}: ${capErr.message}` : String(capErr));
-      // fallback لـ web fetch
+    } catch (err) {
+      console.error('[customFetch] signature error:', err);
     }
   }
 
-  // Web أو fallback
+  // ── استخدام fetch العادي (WebView) — يعمل مثل المتصفح تماماً ──
   options.headers = flatHeaders;
   return fetch(url, options);
 };
