@@ -1,43 +1,51 @@
 import { MoneyTransfer, RechargeBalance, VodafoneCashCenterStats } from "../../types/vodafoneCash";
-import { supabase } from "@/db/supabase";
+import { supabase, customFetch } from "@/db/supabase";
 
-/**
- * Placeholder service for Vodafone Cash operations.
- * NO REAL API CALLS YET.
- */
+// ── helper: استدعاء Edge Function بـ fetch مباشر (يتجاوز supabase.functions.invoke timeout) ──
+async function invokeEdgeFunction(fnName: string, body: object, timeoutMs = 40_000): Promise<{ data: any; error: string | null }> {
+  const session = await supabase.auth.getSession();
+  const authToken = session.data.session?.access_token ?? '';
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey    = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await customFetch(`${supabaseUrl}/functions/v1/${fnName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    let parsed: any = null;
+    try { parsed = await res.json(); } catch { /* ignore */ }
+    if (!res.ok) return { data: null, error: parsed?.error ?? `HTTP ${res.status}` };
+    return { data: parsed, error: null };
+  } catch (e: any) {
+    clearTimeout(tid);
+    const isAbort = e?.name === 'AbortError';
+    return { data: null, error: isAbort ? 'انتهت مهلة الاتصال — أعد المحاولة' : (e.message ?? 'حدث خطأ أثناء الاتصال بالسيرفر') };
+  }
+}
+
 export class VodafoneCashService {
   static async initiateMoneyTransfer(payload: { receiver_number: string; amount: number; pin: string; seamless_token: string | null; msisdn: string | null }): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
     try {
-      const { data, error } = await supabase.functions.invoke('vcc-money-transfer', {
-        body: {
-          receiver: payload.receiver_number,
-          amount: payload.amount,
-          pin: payload.pin,
-          seamless_token: payload.seamless_token,
-          payload_msisdn: payload.msisdn
-        }
+      const { data, error } = await invokeEdgeFunction('vcc-money-transfer', {
+        receiver: payload.receiver_number,
+        amount: payload.amount,
+        pin: payload.pin,
+        seamless_token: payload.seamless_token,
+        payload_msisdn: payload.msisdn,
       });
-      if (error) {
-        // حاول تقرأ الـ body الفعلي من Edge Function (Supabase بيرمي FunctionsHttpError)
-        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
-        let debugSteps: any[] = [];
-        try {
-          const ctx = (error as any)?.context;
-          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
-          if (rawTxt) {
-            const parsed = JSON.parse(rawTxt);
-            if (parsed?.error) errMsg = parsed.error;
-            if (parsed?.debugSteps) debugSteps = parsed.debugSteps;
-          }
-        } catch { /* ignore */ }
-        return { success: false, message: errMsg, error: errMsg, data: { debugSteps } };
-      }
-      if (!data) {
-        return { success: false, message: "لا يوجد رد من الخادم", error: "no_data" };
-      }
-      if (!data.success) {
-        return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data };
-      }
+      if (error) return { success: false, message: error, error };
+      if (!data)  return { success: false, message: "لا يوجد رد من الخادم", error: "no_data" };
+      if (!data.success) return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data };
       return { success: true, message: data.message || "تم التحويل بنجاح", data };
     } catch (e: any) {
       return { success: false, message: e.message || "حدث خطأ غير متوقع", error: e.message };
@@ -46,33 +54,16 @@ export class VodafoneCashService {
 
   static async initiateRecharge(payload: { receiver_number: string; amount: number; pin: string; seamless_token: string | null; msisdn: string | null }): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
     try {
-      const { data, error } = await supabase.functions.invoke('vcc-recharge', {
-        body: {
-          receiver: payload.receiver_number,
-          amount: payload.amount,
-          pin: payload.pin,
-          seamless_token: payload.seamless_token,
-          payload_msisdn: payload.msisdn,
-        }
+      const { data, error } = await invokeEdgeFunction('vcc-recharge', {
+        receiver: payload.receiver_number,
+        amount: payload.amount,
+        pin: payload.pin,
+        seamless_token: payload.seamless_token,
+        payload_msisdn: payload.msisdn,
       });
-      if (error) {
-        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
-        let debugSteps: any[] = [];
-        try {
-          const ctx = (error as any)?.context;
-          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
-          if (rawTxt) {
-            const parsed = JSON.parse(rawTxt);
-            if (parsed?.error) errMsg = parsed.error;
-            if (parsed?.debugSteps) debugSteps = parsed.debugSteps;
-          }
-        } catch { /* ignore */ }
-        return { success: false, message: errMsg, error: errMsg, data: { debugSteps } };
-      }
-      if (!data) return { success: false, message: "لا يوجد رد من الخادم", error: "no_data" };
-      if (!data.success) {
-        return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data };
-      }
+      if (error) return { success: false, message: error, error };
+      if (!data)  return { success: false, message: "لا يوجد رد من الخادم", error: "no_data" };
+      if (!data.success) return { success: false, message: data.error || data.message || "فشلت العملية", error: data.error, data };
       return { success: true, message: data.message || "تم الشحن بنجاح", data };
     } catch (e: any) {
       return { success: false, message: e.message || "حدث خطأ غير متوقع", error: e.message };
@@ -86,23 +77,13 @@ export class VodafoneCashService {
     msisdn: string | null;
   }): Promise<{ success: boolean; balance?: string; msisdn?: string; queried_at?: string; message: string; data?: any }> {
     try {
-      const { data, error } = await supabase.functions.invoke('vcc-wallet-balance', {
-        body: {
-          action: 'balance',
-          pin: payload.pin,
-          seamless_token: payload.seamless_token,
-          payload_msisdn: payload.msisdn,
-        }
+      const { data, error } = await invokeEdgeFunction('vcc-wallet-balance', {
+        action: 'balance',
+        pin: payload.pin,
+        seamless_token: payload.seamless_token,
+        payload_msisdn: payload.msisdn,
       });
-      if (error) {
-        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
-        try {
-          const ctx = (error as any)?.context;
-          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
-          if (rawTxt) { const p = JSON.parse(rawTxt); if (p?.error) errMsg = p.error; }
-        } catch { /* ignore */ }
-        return { success: false, message: errMsg };
-      }
+      if (error) return { success: false, message: error };
       if (!data?.success) return { success: false, message: data?.error || "تعذر الحصول على الرصيد", data };
       return { success: true, message: "تم الحصول على الرصيد بنجاح", balance: data.balance, msisdn: data.msisdn, queried_at: data.queried_at, data };
     } catch (e: any) {
@@ -115,29 +96,19 @@ export class VodafoneCashService {
     pin: string;
     seamless_token: string | null;
     msisdn: string | null;
-    start_date: string; // ISO string
-    end_date: string;   // ISO string
+    start_date: string;
+    end_date: string;
   }): Promise<{ success: boolean; transactions?: any[]; total?: number; period?: any; pagination_error?: boolean; message: string; data?: any }> {
     try {
-      const { data, error } = await supabase.functions.invoke('vcc-wallet-balance', {
-        body: {
-          action: 'transactions',
-          pin: payload.pin,
-          seamless_token: payload.seamless_token,
-          payload_msisdn: payload.msisdn,
-          start_date: payload.start_date,
-          end_date: payload.end_date,
-        }
+      const { data, error } = await invokeEdgeFunction('vcc-wallet-balance', {
+        action: 'transactions',
+        pin: payload.pin,
+        seamless_token: payload.seamless_token,
+        payload_msisdn: payload.msisdn,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
       });
-      if (error) {
-        let errMsg = error.message || "حدث خطأ أثناء الاتصال بالسيرفر";
-        try {
-          const ctx = (error as any)?.context;
-          const rawTxt = typeof ctx?.text === 'function' ? await ctx.text() : null;
-          if (rawTxt) { const p = JSON.parse(rawTxt); if (p?.error) errMsg = p.error; }
-        } catch { /* ignore */ }
-        return { success: false, message: errMsg };
-      }
+      if (error) return { success: false, message: error };
       if (!data?.success) return { success: false, message: data?.error || "تعذر جلب سجل العمليات", data };
       return {
         success: true,
