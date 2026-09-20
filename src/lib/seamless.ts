@@ -16,55 +16,134 @@ export function normalizeMsisdn(raw: string | null | undefined): string | null {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  fetchSeamlessToken — v4 (Server-Side via seamless-proxy)
+//  fetchSeamlessToken — v5 (Native-First)
 //
-//  السبب الجذري لفشل النسخة السابقة (fetch مباشر):
-//  • Android 9+ يمنع cleartext HTTP (http://) في WebView افتراضياً
-//  • فودافون مصر تقبل الطلب فقط من IP مصري — السيرفر يعوض هذا
-//    لأن Supabase Edge Function على سيرفر خارج مصر، لكن
-//    seamless-proxy يستخدم fetch من الـ Deno runtime (لا WebView)
-//    وهو غير مقيّد بـ cleartext HTTP policy
+//  الاستراتيجية:
+//  1. على الجهاز (Native APK): CapacitorHttp.request مباشرة
+//     - يتجاوز WebView تماماً → cleartext HTTP مسموح
+//     - IP المصري محفوظ لأن الطلب من الجهاز ذاته
+//     - network_security_config.xml يسمح mobile.vodafone.com.eg
+//  2. على الويب: Edge Function كـ fallback (لا يعمل خارج مصر)
 //
-//  الحل: إرسال الطلب عبر seamless-proxy Edge Function بدل fetch مباشر
+//  لماذا فشلت v4 (Edge Function):
+//  - Supabase server IP خارج مصر → Vodafone ترفض
+//  - timeout 84 ثانية = مفيش رد من Vodafone على IPs خارجية
 // ══════════════════════════════════════════════════════════════
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { supabase } from '@/db/supabase';
 
-export async function fetchSeamlessToken(
-  _clientId?: string,
-  _customUrl?: string
-): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
+const SEAMLESS_CLIENT_IDS = [
+  'AnaVodafoneAndroid',
+  'vodafone-cash',
+  'VF-Cash-Android',
+  'cash-app',
+  'ana-vodafone-app-seamless',
+  'vodafone-app',
+];
+
+const DEFAULT_SEAMLESS_URL =
+  'http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
+
+// ── Native HTTP مباشر من الجهاز ──────────────────────────────
+async function tryNative(clientId: string, baseUrl: string): Promise<{ token: string; msisdn: string | null } | null> {
+  try {
+    const url = `${baseUrl}?client_id=${clientId}`;
+    const res = await CapacitorHttp.request({
+      method:          'GET',
+      url,
+      connectTimeout:  8000,
+      readTimeout:     8000,
+      headers: {
+        'User-Agent':              'okhttp/4.12.0',
+        'Connection':              'Keep-Alive',
+        'clientId':                clientId,
+        'Accept-Language':         'ar',
+        'x-agent-operatingsystem': '16',
+        'x-agent-device':          'Samsung SM-G991B',
+        'x-agent-version':         '2026.9.1',
+        'x-agent-build':           '1200',
+        'digitalId':               '',
+        'device-id':               '',
+        'Accept':                  'application/json',
+      },
+    });
+
+    if (res.status !== 200) {
+      console.log(`[seamless native] ${clientId} → HTTP ${res.status}`);
+      return null;
+    }
+
+    const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+    const token = data?.seamlessToken ?? data?.access_token ?? data?.token;
+    if (!token) {
+      console.log(`[seamless native] ${clientId} → no token, keys: ${Object.keys(data ?? {}).join(',')}`);
+      return null;
+    }
+
+    const msisdn = normalizeMsisdn(data?.msisdn ?? data?.sub ?? data?.phoneNumber ?? null);
+    console.log(`[seamless native] ✅ ${clientId} → token OK, msisdn=${msisdn ?? 'null'}`);
+    return { token, msisdn };
+  } catch (e: any) {
+    console.log(`[seamless native] ${clientId} → exception: ${e?.message ?? e}`);
+    return null;
+  }
+}
+
+// ── Edge Function fallback (للويب فقط) ───────────────────────
+async function tryEdgeFunction(): Promise<{ token: string; msisdn: string | null } | null> {
   try {
     const { data, error } = await supabase.functions.invoke<{
       success: boolean;
       seamlessToken?: string;
       msisdn?: string | null;
-      clientIdUsed?: string;
       error?: string;
-    }>('seamless-proxy', {
-      method: 'POST',
-      body: {},
-    });
+    }>('seamless-proxy', { method: 'POST', body: {} });
 
-    if (error) {
-      const msg = await (error as any)?.context?.text?.().catch(() => '') ?? error.message;
-      console.error('[fetchSeamlessToken] edge error:', msg);
-      return { token: null, msisdn: null, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
-    }
-
-    if (!data?.success || !data?.seamlessToken) {
-      return {
-        token:  null,
-        msisdn: null,
-        error:  data?.error ?? 'تعذّر التعرف على الشبكة — تأكد من تشغيل بيانات فودافون',
-      };
-    }
-
+    if (error || !data?.success || !data?.seamlessToken) return null;
     return {
       token:  data.seamlessToken,
       msisdn: normalizeMsisdn(data.msisdn ?? null),
     };
-  } catch (e: any) {
-    console.error('[fetchSeamlessToken] fatal:', e);
-    return { token: null, msisdn: null, error: 'خطأ غير متوقع — حاول مرة أخرى' };
+  } catch {
+    return null;
   }
+}
+
+export async function fetchSeamlessToken(
+  _clientId?: string,
+  customUrl?: string
+): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
+  const baseUrl = customUrl || DEFAULT_SEAMLESS_URL;
+  const isNative = Capacitor.isNativePlatform();
+
+  // ── المسار الأول: Native HTTP مباشر من الجهاز ──
+  if (isNative) {
+    for (const clientId of SEAMLESS_CLIENT_IDS) {
+      const result = await tryNative(clientId, baseUrl);
+      if (result) return { token: result.token, msisdn: result.msisdn };
+    }
+    // محاولة HTTPS أيضاً لو HTTP فشل
+    const httpsUrl = baseUrl.replace('http://', 'https://');
+    if (httpsUrl !== baseUrl) {
+      for (const clientId of SEAMLESS_CLIENT_IDS) {
+        const result = await tryNative(clientId, httpsUrl);
+        if (result) return { token: result.token, msisdn: result.msisdn };
+      }
+    }
+    return {
+      token:  null,
+      msisdn: null,
+      error:  'تعذّر التعرف على شبكة فودافون — تأكد من تشغيل بيانات فودافون وإيقاف الـ VPN',
+    };
+  }
+
+  // ── المسار الثاني: Edge Function (ويب / تطوير) ──
+  const result = await tryEdgeFunction();
+  if (result) return { token: result.token, msisdn: result.msisdn };
+
+  return {
+    token:  null,
+    msisdn: null,
+    error:  'تعذّر التعرف على الشبكة — تأكد من تشغيل بيانات فودافون',
+  };
 }
