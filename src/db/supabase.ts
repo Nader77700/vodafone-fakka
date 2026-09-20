@@ -117,6 +117,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
   options.headers = flatHeaders;
   return fetch(url, options);
 };
+export { customFetch };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

@@ -1,5 +1,6 @@
 import { GlobalCrashContext } from './crashContext';
 import { supabase } from '@/db/supabase';
+import { customFetch } from '@/db/supabase';
 import type {
   Profile, LicenseKey, Subscription, Favorite,
   Operation, Notification, SystemLog, PaginatedResult, UserStatistics
@@ -1242,40 +1243,58 @@ export async function executeVodafoneOrder(payload: {
     }
 
     // التنفيذ حصرياً عبر الـ Server (Edge Function) — سد ثغرة الـ Native APK Modifications
+    // نستخدم fetch مباشر بدل supabase.functions.invoke لتجنب الـ timeout الداخلي (4.5s)
+    // العملية تحتاج: 15s (Vodafone token) + 20s (productOrder) = 35s كحد أقصى
     const nonce = securityManager.generateNonce();
     const payloadStr = JSON.stringify(payload);
     const signature = await securityManager.signRequest(payloadStr, nonce);
     const ztHeaders = securityManager.getSecurityHeaders(nonce, signature);
 
-    const { data, error } = await supabase.functions.invoke<{
-      success: boolean; error?: string; message?: string;
-      operation_number?: number | null; registered?: boolean;
-    }>(
-      'vodafone-execute',
-      {
-        body: payload,
-        headers: {
-          ...(payload.idempotencyKey ? { 'X-Idempotency-Key': payload.idempotencyKey } : {}),
-          ...(payload.correlationId  ? { 'X-Correlation-Id':  payload.correlationId  } : {}),
-          'X-Device-Fp': typeof window !== 'undefined'
-            ? (localStorage.getItem('vf_device_id') ?? '')
-            : '',
-          ...ztHeaders
-        },
-      }
-    );
-    if (error) {
-      const msg = await error?.context?.text?.().catch(() => null);
-      let parsed: { error?: string; registered?: boolean; operation_number?: number } | null = null;
-      try { parsed = msg ? JSON.parse(msg) : null; } catch { /* ignore */ }
-      const errMsg = parsed?.error ?? msg ?? 'حدث خطأ أثناء الاتصال بالخادم';
-      if (isPermanentError(errMsg)) return { success: false, error: errMsg, via: 'server', retryCount, registered: parsed?.registered, operation_number: parsed?.operation_number };
-      if (isTransientError(errMsg) && attempt < MAX_RETRIES) continue;
-      return { success: false, error: errMsg, via: 'server', retryCount, registered: parsed?.registered, operation_number: parsed?.operation_number };
+    const session = await supabase.auth.getSession();
+    const authToken = session.data.session?.access_token ?? '';
+    const deviceFp = typeof window !== 'undefined' ? (localStorage.getItem('vf_device_id') ?? '') : '';
+
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 40_000); // 40s timeout آمن
+
+    let rawRes: Response;
+    try {
+      rawRes = await customFetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vodafone-execute`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            ...(payload.idempotencyKey ? { 'X-Idempotency-Key': payload.idempotencyKey } : {}),
+            ...(payload.correlationId  ? { 'X-Correlation-Id':  payload.correlationId  } : {}),
+            'X-Device-Fp': deviceFp,
+            ...ztHeaders,
+          },
+          body: payloadStr,
+          signal: ctrl.signal,
+        }
+      );
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId);
+      const isAbort = fetchErr?.name === 'AbortError';
+      const errMsg = isAbort
+        ? 'انتهت مهلة الاتصال — تأكد من الإنترنت وأعد المحاولة'
+        : 'حدث خطأ أثناء الاتصال بالخادم';
+      if (!isAbort && attempt < MAX_RETRIES) continue;
+      return { success: false, error: errMsg, via: 'server', retryCount };
     }
-    if (!data) {
+    clearTimeout(timeoutId);
+
+    let data: { success: boolean; error?: string; message?: string; operation_number?: number | null; registered?: boolean } | null = null;
+    try { data = await rawRes.json(); } catch { /* ignore */ }
+
+    if (!rawRes.ok || !data) {
+      const errMsg = data?.error ?? 'حدث خطأ أثناء الاتصال بالخادم';
+      if (isPermanentError(errMsg)) return { success: false, error: errMsg, via: 'server', retryCount, registered: data?.registered, operation_number: data?.operation_number };
       if (attempt < MAX_RETRIES) continue;
-      return { success: false, error: 'لا يوجد رد من الخادم', via: 'server', retryCount };
+      return { success: false, error: errMsg, via: 'server', retryCount };
     }
     if (data.success) return {
       success: true, error: data.error, via: 'server', retryCount,
