@@ -16,7 +16,7 @@ import { Download, AlertTriangle, Copy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { ApkInstaller, downloadApkWithProgress, DownloadProgress } from '@/lib/apkInstaller';
+import { ApkInstallerNative, downloadApkToFile, downloadApkWithProgress, DownloadProgress } from '@/lib/apkInstaller';
 import { toast } from 'sonner';
 
 interface ForceUpdateScreenProps {
@@ -46,14 +46,24 @@ export default function ForceUpdateScreen({ apkUrl, latestVersion, customMessage
     }
     setIsDownloading(true);
     setError('');
+    const fileName = `VodafoneFakka-v${latestVersion || 'latest'}.apk`;
     try {
-      const base64 = await downloadApkWithProgress(apkUrl, setProgress);
+      // ── المحاولة الأولى: Filesystem.downloadFile (بدون base64 في الذاكرة) ──
+      const filePath = await downloadApkToFile(apkUrl, fileName, setProgress);
       setProgress(p => ({ ...p!, percent: 100 }));
-      await ApkInstaller.saveAndInstall({ base64, fileName: `VodafoneFakka-v${latestVersion || 'latest'}.apk` });
-    } catch (err: any) {
-      console.error('Internal update failed:', err);
-      setError(err.message || 'حدث خطأ أثناء التنزيل');
-      toast.error('فشل التنزيل الداخلي. يرجى نسخ الرابط واستخدام متصفح كروم.');
+      await ApkInstallerNative.install({ filePath });
+    } catch (firstErr: any) {
+      console.warn('downloadApkToFile failed, trying base64 fallback:', firstErr);
+      // ── Fallback: تنزيل base64 كلاسيكي ──
+      try {
+        const base64 = await downloadApkWithProgress(apkUrl, setProgress);
+        setProgress(p => ({ ...p!, percent: 100 }));
+        await ApkInstallerNative.saveAndInstall({ base64, fileName });
+      } catch (err: any) {
+        console.error('Internal update failed (both methods):', err);
+        setError('حدث خطأ أثناء التنزيل. انسخ الرابط وافتحه في كروم.');
+        toast.error('فشل التنزيل الداخلي. يرجى نسخ الرابط واستخدام متصفح كروم.');
+      }
     } finally {
       setIsDownloading(false);
       setProgress(null);

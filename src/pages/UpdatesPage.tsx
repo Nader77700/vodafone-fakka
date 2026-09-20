@@ -9,7 +9,7 @@ import { BUILD_INFO } from '@/lib/buildInfo';
 import { toast } from 'sonner';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { ApkInstaller, downloadApkWithProgress, DownloadProgress } from '@/lib/apkInstaller';
+import { ApkInstallerNative, downloadApkToFile, downloadApkWithProgress, DownloadProgress } from '@/lib/apkInstaller';
 
 interface AppVersion {
   id: string;
@@ -75,14 +75,24 @@ export default function UpdatesPage() {
       return;
     }
     setIsDownloading(true);
+    const fileName = `VodafoneFakka-v${version}.apk`;
     try {
-      const base64 = await downloadApkWithProgress(url, setProgress);
+      // ── المحاولة الأولى: Filesystem.downloadFile ──
+      const filePath = await downloadApkToFile(url, fileName, setProgress);
       setProgress(p => ({ ...p!, percent: 100 }));
-      await ApkInstaller.saveAndInstall({ base64, fileName: `VodafoneFakka-v${version}.apk` });
-    } catch (err: any) {
-      console.error('Internal update failed:', err);
-      toast.error(`فشل التنزيل الداخلي: ${err.message || 'خطأ غير معروف'}. جاري الفتح في المتصفح...`);
-      Browser.open({ url });
+      await ApkInstallerNative.install({ filePath });
+    } catch (firstErr: any) {
+      console.warn('downloadApkToFile failed, trying base64 fallback:', firstErr);
+      // ── Fallback: base64 كلاسيكي ──
+      try {
+        const base64 = await downloadApkWithProgress(url, setProgress);
+        setProgress(p => ({ ...p!, percent: 100 }));
+        await ApkInstallerNative.saveAndInstall({ base64, fileName });
+      } catch (err: any) {
+        console.error('Internal update failed (both methods):', err);
+        toast.error(`فشل التنزيل الداخلي. جاري الفتح في المتصفح...`);
+        Browser.open({ url });
+      }
     } finally {
       setIsDownloading(false);
       setProgress(null);
