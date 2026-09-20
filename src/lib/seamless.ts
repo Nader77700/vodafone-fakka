@@ -16,99 +16,55 @@ export function normalizeMsisdn(raw: string | null | undefined): string | null {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  قائمة client_ids تُجرَّب بالتسلسل مباشرةً من الجهاز
-//  المستخدم يطلب فودافون مصر من شبكته المصرية → لا VPN سيرفر
+//  fetchSeamlessToken — v4 (Server-Side via seamless-proxy)
+//
+//  السبب الجذري لفشل النسخة السابقة (fetch مباشر):
+//  • Android 9+ يمنع cleartext HTTP (http://) في WebView افتراضياً
+//  • فودافون مصر تقبل الطلب فقط من IP مصري — السيرفر يعوض هذا
+//    لأن Supabase Edge Function على سيرفر خارج مصر، لكن
+//    seamless-proxy يستخدم fetch من الـ Deno runtime (لا WebView)
+//    وهو غير مقيّد بـ cleartext HTTP policy
+//
+//  الحل: إرسال الطلب عبر seamless-proxy Edge Function بدل fetch مباشر
 // ══════════════════════════════════════════════════════════════
-const SEAMLESS_CLIENT_IDS = [
-  'AnaVodafoneAndroid',
-  'ana-vodafone-app-seamless',
-  'cash-app',
-  'vodafone-app',
-];
+import { supabase } from '@/db/supabase';
 
-const SEAMLESS_BASE_URL =
-  'http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth';
-
-const SEAMLESS_HEADERS: Record<string, string> = {
-  'User-Agent':              'okhttp/4.12.0',
-  'Connection':              'Keep-Alive',
-  'x-dynatrace':             'MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157',
-  'x-agent-operatingsystem': '16',
-  'Accept-Language':         'ar',
-  'x-agent-device':          'OPPO CPH2701',
-  'x-agent-version':         '2026.7.1',
-  'x-agent-build':           '1176',
-  'digitalId':               '',
-  'device-id':               '',
-};
-
-async function tryClientId(
-  clientId: string,
-  baseUrl: string
-): Promise<{ token: string; msisdn: string | null } | null> {
-  const url = `${baseUrl}?client_id=${clientId}`;
-  try {
-    const ctrl    = new AbortController();
-    const timerId = setTimeout(() => ctrl.abort(), 7_000);
-    const res = await fetch(url, {
-      method: 'GET',
-      signal: ctrl.signal,
-      headers: { ...SEAMLESS_HEADERS, clientId },
-    });
-    clearTimeout(timerId);
-
-    if (res.status !== 200) return null;
-
-    const txt = await res.text();
-    let data: Record<string, unknown>;
-    try { data = JSON.parse(txt); }
-    catch { return null; }
-
-    const token  = data['seamlessToken'] as string | undefined;
-    const msisdn = data['msisdn']        as string | undefined;
-    if (!token) return null;
-
-    return { token, msisdn: normalizeMsisdn(msisdn ?? null) };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * fetchSeamlessToken
- * يجلب Seamless Token مباشرةً من جهاز المستخدم (client-side / APK)
- * لأن فودافون مصر تقبل الطلب فقط من IP مصري (شبكة الجهاز) وليس من سيرفر خارجي.
- *
- * يجرّب 4 client_ids بالتسلسل حتى أول نجاح.
- * clientId و customUrl اختياريان — إذا مُرِّرا يُضافان في المقدمة.
- */
 export async function fetchSeamlessToken(
-  clientId?: string,
-  customUrl?: string
+  _clientId?: string,
+  _customUrl?: string
 ): Promise<{ token: string | null; msisdn: string | null; error?: string }> {
-  const baseUrl = customUrl || SEAMLESS_BASE_URL;
+  try {
+    const { data, error } = await supabase.functions.invoke<{
+      success: boolean;
+      seamlessToken?: string;
+      msisdn?: string | null;
+      clientIdUsed?: string;
+      error?: string;
+    }>('seamless-proxy', {
+      method: 'POST',
+      body: {},
+    });
 
-  // إذا مُرِّر client_id خاص → جرّبه أولاً ثم القائمة الاحتياطية
-  const ids = clientId && !SEAMLESS_CLIENT_IDS.includes(clientId)
-    ? [clientId, ...SEAMLESS_CLIENT_IDS]
-    : SEAMLESS_CLIENT_IDS;
-
-  const errors: string[] = [];
-
-  for (const id of ids) {
-    try {
-      const result = await tryClientId(id, baseUrl);
-      if (result) return { token: result.token, msisdn: result.msisdn };
-      errors.push(`${id}: no token`);
-    } catch (e: any) {
-      errors.push(`${id}: ${e?.message ?? 'error'}`);
+    if (error) {
+      const msg = await (error as any)?.context?.text?.().catch(() => '') ?? error.message;
+      console.error('[fetchSeamlessToken] edge error:', msg);
+      return { token: null, msisdn: null, error: 'خطأ في الاتصال بالخادم — حاول مرة أخرى' };
     }
-  }
 
-  // كل client_ids فشلت
-  return {
-    token:  null,
-    msisdn: null,
-    error:  `تعذّر التعرف على الشبكة (${errors.slice(-1)[0] ?? 'timeout'})`,
-  };
+    if (!data?.success || !data?.seamlessToken) {
+      return {
+        token:  null,
+        msisdn: null,
+        error:  data?.error ?? 'تعذّر التعرف على الشبكة — تأكد من تشغيل بيانات فودافون',
+      };
+    }
+
+    return {
+      token:  data.seamlessToken,
+      msisdn: normalizeMsisdn(data.msisdn ?? null),
+    };
+  } catch (e: any) {
+    console.error('[fetchSeamlessToken] fatal:', e);
+    return { token: null, msisdn: null, error: 'خطأ غير متوقع — حاول مرة أخرى' };
+  }
 }
