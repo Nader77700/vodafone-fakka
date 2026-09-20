@@ -90,10 +90,12 @@ serve(async (req: Request) => {
     // ── التحقق من الاشتراك وحالة القفل ──
     const { data: sub } = await supabaseAdmin
       .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
-    const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
+    // اشتراك نشط إذا: status=active + (expires_at=null أي مفتوح) أو (expires_at في المستقبل)
+    const hasActive = sub && sub.status === "active" &&
+      (sub.expires_at === null || new Date(sub.expires_at) > new Date());
 
     if (!hasActive) {
-      logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}`);
+      logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}, expires_at=${sub?.expires_at ?? "none"}`);
       return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك", layer: "Authorization" });
     }
 
