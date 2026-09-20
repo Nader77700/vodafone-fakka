@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.7.0',
-  versionCode:    516,
+  appVersion:      '3.7.1',
+  versionCode:    517,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_v3_7_0_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.7.0.apk',
-  bundleHash:     'apk_v3_7_0_code516',
-  apkHash:        'apk_v3_7_0_code516',
-  dbVersion:      'v3.7.0',
+  bundleFile:     'VodafoneFakka-v3.7.1.apk',
+  bundleHash:     'apk_v3_7_1_code517',
+  apkHash:        'apk_v3_7_1_code517',
+  dbVersion:      'v3.7.1',
   releaseNotes: [
+    'v3.7.1: إضافة 6 كروت فكة جديدة (NewFakka) مع فاصل بصري جديد/قديم + إصلاح Seamless Token على Android 9+',
     'v3.7.0: إصلاح جذري نهائي — شاشة offline الخاطئة رغم وجود إنترنت',
     'v3.7.0: استبدال no-cors ping بـ Supabase REST ping على native',
     'v3.6.9: إلغاء CapacitorHttp + WebView fetch مباشرة',
