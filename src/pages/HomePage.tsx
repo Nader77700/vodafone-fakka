@@ -32,7 +32,7 @@ import { formatEgyptTime, formatEgyptDate, formatReceiptDate, formatReceiptTime 
 import InvoiceReceipt from '@/components/invoice/InvoiceReceipt';
 import PrintButton from '@/components/invoice/PrintButton';
 import type { InvoiceData } from '@/lib/printer/types';
-import { ALL_PRODUCTS, FAKKA_PRODUCTS, MARED_PRODUCTS } from '@/data/products';
+import { ALL_PRODUCTS, FAKKA_PRODUCTS, MARED_PRODUCTS, NEW_FAKKA_PRODUCTS } from '@/data/products';
 import type { VodafoneProduct } from '@/data/products';
 
 // لوجو احتياطي — محلي دائمًا، لا يعتمد على الشبكة
@@ -624,6 +624,7 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
   const isMared = product.category === 'mared';
   const validity = getValidity(product);
   const L = useIsLight();
+  const isNew = !!product.isNew;
 
   return (
     <button
@@ -633,8 +634,12 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       style={{
         minHeight: 112,
         borderRadius: 14,
-        border: `1.5px solid ${L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)'}`,
-        boxShadow: L ? '0 4px 18px rgba(0,0,0,0.12), 0 0 0 1px rgba(230,0,0,0.08)' : '0 4px 24px rgba(0,0,0,0.70)',
+        border: isNew
+          ? `1.5px solid ${L ? 'rgba(255,160,0,0.60)' : 'rgba(255,185,0,0.65)'}`
+          : `1.5px solid ${L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)'}`,
+        boxShadow: isNew
+          ? (L ? '0 4px 18px rgba(255,160,0,0.18), 0 0 0 1px rgba(255,160,0,0.10)' : '0 4px 24px rgba(0,0,0,0.70), 0 0 16px rgba(255,185,0,0.22)')
+          : (L ? '0 4px 18px rgba(0,0,0,0.12), 0 0 0 1px rgba(230,0,0,0.08)' : '0 4px 24px rgba(0,0,0,0.70)'),
         transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
         background: L ? '#ffffff' : '#0D0303',
       }}
@@ -651,19 +656,25 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.transform = 'translateY(-3px)';
-        el.style.boxShadow = L
-          ? '0 8px 28px rgba(230,0,0,0.18), 0 0 0 1px rgba(230,0,0,0.18)'
-          : '0 12px 36px rgba(0,0,0,0.75), 0 0 28px rgba(230,0,0,0.42)';
-        el.style.borderColor = L ? 'rgba(230,0,0,0.60)' : 'rgba(230,0,0,0.75)';
+        el.style.boxShadow = isNew
+          ? (L ? '0 8px 28px rgba(255,160,0,0.28), 0 0 0 1px rgba(255,160,0,0.25)' : '0 12px 36px rgba(0,0,0,0.75), 0 0 28px rgba(255,185,0,0.38)')
+          : (L ? '0 8px 28px rgba(230,0,0,0.18), 0 0 0 1px rgba(230,0,0,0.18)' : '0 12px 36px rgba(0,0,0,0.75), 0 0 28px rgba(230,0,0,0.42)');
+        el.style.borderColor = isNew
+          ? (L ? 'rgba(255,160,0,0.85)' : 'rgba(255,185,0,0.90)')
+          : (L ? 'rgba(230,0,0,0.60)' : 'rgba(230,0,0,0.75)');
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.transform = 'translateY(0)';
-        el.style.boxShadow = L ? '0 4px 18px rgba(0,0,0,0.12)' : '0 4px 24px rgba(0,0,0,0.70)';
-        el.style.borderColor = L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)';
+        el.style.boxShadow = isNew
+          ? (L ? '0 4px 18px rgba(255,160,0,0.18)' : '0 4px 24px rgba(0,0,0,0.70), 0 0 16px rgba(255,185,0,0.22)')
+          : (L ? '0 4px 18px rgba(0,0,0,0.12)' : '0 4px 24px rgba(0,0,0,0.70)');
+        el.style.borderColor = isNew
+          ? (L ? 'rgba(255,160,0,0.60)' : 'rgba(255,185,0,0.65)')
+          : (L ? 'rgba(230,0,0,0.35)' : 'rgba(230,0,0,0.45)');
       }}
     >
-      {/* خلفية AI — تُخفى في Light Mode */}
+      {/* خلفية — Dark Mode */}
       {!L && (
         <img
           src="/images/vf-card-bg.jpg"
@@ -675,19 +686,34 @@ function ProductCard({ product, onSelect }: { product: VodafoneProduct; onSelect
       )}
       {!L && (
         <div className="absolute inset-0" style={{
-          background: 'linear-gradient(to right, rgba(4,0,0,0.95) 38%, rgba(4,0,0,0.55) 58%, rgba(4,0,0,0.02) 100%)',
+          background: isNew
+            ? 'linear-gradient(to right, rgba(20,8,0,0.96) 38%, rgba(20,8,0,0.58) 58%, rgba(20,8,0,0.04) 100%)'
+            : 'linear-gradient(to right, rgba(4,0,0,0.95) 38%, rgba(4,0,0,0.55) 58%, rgba(4,0,0,0.02) 100%)',
           borderRadius: 'inherit',
         }} />
       )}
       {L && (
         <div className="absolute inset-0" style={{
-          background: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 50%, #fef2f2 100%)',
+          background: isNew
+            ? 'linear-gradient(135deg, #fffbf0 0%, #ffffff 50%, #fff8e7 100%)'
+            : 'linear-gradient(135deg, #fff5f5 0%, #ffffff 50%, #fef2f2 100%)',
           borderRadius: 'inherit',
         }} />
       )}
 
+      {/* شريط "جديد" علوي — مميز للكروت الجديدة */}
+      {isNew && (
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-end px-2"
+          style={{ height: 16, background: L ? 'rgba(255,160,0,0.15)' : 'rgba(255,185,0,0.18)', borderBottom: `1px solid ${L ? 'rgba(255,160,0,0.25)' : 'rgba(255,185,0,0.30)'}` }}>
+          <span className="text-[8px] font-black tracking-widest"
+            style={{ color: L ? '#b45309' : '#FFD700', textShadow: L ? 'none' : '0 0 8px rgba(255,215,0,0.60)' }}>
+            ✦ جديد
+          </span>
+        </div>
+      )}
+
       {/* Layout: يسار = لوجو+توقيع، يمين = بيانات */}
-      <div className="relative z-10 flex flex-row h-full" style={{ minHeight: 112 }}>
+      <div className="relative z-10 flex flex-row h-full" style={{ minHeight: 112, paddingTop: isNew ? 16 : 0 }}>
 
         {/* الجانب الأيسر — لوجو + توقيع */}
         <div className="flex flex-col justify-between py-2 px-2" style={{ width: '36%', minWidth: 0 }}>
@@ -2835,10 +2861,10 @@ function HomePage() {
   const mergedProducts = useMemo((): VodafoneProduct[] => {
     // قبل تحميل أي config → عرض كل الكروت كما هي
     if (productConfigs.length === 0) {
-      return [...FAKKA_PRODUCTS, ...MARED_PRODUCTS];
+      return [...NEW_FAKKA_PRODUCTS, ...FAKKA_PRODUCTS, ...MARED_PRODUCTS];
     }
     const cfgMap = new Map(productConfigs.map(c => [c.product_id, c]));
-    const allBase = [...FAKKA_PRODUCTS, ...MARED_PRODUCTS];
+    const allBase = [...NEW_FAKKA_PRODUCTS, ...FAKKA_PRODUCTS, ...MARED_PRODUCTS];
     const merged = allBase
       .map(p => {
         const cfg = cfgMap.get(p.id);
@@ -3383,7 +3409,7 @@ function HomePage() {
               الكل <span className="mr-1 text-xs opacity-60">({ALL_PRODUCTS.length})</span>
             </TabsTrigger>
             <TabsTrigger value="fakka" className="flex-1 text-xs font-semibold">
-              فكة <span className="mr-1 text-xs opacity-60">({FAKKA_PRODUCTS.length})</span>
+              فكة <span className="mr-1 text-xs opacity-60">({FAKKA_PRODUCTS.length + NEW_FAKKA_PRODUCTS.length})</span>
             </TabsTrigger>
             <TabsTrigger value="mared" className="flex-1 text-xs font-semibold">
               مارد <span className="mr-1 text-xs opacity-60">({MARED_PRODUCTS.length})</span>
@@ -3401,6 +3427,12 @@ function HomePage() {
               <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
                 {displayedFakka.length}
               </span>
+              {displayedFakka.some(p => p.isNew) && (
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(255,160,0,0.15)', color: '#b45309', border: '1px solid rgba(255,160,0,0.30)' }}>
+                  ✦ جديد
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               {displayedFakka.map(product => (

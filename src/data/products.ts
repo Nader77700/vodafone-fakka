@@ -1,6 +1,6 @@
 // بيانات المنتجات المستخرجة من السكربت — لا تعديل يدوي
 // FAKKA_PRODUCTS + MARED_PRODUCTS
-// آخر تحديث: v2.6.0 — تصحيح الصلاحيات + إضافة الرصيد الصافي + تصحيح الوحدات
+// آخر تحديث: v3.7.0 — إضافة كروت جديدة (NewFakka) مع علامة isNew
 
 export type ProductCategory = 'fakka' | 'mared';
 
@@ -16,10 +16,24 @@ export interface VodafoneProduct {
   unitsLabel: string;    // "45 وحدة"
   validity: string;      // مدة الصلاحية الكاملة — صالح 24 ساعة / صالح 3 أيام ...
   net_balance: number;   // الرصيد الصافي بالجنيه
+  isNew?: boolean;       // ✦ كارت جديد — يظهر مميز في الأعلى
 }
 
 // ─── مساعد: تنسيق label الوحدات ───────────────────────────────────────────
 function ul(n: number): string { return `${n} وحدة`; }
+
+// ══════════════════════════════════════════════════════════════
+// كروت فكة جديدة — تظهر أعلى القائمة بشكل مميز
+// الـ product_ids مضافة في السكربت على السيرفر
+// ══════════════════════════════════════════════════════════════
+export const NEW_FAKKA_PRODUCTS: VodafoneProduct[] = [
+  { id: 'NewFakka_5_Unite',      name: 'فكة 5 جنيه - 80 وحدة',            category: 'fakka', price: 5,    units: 80,  type: 'وحدة', displayName: 'فكة 5 جنيه',        priceLabel: '5 جنيه',    unitsLabel: ul(80),  validity: 'صالح 2 أيام',  net_balance: 3.50,  isNew: true },
+  { id: 'Fakka_15_Unite_v2',     name: 'فكة 15 جنيه - 300 وحدة',          category: 'fakka', price: 15,   units: 300, type: 'وحدة', displayName: 'فكة 15 جنيه',       priceLabel: '15 جنيه',   unitsLabel: ul(300), validity: 'صالح 2 أيام',  net_balance: 10.50, isNew: true },
+  { id: 'Fakka_19_Unite',        name: 'فكة 19 جنيه - 425 وحدة',          category: 'fakka', price: 19,   units: 425, type: 'وحدة', displayName: 'فكة 19 جنيه',       priceLabel: '19 جنيه',   unitsLabel: ul(425), validity: 'صالح 6 أيام',  net_balance: 13.30, isNew: true },
+  { id: 'Fakka_22.5_Unite',      name: 'فكة 22.5 جنيه - 550 وحدة',        category: 'fakka', price: 22.5, units: 550, type: 'وحدة', displayName: 'فكة 22.5 جنيه',     priceLabel: '22.5 جنيه', unitsLabel: ul(550), validity: 'صالح 7 أيام',  net_balance: 15.75, isNew: true },
+  { id: 'FakkaCard_29_Summer26', name: 'فكة 29 جنيه - 800 وحدة',          category: 'fakka', price: 29,   units: 800, type: 'وحدة', displayName: 'فكة 29 جنيه',       priceLabel: '29 جنيه',   unitsLabel: ul(800), validity: 'صالح 2 أيام',  net_balance: 20.30, isNew: true },
+  { id: 'Fakka_30_Unite',        name: 'فكة 30 جنيه - 750 وحدة',          category: 'fakka', price: 30,   units: 750, type: 'وحدة', displayName: 'فكة 30 جنيه',       priceLabel: '30 جنيه',   unitsLabel: ul(750), validity: 'صالح 10 أيام', net_balance: 21.00, isNew: true },
+];
 
 export const FAKKA_PRODUCTS: VodafoneProduct[] = [
   // ─── 1 يوم = صالح 24 ساعة ───────────────────────────────────────────────
@@ -59,4 +73,4 @@ export const MARED_PRODUCTS: VodafoneProduct[] = [
   { id: 'Mared_10_Social', name: 'مارد 10 سوشيال - 450 وحدة', category: 'mared', price: 10, units: 450, type: 'سوشيال', displayName: 'مارد سوشيال', priceLabel: '10 جنيه', unitsLabel: ul(450), validity: 'صالح 7 أيام', net_balance: 0 },
 ];
 
-export const ALL_PRODUCTS: VodafoneProduct[] = [...FAKKA_PRODUCTS, ...MARED_PRODUCTS];
+export const ALL_PRODUCTS: VodafoneProduct[] = [...NEW_FAKKA_PRODUCTS, ...FAKKA_PRODUCTS, ...MARED_PRODUCTS];
