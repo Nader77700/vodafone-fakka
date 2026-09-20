@@ -502,11 +502,16 @@ export default function AdminUserDetail() {
   const appVer        = primaryDevice?.app_version ?? '—';
   const versionCode   = primaryDevice?.version_code ?? '—';
 
-  // حساب الحالة الفعلية للاشتراك (expired إذا انتهى وقته حتى لو status=active)
+  // حساب الحالة الفعلية للاشتراك
+  // - status=active + expires_at=NULL  → unlimited (نشط بلا انتهاء) ✅
+  // - status=active + expires_at مستقبلي → نشط ✅
+  // - status=active + expires_at منتهي  → منتهي فعلياً ❌
   const isSubReallyActive =
     subscription?.status === 'active' &&
-    subscription?.expires_at &&
-    new Date(subscription.expires_at) > new Date();
+    (
+      !subscription.expires_at ||
+      new Date(subscription.expires_at) > new Date()
+    );
 
   const opsRemaining = ops_limit == null
     ? null
