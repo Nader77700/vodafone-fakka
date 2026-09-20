@@ -4,8 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.7.2',
-  versionCode:    518,
+  appVersion:      '3.7.3',
+  versionCode:    519,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_v3_7_0_' + Date.now(),
   bundleFile:     'VodafoneFakka-v3.7.1.apk',
