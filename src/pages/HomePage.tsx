@@ -3419,28 +3419,76 @@ function HomePage() {
       </div>
 
       <div className="px-4 pt-3 space-y-4">
-        {/* مجموعة كروت الفكة */}
-        {displayedFakka.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="text-sm font-bold text-foreground">🎯 كروت الفكة</span>
-              <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
-                {displayedFakka.length}
-              </span>
-              {displayedFakka.some(p => p.isNew) && (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(255,160,0,0.15)', color: '#b45309', border: '1px solid rgba(255,160,0,0.30)' }}>
-                  ✦ جديد
+        {/* ── قسم كروت الفكة مع فاصل جديد/قديم ── */}
+        {displayedFakka.length > 0 && (() => {
+          const newCards  = displayedFakka.filter(p => p.isNew);
+          const oldCards  = displayedFakka.filter(p => !p.isNew);
+          return (
+            <div>
+              {/* عنوان القسم */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-bold text-foreground">🎯 كروت الفكة</span>
+                <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-full">
+                  {displayedFakka.length}
                 </span>
+              </div>
+
+              {/* ───────── كروت جديدة ───────── */}
+              {newCards.length > 0 && (
+                <div className="mb-3">
+                  {/* رأس قسم الجديدة */}
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+                      style={{ background: 'linear-gradient(90deg,rgba(255,160,0,0.18),rgba(255,215,0,0.12))', border: '1px solid rgba(255,160,0,0.40)' }}>
+                      <span className="text-[10px] font-black tracking-widest"
+                        style={{ color: '#b45309' }}>✦ كروت جديدة</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: 'rgba(255,160,0,0.25)', color: '#92400e' }}>{newCards.length}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {newCards.map(product => (
+                      <ProductCard key={product.id} product={product} onSelect={handleSelectProduct} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ───────── فاصل ───────── */}
+              {newCards.length > 0 && oldCards.length > 0 && (
+                <div className="flex items-center gap-3 my-3 px-1">
+                  <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(120,120,120,0.35), transparent)' }} />
+                  <span className="text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-full"
+                    style={{ color: 'var(--muted-foreground)', border: '1px solid rgba(120,120,120,0.25)', background: 'rgba(120,120,120,0.08)' }}>
+                    ───── كروت قديمة ─────
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(120,120,120,0.35), transparent)' }} />
+                </div>
+              )}
+
+              {/* ───────── كروت قديمة ───────── */}
+              {oldCards.length > 0 && (
+                <div>
+                  {newCards.length > 0 && (
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+                        style={{ background: 'rgba(120,120,120,0.08)', border: '1px solid rgba(120,120,120,0.22)' }}>
+                        <span className="text-[10px] font-bold tracking-wide text-muted-foreground">كروت قديمة</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: 'rgba(120,120,120,0.15)', color: 'var(--muted-foreground)' }}>{oldCards.length}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {oldCards.map(product => (
+                      <ProductCard key={product.id} product={product} onSelect={handleSelectProduct} />
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {displayedFakka.map(product => (
-                <ProductCard key={product.id} product={product} onSelect={handleSelectProduct} />
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* مجموعة كروت المارد */}
         {displayedMared.length > 0 && (
