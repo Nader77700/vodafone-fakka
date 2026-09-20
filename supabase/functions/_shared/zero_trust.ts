@@ -12,12 +12,23 @@ const ALLOWED_ORIGINS = [
   "https://vchmsnavyhripakyvzom.supabase.co",   // Supabase Studio
 ];
 
+// جميع الـ headers المطلوبة — يشمل x-hmac-signature و x-timestamp و x-app-package
+// المضافة في v3.6.9 / v3.7.0
+const ALLOWED_HEADERS =
+  "authorization, x-client-info, apikey, content-type, " +
+  "x-app-build, x-app-version, x-app-secure-token, " +
+  "x-app-signature, x-build-hash, x-app-package, " +
+  "x-hmac-signature, x-timestamp, " +
+  "x-device-id, x-hardware-hash, x-device-fp, " +
+  "x-idempotency-key, x-correlation-id, " +
+  "x-nonce, x-request-signature, x-session-token";
+
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin":  allowed,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-build, x-app-version, x-idempotency-key, x-correlation-id, x-app-signature, x-build-hash, x-device-id, x-hardware-hash, x-nonce, x-request-signature, x-session-token, x-device-fp, x-app-secure-token",
+    "Access-Control-Allow-Headers": ALLOWED_HEADERS,
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Vary": "Origin",
   };
@@ -28,7 +39,7 @@ export function getCORSHeaders(req: Request) { return getCorsHeaders(req); }
 // للتوافق مع الكود القديم الذي يستورد CORS_HEADERS كـ object ثابت
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-build, x-app-version, x-idempotency-key, x-correlation-id, x-app-signature, x-build-hash, x-device-id, x-hardware-hash, x-nonce, x-request-signature, x-session-token, x-device-fp, x-app-secure-token",
+  "Access-Control-Allow-Headers": ALLOWED_HEADERS,
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
