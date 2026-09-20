@@ -2196,7 +2196,7 @@ function ExecuteModal({
                         opacity: isDisabled && !accountLocked ? 0.7 : 1,
                       }}
                       disabled={isDisabled}
-                      onClick={() => { if (!isDisabled) setConfirmOpen(true); }}
+                      onClick={() => { if (!isDisabled) handleExecute(); }}
                     >
                       {submitting
                         ? <><Loader2 className="w-5 h-5 animate-spin" />جارٍ التنفيذ…</>
@@ -2226,94 +2226,6 @@ function ExecuteModal({
                 >
                   إلغاء
                 </button>
-
-                {/* ── نافذة تأكيد التنفيذ — منبثقة في المنتصف ── */}
-                {confirmOpen && product && (
-                  <div
-                    className="fixed inset-0 z-50 flex items-center justify-center px-5"
-                    style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(6px)' }}
-                    onClick={() => setConfirmOpen(false)}
-                  >
-                    <div
-                      className="w-full max-w-[340px] rounded-2xl overflow-hidden"
-                      style={{
-                        background: 'linear-gradient(160deg,#110000,#0d0000)',
-                        border: '1px solid rgba(230,0,0,0.35)',
-                        boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(230,0,0,0.1)',
-                      }}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      {/* شريط علوي أحمر */}
-                      <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg,#E60000,#ff4444,#E60000)' }} />
-
-                      {/* هيدر */}
-                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: 'rgba(230,0,0,0.12)' }}>
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: 'rgba(230,0,0,0.15)', border: '1px solid rgba(230,0,0,0.3)' }}>
-                          <Zap className="w-4 h-4" style={{ color: '#E60000' }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-black" style={{ color: '#ffffff' }}>تأكيد تنفيذ الشحن</p>
-                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.38)' }}>راجع التفاصيل قبل المتابعة</p>
-                        </div>
-                      </div>
-
-                      {/* تفاصيل العملية */}
-                      <div className="px-4 pt-3 pb-4 space-y-2">
-                        {/* صفوف التفاصيل */}
-                        {[
-                          { label: 'نوع الكارت', value: product.name,       color: '#ffffff',  mono: false },
-                          { label: 'قيمة الشحن', value: product.priceLabel, color: '#E60000',  mono: false },
-                        ].map(row => (
-                          <div key={row.label}
-                            className="flex items-center justify-between px-3 py-2 rounded-lg"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>{row.label}</span>
-                            <span className={`text-sm font-black ${row.mono ? 'font-mono' : ''}`} style={{ color: row.color }}>{row.value}</span>
-                          </div>
-                        ))}
-
-                        {/* رقم الشحن */}
-                        <div className="flex items-center justify-between px-3 py-2 rounded-lg"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>رقم الشحن</span>
-                          {chargeForSelf ? (
-                            walletMsisdn ? (
-                              <span className="text-sm font-black font-mono" style={{ color: '#4ade80' }}>{walletMsisdn}</span>
-                            ) : (
-                              <span className="text-xs font-semibold" style={{ color: '#4ade80' }}>سيُقرأ من الشبكة تلقائياً</span>
-                            )
-                          ) : (
-                            <span className="text-sm font-black font-mono" style={{ color: '#ffffff' }}>{phone}</span>
-                          )}
-                        </div>
-
-                        {/* أزرار */}
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            className="flex-1 h-10 rounded-xl font-medium text-sm transition-all active:scale-[0.97]"
-                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.50)' }}
-                            onClick={() => setConfirmOpen(false)}
-                          >
-                            إلغاء
-                          </button>
-                          <button
-                            className="flex-[2] h-10 rounded-xl font-black text-sm flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
-                            style={{
-                              background: 'linear-gradient(135deg,#E60000,#cc0000)',
-                              boxShadow: '0 0 16px rgba(230,0,0,0.45)',
-                              color: '#fff',
-                              border: '1px solid rgba(230,0,0,0.5)',
-                            }}
-                            onClick={() => { setConfirmOpen(false); handleExecute(); }}
-                          >
-                            <Zap className="w-3.5 h-3.5" />تأكيد وتنفيذ
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Debug Panel — Admin فقط */}
                 {isAdmin && (debugSteps.length > 0 || seamlessDebug || traceReport) && !submitting && (
