@@ -15,7 +15,6 @@ import {
 import { toast } from 'sonner';
 import { useIsLight } from '@/contexts/ThemeContext';
 import { useHotfixLineInfoDisabled } from '@/contexts/RuntimeConfigContext';
-import VipRedMonitoringSection from '@/components/line-info/VipRedMonitoringSection';
 import {
   fetchLineInfo,
   getLineInfoHistory,
@@ -445,9 +444,6 @@ export default function LineInfoPage() {
 
         {/* ── سجل الفحوصات ── */}
         <HistoryPanel key={histKey} onSelect={handleSelectHistory} L={L} />
-
-        {/* ── قسم VIP لمراقبة تحويلات خطوط ريد ── */}
-        <VipRedMonitoringSection L={L} />
 
         {/* الحالة المبدئية */}
         {status === 'idle' && (

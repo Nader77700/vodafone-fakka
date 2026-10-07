@@ -19,6 +19,7 @@ const AdminServicesControlPage = lazy(() => import('./pages/admin/AdminServicesC
 const AdminHotfixPage          = lazy(() => import('./pages/admin/AdminHotfixPage'));
 const AdminLineInfoDebugPage   = lazy(() => import('./pages/admin/AdminLineInfoDebugPage'));
 const AdminVipRedSettingsPage  = lazy(() => import('./pages/admin/AdminVipRedSettingsPage'));
+const VipRedCenterPage          = lazy(() => import('./pages/vip-red/VipRedCenterPage'));
 const SubscriptionHistoryPage = lazy(() => import('./pages/SubscriptionHistoryPage'));
 const UpdatesPage           = lazy(() => import('./pages/UpdatesPage'));
 const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));
@@ -122,6 +123,10 @@ export const routes: RouteConfig[] = [
       { name: 'VodafoneOffersOther',      path: '/vodafone-offers/other',            element: <S><OtherOffersPage /></S> },
       { name: 'VodafoneOffersSubscriptions', path: '/vodafone-offers/subscriptions', element: <S><UpcomingSubscriptionsPage /></S> },
       { name: 'VodafoneOffersRecharge',   path: '/vodafone-offers/recharge',         element: <S><BalanceRechargeShortcutPage /></S> },
+
+      // ── VIP RED Center: قسم إدارة باقات ريد VIP المستقل ──
+      { name: 'VipRedCenter',             path: '/vip-red',                          element: <S><VipRedCenterPage /></S> },
+      { name: 'VipRedCenterAlias',        path: '/red-vip',                          element: <Navigate to="/vip-red" replace /> },
 
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],

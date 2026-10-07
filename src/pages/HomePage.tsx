@@ -45,7 +45,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Loader2,
   Shield, CreditCard, Users, ChevronLeft, ShieldAlert,
   Database, Sparkles, Gift, Wifi, Signal, RefreshCw,
-  Smartphone, Copy, Info, Home, RotateCcw, Tag, Gem,
+  Smartphone, Copy, Info, Home, RotateCcw, Tag, Gem, Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,122 @@ import { saveVaultPin, loadWalletPinFromDb } from '@/lib/balanceSession';
 // HomeServicesCard: كرت واحد موحد يفتح صفحة الخدمات
 // — يحل محل HomeServicesGrid القديمة دون حذف أي منطق —
 // ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// HomeVipRedCard: كرت إدارة باقات ريد VIP المستقل في الشاشة الرئيسية
+// ══════════════════════════════════════════════════════════
+
+function HomeVipRedCard() {
+  const navigate = useNavigate();
+  const L = useIsLight();
+
+  return (
+    <div className="px-4 pt-3">
+      <div
+        onClick={() => navigate('/vip-red')}
+        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[140px] hover:scale-[1.02] active:scale-95"
+        style={{
+          boxShadow: L ? '0 4px 24px rgba(230,0,0,0.12)' : '0 10px 40px rgba(0,0,0,0.45)',
+        }}
+        aria-label="فتح قسم إدارة باقات ريد VIP"
+      >
+        {/* Gradient Background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: L
+              ? 'linear-gradient(135deg, #fff1f2 0%, #fff7ed 50%, #ffffff 100%)'
+              : 'linear-gradient(135deg, #20080c 0%, #160a14 50%, #0d0b16 100%)',
+          }}
+        />
+        {/* Glowing radial accent */}
+        <div
+          className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at 25% 65%, rgba(230,0,0,${L ? '0.14' : '0.28'}) 0%, transparent 65%), radial-gradient(ellipse at 85% 25%, rgba(245,158,11,${L ? '0.12' : '0.22'}) 0%, transparent 55%)`,
+          }}
+        />
+        {/* Border */}
+        <div
+          className={`absolute inset-0 rounded-[28px] pointer-events-none transition-colors duration-500 ${
+            L ? 'border border-rose-200 group-hover:border-rose-300' : 'border border-white/10 group-hover:border-rose-500/35'
+          }`}
+        />
+        {/* Top accent line */}
+        <div
+          className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
+          style={{ background: 'linear-gradient(90deg, #E60000 0%, #f59e0b 50%, #10b981 100%)' }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 p-4 sm:p-5 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner relative"
+                style={{
+                  background: L
+                    ? 'linear-gradient(135deg, rgba(230,0,0,0.15), rgba(245,158,11,0.12))'
+                    : 'linear-gradient(135deg, rgba(230,0,0,0.35), rgba(245,158,11,0.25))',
+                  border: L ? '1px solid rgba(230,0,0,0.25)' : '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                <Crown className="w-6 h-6 text-[#E60000] drop-shadow-sm" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse border-2 border-white dark:border-[#0d0b16]" />
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-2">
+                  <h3 className={`text-base font-black ${L ? 'text-gray-900' : 'text-white'}`}>
+                    إدارة باقات ريد VIP
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-xs">
+                    Red Center
+                  </span>
+                </div>
+                <p className={`text-xs mt-0.5 ${L ? 'text-gray-600' : 'text-gray-300'}`}>
+                  مراقبة وتحويل وتفعيل باقات Enterprise member control تلقائياً
+                </p>
+              </div>
+            </div>
+
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:-translate-x-1 ${
+                L ? 'bg-rose-100 text-rose-600' : 'bg-white/10 text-white'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Badges / Pill Tags */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-rose-100/80 text-rose-700' : 'bg-rose-500/15 text-rose-300 border border-rose-500/25'
+              }`}
+            >
+              تجار VIP 👑
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-amber-100/80 text-amber-700' : 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
+              }`}
+            >
+              فحص تلقائي كل 4 ساعات ⏱️
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-emerald-100/80 text-emerald-700' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+              }`}
+            >
+              تنبيهات فورية عند التحويل ⚡
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HomeServicesCard() {
   const navigate = useNavigate();
@@ -3269,6 +3385,11 @@ function HomePage() {
           بانر العروض الديناميكي
          ══════════════════════════════════════ */}
       <PromotionBanner />
+
+      {/* ══════════════════════════════════════
+          3.9 VIP RED CENTER CARD — إدارة باقات ريد VIP
+         ══════════════════════════════════════ */}
+      <HomeVipRedCard />
 
       {/* ══════════════════════════════════════
           4. SERVICES HUB CARD

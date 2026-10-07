@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.7.4',
-  versionCode:    520,
+  appVersion:      '3.7.5',
+  versionCode:    521,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_7_4_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.7.4.apk',
-  bundleHash:     'apk_v3_7_4_code520',
-  apkHash:        'apk_v3_7_4_code520',
-  dbVersion:      'v3.7.4',
+  sourceHash:     'build_v3_7_5_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.7.5.apk',
+  bundleHash:     'apk_v3_7_5_code521',
+  apkHash:        'apk_v3_7_5_code521',
+  dbVersion:      'v3.7.5',
   releaseNotes: [
+    'v3.7.5: تحويل قسم إدارة باقات ريد VIP إلى قسم مستقل كامل ومضغوط للموبايل مع كارت رئيسي مميز وفصله عن معلومات الخط',
     'v3.7.4: إضافة قسم VIP لمراقبة تحويلات خطوط فودافون ريد (Enterprise member control) مع دورية الفحص التلقائي وتنبيهات فورية',
     'v3.7.4: دعم كامل للوضعين الفاتح والداكن وتمييز الخطوط المؤهلة وقيد المراقبة بالعد التنازلي',
     'v3.7.4: إضافة لوحة تحكم إعدادات وصلاحيات مراقبة ريد VIP في لوحة الأدمن',
