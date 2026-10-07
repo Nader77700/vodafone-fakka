@@ -145,6 +145,7 @@ const AdminServicesControlPage     = lazyImport(() => import('./pages/admin/Admi
 const AdminHotfixPage              = lazyImport(() => import('./pages/admin/AdminHotfixPage'));
 const AdminLineInfoDebugPage       = lazyImport(() => import('./pages/admin/AdminLineInfoDebugPage'));
 const AdminOffersCenter            = lazyImport(() => import('./pages/admin/AdminOffersCenter'));
+const AdminVipRedSettingsPage      = lazyImport(() => import('./pages/admin/AdminVipRedSettingsPage'));
 const LineInfoPage                 = lazyImport(() => import('./pages/line-info/LineInfoPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
@@ -448,17 +449,34 @@ function AppInner() {
   const [splashDoneReq,  setSplashDoneReq]  = useState(false); // طلب الانتهاء من SplashOverlay
   const [navigateNow,    setNavigateNow]    = useState(false);
 
-  // ── ربط انتهاء Splash بانتهاء Auth loading ────────────────────────────────
-  // SplashOverlay يُرسل إشارة "انتهيت" عبر splashDoneReq
-  // لكن لا نُخفيه إلا بعد أن ينتهي auth.loading أيضاً
-  // هذا يمنع ظهور شاشة "جاري التحميل" من RouteGuard بعد الـ Splash
+  // ── ربط انتهاء Splash بانتهاء Auth loading مع مؤقت أمان فائق لمنع التعليق ──
   useEffect(() => {
     if (splashDoneReq && !loading) {
       localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
       setShowSplash(false);
       setNavigateNow(true);
+      return;
+    }
+
+    // Fail-safe: إذا استغرق تحميل الجلسة أكثر من ثانيتين بعد اكتمال الـ Splash، نتخطى الـ Splash فوراً
+    if (splashDoneReq) {
+      const timer = setTimeout(() => {
+        localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+        setShowSplash(false);
+        setNavigateNow(true);
+      }, 1800);
+      return () => clearTimeout(timer);
     }
   }, [splashDoneReq, loading]);
+
+  // حماية قصوى: لا يمكن بأي حال أن تبقى شاشة الـ Splash أكثر من 4.5 ثوانٍ مهما كان السبب
+  useEffect(() => {
+    const hardLimit = setTimeout(() => {
+      setShowSplash(false);
+      setNavigateNow(true);
+    }, 4500);
+    return () => clearTimeout(hardLimit);
+  }, []);
 
   // ── فحص حظر الجهاز ─────────────────────────────────────────────────────
   const [deviceBan, setDeviceBan] = useState<{ banned: boolean; reason?: string; banned_at?: string } | null>(null);
@@ -681,6 +699,7 @@ function AppInner() {
         <Route path="/admin/hotfix"            element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-hotfix"><S><AdminHotfixPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/line-info-debug"   element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-line-debug"><S><AdminLineInfoDebugPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/offers-center"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-offers-center"><S><AdminOffersCenter /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/vip-red"           element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-vip-red"><S><AdminVipRedSettingsPage /></S></PageErrorBoundary></RouteGuard>} />
 
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/merchant"    element={<RouteGuard merchantOnly><PageErrorBoundary pageName="merchant"><S><MerchantDashboard /></S></PageErrorBoundary></RouteGuard>} />

@@ -48,9 +48,11 @@ export default function OfflineGate({ children }: OfflineGateProps) {
     if (checking) return;
     setChecking(true);
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-    await recheckNow();
-    // أعطِ 2 ثانية للـ state يتحدّث، ثم أوقف spinner إذا لم يُغلق overlay
-    retryTimerRef.current = setTimeout(() => setChecking(false), 2500);
+    try {
+      await recheckNow();
+    } catch {}
+    // إيقاف مؤشر الفحص سريعاً
+    retryTimerRef.current = setTimeout(() => setChecking(false), 800);
   }, [checking, recheckNow]);
 
   return (

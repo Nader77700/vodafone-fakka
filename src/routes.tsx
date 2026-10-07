@@ -18,6 +18,7 @@ const AdminDashboard        = lazy(() => import('./pages/AdminDashboard'));
 const AdminServicesControlPage = lazy(() => import('./pages/admin/AdminServicesControlPage'));
 const AdminHotfixPage          = lazy(() => import('./pages/admin/AdminHotfixPage'));
 const AdminLineInfoDebugPage   = lazy(() => import('./pages/admin/AdminLineInfoDebugPage'));
+const AdminVipRedSettingsPage  = lazy(() => import('./pages/admin/AdminVipRedSettingsPage'));
 const SubscriptionHistoryPage = lazy(() => import('./pages/SubscriptionHistoryPage'));
 const UpdatesPage           = lazy(() => import('./pages/UpdatesPage'));
 const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));
@@ -130,6 +131,7 @@ export const routes: RouteConfig[] = [
   { name: 'AdminServicesControl',  path: '/admin/services-control',    element: <S><AdminServicesControlPage /></S>, adminOnly: true },
   { name: 'AdminHotfix',           path: '/admin/hotfix',               element: <S><AdminHotfixPage /></S>,           adminOnly: true },
   { name: 'AdminLineInfoDebug',    path: '/admin/line-info-debug',      element: <S><AdminLineInfoDebugPage /></S>,     adminOnly: true },
+  { name: 'AdminVipRedSettings',   path: '/admin/vip-red',              element: <S><AdminVipRedSettingsPage /></S>,    adminOnly: true },
   { name: 'InvitePage', path: '/invite/:token', element: <S><InvitePage /></S>, public: true },
   { name: 'RefPage',    path: '/ref/:code',     element: <S><RefLandingPage /></S>, public: true },
   { name: 'Download',   path: '/download',    element: <S><DownloadPage /></S>, public: true },

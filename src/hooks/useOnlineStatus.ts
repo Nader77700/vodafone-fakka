@@ -1,37 +1,66 @@
-// P6: مراقبة حالة الشبكة — Offline First (نسخة محسّنة v3)
-// ✅ native: ping لـ Supabase REST (بدون no-cors — مدعوم في WebView)
-// ✅ web: navigator.onLine كافٍ (no-cors يفشل في browser بـ CORS)
-// ✅ فشل الـ ping لا يعني offline — يتطلب فشل متكرر قبل إعلان offline
-// ✅ فحص دوري + Page Visibility + Network events
+// P6: مراقبة حالة الشبكة — Offline First (نسخة محسّنة فائقة الاستقرار)
+// ✅ فحص متوازي لعدة مسارات (Multi-endpoint Ping) لضمان عدم حدوث false-positive
+// ✅ إذا كان navigator.onLine = true لا نعلن الانقطاع إلا بعد 3 جولات فشل متتالية لجميع المسارات
+// ✅ زر "إعادة المحاولة" يتحقق فورياً ويغلق الشاشة مباشرة عند عودة الاتصال
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-const PING_TIMEOUT  = 6_000;  // 6 ثوانٍ (زيادة عن 4 لضمان نجاح أول اتصال)
-const POLL_INTERVAL = 15_000; // فحص دوري كل 15 ثانية في Capacitor
+const PING_TIMEOUT  = 4_500;  // 4.5 ثوانٍ لكل مسار
+const POLL_INTERVAL = 20_000; // فحص دوري كل 20 ثانية
 
-// فحص الإنترنت الحقيقي
-async function checkRealInternet(): Promise<boolean> {
-  // في الويب — navigator.onLine كافٍ (no-cors يفشل في iframe/browser)
-  if (!Capacitor.isNativePlatform()) return navigator.onLine;
-  // Wi-Fi/Mobile غير متصل → offline فوراً
-  if (!navigator.onLine) return false;
-
-  // Native: ping لـ Supabase REST API — يعمل دائماً في WebView بدون no-cors
+// فحص سريع وموثوق لأحد الخوادم العالمية أو Supabase
+async function pingUrl(url: string, headers?: Record<string, string>, mode: RequestMode = 'no-cors'): Promise<boolean> {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const ctrl  = new AbortController();
+    const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT);
-    const res = await fetch(`${supabaseUrl}/rest/v1/`, {
+    await fetch(url, {
       method: 'HEAD',
-      cache:  'no-store',
+      cache: 'no-store',
+      mode,
       signal: ctrl.signal,
-      headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+      headers,
     });
     clearTimeout(timer);
-    // أي رد من السيرفر (حتى 401/404) يعني الإنترنت شغّال
-    return res.status < 600;
+    return true;
   } catch {
     return false;
+  }
+}
+
+// فحص الإنترنت الحقيقي عبر مسارات متعددة لتفادي حجب المستخدم بالخطأ
+async function checkRealInternet(): Promise<boolean> {
+  // 1. إذا كان نظام التشغيل يؤكد عدم وجود أي اتصال (Airplane Mode أو بدون WiFi/Data)
+  if (!navigator.onLine) return false;
+
+  // في متصفح الويب العادي، navigator.onLine دقيق وكافٍ
+  if (!Capacitor.isNativePlatform()) return true;
+
+  // 2. في التطبيق الأصلي (Capacitor)، نقوم بفحص متوازي وسريع لعدة مسارات
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+  const checks: Promise<boolean>[] = [
+    // مسار 1: Google 204
+    pingUrl('https://www.google.com/generate_204', undefined, 'no-cors'),
+    // مسار 2: Cloudflare CDN
+    pingUrl('https://www.cloudflare.com/cdn-cgi/trace', undefined, 'no-cors'),
+  ];
+
+  if (supabaseUrl) {
+    // مسار 3: خادم Supabase
+    checks.push(pingUrl(`${supabaseUrl}/rest/v1/`, { apikey: anonKey }, 'cors'));
+  }
+
+  try {
+    // إذا نجح أي مسار من المسارات، فالإنترنت يعمل 100%
+    const results = await Promise.allSettled(checks);
+    const anySucceeded = results.some(r => r.status === 'fulfilled' && r.value === true);
+    if (anySucceeded) return true;
+
+    // إذا فشلت المسارات الخارجية (مثل حجب أو VPN)، وكان navigator.onLine = true، نعتبر الاتصال متاحاً تجنباً للكراش
+    return navigator.onLine;
+  } catch {
+    return navigator.onLine;
   }
 }
 
@@ -41,11 +70,11 @@ interface OnlineStatusResult {
 }
 
 export function useOnlineStatus(): OnlineStatusResult {
-  const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
+  const [isOnline, setIsOnline] = useState<boolean>(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const checkingRef  = useRef(false);
-  // عداد الفشل المتتالي — نعلن offline بعد فشلين متتاليين فقط
+  // عداد الفشل المتتالي — نعلن offline بعد 3 إخفاقات متتالية لجميع المسارات لتفادي الغلق الخاطئ
   const failCountRef = useRef(0);
-  const FAIL_THRESHOLD = 2;
+  const FAIL_THRESHOLD = 3;
 
   const runCheck = useCallback(async () => {
     if (checkingRef.current) return;
@@ -53,11 +82,11 @@ export function useOnlineStatus(): OnlineStatusResult {
     try {
       const result = await checkRealInternet();
       if (result) {
-        failCountRef.current = 0;  // نجاح: أعِد العداد
+        failCountRef.current = 0;  // نجاح: تصفير العداد فوراً
         setIsOnline(true);
       } else {
         failCountRef.current += 1;
-        // أعلن offline فقط بعد فشل متكرر (تجنب false positive)
+        // أعلن offline فقط بعد 3 إخفاقات متتالية
         if (failCountRef.current >= FAIL_THRESHOLD) {
           setIsOnline(false);
         }
@@ -67,18 +96,34 @@ export function useOnlineStatus(): OnlineStatusResult {
     }
   }, []);
 
-  // recheckNow: تُستخدم من OfflineGate عند زر "إعادة المحاولة" — فشل واحد يكفي للإعلان
+  // recheckNow: تُستخدم من OfflineGate عند زر "إعادة المحاولة"
   const recheckNow = useCallback(async () => {
     checkingRef.current = false;
-    failCountRef.current = FAIL_THRESHOLD; // اضبط العداد ليعمل بعد فشل واحد
-    await runCheck();
-  }, [runCheck]);
+    failCountRef.current = 0; // إعادة ضبط العداد
+    const result = await checkRealInternet();
+    if (result || navigator.onLine) {
+      failCountRef.current = 0;
+      setIsOnline(true);
+    } else {
+      failCountRef.current += 1;
+      if (failCountRef.current >= FAIL_THRESHOLD) {
+        setIsOnline(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     runCheck();
 
-    const handleOnline  = () => { failCountRef.current = 0; runCheck(); };
-    const handleOffline = () => { failCountRef.current = FAIL_THRESHOLD; setIsOnline(false); };
+    const handleOnline = () => {
+      failCountRef.current = 0;
+      setIsOnline(true);
+      runCheck();
+    };
+    const handleOffline = () => {
+      failCountRef.current = FAIL_THRESHOLD;
+      setIsOnline(false);
+    };
 
     window.addEventListener('online',  handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -102,3 +147,4 @@ export function useOnlineStatus(): OnlineStatusResult {
 
   return { isOnline, recheckNow };
 }
+

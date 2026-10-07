@@ -49,19 +49,23 @@ serve(async (req: Request) => {
 
   try {
     // التحقق من الاشتراك
-    const { data: prof } = await supabaseAdmin.from("profiles").select("role, is_active").eq("id", caller.id).single();
-    if (!prof?.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 200);
+    const { data: prof } = await supabaseAdmin.from("profiles").select("role, is_active").eq("id", caller.id).maybeSingle();
+    if (prof && !prof.is_active) return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 200);
 
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("status, expires_at, is_paused").eq("user_id", caller.id).maybeSingle();
-    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role ?? "");
+      .from("subscriptions").select("status, expires_at, days_remaining, is_paused").eq("user_id", caller.id).maybeSingle();
+    const isAdmin = zt.isAdmin || (prof && ["admin", "super_admin"].includes(prof.role ?? ""));
 
     // الأدمن يتجاوز فحص الاشتراك دائماً
     // المستخدم العادي: نقبل active أو suspended (paused) — الرفض فقط لمنتهي الصلاحية حقاً
     if (!isAdmin) {
       const allowedStatuses = ["active", "suspended"];
       const statusOk = sub && allowedStatuses.includes(sub.status);
-      const notExpired = sub?.expires_at ? new Date(sub.expires_at) > new Date() : false;
+      const notExpired = sub && (
+        !sub.expires_at || 
+        new Date(sub.expires_at) > new Date() || 
+        (typeof sub.days_remaining === 'number' && sub.days_remaining > 0)
+      );
       if (!statusOk || !notExpired) {
         return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);
       }

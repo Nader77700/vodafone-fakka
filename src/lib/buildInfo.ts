@@ -4,15 +4,19 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.7.3',
-  versionCode:    519,
+  appVersion:      '3.7.4',
+  versionCode:    520,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_7_0_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.7.1.apk',
-  bundleHash:     'apk_v3_7_1_code517',
-  apkHash:        'apk_v3_7_1_code517',
-  dbVersion:      'v3.7.1',
+  sourceHash:     'build_v3_7_4_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.7.4.apk',
+  bundleHash:     'apk_v3_7_4_code520',
+  apkHash:        'apk_v3_7_4_code520',
+  dbVersion:      'v3.7.4',
   releaseNotes: [
+    'v3.7.4: إضافة قسم VIP لمراقبة تحويلات خطوط فودافون ريد (Enterprise member control) مع دورية الفحص التلقائي وتنبيهات فورية',
+    'v3.7.4: دعم كامل للوضعين الفاتح والداكن وتمييز الخطوط المؤهلة وقيد المراقبة بالعد التنازلي',
+    'v3.7.4: إضافة لوحة تحكم إعدادات وصلاحيات مراقبة ريد VIP في لوحة الأدمن',
+    'v3.7.4: إصلاح واستقرار عمليات شحن فودافون كاش كروت الفكة NewFakka',
     'v3.7.1: إضافة 6 كروت فكة جديدة (NewFakka) مع فاصل بصري جديد/قديم + إصلاح Seamless Token على Android 9+',
     'v3.7.0: إصلاح جذري نهائي — شاشة offline الخاطئة رغم وجود إنترنت',
     'v3.7.0: استبدال no-cors ping بـ Supabase REST ping على native',

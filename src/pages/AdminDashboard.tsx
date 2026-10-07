@@ -104,7 +104,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer' | 'offers_center';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer' | 'offers_center' | 'vip_red';
 
 interface TabMeta {
   id: AdminTab;
@@ -151,6 +151,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'services_control',  label: 'التحكم في خدماتي', desc: 'إخفاء وتعطيل وصيانة أقسام الخدمات',      icon: Globe },
   { id: 'hotfix',            label: '🔧 HotFix',         desc: 'تعطيل/تفعيل الخدمات فوراً بدون APK',      icon: ShieldAlert },
   { id: 'line_info_debug',   label: '🔍 تشخيص معلومات الخط', desc: 'اختبار وتشخيص flow معلومات الخط خطوة بخطوة', icon: Terminal },
+  { id: 'vip_red',           label: '👑 مراقبة ريد VIP',    desc: 'إعدادات وصلاحيات مراقبة تحويلات أنظمة ريد', icon: Crown },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -1487,6 +1488,9 @@ function AdminDashboard() {
     }
     if (activeTab === 'offers_center') {
       navigate('/admin/offers-center', { replace: true });
+    }
+    if (activeTab === 'vip_red') {
+      navigate('/admin/vip-red', { replace: true });
     }
   }, [activeTab, navigate]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);
@@ -6697,6 +6701,14 @@ function AdminDashboard() {
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
               <Loader2 className="w-6 h-6 animate-spin" />
               <p className="text-sm">جاري فتح التحكم في الخدمات...</p>
+            </div>
+          )}
+
+          {/* ════ مراقبة خطوط ريد VIP ════ */}
+          {activeTab === 'vip_red' && (
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <p className="text-sm">جاري فتح إعدادات مراقبة خطوط ريد VIP...</p>
             </div>
           )}
 

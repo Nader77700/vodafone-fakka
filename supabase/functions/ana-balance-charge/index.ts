@@ -83,13 +83,17 @@ serve(async (req: Request) => {
     };
 
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("status, expires_at, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
+      .from("subscriptions").select("status, expires_at, days_remaining, ops_count, ops_limit").eq("user_id", caller.id).maybeSingle();
 
     // نقبل active أو suspended (paused) — الأدمن دائماً مقبول
     if (!isAdmin) {
       const allowedStatuses = ["active", "suspended"];
       const statusOk = sub && allowedStatuses.includes(sub.status);
-      const notExpired = sub?.expires_at ? new Date(sub.expires_at) > new Date() : false;
+      const notExpired = sub && (
+        !sub.expires_at || 
+        new Date(sub.expires_at) > new Date() || 
+        (typeof sub.days_remaining === 'number' && sub.days_remaining > 0)
+      );
       if (!statusOk || !notExpired) {
         return await abortAndRefund({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" });
       }
@@ -118,6 +122,12 @@ serve(async (req: Request) => {
     }
 
     // ── LAYER 14 & 15: Validate product against Database ──
+    const allowedMared = ['Mared_10_Flexs', 'Mared_10_Minuts', 'Mared_10_Social'];
+    if (!allowedMared.includes(product_id)) {
+      console.log("[balance-charge] product not allowed (only mared enabled):", product_id);
+      return await abortAndRefund({ success: false, error: "كروت الفكة متوقفة حالياً من النظام — متاح فقط كروت المارد (10 فليكس، 10 دقائق، 10 سوشيال)" });
+    }
+
     const { data: productConfig } = await supabaseAdmin
       .from("product_config")
       .select("id, is_enabled, display_name, price")

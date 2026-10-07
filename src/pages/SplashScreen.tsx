@@ -9,20 +9,16 @@ import { supabase } from '@/db/supabase';
 export const OFFICIAL_LOGO = '/vfp-logo.png';
 
 // ══ DEVICE INTELLIGENCE — تشغيل التطبيق حسب قوة الجهاز ══════════════════════
-// يقيس: عدد الأنوية + RAM + سرعة JS + نوع الاتصال
+// يقيس: عدد الأنوية + RAM
 // يُحدد مستوى الأداء: high / mid / low
 // ويضبط تلقائياً: delays + animations + MIN_DISPLAY_MS
 function measureDeviceTier(): 'high' | 'mid' | 'low' {
   try {
-    const cores  = (navigator as Navigator & { hardwareConcurrency?: number }).hardwareConcurrency ?? 4;
-    const ram    = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4;
-    // قياس سرعة JS: كم عملية رياضية في 5ms
-    const t0 = performance.now();
-    let n = 0; while (performance.now() - t0 < 5) n++;
-    const jsSpeed = n; // كلما زاد = أسرع
+    const cores = (navigator as Navigator & { hardwareConcurrency?: number }).hardwareConcurrency ?? 4;
+    const ram   = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4;
 
-    if (cores >= 6 && ram >= 4 && jsSpeed > 2_000_000) return 'high';
-    if (cores >= 4 && ram >= 2 && jsSpeed > 800_000)   return 'mid';
+    if (cores >= 6 && ram >= 4) return 'high';
+    if (cores >= 4 && ram >= 2) return 'mid';
     return 'low';
   } catch {
     return 'mid'; // fallback آمن
@@ -32,17 +28,14 @@ function measureDeviceTier(): 'high' | 'mid' | 'low' {
 const DEVICE_TIER = measureDeviceTier();
 const IS_NATIVE   = Capacitor.isNativePlatform();
 
-// MIN_DISPLAY_MS حسب قوة الجهاز — الأجهزة الضعيفة تُقلّل وقت الانتظار
+// MIN_DISPLAY_MS حسب قوة الجهاز — تجربة سريعة وسلسة
 const MIN_DISPLAY_MS =
-  DEVICE_TIER === 'high' ? 2000 :
-  DEVICE_TIER === 'mid'  ? 1500 :
-  /* low */                 1000;
+  DEVICE_TIER === 'high' ? 1400 :
+  DEVICE_TIER === 'mid'  ? 1100 :
+  /* low */                 800;
 
-// timeout أقل على الأجهزة الضعيفة — لا تستنزف وقت المعالج
-const NET_TIMEOUT_MS =
-  DEVICE_TIER === 'high' ? 3000 :
-  DEVICE_TIER === 'mid'  ? 2000 :
-  /* low */                 1500;
+// timeout سريع ومحدد لتفادي تعليق التطبيق
+const NET_TIMEOUT_MS = 1200;
 
 // ── خطوات التهيئة الحقيقية ─────────────────────────────────────────────────
 interface InitStep {
@@ -54,45 +47,41 @@ interface InitStep {
 
 const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-// timeout wrapper — لا يسمح لأي network call بالـ hang أكثر من MAX_MS
+// timeout wrapper آمن ضد الـ rejections والـ hangs
 const withTimeout = <T,>(promise: Promise<T>, ms = NET_TIMEOUT_MS): Promise<T | null> =>
   Promise.race([
-    promise.then(v => v),
+    promise.then(v => v, () => null),
     delay(ms).then(() => null),
-  ]);
+  ]).catch(() => null);
 
-// delays مضبوطة حسب الجهاز — أجهزة low تحصل على delays أقصر
+// delays مضبوطة حسب الجهاز
 const D = {
-  init:     DEVICE_TIER === 'high' ? 80  : DEVICE_TIER === 'mid' ? 50  : 20,
-  settings: DEVICE_TIER === 'high' ? 60  : DEVICE_TIER === 'mid' ? 40  : 15,
-  internet: DEVICE_TIER === 'high' ? 50  : DEVICE_TIER === 'mid' ? 30  : 10,
-  firebase: IS_NATIVE
-    ? (DEVICE_TIER === 'high' ? 200 : DEVICE_TIER === 'mid' ? 120 : 60)
-    : 60,
-  fcm:      DEVICE_TIER === 'high' ? 120 : DEVICE_TIER === 'mid' ? 80  : 40,
-  sub:      DEVICE_TIER === 'high' ? 100 : DEVICE_TIER === 'mid' ? 60  : 25,
-  user:     DEVICE_TIER === 'high' ? 80  : DEVICE_TIER === 'mid' ? 50  : 20,
-  complete: DEVICE_TIER === 'high' ? 60  : DEVICE_TIER === 'mid' ? 40  : 15,
+  init:     DEVICE_TIER === 'high' ? 60  : DEVICE_TIER === 'mid' ? 40  : 20,
+  settings: DEVICE_TIER === 'high' ? 50  : DEVICE_TIER === 'mid' ? 30  : 15,
+  internet: DEVICE_TIER === 'high' ? 40  : DEVICE_TIER === 'mid' ? 25  : 10,
+  firebase: IS_NATIVE ? (DEVICE_TIER === 'high' ? 100 : DEVICE_TIER === 'mid' ? 70 : 40) : 40,
+  fcm:      DEVICE_TIER === 'high' ? 80  : DEVICE_TIER === 'mid' ? 50  : 30,
+  sub:      DEVICE_TIER === 'high' ? 70  : DEVICE_TIER === 'mid' ? 40  : 20,
+  user:     DEVICE_TIER === 'high' ? 60  : DEVICE_TIER === 'mid' ? 40  : 20,
+  complete: DEVICE_TIER === 'high' ? 50  : DEVICE_TIER === 'mid' ? 30  : 15,
 } as const;
 
 function buildSteps(): InitStep[] {
   return [
-    { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 5,  run: async () => { await delay(D.init); } },
-    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 5, run: async () => { await delay(D.settings); } },
-    { id: 'internet',     label: 'التحقق من الاتصال…',     weight: 10, run: async () => { await delay(navigator.onLine ? D.internet : D.internet * 3); } },
+    { id: 'init_app',     label: 'تهيئة التطبيق…',         weight: 15, run: async () => { await delay(D.init); } },
+    { id: 'settings',     label: 'تحميل الإعدادات…',       weight: 10, run: async () => { await delay(D.settings); } },
+    { id: 'internet',     label: 'التحقق من الاتصال…',     weight: 10, run: async () => { await delay(D.internet); } },
     { id: 'security',     label: 'التحقق من الأمان…',      weight: 10, run: async () => { await delay(D.internet); } },
-    { id: 'firebase',     label: 'تهيئة Firebase…',        weight: 10, run: async () => { await delay(D.firebase); } },
+    { id: 'firebase',     label: 'تهيئة الخدمات…',         weight: 10, run: async () => { await delay(D.firebase); } },
     { id: 'fcm',          label: 'تسجيل الإشعارات…',       weight: 10, run: async () => { await delay(D.fcm); } },
-    { id: 'auth',         label: 'التحقق من الحساب…',      weight: 10, run: async () => { try { await withTimeout(supabase.auth.getSession()); } catch {} } },
+    { id: 'auth',         label: 'التحقق من الحساب…',      weight: 15, run: async () => { try { await withTimeout(supabase.auth.getSession(), 800); } catch {} } },
     { id: 'subscription', label: 'فحص الاشتراك…',          weight: 10, run: async () => { await delay(D.sub); } },
-    { id: 'update',       label: 'فحص التحديثات…',         weight: 10, run: async () => { try { const q = supabase.from('app_versions').select('version').eq('is_latest', true).maybeSingle(); await withTimeout(Promise.resolve(q)); } catch {} } },
-    { id: 'user_data',    label: 'تحميل بيانات المستخدم…', weight: 10, run: async () => { await delay(D.user); } },
-    { id: 'complete',     label: 'جاري التحميل…',          weight: 10, run: async () => { await delay(D.complete); } },
+    { id: 'complete',     label: 'جاهز…',                  weight: 10, run: async () => { await delay(D.complete); } },
   ];
 }
 
-// مؤقت أقصى مسموح للتطبيق أن يبقى معلق في حالة تعليق أو خطأ في أي خطوة
-const MAX_SPLASH_MS = 8000;
+// أقصى وقت كلي للشاشة البدائية 3.5 ثوانٍ لضمان عدم توقف التطبيق أبداً
+const MAX_SPLASH_MS = 3500;
 
 // ── Network Constellation Lines (SVG) ─────────────────────────────────────
 // نقاط الشبكة المضيئة وخطوط الاتصال — مطابق للصورة المرجعية
@@ -278,15 +267,16 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
       let acc = 0;
       for (const step of steps) {
         setLoadingLabel(step.label);
-        try { await step.run(); } catch {}
+        try { 
+          await Promise.race([step.run(), delay(350)]); 
+        } catch {}
         acc = Math.min(100, acc + step.weight);
         setProgress(acc);
-        // نعطي displayProg التحديث فورًا لتجنب التأخير
         setDisplayProg(acc); 
       }
       setProgress(100);
       setDisplayProg(100);
-      setLoadingLabel('جاهز...');
+      setLoadingLabel('تهيئة التطبيق…');
       initDoneRef.current = true;
       tryLeave();
     };
@@ -457,17 +447,26 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
           Smart Vodafone Cash Cards Platform
         </p>
 
-        {/* ── "جاري التحميل..." ── */}
-        <p key={loadingLabel} style={{
-          margin: '0 0 10px 0',
-          textAlign: 'center', direction: 'rtl',
-          fontSize: 'clamp(12px, 3.2vw, 14px)',
-          color: 'rgba(255,255,255,0.75)',
-          fontWeight: 500,
-          animation: 'fade-label 0.3s ease',
+        {/* ── حالة التحميل والتهيئة ── */}
+        <div style={{
+          minHeight: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 10,
         }}>
-          {loadingLabel}
-        </p>
+          <p style={{
+            margin: 0,
+            textAlign: 'center', direction: 'rtl',
+            fontSize: 'clamp(12px, 3.2vw, 14px)',
+            color: 'rgba(255,255,255,0.85)',
+            fontWeight: 600,
+            letterSpacing: '0.01em',
+            transition: 'opacity 0.2s ease',
+          }}>
+            {loadingLabel || 'تهيئة التطبيق…'}
+          </p>
+        </div>
 
         {/* ── Progress Bar — أحمر مع Glow عند الطرف ── */}
         <div style={{ width: '72%', maxWidth: 280, position: 'relative' }}>
@@ -517,10 +516,10 @@ export function SplashOverlay({ onDone }: { onDone: () => void }) {
         paddingBottom: 'max(20px, 5vh)',
         direction: 'rtl',
       }}>
-        <p style={{ margin: 0, fontSize: 'clamp(10px, 2.5vw, 12px)', color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>
+        <p style={{ margin: 0, fontSize: 'clamp(11px, 2.8vw, 13px)', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
           جميع الحقوق محفوظة © 2026
         </p>
-        <p style={{ margin: '3px 0 0 0', fontSize: 'clamp(10px, 2.5vw, 12px)', color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>
+        <p style={{ margin: '4px 0 0 0', fontSize: 'clamp(10px, 2.6vw, 12px)', color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
           من تطوير نادر اكرام
         </p>
       </div>

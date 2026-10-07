@@ -66,14 +66,16 @@ serve(async (req: Request) => {
 
     const { data: sub } = await supabaseAdmin
       .from("subscriptions")
-      .select("status, expires_at")
+      .select("status, expires_at, days_remaining")
       .eq("user_id", caller.id)
       .maybeSingle();
 
-    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
+    const isAdmin = zt.isAdmin || (prof && ["admin", "super_admin"].includes(prof.role));
     const hasActive =
       isAdmin ||
-      (sub && sub.status === "active" && (!sub.expires_at || new Date(sub.expires_at) > new Date()));
+      (sub &&
+        (sub.status === "active" || sub.status === "suspended") &&
+        (!sub.expires_at || new Date(sub.expires_at) > new Date() || (typeof sub.days_remaining === 'number' && sub.days_remaining > 0)));
 
     if (!hasActive)
       return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);

@@ -172,6 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setSessionConflict(false);
     setProfile(profileData);
+    try {
+      localStorage.setItem('vfp_cached_profile', JSON.stringify(profileData));
+    } catch {}
     // Phase 7: ربط تلقائي بالتاجر إن كان هناك دعوة معلّقة
     tryAutoLink(u.id);
   };
@@ -217,21 +220,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialSessionLoaded = useRef(false);
 
   useEffect(() => {
+    // محاولة استعادة البروفايل المحفوظ محلياً للإسراع بالفتح ومنع الشاشات البيضاء أو أخطاء الشبكة المؤقتة
+    try {
+      const cached = localStorage.getItem('vfp_cached_profile');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          setProfile(parsed);
+        }
+      }
+    } catch {}
+
+    // مؤقت أمان حاسم: لا تزيد مدة انتظار الجلسة الأولية عن 2.5 ثانية مطلقاً
+    const safetyTimer = setTimeout(() => {
+      if (!initialSessionLoaded.current) {
+        setLoading(false);
+        initialSessionLoaded.current = true;
+      }
+    }, 2500);
+
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           loadProfile(session.user).finally(() => {
+            clearTimeout(safetyTimer);
             setLoading(false);
             initialSessionLoaded.current = true;
           });
         } else {
+          clearTimeout(safetyTimer);
           setLoading(false);
           initialSessionLoaded.current = true;
         }
       })
       .catch((e) => {
         console.error('[AuthContext] getSession error — safe fallback:', e);
+        clearTimeout(safetyTimer);
         setUser(null);
         setProfile(null);
         setLoading(false);

@@ -88,10 +88,12 @@ serve(async (req: Request) => {
       return json({ success: false, error: "حسابك محظور — تواصل مع الإدارة" }, 200);
 
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
-    const isAdmin = prof && ["admin", "super_admin"].includes(prof.role);
+      .from("subscriptions").select("status, expires_at, days_remaining").eq("user_id", caller.id).maybeSingle();
+    const isAdmin = zt.isAdmin || (prof && ["admin", "super_admin"].includes(prof.role));
     const hasActive = isAdmin ||
-      (sub && sub.status === "active" && (!sub.expires_at || new Date(sub.expires_at) > new Date()));
+      (sub &&
+        (sub.status === "active" || sub.status === "suspended") &&
+        (!sub.expires_at || new Date(sub.expires_at) > new Date() || (typeof sub.days_remaining === 'number' && sub.days_remaining > 0)));
     if (!hasActive)
       return json({ success: false, error: "اشتراكك منتهٍ — يرجى تجديد الاشتراك" }, 200);
 

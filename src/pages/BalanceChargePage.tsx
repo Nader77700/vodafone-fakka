@@ -280,38 +280,76 @@ function WalletQuickBalanceModal({ open, onClose }: { open: boolean; onClose: ()
 function BalanceProductCard({ product, onSelect }: { product: BalanceProduct; onSelect: (p: BalanceProduct) => void }) {
   const isDisabled = !product.is_enabled;
   const isMared = product.category === 'mared';
-  const cardColor = isMared ? '#cc2200' : C.red;
+  const cardColor = isMared ? '#ff4d4d' : C.red;
 
   return (
     <button
-      className="relative w-full text-right rounded-2xl overflow-hidden transition-all active:scale-[0.97] disabled:opacity-40"
+      className={`relative w-full text-right rounded-2xl overflow-hidden transition-all active:scale-[0.97] ${
+        isDisabled ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
+      }`}
       style={{
-        background: `linear-gradient(135deg, rgba(230,0,0,0.12), rgba(230,0,0,0.05))`,
-        border: `1px solid rgba(230,0,0,0.22)`,
-        boxShadow: `0 2px 14px rgba(230,0,0,0.10)`,
-        padding: '12px',
-        cursor: isDisabled ? 'not-allowed' : 'pointer',
+        background: isMared && !isDisabled
+          ? 'linear-gradient(135deg, rgba(230,0,0,0.22), rgba(255,80,0,0.10))'
+          : 'linear-gradient(135deg, rgba(230,0,0,0.08), rgba(230,0,0,0.03))',
+        border: isMared && !isDisabled
+          ? '1.5px solid rgba(230,0,0,0.55)'
+          : '1px solid rgba(230,0,0,0.15)',
+        boxShadow: isMared && !isDisabled
+          ? '0 4px 20px rgba(230,0,0,0.22)'
+          : '0 2px 10px rgba(230,0,0,0.06)',
+        padding: '13px',
       }}
       disabled={isDisabled}
       onClick={() => !isDisabled && onSelect(product)}
     >
       <div className="flex items-start justify-between gap-1 mb-2">
-        <span className="text-xs font-black px-1.5 py-0.5 rounded-full"
-          style={{ background: C.redLight, color: cardColor }}>
+        <span
+          className="text-xs font-black px-2 py-0.5 rounded-full flex items-center gap-1"
+          style={{ background: isMared ? 'rgba(230,0,0,0.2)' : C.redLight, color: cardColor }}
+        >
           {isMared ? '🔥 مارد' : '⚡ فكة'}
         </span>
+        {isMared && !isDisabled && (
+          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            متاح للطلب
+          </span>
+        )}
         {isDisabled && (
-          <span className="text-xs font-black px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive">متوقف</span>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-destructive/20 text-destructive border border-destructive/30">
+            غير متاح حالياً
+          </span>
         )}
       </div>
-      <p className="text-base font-black leading-tight" style={{ color: C.red }}>
-        {product.price} <span className="text-xs font-medium" style={{ color: C.muted }}>جنيه</span>
+
+      <p className="text-sm font-black text-foreground truncate mb-1">
+        {product.display_name}
       </p>
-      <p className="text-xs font-bold text-foreground/80 mt-0.5">
+
+      {/* الأسعار: رصيد صافي وكاش */}
+      {isMared ? (
+        <div className="space-y-0.5 my-1.5">
+          <p className="text-base font-black leading-tight text-emerald-400">
+            7 جنيه <span className="text-[11px] font-medium text-muted-foreground">رصيد صافي</span>
+          </p>
+          <p className="text-xs font-bold text-foreground/75">
+            10 جنيه <span className="text-[10px] font-normal text-muted-foreground">كاش</span>
+          </p>
+        </div>
+      ) : (
+        <p className="text-base font-black leading-tight my-1" style={{ color: C.red }}>
+          {product.price} <span className="text-xs font-medium" style={{ color: C.muted }}>جنيه</span>
+        </p>
+      )}
+
+      {/* الوحدات */}
+      <p className="text-xs font-black text-foreground/90 mt-1">
         {product.units_label ?? `${product.units} ${product.product_type}`}
       </p>
+
+      {/* الصلاحية */}
       <p className="text-xs mt-1" style={{ color: C.muted }}>{product.validity}</p>
-      {product.net_charge_label && (
+
+      {!isMared && product.net_charge_label && (
         <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}>
           صافي: {product.net_charge_label === 'غير محدد' ? 'غير محدد' : `${product.net_charge_label} ج`}
         </p>
@@ -1364,13 +1402,13 @@ function BalanceExecuteDialog({
 
   // PHASE 12: تفاصيل العملية الكاملة
   const details = [
-    { label: 'اسم الكارت',      value: product.display_name },
-    { label: 'السعر',            value: `${product.price} جنيه` },
-    { label: 'الرصيد الصافي',   value: product.net_charge_label === 'غير محدد' ? 'غير محدد' : product.net_charge_label ? `${product.net_charge_label} جنيه` : '—' },
-    { label: 'الوحدات',          value: product.units_label ?? '—' },
-    { label: 'الصلاحية',         value: product.validity },
-    { label: 'رقم الشحن',        value: receiverPhone },
-    { label: 'طريقة الدفع',      value: 'رصيد الهاتف' },     // PHASE 12
+    { label: 'اسم الكارت',             value: product.display_name },
+    { label: 'سعر الكارت كاش',          value: `${product.price} جنيه` },
+    { label: 'الرصيد الصافي المطلوب',   value: product.category === 'mared' ? '7 جنيه (صافي)' : (product.net_charge_label === 'غير محدد' ? 'غير محدد' : product.net_charge_label ? `${product.net_charge_label} جنيه` : '—') },
+    { label: 'الوحدات',                 value: product.units_label ?? '—' },
+    { label: 'الصلاحية',                value: product.validity },
+    { label: 'رقم الشحن',               value: receiverPhone },
+    { label: 'طريقة الدفع',             value: 'رصيد الهاتف المباشر' },     // PHASE 12
   ];
 
   return (
@@ -1443,7 +1481,7 @@ function BalanceExecuteDialog({
                     <p className="text-xs font-black" style={{ color: C.warning }}>هل أنت متأكد من تنفيذ عملية الشحن؟</p>
                   </div>
                   <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    سيتم خصم <span className="font-black text-foreground">{product.price} جنيه</span> من رصيد الخط الحالي.
+                    سيتم خصم <span className="font-black text-foreground">{product.category === 'mared' ? '7 جنيه صافي' : `${product.price} جنيه`}</span> من رصيد الخط الحالي.
                   </p>
                   <ul className="space-y-1">
                     {['وجود رصيد كافٍ على الخط.', 'أن الخط الحالي هو نفس الخط المسجل.', 'أن الخدمة تعمل بشكل طبيعي.'].map((item, i) => (
@@ -1585,7 +1623,7 @@ export default function BalanceChargePage() {
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
   const displayedProducts = useMemo(() => products.filter(p => {
-    if (!isAdmin && (!p.is_visible || !p.is_enabled)) return false;
+    if (!p.is_visible && !isAdmin) return false;
     return activeCategory === 'all' || p.category === activeCategory;
   }), [products, activeCategory, isAdmin]);
 
@@ -1593,6 +1631,13 @@ export default function BalanceChargePage() {
   const maredCount = useMemo(() => products.filter(p => p.category === 'mared' && (isAdmin || p.is_visible)).length, [products, isAdmin]);
 
   const handleSelectProduct = useCallback((p: BalanceProduct) => {
+    if (!p.is_enabled) {
+      toast.error('❌ هذا الكارت غير متاح حالياً', {
+        description: 'متاح حالياً فقط كروت المارد (10 فليكس، 10 دقائق، 10 سوشيال)',
+        duration: 4000,
+      });
+      return;
+    }
     if (!session) { setLoginOpen(true); return; }
     // منع الشحن إذا كان Context لم ينتهِ التحميل بعد
     if (isMerchantClient && merchantLoading) {

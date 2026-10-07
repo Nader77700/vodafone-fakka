@@ -81,8 +81,9 @@ serve(async (req: Request) => {
 
     // Subscription check
     const { data: sub } = await opsAdminClient
-      .from("subscriptions").select("status, expires_at").eq("user_id", user.id).maybeSingle();
-    const hasActive = sub && sub.status === "active" && sub.expires_at && new Date(sub.expires_at) > new Date();
+      .from("subscriptions").select("status, expires_at, days_remaining").eq("user_id", user.id).maybeSingle();
+    const isAdmin = authRes.isAdmin;
+    const hasActive = isAdmin || (sub && (sub.status === "active" || sub.status === "suspended") && (!sub.expires_at || new Date(sub.expires_at) > new Date() || (typeof sub.days_remaining === 'number' && sub.days_remaining > 0)));
 
     if (!hasActive) {
       logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}`);

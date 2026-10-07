@@ -10,15 +10,17 @@ import { zeroTrustCheck, CORS_HEADERS } from "../_shared/zero_trust.ts";
 
 const DEVICE: Record<string, string> = {
   "User-Agent": "okhttp/4.12.0",
-  "Connection": "Keep-Alive",
-  "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157",
-  "x-agent-operatingsystem": "13",
+  "Connection": "close",
+  "Accept": "application/json",
+  "Accept-Encoding": "gzip",
+  "x-agent-operatingsystem": "16",
   "clientId": "AnaVodafoneAndroid",
   "Accept-Language": "ar",
-  "x-agent-device": "LENOVO TB310XU",
+  "x-agent-device": "OPPO CPH2737",
   "x-agent-version": "2026.4.1",
   "x-agent-build": "1139",
-  "digitalId": "25ZQ6VBSZPI1V",
+  "digitalId": "2BD5YKHMAV6VL",
+  "device-id": "b61c90c58c612671",
 };
 
 const json = (data: unknown, status = 200) =>
@@ -89,10 +91,10 @@ serve(async (req: Request) => {
 
     // ── التحقق من الاشتراك وحالة القفل ──
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("status, expires_at").eq("user_id", caller.id).maybeSingle();
-    // اشتراك نشط إذا: status=active + (expires_at=null أي مفتوح) أو (expires_at في المستقبل)
-    const hasActive = sub && sub.status === "active" &&
-      (sub.expires_at === null || new Date(sub.expires_at) > new Date());
+      .from("subscriptions").select("status, expires_at, days_remaining").eq("user_id", caller.id).maybeSingle();
+    // اشتراك نشط إذا: أدمن أو (status=active/suspended و (expires_at=null أي مفتوح أو expires_at في المستقبل أو days_remaining > 0))
+    const hasActive = isAdmin || (sub && (sub.status === "active" || sub.status === "suspended") &&
+      (sub.expires_at === null || new Date(sub.expires_at) > new Date() || (typeof sub.days_remaining === 'number' && sub.days_remaining > 0)));
 
     if (!hasActive) {
       logStep("subscription", "fail", `sub status=${sub?.status ?? "none"}, expires_at=${sub?.expires_at ?? "none"}`);
@@ -224,9 +226,15 @@ serve(async (req: Request) => {
     // تم إلغاء طلب الـ sender الإجباري لأن التطبيق يعتمد على التعرف التلقائي (Seamless)
     logStep("validate", "ok", `product=${product_id} receiver=${receiver}`);
 
-    // ── Step 1: seamless token ──
+    // ── Step 1: seamless token & msisdn normalization ──
     let seamlessToken: string | null = seamless_token || null;
-    let msisdn: string = payload_msisdn || (sender && sender.length > 0 ? (sender.startsWith("0") ? sender.slice(1) : sender) : "");
+    const rawMsisdn = String(payload_msisdn || sender || "").trim();
+    const cleanDigits = rawMsisdn.replace(/\D/g, "");
+    const normalized10 = cleanDigits.startsWith("20") && cleanDigits.length === 12
+      ? cleanDigits.slice(2)
+      : (cleanDigits.startsWith("0") ? cleanDigits.slice(1) : cleanDigits);
+    const formatted = `0${normalized10}`;
+    const msisdn = normalized10;
 
     if (!seamlessToken) {
       logStep("seamless", "fail", "missing seamlessToken from client");
@@ -234,47 +242,117 @@ serve(async (req: Request) => {
         success: false,
         error: "فشل التعرف التلقائي: يرجى التأكد من تشغيل بيانات خط فودافون (Vodafone Data) وإغلاق الواي فاي (WiFi) لتتمكن من تنفيذ العملية.",
         layer: "Vodafone",
-        });
+      });
     }
 
     // ── استخراج IP الحقيقي للمستخدم لتجاوز WAF فودافون ──
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
       || req.headers.get("cf-connecting-ip")
       || req.headers.get("x-real-ip")
-      || "156.216.100.50";
+      || "163.121.214.12";
 
-    // ── Step 2: access token (timeout 15s) ──
-    const tokenRes = await fetchWithTimeout(
-      "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token",
-      {
-        method: "POST",
-        headers: {
-          ...DEVICE,
-          "Accept": "application/json, text/plain, */*",
-          "silentLogin": "true", "seamlessToken": seamlessToken,
-          "firstTimeLogin": "true",
-          "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21520_165",
-          "Content-Type": "application/x-www-form-urlencoded",
-          "X-Forwarded-For": clientIp,
-          "True-Client-IP": clientIp,
-        },
-        body: new URLSearchParams({
-          grant_type: "password",
-          client_secret: "b86e30a8-ae29-467a-a71f-65c73f2ff5e3",
-          client_id: "cash-app",
-        }).toString(),
-      }, 15
-    );
-    const tokenTxt = await tokenRes.text();
+    // ── Step 2: access token (استخراج التوكن مع معالجة احترافية لمحاولات الدخول) ──
     let accessToken: string | null = null;
-    try { accessToken = JSON.parse(tokenTxt)?.access_token ?? null; } catch { /* ignore */ }
-    logStep("token", accessToken ? "ok" : "fail", `http=${tokenRes.status}`, { layer: "Vodafone" });
+    let lastTokenErrText = "";
+    let lastTokenStatus = 0;
 
-    if (!accessToken) {
-      return await abortAndRefund(caller.id, supabaseAdmin, { success: false, error: "فشل المصادقة — الرقم السري غير صحيح أو انتهت الجلسة", layer: "Vodafone" });
+    const tokenAttempts = [
+      { firstTime: "true",  msisdnVal: formatted },
+      { firstTime: "false", msisdnVal: formatted },
+      { firstTime: "false", msisdnVal: normalized10 },
+      { firstTime: "true",  msisdnVal: normalized10 },
+    ];
+
+    for (let i = 0; i < tokenAttempts.length; i++) {
+      const { firstTime, msisdnVal } = tokenAttempts[i];
+      try {
+        const tokenRes = await fetchWithTimeout(
+          "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token",
+          {
+            method: "POST",
+            headers: {
+              ...DEVICE,
+              "CRP": "false",
+              "seamlessToken": seamlessToken,
+              "silentLogin": "true",
+              "firstTimeLogin": firstTime,
+              "msisdn": msisdnVal,
+              "api-host": "IdP",
+              "Accept": "application/json, text/plain, */*",
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-Forwarded-For": clientIp,
+              "True-Client-IP": clientIp,
+            },
+            body: new URLSearchParams({
+              grant_type: "password",
+              client_secret: "b86e30a8-ae29-467a-a71f-65c73f2ff5e3",
+              client_id: "cash-app",
+            }).toString(),
+          },
+          15
+        );
+        lastTokenStatus = tokenRes.status;
+        lastTokenErrText = await tokenRes.text();
+        let tokenJson: Record<string, unknown> = {};
+        try { tokenJson = JSON.parse(lastTokenErrText); } catch { /* ignore */ }
+        if (tokenJson?.access_token && typeof tokenJson.access_token === "string") {
+          accessToken = tokenJson.access_token;
+          logStep("token", "ok", `attempt=${i + 1} http=${tokenRes.status}`, { layer: "Vodafone" });
+          break;
+        }
+      } catch (e) {
+        lastTokenErrText = String(e);
+      }
     }
 
-    const formatted = msisdn.startsWith("0") ? msisdn : `0${msisdn}`;
+    if (!accessToken) {
+      logStep("token", "fail", `http=${lastTokenStatus} err=${lastTokenErrText.slice(0, 200)}`, { layer: "Vodafone" });
+      let tokenFriendly = "فشل التعرف على جلسة فودافون كاش — تأكد من تشغيل بيانات خط فودافون وأعد المحاولة";
+      const tokenErrLower = lastTokenErrText.toLowerCase();
+      if (tokenErrLower.includes("invalid_grant") || tokenErrLower.includes("session") || tokenErrLower.includes("expired")) {
+        tokenFriendly = "انتهت جلسة التعرف على الخط (Seamless) — أعد المحاولة عبر بيانات فودافون";
+      } else if (lastTokenStatus === 403 || lastTokenErrText.trim().toLowerCase().startsWith("<html")) {
+        tokenFriendly = "خوادم فودافون محجوبة مؤقتاً أو تحت الصيانة — حاول لاحقاً";
+      }
+
+      // سجّل العملية الفاشلة في قاعدة البيانات سيرفر-سايد لضمان الشفافية والإحصاءات
+      const performedAt = new Date().toISOString();
+      const latencyMs = Date.now() - requestStartedAt;
+      await supabaseAdmin.from("operations").insert({
+        user_id:          caller.id,
+        phone_number:     receiver,
+        card_type:        productConfig?.display_name || product_id,
+        category:         product_id.toLowerCase().includes("mared") ? "مارد" : "فكة",
+        amount:           productConfig?.price || 0,
+        status:           "failed",
+        error_message:    tokenFriendly,
+        performed_at:     performedAt,
+        api_response:     tokenFriendly,
+        operation_source: "vodafone_cash",
+        idempotency_key:  idempotencyKey,
+        correlation_id:   correlationId,
+        latency_ms:       latencyMs,
+        device_fp:        deviceFp ?? null,
+        execution_layer:  "edge_function",
+        card_data: {
+          product_id,
+          receiver,
+          via:             "server",
+          idempotency_key: idempotencyKey,
+          correlation_id:  correlationId,
+          latency_ms:      latencyMs,
+          registered_by:   "edge_function",
+          stage:           "token_exchange",
+        },
+      });
+
+      return await abortAndRefund(caller.id, supabaseAdmin, {
+        success: false,
+        error: tokenFriendly,
+        layer: "Vodafone",
+        registered: true,
+      });
+    }
 
     // ── Step 3: productOrder مع Retry تلقائي لكود 3999 (timeout 20s × 3 محاولات) ──
     const orderPayload = {
@@ -289,7 +367,7 @@ serve(async (req: Request) => {
           ],
           id: product_id,
           relatedParty: [
-            { id: msisdn, name: "MSISDN", role: "Subscriber" },
+            { id: formatted, name: "MSISDN", role: "Subscriber" },
             { id: receiver, name: "Receiver", role: "Receiver" },
           ],
         },
@@ -317,10 +395,12 @@ serve(async (req: Request) => {
           method: "POST",
           headers: {
             ...DEVICE,
-            "Accept": "application/json", "Content-Type": "application/json",
-            "api-host": "ProductOrderingManagement", "useCase": "CashFakkaAndMared",
-            "x-dynatrace": "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_2_160",
-            "api-version": "v2", "msisdn": formatted,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "api-host": "ProductOrderingManagement",
+            "useCase": "CashFakkaAndMared",
+            "api-version": "v2",
+            "msisdn": formatted,
             "Authorization": `Bearer ${accessToken}`,
             "X-Forwarded-For": clientIp,
             "True-Client-IP": clientIp,
