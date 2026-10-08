@@ -4,15 +4,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.7.6',
-  versionCode:    522,
+  appVersion:      '3.7.7',
+  versionCode:    523,
   buildTimestamp: new Date().toISOString(),
   sourceHash:     'build_v3_7_6_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.7.6.apk',
-  bundleHash:     'apk_v3_7_6_code522',
-  apkHash:        'apk_v3_7_6_code522',
-  dbVersion:      'v3.7.6',
+  bundleFile:     'VodafoneFakka-v3.7.7.apk',
+  bundleHash:     'apk_v3_7_7_code523',
+  apkHash:        'apk_v3_7_7_code523',
+  dbVersion:      'v3.7.7',
   releaseNotes: [
+    'v3.7.7: المرحلة 2C (Compact Mobile UI) — إعادة هيكلة وضغط واجهات قسم فودافون ريد VIP بالكامل للموبايل، تقليل الحشو والتمرير الزائد مع شريط تثبيت علوي عالي الكفاءة وحماية من التداخل البصري والهوامش السفلية الآمنة',
     'v3.7.6: نظام الفحص التلقائي بالسيرفر (pg_cron) بدون الحاجة لفتح التطبيق، فحص الأرقام على دفعات تدريجية آمنة (Chunks) لتفادي الحظر، تنبيهات فورية لتحويل الخط للمستخدم والتاجر، تنزيل الفواتير بصيغة HTML/PDF، وتصغير وضغط واجهات القسم بالكامل للموبايل',
     'v3.7.5: تحويل قسم إدارة باقات ريد VIP إلى قسم مستقل كامل ومضغوط للموبايل مع كارت رئيسي مميز وفصله عن معلومات الخط',
     'v3.7.4: إضافة قسم VIP لمراقبة تحويلات خطوط فودافون ريد (Enterprise member control) مع دورية الفحص التلقائي وتنبيهات فورية',

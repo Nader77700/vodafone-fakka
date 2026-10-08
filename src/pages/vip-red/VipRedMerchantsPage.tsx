@@ -187,12 +187,12 @@ export default function VipRedMerchantsPage() {
 
   return (
     <div
-      className="min-h-screen pb-16 font-sans transition-colors duration-200 select-none"
+      className="min-h-screen pb-24 font-sans transition-colors duration-200 select-none"
       style={{ background: bg, color: textC, direction: 'rtl' }}
     >
       {/* ── شريط الرأس الرئيسي ── */}
       <header
-        className="sticky top-0 z-30 border-b backdrop-blur-md px-3 sm:px-4 py-2.5 transition-colors"
+        className="sticky top-0 z-30 border-b backdrop-blur-md px-2 sm:px-3 py-1.5 transition-colors"
         style={{
           background: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(17, 19, 24, 0.92)',
           borderColor: cardBdr,
@@ -255,11 +255,11 @@ export default function VipRedMerchantsPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
+      <main className="max-w-4xl mx-auto px-2 sm:px-3 py-2 sm:py-3 space-y-2 sm:space-y-2.5 pb-24">
         {/* شريط الإحصائيات العامة المدمج */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
           <div
-            className="p-3 rounded-xl border flex flex-col justify-between"
+            className="p-2 sm:p-2.5 rounded-xl border flex flex-col justify-between shadow-xs"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
             <div className="flex items-center justify-between text-amber-500">
@@ -272,7 +272,7 @@ export default function VipRedMerchantsPage() {
           </div>
 
           <div
-            className="p-3 rounded-xl border flex flex-col justify-between"
+            className="p-2 sm:p-2.5 rounded-xl border flex flex-col justify-between shadow-xs"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
             <div className="flex items-center justify-between text-blue-500">
@@ -285,7 +285,7 @@ export default function VipRedMerchantsPage() {
           </div>
 
           <div
-            className="p-3 rounded-xl border flex flex-col justify-between"
+            className="p-2 sm:p-2.5 rounded-xl border flex flex-col justify-between shadow-xs"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
             <div className="flex items-center justify-between text-emerald-500">
@@ -298,7 +298,7 @@ export default function VipRedMerchantsPage() {
           </div>
 
           <div
-            className="p-3 rounded-xl border flex flex-col justify-between"
+            className="p-2 sm:p-2.5 rounded-xl border flex flex-col justify-between shadow-xs"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
             <div className="flex items-center justify-between text-amber-500">

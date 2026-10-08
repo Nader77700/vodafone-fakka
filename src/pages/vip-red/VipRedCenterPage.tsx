@@ -947,9 +947,9 @@ export default function VipRedCenterPage() {
     <div className="min-h-screen pb-16 transition-colors duration-300" style={{ background: pageBg }}>
       {/* ── رأس الصفحة (Header) للمالك (Admin) ── */}
       <header
-        className="sticky top-0 z-30 px-2.5 sm:px-4 py-2 sm:py-2.5 border-b backdrop-blur-md transition-colors"
+        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 border-b backdrop-blur-md transition-colors"
         style={{
-          background: L ? 'rgba(255, 255, 255, 0.85)' : 'rgba(11, 11, 20, 0.85)',
+          background: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(11, 11, 20, 0.92)',
           borderColor: cardBdr,
         }}
       >
@@ -1030,25 +1030,25 @@ export default function VipRedCenterPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-3xl mx-auto p-2 sm:p-4 space-y-2 sm:space-y-2.5">
+      <main className="max-w-3xl mx-auto p-2 sm:p-3 space-y-1.5 sm:space-y-2 pb-24">
         {/* ── كارت الإدخال والإضافة المدمج (Ultra-compact Add Bar) ── */}
         <div
-          className="p-3 rounded-2xl border space-y-2.5 shadow-sm"
+          className="p-2 sm:p-2.5 rounded-xl border space-y-1.5 shadow-xs"
           style={{ background: cardBg, borderColor: cardBdr }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: textC }}>
+            <span className="text-[11px] sm:text-xs font-black flex items-center gap-1.5" style={{ color: textC }}>
               <Plus className="w-3.5 h-3.5 text-[#E60000]" />
               إضافة أرقام للمراقبة المستمرة
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/5" style={{ color: mutC }}>
-              إجمالي الأرقام: {lines.length}
+            <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 font-bold" style={{ color: mutC }}>
+              الإجمالي: {lines.length} خط
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-1.5">
             <div className="flex-1 relative">
-              <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: mutC }} />
+              <Phone className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: mutC }} />
               <input
                 type="tel"
                 inputMode="numeric"
@@ -1058,7 +1058,7 @@ export default function VipRedCenterPage() {
                 placeholder="أدخل رقم فودافون (01xxxxxxxxx)"
                 maxLength={11}
                 disabled={isAdding}
-                className="w-full h-10 rounded-xl pr-9 pl-3 text-xs font-medium outline-none transition-all"
+                className="w-full h-8 rounded-lg pr-8 pl-2.5 text-xs font-bold outline-none transition-all"
                 style={{
                   background: innerBg,
                   border: `1px solid ${cardBdr}`,
@@ -1073,16 +1073,16 @@ export default function VipRedCenterPage() {
               <button
                 onClick={handleAddSingle}
                 disabled={isAdding || !singlePhone.trim()}
-                className="h-10 px-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 text-white shadow-sm"
+                className="h-8 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 text-white shadow-xs"
                 style={{ background: '#E60000' }}
               >
-                <Zap className="w-3.5 h-3.5" />
+                <Zap className="w-3 h-3" />
                 {isAdding ? 'جاري الفحص...' : 'إضافة وفحص'}
               </button>
 
               <button
                 onClick={() => setShowBulkModal(true)}
-                className="h-10 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all active:scale-95"
+                className="h-8 px-2.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 transition-all active:scale-95"
                 style={{
                   background: innerBg,
                   borderColor: cardBdr,
@@ -1090,7 +1090,7 @@ export default function VipRedCenterPage() {
                 }}
                 title="إضافة أرقام متعددة دفعة واحدة"
               >
-                <Layers className="w-3.5 h-3.5 text-blue-500" />
+                <Layers className="w-3 h-3 text-blue-500" />
                 <span className="hidden sm:inline">إضافة مجمعة</span>
                 <span className="sm:hidden">مجمعة</span>
               </button>
@@ -1098,15 +1098,15 @@ export default function VipRedCenterPage() {
           </div>
 
           {/* خيارات التاجر وموعد التفعيل للإضافة */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t" style={{ borderColor: cardBdr }}>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 pt-1.5 border-t" style={{ borderColor: cardBdr }}>
             {/* اختيار التاجر */}
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="text-[11px] font-bold shrink-0" style={{ color: mutC }}>التاجر:</span>
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <Crown className="w-3 h-3 text-amber-500 shrink-0" />
+              <span className="text-[10px] font-bold shrink-0" style={{ color: mutC }}>التاجر:</span>
               <select
                 value={selectedMerchantId}
                 onChange={e => setSelectedMerchantId(e.target.value)}
-                className="flex-1 h-8 px-2 rounded-lg text-xs font-medium outline-none border transition-all cursor-pointer truncate"
+                className="flex-1 h-7 px-2 rounded-md text-[11px] font-bold outline-none border transition-all cursor-pointer truncate max-w-[180px]"
                 style={{
                   background: innerBg,
                   borderColor: cardBdr,
@@ -1123,8 +1123,8 @@ export default function VipRedCenterPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateMerchantModal(true)}
-                className="h-8 px-2 rounded-lg border text-[11px] font-bold flex items-center gap-1 shrink-0 transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-95"
-                style={{ background: innerBg, borderColor: cardBdr, color: textC }}
+                className="h-7 px-1.5 rounded-md border text-[10px] font-bold flex items-center gap-1 shrink-0 transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 text-amber-600 dark:text-amber-400"
+                style={{ background: innerBg, borderColor: cardBdr }}
                 title="إضافة تاجر جديد"
               >
                 <Plus className="w-3 h-3 text-[#E60000]" />
@@ -1133,9 +1133,9 @@ export default function VipRedCenterPage() {
             </div>
 
             {/* موعد التفعيل */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-              <span className="text-[11px] font-bold shrink-0" style={{ color: mutC }}>موعد التفعيل:</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <Calendar className="w-3 h-3 text-purple-500 shrink-0" />
+              <span className="text-[10px] font-bold shrink-0" style={{ color: mutC }}>موعد التفعيل:</span>
               <div className="flex items-center gap-1">
                 {VALID_ACTIVATION_DAYS.map(day => {
                   const isSelected = selectedActivationDay === day;
@@ -1144,7 +1144,7 @@ export default function VipRedCenterPage() {
                       key={day}
                       type="button"
                       onClick={() => setSelectedActivationDay(isSelected ? null : day)}
-                      className="h-8 px-2.5 rounded-lg border text-[11px] font-black transition-all active:scale-95"
+                      className="h-7 px-2 rounded-md border text-[10px] font-black transition-all active:scale-95"
                       style={{
                         background: isSelected
                           ? (L ? '#7e22ce' : '#9333ea')
@@ -1166,28 +1166,28 @@ export default function VipRedCenterPage() {
 
         {/* ── شريط حالة الفحص التلقائي بالسيرفر (Server-side Background Scheduler) ── */}
         <div
-          className="p-2.5 sm:p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs transition"
+          className="p-2 sm:p-2.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-xs transition"
           style={{
             background: L ? 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)' : 'rgba(16, 185, 129, 0.08)',
             borderColor: L ? '#bbf7d0' : 'rgba(16, 185, 129, 0.25)',
           }}
         >
-          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-              <Server className="w-4 h-4" />
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Server className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
-                  ⚡ الفحص التلقائي بالسيرفر نشط في الخلفية
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300">
+                  ⚡ فحص تلقائي بالسيرفر نشط في الخلفية
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  مستمر دائماً
+                  مستمر
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-600/90 dark:text-emerald-400/90 leading-relaxed mt-0.5">
-                يعمل الخادم تلقائياً كل 10 دقائق لفحص الأرقام المستحقة على دفعات صغيرة وآمنة (3–5 أرقام) دون الحاجة لفتح المتصفح أو التطبيق.
+              <p className="text-[10px] text-emerald-600/90 dark:text-emerald-400/90 truncate">
+                فحص كل 10 د على دفعات آمنة (3–5 أرقام) دون الحاجة لفتح المتصفح أو التطبيق
               </p>
             </div>
           </div>
@@ -1196,21 +1196,21 @@ export default function VipRedCenterPage() {
             type="button"
             onClick={handleTriggerServerScan}
             disabled={isTriggeringServerScan}
-            className="h-7 px-3 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1.5 shrink-0 transition active:scale-95 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-50"
+            className="h-6.5 px-2.5 rounded-md border text-[10px] font-bold flex items-center justify-center gap-1 shrink-0 transition active:scale-95 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-50 self-end sm:self-auto"
             title="تشغيل دورة فحص سحابية الآن"
           >
-            <Cpu className={`w-3.5 h-3.5 ${isTriggeringServerScan ? 'animate-spin' : ''}`} />
+            <Cpu className={`w-3 h-3 ${isTriggeringServerScan ? 'animate-spin' : ''}`} />
             <span>{isTriggeringServerScan ? 'جاري الفحص...' : 'فحص سحابي فوري'}</span>
           </button>
         </div>
 
         {/* ── شريط التبويبات المدمج السريع (Stat Pills) ── */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {/* تبويب قيد المراقبة */}
           <button
             onClick={() => setActiveTab('monitoring')}
-            className={`p-2.5 rounded-xl border text-right transition-all flex flex-col justify-between ${
-              activeTab === 'monitoring' ? 'ring-2 ring-blue-500/50 shadow-sm' : ''
+            className={`p-1.5 sm:p-2 rounded-xl border text-right transition-all flex flex-col justify-between ${
+              activeTab === 'monitoring' ? 'ring-2 ring-blue-500/50 shadow-xs' : ''
             }`}
             style={{
               background: activeTab === 'monitoring' ? (L ? '#eff6ff' : 'rgba(59, 130, 246, 0.14)') : cardBg,
@@ -1218,20 +1218,20 @@ export default function VipRedCenterPage() {
             }}
           >
             <div className="flex items-center justify-between">
-              <Clock className="w-3.5 h-3.5 text-blue-500" />
-              <span className="font-mono text-sm font-black text-blue-500">{monitoringLines.length}</span>
+              <Clock className="w-3 h-3 text-blue-500" />
+              <span className="font-mono text-xs sm:text-sm font-black text-blue-500">{monitoringLines.length}</span>
             </div>
-            <div className="mt-1">
-              <p className="text-[11px] font-bold" style={{ color: textC }}>قيد المراقبة</p>
-              <p className="text-[9px]" style={{ color: mutC }}>14 قرش ريح بالك</p>
+            <div className="mt-0.5">
+              <p className="text-[10px] sm:text-[11px] font-black" style={{ color: textC }}>قيد المراقبة</p>
+              <p className="text-[8px] sm:text-[9px]" style={{ color: mutC }}>14 قرش ريح بالك</p>
             </div>
           </button>
 
           {/* تبويب تم التحويل */}
           <button
             onClick={() => setActiveTab('converted')}
-            className={`p-2.5 rounded-xl border text-right transition-all flex flex-col justify-between ${
-              activeTab === 'converted' ? 'ring-2 ring-emerald-500/50 shadow-sm' : ''
+            className={`p-1.5 sm:p-2 rounded-xl border text-right transition-all flex flex-col justify-between ${
+              activeTab === 'converted' ? 'ring-2 ring-emerald-500/50 shadow-xs' : ''
             }`}
             style={{
               background: activeTab === 'converted' ? (L ? '#f0fdf4' : 'rgba(16, 185, 129, 0.14)') : cardBg,
@@ -1239,20 +1239,20 @@ export default function VipRedCenterPage() {
             }}
           >
             <div className="flex items-center justify-between">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="font-mono text-sm font-black text-emerald-500">{convertedLines.length}</span>
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              <span className="font-mono text-xs sm:text-sm font-black text-emerald-500">{convertedLines.length}</span>
             </div>
-            <div className="mt-1">
-              <p className="text-[11px] font-bold" style={{ color: textC }}>تم التحويل</p>
-              <p className="text-[9px]" style={{ color: mutC }}>جاهز للتفعيل</p>
+            <div className="mt-0.5">
+              <p className="text-[10px] sm:text-[11px] font-black" style={{ color: textC }}>تم التحويل</p>
+              <p className="text-[8px] sm:text-[9px]" style={{ color: mutC }}>جاهز للتفعيل</p>
             </div>
           </button>
 
           {/* تبويب غير مؤهل */}
           <button
             onClick={() => setActiveTab('ineligible')}
-            className={`p-2.5 rounded-xl border text-right transition-all flex flex-col justify-between ${
-              activeTab === 'ineligible' ? 'ring-2 ring-rose-500/50 shadow-sm' : ''
+            className={`p-1.5 sm:p-2 rounded-xl border text-right transition-all flex flex-col justify-between ${
+              activeTab === 'ineligible' ? 'ring-2 ring-rose-500/50 shadow-xs' : ''
             }`}
             style={{
               background: activeTab === 'ineligible' ? (L ? '#fef2f2' : 'rgba(239, 68, 68, 0.14)') : cardBg,
@@ -1260,42 +1260,42 @@ export default function VipRedCenterPage() {
             }}
           >
             <div className="flex items-center justify-between">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-              <span className="font-mono text-sm font-black text-rose-500">{ineligibleLines.length}</span>
+              <AlertTriangle className="w-3 h-3 text-rose-500" />
+              <span className="font-mono text-xs sm:text-sm font-black text-rose-500">{ineligibleLines.length}</span>
             </div>
-            <div className="mt-1">
-              <p className="text-[11px] font-bold" style={{ color: textC }}>غير مؤهل</p>
-              <p className="text-[9px]" style={{ color: mutC }}>يلزم 14 قرش أولاً</p>
+            <div className="mt-0.5">
+              <p className="text-[10px] sm:text-[11px] font-black" style={{ color: textC }}>غير مؤهل</p>
+              <p className="text-[8px] sm:text-[9px]" style={{ color: mutC }}>يلزم 14 قرش أولاً</p>
             </div>
           </button>
         </div>
 
         {/* ── شريط التحكم التلقائي والفحص الجماعي (Compact Control Bar) ── */}
         <div
-          className="p-2.5 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-2.5"
+          className="p-1.5 sm:p-2 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-1.5 shadow-xs"
           style={{ background: cardBg, borderColor: cardBdr }}
         >
           <div className="text-right w-full sm:w-auto">
-            <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: textC }}>
+            <p className="text-[11px] font-bold flex items-center gap-1.5" style={{ color: textC }}>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              دورية الفحص التلقائي بالسيرفر: فحص دوري منتظم (كل {config?.check_interval_hours || 4} ساعات)
+              دورية الفحص التلقائي بالسيرفر: فحص منتظم (كل {config?.check_interval_hours || 4} ساعات)
             </p>
-            <p className="text-[10px]" style={{ color: mutC }}>
-              مراقبة مستمرة بالسيرفر وإرسال تنبيهات لحظية فور تحويل أي خط لنظام ريد بيزنس
+            <p className="text-[9px]" style={{ color: mutC }}>
+              مراقبة مستمرة بالسيرفر وتنبيهات فورية فور تحويل أي خط لنظام ريد
             </p>
           </div>
 
           <button
             onClick={handleBatchCheckAll}
             disabled={isBatchChecking || monitoringLines.length === 0}
-            className="w-full sm:w-auto h-8 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 border transition-all active:scale-95 disabled:opacity-50 shrink-0"
+            className="w-full sm:w-auto h-7 px-2.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 border transition-all active:scale-95 disabled:opacity-50 shrink-0"
             style={{
               background: innerBg,
               borderColor: cardBdr,
               color: textC,
             }}
           >
-            <RotateCcw className={`w-3.5 h-3.5 text-[#E60000] ${isBatchChecking ? 'animate-spin' : ''}`} />
+            <RotateCcw className={`w-3 h-3 text-[#E60000] ${isBatchChecking ? 'animate-spin' : ''}`} />
             {isBatchChecking
               ? `جاري فحص (${batchProgress?.current}/${batchProgress?.total})...`
               : 'فحص جميع الأرقام الآن'}
@@ -1444,7 +1444,7 @@ export default function VipRedCenterPage() {
               return (
                 <div
                   key={line.id}
-                  className="p-2.5 sm:p-3 rounded-xl border transition-all space-y-2 shadow-sm"
+                  className="p-2 sm:p-2.5 rounded-xl border transition-all space-y-1.5 shadow-xs"
                   style={{
                     background: cardBg,
                     borderColor:
@@ -1458,7 +1458,7 @@ export default function VipRedCenterPage() {
                   {/* شريط تم التحويل البارز الفخم */}
                   {classification.status === 'converted' && (
                     <div
-                      className="p-2 rounded-lg border flex items-center justify-between gap-2 text-xs font-bold"
+                      className="p-1.5 rounded-lg border flex items-center justify-between gap-1.5 text-[11px] font-bold"
                       style={{
                         background: L ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.18)',
                         borderColor: L ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.5)',
@@ -1472,7 +1472,7 @@ export default function VipRedCenterPage() {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => navigate('/vip-red/renewals')}
-                          className="px-2 py-0.5 rounded text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center gap-1"
+                          className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center gap-0.5"
                           title="فتح صفحة التجديد القادم وسداد الاشتراكات"
                         >
                           <span>جدول التجديد والسداد</span>
@@ -1613,11 +1613,11 @@ export default function VipRedCenterPage() {
                       </div>
                     </div>
 
-                    {/* أزرار الإجراءات للرقم */}
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                    {/* أزرار الإجراءات للرقم (Ultra-compact buttons) */}
+                    <div className="flex items-center gap-1 self-end sm:self-auto shrink-0">
                       <button
                         onClick={() => setSelectedLineForDetails(line)}
-                        className="h-7 px-2 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95"
+                        className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95"
                         style={{
                           background: innerBg,
                           borderColor: cardBdr,
@@ -1626,13 +1626,13 @@ export default function VipRedCenterPage() {
                         title="تفاصيل الخط والباقات"
                       >
                         <Eye className="w-3 h-3 text-blue-500" />
-                        تفاصيل
+                        <span>تفاصيل</span>
                       </button>
 
                       <button
                         onClick={() => handleRecheckSingle(line)}
                         disabled={isLineChecking || isBatchChecking}
-                        className="h-7 px-2 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                        className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                         style={{
                           background: innerBg,
                           borderColor: cardBdr,
@@ -1641,12 +1641,12 @@ export default function VipRedCenterPage() {
                         title="إعادة فحص هذا الرقم فوراً"
                       >
                         <RotateCcw className={`w-3 h-3 text-[#E60000] ${isLineChecking ? 'animate-spin' : ''}`} />
-                        {isLineChecking ? 'جاري...' : 'فحص'}
+                        <span>{isLineChecking ? 'جاري...' : 'فحص'}</span>
                       </button>
 
                       <button
                         onClick={() => handleDeleteLine(line.id, line.phone_number)}
-                        className="h-7 w-7 rounded-lg border flex items-center justify-center transition-all hover:bg-rose-500/10 active:scale-95"
+                        className="h-6.5 w-6.5 rounded-md border flex items-center justify-center transition-all hover:bg-rose-500/10 active:scale-95"
                         style={{
                           borderColor: cardBdr,
                           color: mutC,

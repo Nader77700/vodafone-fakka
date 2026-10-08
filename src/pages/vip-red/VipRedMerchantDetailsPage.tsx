@@ -393,12 +393,12 @@ export default function VipRedMerchantDetailsPage() {
 
   return (
     <div
-      className="min-h-screen pb-16 font-sans transition-colors duration-200 select-none"
+      className="min-h-screen pb-24 font-sans transition-colors duration-200 select-none"
       style={{ background: bg, color: textC, direction: 'rtl' }}
     >
       {/* ── شريط الرأس الرئيسي ── */}
       <header
-        className="sticky top-0 z-30 border-b backdrop-blur-md px-3 sm:px-4 py-2.5 transition-colors"
+        className="sticky top-0 z-30 border-b backdrop-blur-md px-2 sm:px-3 py-1.5 transition-colors"
         style={{
           background: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(17, 19, 24, 0.92)',
           borderColor: cardBdr,
@@ -467,11 +467,11 @@ export default function VipRedMerchantDetailsPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
+      <main className="max-w-4xl mx-auto px-2 sm:px-3 py-2 sm:py-3 space-y-2 sm:space-y-2.5 pb-24">
         {/* بطاقة معلومات التاجر العلوية */}
         {merchant && (
           <div
-            className="p-3.5 sm:p-4 rounded-2xl border space-y-3"
+            className="p-2.5 sm:p-3 rounded-xl border space-y-2 shadow-xs"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -533,7 +533,7 @@ export default function VipRedMerchantDetailsPage() {
                 {/* الصف الأول: الإجماليات */}
                 <div className="grid grid-cols-3 gap-2">
                   <div
-                    className="p-2.5 rounded-xl border text-center"
+                    className="p-1.5 sm:p-2 rounded-xl border text-center shadow-xs"
                     style={{ background: innerBg, borderColor: cardBdr }}
                   >
                     <span className="block text-[10px]" style={{ color: mutC }}>إجمالي الأرقام</span>
@@ -541,7 +541,7 @@ export default function VipRedMerchantDetailsPage() {
                   </div>
 
                   <div
-                    className="p-2.5 rounded-xl border text-center"
+                    className="p-1.5 sm:p-2 rounded-xl border text-center shadow-xs"
                     style={{ background: innerBg, borderColor: cardBdr }}
                   >
                     <span className="block text-[10px] text-emerald-500">تم التحويل لريد</span>
@@ -549,7 +549,7 @@ export default function VipRedMerchantDetailsPage() {
                   </div>
 
                   <div
-                    className="p-2.5 rounded-xl border text-center"
+                    className="p-1.5 sm:p-2 rounded-xl border text-center shadow-xs"
                     style={{ background: innerBg, borderColor: cardBdr }}
                   >
                     <span className="block text-[10px] text-amber-500">تحت المراقبة</span>

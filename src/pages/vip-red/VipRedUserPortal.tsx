@@ -284,10 +284,10 @@ export default function VipRedUserPortal({
   const monitoringCount = lines.filter(l => l.system_status === 'monitoring').length;
 
   return (
-    <div className="space-y-3 sm:space-y-4" dir="rtl">
+    <div className="space-y-2 sm:space-y-2.5 pb-24" dir="rtl">
       {/* ── بطاقة الملف التعريفي العلوية المدمجة ── */}
       <div
-        className="p-3 sm:p-4 rounded-2xl border shadow-xs"
+        className="p-2.5 sm:p-3 rounded-xl border shadow-xs"
         style={{ background: cardBg, borderColor: cardBdr }}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -348,10 +348,10 @@ export default function VipRedUserPortal({
       </div>
 
       {/* ── التبويبات الرئيسية الثلاثة (أرقامي، بحث واعتماد، الفاتورة) ── */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl border" style={{ background: cardBg, borderColor: cardBdr }}>
+      <div className="grid grid-cols-3 gap-1 p-0.5 rounded-xl border shadow-xs" style={{ background: cardBg, borderColor: cardBdr }}>
         <button
           onClick={() => setActiveMainTab('lines')}
-          className={`py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+          className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
             activeMainTab === 'lines'
               ? 'bg-[#E60000] text-white shadow-xs'
               : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -364,7 +364,7 @@ export default function VipRedUserPortal({
 
         <button
           onClick={() => setActiveMainTab('search')}
-          className={`py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+          className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
             activeMainTab === 'search'
               ? 'bg-[#E60000] text-white shadow-xs'
               : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -377,7 +377,7 @@ export default function VipRedUserPortal({
 
         <button
           onClick={() => setActiveMainTab('invoice')}
-          className={`py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+          className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
             activeMainTab === 'invoice'
               ? 'bg-[#E60000] text-white shadow-xs'
               : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -539,7 +539,7 @@ export default function VipRedUserPortal({
                 return (
                   <div
                     key={line.id}
-                    className="p-3 sm:p-3.5 rounded-2xl border space-y-2.5 transition-all shadow-xs"
+                    className="p-2 sm:p-2.5 rounded-xl border space-y-1.5 transition-all shadow-xs"
                     style={{
                       background: cardBg,
                       borderColor: hasConverted ? 'rgba(16, 185, 129, 0.45)' : cardBdr,

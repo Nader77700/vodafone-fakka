@@ -1133,10 +1133,10 @@ export default function VipRedRenewalsPage() {
   }, [lines, dayFilter, paymentFilter, searchQuery]);
 
   return (
-    <div className="min-h-screen pb-16 transition-colors duration-200" style={{ backgroundColor: bg }}>
-      {/* ── الرأس العلوي (Compact Mobile Header) ── */}
+    <div className="min-h-screen pb-24 transition-colors duration-200" style={{ backgroundColor: bg }}>
+      {/* ── الرأس العلوي (Ultra-compact Mobile Header) ── */}
       <div
-        className="sticky top-0 z-30 px-3 py-2.5 backdrop-blur-md border-b flex items-center justify-between gap-2"
+        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b flex items-center justify-between gap-1.5"
         style={{
           backgroundColor: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(17, 19, 24, 0.92)',
           borderColor: cardBdr,
@@ -1145,11 +1145,11 @@ export default function VipRedRenewalsPage() {
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={() => navigate('/vip-red')}
-            className="p-1.5 rounded-lg border transition hover:bg-muted shrink-0"
+            className="w-7 h-7 rounded-lg border flex items-center justify-center transition hover:bg-muted shrink-0"
             style={{ borderColor: cardBdr }}
             title="الرجوع لمركز فودافون ريد"
           >
-            <ArrowRight className="w-4 h-4 text-primary" />
+            <ArrowRight className="w-3.5 h-3.5 text-primary" />
           </button>
           <div className="truncate">
             <div className="flex items-center gap-1.5">
@@ -1193,22 +1193,22 @@ export default function VipRedRenewalsPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-2.5 sm:px-4 pt-2.5 space-y-2.5">
+      <div className="max-w-5xl mx-auto px-2 sm:px-3 pt-2 space-y-2">
         {/* ── شريط الإحصائيات المضغوط (Compact Mobile Stats Cards) ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
           {/* إجمالي خطوط ريد */}
           <div
-            className="rounded-xl p-2.5 border flex items-center gap-2.5"
+            className="rounded-xl p-2 border flex items-center gap-2"
             style={{ backgroundColor: cardBg, borderColor: cardBdr }}
           >
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <PhoneCall className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <PhoneCall className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] block truncate" style={{ color: mutC }}>
+              <span className="text-[9px] sm:text-[10px] block truncate" style={{ color: mutC }}>
                 إجمالي خطوط ريد
               </span>
-              <span className="text-base font-bold font-mono" style={{ color: textC }}>
+              <span className="text-xs sm:text-sm font-black font-mono" style={{ color: textC }}>
                 {stats.total}
               </span>
             </div>
@@ -1216,41 +1216,41 @@ export default function VipRedRenewalsPage() {
 
           {/* لم يسدد المبلغ (تنبيه رئيسي) */}
           <div
-            className="rounded-xl p-2.5 border flex items-center gap-2.5"
+            className="rounded-xl p-2 border flex items-center gap-2"
             style={{
               backgroundColor: cardBg,
               borderColor: stats.unpaid > 0 ? 'rgba(239, 68, 68, 0.4)' : cardBdr,
             }}
           >
-            <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-              <AlertCircle className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] block truncate text-red-500 font-medium">
+              <span className="text-[9px] sm:text-[10px] block truncate text-red-500 font-bold">
                 لم يسدد المبلغ
               </span>
               <div className="flex items-baseline gap-1">
-                <span className="text-base font-bold font-mono text-red-500">
+                <span className="text-xs sm:text-sm font-black font-mono text-red-500">
                   {stats.unpaid}
                 </span>
-                <span className="text-[10px] text-muted-foreground">خط</span>
+                <span className="text-[9px] text-muted-foreground">خط</span>
               </div>
             </div>
           </div>
 
           {/* تم الدفع والتجديد */}
           <div
-            className="rounded-xl p-2.5 border flex items-center gap-2.5"
+            className="rounded-xl p-2 border flex items-center gap-2"
             style={{ backgroundColor: cardBg, borderColor: cardBdr }}
           >
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] block truncate text-emerald-500 font-medium">
+              <span className="text-[9px] sm:text-[10px] block truncate text-emerald-500 font-bold">
                 تم الدفع والتجديد
               </span>
-              <span className="text-base font-bold font-mono text-emerald-500">
+              <span className="text-xs sm:text-sm font-black font-mono text-emerald-500">
                 {stats.paid}
               </span>
             </div>
@@ -1258,23 +1258,23 @@ export default function VipRedRenewalsPage() {
 
           {/* أقرب موعد تجديد قادم */}
           <div
-            className="rounded-xl p-2.5 border flex items-center gap-2.5"
+            className="rounded-xl p-2 border flex items-center gap-2"
             style={{ backgroundColor: cardBg, borderColor: cardBdr }}
           >
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+              <Calendar className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] block truncate" style={{ color: mutC }}>
+              <span className="text-[9px] sm:text-[10px] block truncate" style={{ color: mutC }}>
                 أقرب موعد قادم
               </span>
               <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-amber-500">
+                <span className="text-[11px] sm:text-xs font-black text-amber-500">
                   {stats.nextDay ? `يوم ${stats.nextDay}` : 'غير محدد'}
                 </span>
                 {stats.diffDays !== null && (
-                  <span className="text-[10px] font-mono bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded">
-                    بعد {stats.diffDays} يوم
+                  <span className="text-[9px] font-mono bg-amber-500/10 text-amber-500 px-1 py-0.2 rounded">
+                    بعد {stats.diffDays} ي
                   </span>
                 )}
               </div>
@@ -1480,7 +1480,7 @@ export default function VipRedRenewalsPage() {
               return (
                 <div
                   key={line.id}
-                  className="rounded-xl p-2.5 border transition duration-150 hover:border-primary/40 relative overflow-hidden flex flex-col gap-2"
+                  className="rounded-xl p-2 sm:p-2.5 border transition duration-150 hover:border-primary/40 relative overflow-hidden flex flex-col gap-1.5 shadow-xs"
                   style={{
                     backgroundColor: cardBg,
                     borderColor: isPaid
@@ -1627,7 +1627,7 @@ export default function VipRedRenewalsPage() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => handleTogglePaymentStatus(line)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm ${
+                        className={`h-6.5 px-2 rounded-md text-[10px] sm:text-[11px] font-bold transition flex items-center gap-1 active:scale-95 shadow-xs ${
                           isPaid
                             ? 'border border-border bg-background hover:bg-muted text-muted-foreground'
                             : 'bg-emerald-600 hover:bg-emerald-700 text-white'

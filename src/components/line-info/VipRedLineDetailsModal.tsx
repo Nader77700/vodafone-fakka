@@ -70,7 +70,7 @@ export default function VipRedLineDetailsModal({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-5 py-4 border-b shrink-0"
+          className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b shrink-0"
           style={{ borderColor: cardBdr, background: L ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}
         >
           <div className="flex items-center gap-2.5">
@@ -98,11 +98,11 @@ export default function VipRedLineDetailsModal({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs">
+        {/* Content (Compact) */}
+        <div className="p-3 sm:p-3.5 overflow-y-auto space-y-2.5 text-xs">
           {/* Status Banner */}
           <div
-            className="p-3.5 rounded-xl flex items-start gap-3 border"
+            className="p-2.5 sm:p-3 rounded-lg flex items-start gap-2.5 border"
             style={{
               background: classification.badgeBg,
               borderColor: classification.badgeBorder,
@@ -123,7 +123,7 @@ export default function VipRedLineDetailsModal({
           </div>
 
           {/* Core Info */}
-          <div className="rounded-xl p-3.5 space-y-2.5 border" style={{ background: innerBg, borderColor: cardBdr }}>
+          <div className="rounded-lg p-2.5 space-y-1.5 border" style={{ background: innerBg, borderColor: cardBdr }}>
             <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Phone className="w-3.5 h-3.5" /> رقم الهاتف

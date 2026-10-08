@@ -182,10 +182,10 @@ export default function VipRedRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen pb-16 transition-colors duration-200" style={{ background: pageBg, color: textC, direction: 'rtl' }}>
+    <div className="min-h-screen pb-24 transition-colors duration-200" style={{ background: pageBg, color: textC, direction: 'rtl' }}>
       {/* ── شريط الرأس ── */}
       <header
-        className="sticky top-0 z-30 border-b backdrop-blur-md px-3 sm:px-4 py-2.5 transition-colors"
+        className="sticky top-0 z-30 border-b backdrop-blur-md px-2 sm:px-3 py-1.5 transition-colors"
         style={{
           background: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(17, 19, 24, 0.92)',
           borderColor: cardBdr,
@@ -230,12 +230,12 @@ export default function VipRedRequestsPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-4xl mx-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
-        {/* شريط التبويبات الثلاثة */}
-        <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl border" style={{ background: cardBg, borderColor: cardBdr }}>
+      <main className="max-w-4xl mx-auto p-2 sm:p-3 space-y-2 sm:space-y-2.5 pb-24">
+        {/* شريط التبويبات الثلاثة (Compact Horizontal Tabs) */}
+        <div className="grid grid-cols-3 gap-1 p-0.5 rounded-xl border shadow-xs" style={{ background: cardBg, borderColor: cardBdr }}>
           <button
             onClick={() => setActiveTab('pending')}
-            className={`py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+            className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
               activeTab === 'pending'
                 ? 'bg-[#E60000] text-white shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -248,7 +248,7 @@ export default function VipRedRequestsPage() {
 
           <button
             onClick={() => setActiveTab('passwords')}
-            className={`py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+            className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
               activeTab === 'passwords'
                 ? 'bg-[#E60000] text-white shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -261,7 +261,7 @@ export default function VipRedRequestsPage() {
 
           <button
             onClick={() => setActiveTab('history')}
-            className={`py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+            className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
               activeTab === 'history'
                 ? 'bg-[#E60000] text-white shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5'
