@@ -26,6 +26,8 @@ import {
   Download,
   Package,
   X,
+  CreditCard,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,6 +36,8 @@ import { supabase } from '@/db/supabase';
 import {
   getConvertedRenewalLines,
   updateLinePaymentStatus,
+  updateLineBundleStatus,
+  runAutoRenewalsOnDueDay,
   updateLineCustomerName,
   updateLineMerchantAndActivation,
   updateLinePackageTier,
@@ -51,9 +55,11 @@ import {
   type VipRedLine,
   type VipRedActivationDay,
   type VipRedPaymentStatus,
+  type VipRedBundleStatus,
   type VipRedMerchant,
   type VipRedPackageTier,
 } from '@/types/vipRed';
+import { SingleLineInvoiceModal } from '@/components/vip-red/SingleLineInvoiceModal';
 
 // حوار تعديل اسم العميل
 interface EditCustomerModalProps {
@@ -809,6 +815,7 @@ export default function VipRedRenewalsPage() {
   const [editingDayLine, setEditingDayLine] = useState<VipRedLine | null>(null);
   const [editingPackageLine, setEditingPackageLine] = useState<VipRedLine | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
+  const [selectedInvoiceLine, setSelectedInvoiceLine] = useState<VipRedLine | null>(null);
   const [deletingLine, setDeletingLine] = useState<VipRedLine | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -848,10 +855,25 @@ export default function VipRedRenewalsPage() {
         getMerchants().catch(() => []),
       ]);
 
-      setLines(renewalLines || []);
+      let loadedLines = renewalLines || [];
+      if (loadedLines.length > 0) {
+        try {
+          const autoRes = await runAutoRenewalsOnDueDay(loadedLines);
+          if (autoRes.renewedCount > 0) {
+            loadedLines = loadedLines.map(l =>
+              autoRes.renewedIds.includes(l.id) ? { ...l, bundle_status: 'renewed' } : l
+            );
+            toast.success(`تم التجديد التلقائي لـ (${autoRes.renewedCount}) خط مسدد وافق موعد دورتها اليوم ✨`);
+          }
+        } catch (autoErr) {
+          console.warn('[VipRedRenewals] auto renewal error:', autoErr);
+        }
+      }
+
+      setLines(loadedLines);
       setMerchants(allMerchants || []);
       try {
-        sessionStorage.setItem('vf_vip_red_renewals_lines', JSON.stringify(renewalLines || []));
+        sessionStorage.setItem('vf_vip_red_renewals_lines', JSON.stringify(loadedLines));
       } catch {}
     } catch (err) {
       console.warn('[VipRedRenewals] loadData error:', err);
@@ -928,7 +950,7 @@ export default function VipRedRenewalsPage() {
     await loadData();
   };
 
-  // تبديل حالة السداد للخط بنقرة واحدة
+  // تبديل حالة سداد المبلغ للخط (مستقل عن تجديد الباقة)
   const handleTogglePaymentStatus = async (line: VipRedLine) => {
     const newStatus: VipRedPaymentStatus = line.payment_status === 'paid' ? 'unpaid' : 'paid';
     const originalStatus = line.payment_status;
@@ -950,7 +972,7 @@ export default function VipRedRenewalsPage() {
       }
 
       if (newStatus === 'paid') {
-        toast.success(`تم تأكيد السداد والتجديد للرقم ${line.phone_number}`);
+        toast.success(`تم تأكيد سداد المبلغ للرقم ${line.phone_number} بنجاح ✅`);
       } else {
         toast.info(`تم تمييز الرقم ${line.phone_number} كـ "لم يسدد"`);
       }
@@ -959,6 +981,38 @@ export default function VipRedRenewalsPage() {
         prev.map(l => (l.id === line.id ? { ...l, payment_status: originalStatus } : l))
       );
       toast.error('حدث خطأ في الشبكة أثناء التحديث');
+    }
+  };
+
+  // تبديل حالة تجديد باقة الخط (مستقل عن سداد الفاتورة)
+  const handleToggleBundleStatus = async (line: VipRedLine) => {
+    const newStatus: VipRedBundleStatus = line.bundle_status === 'renewed' ? 'pending' : 'renewed';
+    const originalStatus = line.bundle_status;
+
+    setLines(prev =>
+      prev.map(l => (l.id === line.id ? { ...l, bundle_status: newStatus } : l))
+    );
+
+    try {
+      const res = await updateLineBundleStatus(line.id, newStatus);
+      if (!res.success || !res.line) {
+        setLines(prev =>
+          prev.map(l => (l.id === line.id ? { ...l, bundle_status: originalStatus } : l))
+        );
+        toast.error(res.error || 'فشل تحديث حالة تجديد الباقة');
+        return;
+      }
+
+      if (newStatus === 'renewed') {
+        toast.success(`تم تأكيد تجديد باقة الرقم ${line.phone_number} بنجاح ✨`);
+      } else {
+        toast.info(`تم إعادة حالة الباقة إلى "بانتظار التجديد" للرقم ${line.phone_number}`);
+      }
+    } catch {
+      setLines(prev =>
+        prev.map(l => (l.id === line.id ? { ...l, bundle_status: originalStatus } : l))
+      );
+      toast.error('حدث خطأ أثناء تحديث حالة الباقة');
     }
   };
 
@@ -982,34 +1036,47 @@ export default function VipRedRenewalsPage() {
     }
   };
 
-  // تصفير دورة السداد (إعادة الجميع إلى غير مسدد للشهر الجديد)
+  // تصفير دورة السداد وتجديد الباقات للشهر الجديد
   const handleResetCycleToUnpaid = async () => {
     if (lines.length === 0) return;
     const confirmed = window.confirm(
-      'هل تريد إعادة ضبط حالة جميع أرقام ريد المحولة إلى "لم يسدد المبلغ" لبدء دورة سداد جديدة؟'
+      'هل تريد تدوير الدورة للشهر الجديد وإعادة ضبط حالة جميع أرقام ريد إلى "لم يسدد" و"بانتظار التجديد"؟'
     );
     if (!confirmed) return;
 
     try {
-      toast.loading('جاري تصفير دورة السداد...', { id: 'reset-cycle' });
+      toast.loading('جاري تدوير دورة السداد والتجديد للشهر الجديد...', { id: 'reset-cycle' });
       const convertedIds = lines.map(l => l.id);
+      const now = new Date();
+      const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const nowIso = now.toISOString();
+
       const { error } = await supabase
         .from('vip_red_monitored_lines')
         .update({
           payment_status: 'unpaid',
-          updated_at: new Date().toISOString(),
+          bundle_status: 'pending',
+          current_cycle_month: currentMonthStr,
+          updated_at: nowIso,
         })
         .in('id', convertedIds);
 
       if (error) {
-        toast.error('تعذر تصفير الدورة: ' + error.message, { id: 'reset-cycle' });
+        toast.error('تعذر تدوير الدورة: ' + error.message, { id: 'reset-cycle' });
         return;
       }
 
-      toast.success('تم تصفير دورة السداد لجميع الأرقام بنجاح', { id: 'reset-cycle' });
-      setLines(prev => prev.map(l => ({ ...l, payment_status: 'unpaid' })));
+      toast.success('تم تدوير الدورة للشهر الجديد وتصفير السداد والتجديد بنجاح', { id: 'reset-cycle' });
+      setLines(prev =>
+        prev.map(l => ({
+          ...l,
+          payment_status: 'unpaid',
+          bundle_status: 'pending',
+          current_cycle_month: currentMonthStr,
+        }))
+      );
     } catch {
-      toast.error('حدث خطأ أثناء تصفير الدورة', { id: 'reset-cycle' });
+      toast.error('حدث خطأ أثناء تدوير الدورة', { id: 'reset-cycle' });
     }
   };
 
@@ -1489,6 +1556,7 @@ export default function VipRedRenewalsPage() {
           <div className="space-y-1.5">
             {filteredLines.map(line => {
               const isPaid = line.payment_status === 'paid';
+              const isRenewed = line.bundle_status === 'renewed';
               const isCancelled = line.payment_status === 'cancelled';
 
               return (
@@ -1511,9 +1579,9 @@ export default function VipRedRenewalsPage() {
                     }`}
                   />
 
-                  {/* السطر الأول: رقم الهاتف + اسم العميل + موعد التجديد */}
+                  {/* السطر الأول: رقم الهاتف + شارة ريد + زر الفاتورة الفردية + اسم العميل + موعد التجديد */}
                   <div className="flex items-center justify-between gap-2 pr-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                       {/* رقم الهاتف */}
                       <span className="font-mono font-bold text-sm" style={{ color: textC }}>
                         {line.phone_number}
@@ -1523,6 +1591,17 @@ export default function VipRedRenewalsPage() {
                       <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                         ريد
                       </span>
+
+                      {/* زر استخراج فاتورة بريميوم فردية للخط */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInvoiceLine(line)}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border transition active:scale-95 bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 shrink-0 shadow-xs"
+                        title="استخراج وطباعة ومشاركة فاتورة فردية بريميوم لهذا الرقم"
+                      >
+                        <FileText className="w-3 h-3 text-blue-500 shrink-0" />
+                        <span>فاتورة</span>
+                      </button>
 
                       {/* اسم العميل مع زر التعديل السريع */}
                       <button
@@ -1613,61 +1692,101 @@ export default function VipRedRenewalsPage() {
                     </div>
                   </div>
 
-                  {/* السطر الثاني: معلومات الرصيد + شارة الحالة + أزرار الإجراءات */}
-                  <div className="flex items-center justify-between gap-2 pr-2 pt-1 border-t text-xs" style={{ borderColor: cardBdr }}>
-                    {/* معلومات الرصيد وحالة السداد الحالية */}
-                    <div className="flex items-center gap-2 truncate">
-                      {/* شارة حالة السداد */}
+                  {/* السطر الثاني: شارات الحالة المنفصلة (سداد وتجديد) + أزرار الإجراءات المنفصلة */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pr-2 pt-1 border-t text-xs" style={{ borderColor: cardBdr }}>
+                    {/* شارات الحالة المنفصلة */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* 1. شارة حالة السداد */}
                       {isPaid ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>تم الدفع والتجديد</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          <span>مسدد المبلغ ✅</span>
                         </span>
                       ) : isCancelled ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
                           <span>ملغي / متوقف</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 animate-pulse">
-                          <AlertCircle className="w-3 h-3" />
-                          <span>لم يسدد المبلغ</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/30 animate-pulse">
+                          <AlertCircle className="w-3 h-3 text-red-500" />
+                          <span>لم يسدد</span>
+                        </span>
+                      )}
+
+                      {/* 2. شارة حالة تجديد الباقة */}
+                      {isRenewed ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-md border border-teal-500/30">
+                          <Sparkles className="w-3 h-3 text-amber-500" />
+                          <span>تجددت الباقة ✨</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/30">
+                          <Clock className="w-2.5 h-2.5" />
+                          <span>بانتظار التجديد ({line.activation_day ? `يوم ${line.activation_day}` : 'غير محدد'})</span>
                         </span>
                       )}
 
                       {/* رصيد الخط إن وجد */}
                       {line.last_line_info?.balance && (
-                        <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                        <span className="text-[10px] sm:text-[11px] text-muted-foreground hidden sm:inline">
                           الرصيد: <strong className="font-mono text-foreground">{line.last_line_info.balance} ج.م</strong>
                         </span>
                       )}
                     </div>
 
-                    {/* أزرار الإجراءات السريعة (تأكيد الدفع / حذف) */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    {/* أزرار الإجراءات المنفصلة (سداد / تجديد / حذف) */}
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                      {/* زر السداد المستقل */}
                       <button
+                        type="button"
                         onClick={() => handleTogglePaymentStatus(line)}
                         className={`h-6.5 px-2 rounded-md text-[10px] sm:text-[11px] font-bold transition flex items-center gap-1 active:scale-95 shadow-xs ${
                           isPaid
                             ? 'border border-border bg-background hover:bg-muted text-muted-foreground'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
                         }`}
-                        title={isPaid ? 'إعادة ضبط كـ لم يسدد' : 'تأكيد استلام المبلغ وتجديد الخط'}
+                        title={isPaid ? 'إعادة ضبط كـ لم يسدد' : 'تأكيد استلام وسداد المبلغ'}
                       >
                         {isPaid ? (
                           <>
-                            <Coins className="w-3 h-3" />
+                            <RotateCcw className="w-3 h-3" />
                             <span>تراجع لم يسدد</span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>تأكيد الدفع والتجديد</span>
+                            <CreditCard className="w-3 h-3" />
+                            <span>سدد المبلغ</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* زر تجديد الباقة المستقل */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleBundleStatus(line)}
+                        className={`h-6.5 px-2 rounded-md text-[10px] sm:text-[11px] font-bold transition flex items-center gap-1 active:scale-95 shadow-xs ${
+                          isRenewed
+                            ? 'border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-400'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+                        }`}
+                        title={isRenewed ? 'إعادة ضبط كـ بانتظار التجديد' : 'تأكيد تجديد باقة الخط الآن'}
+                      >
+                        {isRenewed ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-teal-500" />
+                            <span>تجددت (تراجع)</span>
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-3 h-3" />
+                            <span>تجديد الباقة</span>
                           </>
                         )}
                       </button>
 
                       {/* زر حذف الخط من المراقبة */}
                       <button
+                        type="button"
                         onClick={() => setDeletingLine(line)}
                         className="p-1 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition"
                         title="حذف الخط"
@@ -1762,6 +1881,14 @@ export default function VipRedRenewalsPage() {
           </div>
         </div>
       )}
+
+      {/* حوار الفاتورة الفردية البريميوم للخط */}
+      <SingleLineInvoiceModal
+        isOpen={!!selectedInvoiceLine}
+        line={selectedInvoiceLine}
+        onClose={() => setSelectedInvoiceLine(null)}
+        isLight={L}
+      />
     </div>
   );
 }

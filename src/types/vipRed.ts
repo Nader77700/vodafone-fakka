@@ -10,6 +10,7 @@ export const VALID_ACTIVATION_DAYS = [7, 11, 25] as const;
 export type VipRedActivationDay = (typeof VALID_ACTIVATION_DAYS)[number];
 
 export type VipRedPaymentStatus = 'unpaid' | 'paid' | 'cancelled';
+export type VipRedBundleStatus = 'renewed' | 'pending';
 
 export interface VipRedMerchant {
   id: string;
@@ -57,6 +58,9 @@ export interface VipRedLine {
   customer_name?: string | null;
   payment_status?: VipRedPaymentStatus;
   last_payment_date?: string | null;
+  bundle_status?: VipRedBundleStatus;
+  bundle_renewed_at?: string | null;
+  current_cycle_month?: string | null;
   renewal_amount?: number | null;
   package_tier?: VipRedPackageTier;
   package_price?: number;

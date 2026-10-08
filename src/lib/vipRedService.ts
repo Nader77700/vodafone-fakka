@@ -13,6 +13,7 @@ import {
   type VipRedMerchantWithStats,
   type VipRedMerchantStats,
   type VipRedPaymentStatus,
+  type VipRedBundleStatus,
   type VipRedRoleType,
   type VipRedProfile,
   type VipRedPackageTier,
@@ -1015,40 +1016,6 @@ export async function getLinkedMerchantForUser(userId: string): Promise<VipRedMe
 }
 
 /**
- * تحديث حالة سداد وتجديد الخط (unpaid | paid | cancelled)
- */
-export async function updateLinePaymentStatus(
-  lineId: string,
-  paymentStatus: VipRedPaymentStatus
-): Promise<{ success: boolean; line?: VipRedLine; error?: string }> {
-  try {
-    const updatePayload: Record<string, any> = {
-      payment_status: paymentStatus,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (paymentStatus === 'paid') {
-      updatePayload.last_payment_date = new Date().toISOString();
-    }
-
-    const { data, error } = await supabase
-      .from('vip_red_monitored_lines')
-      .update(updatePayload)
-      .eq('id', lineId)
-      .select('*, merchant:vip_red_merchants(*)')
-      .single();
-
-    if (error || !data) {
-      return { success: false, error: error?.message || 'فشل تحديث حالة السداد' };
-    }
-
-    return { success: true, line: data as VipRedLine };
-  } catch (err) {
-    return { success: false, error: String(err) };
-  }
-}
-
-/**
  * تحديث اسم العميل / المستخدم المرتبط بالخط
  */
 export async function updateLineCustomerName(
@@ -1097,6 +1064,116 @@ export async function getConvertedRenewalLines(userId?: string): Promise<VipRedL
     return data as VipRedLine[];
   } catch {
     return [];
+  }
+}
+
+/**
+ * تحديث حالة سداد الخط (مسدد / غير مسدد)
+ */
+export async function updateLinePaymentStatus(
+  lineId: string,
+  paymentStatus: VipRedPaymentStatus
+): Promise<{ success: boolean; line?: VipRedLine; error?: string }> {
+  try {
+    const nowIso = new Date().toISOString();
+    const updates: Record<string, any> = {
+      payment_status: paymentStatus,
+      updated_at: nowIso,
+    };
+    if (paymentStatus === 'paid') {
+      updates.last_payment_date = nowIso;
+    }
+
+    const { data, error } = await supabase
+      .from('vip_red_monitored_lines')
+      .update(updates)
+      .eq('id', lineId)
+      .select('*, merchant:vip_red_merchants(*)')
+      .single();
+
+    if (error || !data) {
+      return { success: false, error: error?.message || 'فشل تحديث حالة السداد' };
+    }
+    return { success: true, line: data as VipRedLine };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+/**
+ * تحديث حالة تجديد باقة الخط (تم التجديد / بانتظار التجديد)
+ */
+export async function updateLineBundleStatus(
+  lineId: string,
+  bundleStatus: VipRedBundleStatus
+): Promise<{ success: boolean; line?: VipRedLine; error?: string }> {
+  try {
+    const nowIso = new Date().toISOString();
+    const updates: Record<string, any> = {
+      bundle_status: bundleStatus,
+      updated_at: nowIso,
+    };
+    if (bundleStatus === 'renewed') {
+      updates.bundle_renewed_at = nowIso;
+    }
+
+    const { data, error } = await supabase
+      .from('vip_red_monitored_lines')
+      .update(updates)
+      .eq('id', lineId)
+      .select('*, merchant:vip_red_merchants(*)')
+      .single();
+
+    if (error || !data) {
+      return { success: false, error: error?.message || 'فشل تحديث حالة تجديد الباقة' };
+    }
+    return { success: true, line: data as VipRedLine };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+/**
+ * فحص وتطبيق التجديد التلقائي للأرقام المسددة في ميعاد التجديد
+ * إذا كان اليوم هو يوم التجديد أو بعده وكان الخط مسدداً، تتجدد الباقة تلقائياً
+ */
+export async function runAutoRenewalsOnDueDay(lines: VipRedLine[]): Promise<{ renewedCount: number; renewedIds: string[] }> {
+  const now = new Date();
+  const currentDay = now.getDate();
+  const nowIso = now.toISOString();
+
+  // الخطوط المستحقة للتجديد التلقائي: مسددة، ولم يتم وسمها كـ renewed بعد، وحل يوم تجديدها (أو تجاوزه)
+  const dueLines = lines.filter(l => {
+    if (l.payment_status !== 'paid') return false;
+    if (l.bundle_status === 'renewed') return false;
+    const actDay = l.activation_day || 11;
+    return currentDay >= actDay;
+  });
+
+  if (dueLines.length === 0) {
+    return { renewedCount: 0, renewedIds: [] };
+  }
+
+  const ids = dueLines.map(l => l.id);
+  try {
+    const { error } = await supabase
+      .from('vip_red_monitored_lines')
+      .update({
+        bundle_status: 'renewed',
+        bundle_renewed_at: nowIso,
+        updated_at: nowIso,
+      })
+      .in('id', ids);
+
+    if (error) {
+      console.warn('[VipRed] Auto renewal update error:', error);
+      return { renewedCount: 0, renewedIds: [] };
+    }
+
+    return { renewedCount: ids.length, renewedIds: ids };
+  } catch (err) {
+    console.error('[VipRed] runAutoRenewalsOnDueDay error:', err);
+    return { renewedCount: 0, renewedIds: [] };
   }
 }
 
