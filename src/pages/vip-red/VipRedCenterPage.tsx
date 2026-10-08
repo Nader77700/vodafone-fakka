@@ -910,9 +910,9 @@ export default function VipRedCenterPage() {
     return (
       <div className="min-h-screen pb-16 transition-colors duration-200" style={{ background: pageBg, direction: 'rtl' }}>
         <header
-          className="sticky top-0 z-30 px-3 sm:px-4 py-2.5 border-b backdrop-blur-md transition-colors"
+          className="sticky top-14 lg:top-0 z-20 px-3 sm:px-4 py-2.5 border-b backdrop-blur-md transition-colors"
           style={{
-            background: L ? 'rgba(255, 255, 255, 0.9)' : 'rgba(11, 11, 20, 0.9)',
+            background: L ? 'rgba(255, 255, 255, 0.95)' : 'rgba(11, 11, 20, 0.95)',
             borderColor: cardBdr,
           }}
         >
@@ -959,7 +959,7 @@ export default function VipRedCenterPage() {
       {/* ── رأس الصفحة (Header) للمالك (Admin) ── */}
       {/* ── شريط الرأس المثبت المضغوط للغاية بدون أي تداخل (Ultra-Compact Sticky Header) ── */}
       <header
-        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 border-b backdrop-blur-md shadow-xs transition-colors"
+        className="sticky top-14 lg:top-0 z-20 px-2 sm:px-3 py-1.5 border-b backdrop-blur-md shadow-xs transition-colors"
         style={{
           background: L ? 'rgba(255, 255, 255, 0.95)' : 'rgba(11, 11, 20, 0.95)',
           borderColor: cardBdr,

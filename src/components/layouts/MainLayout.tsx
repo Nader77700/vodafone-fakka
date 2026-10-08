@@ -189,7 +189,7 @@ export default function MainLayout() {
       {/* ==================== المحتوى الرئيسي ==================== */}
       <div className="flex-1 min-w-0 flex flex-col lg:mr-64">
         {/* هيدر موبايل */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-border">
+        <header className="lg:hidden sticky top-0 z-30 h-14 flex items-center justify-between px-4 bg-background/95 backdrop-blur-md border-b border-border">
           <NavLogo />
           <div className="flex items-center gap-1">
             {/* زر تبديل الوضع الفاتح/الداكن */}
@@ -320,7 +320,7 @@ export default function MainLayout() {
         </header>
 
         {/* المحتوى */}
-        <main className="flex-1 overflow-x-hidden pb-20 lg:pb-6">
+        <main className="flex-1 min-w-0 pb-20 lg:pb-6">
           <Outlet />
         </main>
 

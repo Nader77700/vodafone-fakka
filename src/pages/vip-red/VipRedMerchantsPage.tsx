@@ -192,7 +192,7 @@ export default function VipRedMerchantsPage() {
     >
       {/* ── شريط الرأس الرئيسي ── */}
       <header
-        className="sticky top-0 z-30 border-b backdrop-blur-md px-2 sm:px-3 py-1.5 transition-colors"
+        className="sticky top-14 lg:top-0 z-20 border-b backdrop-blur-md px-2 sm:px-3 py-1.5 transition-colors"
         style={{
           background: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(17, 19, 24, 0.92)',
           borderColor: cardBdr,

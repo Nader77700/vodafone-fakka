@@ -1140,7 +1140,7 @@ export default function VipRedRenewalsPage() {
     <div className="min-h-screen pb-32 transition-colors duration-200" style={{ backgroundColor: bg }}>
       {/* ── الرأس العلوي فائق الانكماش المزدوج (Ultra-Compact Mobile Header) ── */}
       <div
-        className="sticky top-[57px] lg:top-0 z-30 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b space-y-1.5 shadow-sm"
+        className="sticky top-14 lg:top-0 z-20 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b space-y-1.5 shadow-sm"
         style={{
           backgroundColor: L ? 'rgba(255, 255, 255, 0.95)' : 'rgba(17, 19, 24, 0.95)',
           borderColor: cardBdr,
