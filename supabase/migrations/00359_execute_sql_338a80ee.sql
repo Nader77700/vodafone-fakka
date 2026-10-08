@@ -1,0 +1,1 @@
+ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'vip_red'; ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'vip_red_renewals'; ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'vip_red_merchants';

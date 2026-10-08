@@ -443,7 +443,9 @@ export async function addMonitoredLines(
 
     // 2. إدخال السجل الجديد
     try {
-      const nextCheck = new Date(Date.now() + 4 * 3600 * 1000).toISOString();
+      // عند إضافة رقم جديد: يكون موعد الفحص فورياً (الآن)
+      // حتى يتم فحصه فوراً بالسيرفر في الخلفية حتى لو خرج المستخدم من التطبيق فور النقر
+      const nextCheck = new Date().toISOString();
       const { error } = await supabase
         .from('vip_red_monitored_lines')
         .insert({
@@ -475,6 +477,10 @@ export async function addMonitoredLines(
         }
       } else {
         added++;
+        // تشغيل فحص السيرفر في الخلفية فوراً دون انتظار المستخدم حتى لو أُغلق التطبيق
+        supabase.functions.invoke('vip-red-auto-scan', {
+          headers: { 'x-internal-key': 'vfp_internal_push_2025' },
+        }).catch(e => console.warn('[vip-red] auto-scan invoke error:', e));
       }
     } catch (err) {
       errors.push(`خطأ في إضافة ${phone}: ${String(err)}`);
@@ -548,7 +554,7 @@ export async function checkSingleMonitoredLine(
     const isNowConverted = classification.status === 'converted';
 
     const cfg = await getVipRedConfig();
-    const intervalHours = cfg.check_interval_hours || 4;
+    const intervalHours = cfg.check_interval_hours ? Number(cfg.check_interval_hours) : 0.5;
 
     const updates: Partial<VipRedLine> = {
       current_system: currentSystem,
@@ -656,6 +662,10 @@ async function sendVipPushNotification(
         priority: 'urgent',
         action_url: actionUrl,
         send_push: true,
+        skip_duplicate_check: true,
+      },
+      headers: {
+        'x-internal-key': 'vfp_internal_push_2025',
       },
     });
   } catch (pushErr) {

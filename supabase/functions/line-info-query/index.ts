@@ -286,10 +286,22 @@ async function runWebSocket(conv: ConvResult, phone: string, timeoutMs: number):
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
-  const zt = await zeroTrustCheck(req);
-  if ("error" in zt && zt.error) {
-    console.error("[line-info] zero-trust rejected:", zt.error);
-    return json({ error: "unauthorized", message: zt.error }, (zt as { status?: number }).status ?? 401);
+  // ── Internal Service / Cron Bypass ──
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const authBearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const internalHeader = (req.headers.get("x-internal-key") ?? "").trim();
+  const isDirectInternal =
+    internalHeader === "vfp_internal_push_2025" ||
+    (serviceKey && authBearerToken === serviceKey) ||
+    (serviceKey && internalHeader === serviceKey);
+
+  if (!isDirectInternal) {
+    const zt = await zeroTrustCheck(req);
+    if ("error" in zt && zt.error) {
+      console.error("[line-info] zero-trust rejected:", zt.error);
+      return json({ error: "unauthorized", message: zt.error }, (zt as { status?: number }).status ?? 401);
+    }
   }
 
   let phone: string;

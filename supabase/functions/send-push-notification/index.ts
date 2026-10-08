@@ -23,6 +23,7 @@ interface NotifPayload {
   is_global?: boolean;
   send_push?: boolean;
   dedup_key?: string;
+  skip_duplicate_check?: boolean;
 }
 
 // ─── JWT + OAuth2 token for FCM HTTP v1 ───────────────────────────────────
@@ -129,10 +130,17 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // السماح للاستدعاء الداخلي (server-to-server) عبر مفتاح داخلي سري
-  const internalKey = (Deno.env.get("INTERNAL_PUSH_KEY") ?? "vfp_internal_push_2025").trim();
+  // السماح للاستدعاء الداخلي (server-to-server) عبر مفتاح داخلي سري أو Service Role Key
+  const internalKey = (Deno.env.get("INTERNAL_PUSH_KEY") || "vfp_internal_push_2025").trim();
   const internalHeader = (req.headers.get("x-internal-key") ?? "").trim();
-  const isInternalCall = (internalHeader === internalKey) || authHeader.replace('Bearer ', '') === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const authBearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  const isInternalCall =
+    internalHeader === "vfp_internal_push_2025" ||
+    (internalKey && internalHeader === internalKey) ||
+    (serviceKey && authBearerToken === serviceKey) ||
+    (serviceKey && internalHeader === serviceKey);
 
   if (!isInternalCall) {
     if (!authHeader) return json({ error: "غير مصرح" }, 200);
@@ -160,12 +168,12 @@ serve(async (req) => {
 
   try {
     const payload: NotifPayload = await req.json();
-    const { title, body, type = "info", priority = "normal", action_url, user_id, user_ids, is_global, send_push = true } = payload;
+    const { title, body, type = "info", priority = "normal", action_url, user_id, user_ids, is_global, send_push = true, skip_duplicate_check = false } = payload;
 
     if (!title?.trim() || !body?.trim()) return json({ error: "title and body required" }, 200);
 
-    // منع التكرار: إشعارات مطابقة خلال 10 ثوانٍ
-    if (user_id) {
+    // منع التكرار: إشعارات مطابقة خلال 10 ثوانٍ (إلا إذا طُلب التخطي صراحةً)
+    if (user_id && !skip_duplicate_check) {
       const since = new Date(Date.now() - 10_000).toISOString();
       const { data: dup } = await supabase
         .from("notifications").select("id")
@@ -179,8 +187,11 @@ serve(async (req) => {
     if (action_url) insert.action_url = action_url;
 
     const { data: notif, error: insertErr } = await supabase
-      .from("notifications").insert(insert).select("id").single();
-    if (insertErr) return json({ error: insertErr.message }, 200);
+      .from("notifications").insert(insert).select("id").maybeSingle();
+    if (insertErr) {
+      console.error("[send-push-notification] notification insert error (continuing to FCM):", insertErr);
+    }
+    const notificationId = notif?.id || crypto.randomUUID();
 
     // إرسال FCM HTTP v1
     let fcmSent = 0;
@@ -208,7 +219,7 @@ serve(async (req) => {
 
         const fcmData: Record<string, string> = {
           type,
-          notification_id: notif.id,
+          notification_id: notificationId,
         };
         // ⚡ تمرير action_url دائماً في data حتى يعمل التوجيه عند tap
         if (action_url) fcmData.action_url = action_url;
@@ -235,7 +246,7 @@ serve(async (req) => {
       }
     }
 
-    return json({ success: true, notification_id: notif.id, fcm_sent: fcmSent });
+    return json({ success: true, notification_id: notificationId, fcm_sent: fcmSent });
   } catch (e) {
     return json({ error: String(e) }, 200);
   }

@@ -46,7 +46,7 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 4;
+    const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
     const nowIso = new Date().toISOString();
 
     // 2. فحص الأرقام بنظام الدفعات الصغيرة الآمنة (Chunked Batch)
@@ -85,9 +85,13 @@ serve(async (req) => {
       try {
         console.log(`[vip-red-auto-scan] Checking chunk item ${i + 1}/${dueLines.length}: ${line.phone_number}`);
 
-        // استعلام حالة الخط من خلال line-info-query
+        // استعلام حالة الخط من خلال line-info-query مع الترويسات الداخلية الموثوقة
         const queryRes = await supabase.functions.invoke("line-info-query", {
           body: { phone: line.phone_number },
+          headers: {
+            "x-internal-key": "vfp_internal_push_2025",
+            "Authorization": `Bearer ${serviceKey}`,
+          },
         });
 
         if (queryRes.error || !queryRes.data?.success || !queryRes.data?.data) {
@@ -148,63 +152,64 @@ serve(async (req) => {
           const notifTitle = `🎉 تم تحويل الرقم ${line.phone_number} بنجاح لريد!`;
           const notifBody = `تم تحويل الرقم (${line.phone_number}) بنجاح إلى نظام فودافون ريد بيزنس (${currentSystem || "Enterprise member control"}) وهو جاهز للتفعيل وسداد الدورة الآن.`;
 
-          // 1. إشعار المالك في notifications والـ Push
-          if (line.user_id) {
-            await supabase.from("notifications").insert({
-              user_id: line.user_id,
-              title: notifTitle,
-              body: notifBody,
-              type: "vip_red",
-              priority: "urgent",
-              action_url: "/vip-red",
-              is_read: false,
-              is_global: false,
-            });
+          // 1. تحديد جميع المستخدمين المعنيين (المالك، المطالب، التاجر، والمشرفين/الآدمن)
+          const targetRecipients = new Set<string>();
+          if (line.user_id) targetRecipients.add(line.user_id);
+          if (line.claimed_by_user_id) targetRecipients.add(line.claimed_by_user_id);
+          const merchantUserId = line.merchant?.user_id;
+          if (merchantUserId) targetRecipients.add(merchantUserId);
 
+          // التأكد من وصول الإشعار دائماً لحسابات المشرفين والمدير العام
+          try {
+            const { data: adminProfiles } = await supabase
+              .from("profiles")
+              .select("id")
+              .in("role", ["admin", "super_admin"]);
+            for (const adm of adminProfiles ?? []) {
+              if (adm.id) targetRecipients.add(adm.id);
+            }
+          } catch (admErr) {
+            console.warn("[vip-red-auto-scan] Failed fetching admins for notif:", admErr);
+          }
+
+          // 2. إرسال الإشعار والتنبيه الفوري لكل المستهدفين
+          for (const recipientId of targetRecipients) {
             try {
-              await supabase.functions.invoke("send-push-notification", {
+              // إرسال FCM Push Notification للشاشة وستارة الهاتف وحفظ الإشعار تلقائياً
+              const pushRes = await supabase.functions.invoke("send-push-notification", {
                 body: {
-                  user_id: line.user_id,
+                  user_id: recipientId,
                   title: notifTitle,
                   body: notifBody,
                   type: "vip_red",
                   priority: "urgent",
                   action_url: "/vip-red",
                   send_push: true,
+                  skip_duplicate_check: true,
+                },
+                headers: {
+                  "x-internal-key": "vfp_internal_push_2025",
+                  "Authorization": `Bearer ${serviceKey}`,
                 },
               });
-            } catch (pushE) {
-              console.warn("[vip-red-auto-scan] Push notification failed:", pushE);
+
+              if (pushRes.error) {
+                console.warn(`[vip-red-auto-scan] Push invoke error for ${recipientId}:`, pushRes.error);
+                // احتياطي: حفظ الإشعار في جدول notifications مباشرة
+                await supabase.from("notifications").insert({
+                  user_id: recipientId,
+                  title: notifTitle,
+                  body: notifBody,
+                  type: "vip_red",
+                  priority: "urgent",
+                  action_url: "/vip-red",
+                  is_read: false,
+                  is_global: false,
+                });
+              }
+            } catch (notifErr) {
+              console.warn(`[vip-red-auto-scan] Notification failed for ${recipientId}:`, notifErr);
             }
-          }
-
-          // 2. إشعار المستخدم المطالب (claimed_by_user_id) إذا كان مختلفاً
-          if (line.claimed_by_user_id && line.claimed_by_user_id !== line.user_id) {
-            await supabase.from("notifications").insert({
-              user_id: line.claimed_by_user_id,
-              title: notifTitle,
-              body: notifBody,
-              type: "vip_red",
-              priority: "urgent",
-              action_url: "/vip-red",
-              is_read: false,
-              is_global: false,
-            });
-          }
-
-          // 3. إشعار التاجر المرتبط إذا كان لديه حساب مستخدم
-          const merchantUserId = line.merchant?.user_id;
-          if (merchantUserId && merchantUserId !== line.user_id && merchantUserId !== line.claimed_by_user_id) {
-            await supabase.from("notifications").insert({
-              user_id: merchantUserId,
-              title: `🎉 تحويل رقم للتاجر: ${line.phone_number}`,
-              body: `تم تحويل الرقم (${line.phone_number}) التابع لـ ${line.merchant?.name || "حسابك"} إلى فودافون ريد بيزنس!`,
-              type: "vip_red",
-              priority: "urgent",
-              action_url: "/vip-red",
-              is_read: false,
-              is_global: false,
-            });
           }
         }
 

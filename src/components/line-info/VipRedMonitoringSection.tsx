@@ -498,7 +498,7 @@ export default function VipRedMonitoringSection({ L }: Props) {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-xl border" style={{ background: innerBg, borderColor: cardBdr }}>
             <div className="text-xs space-y-0.5 text-right w-full sm:w-auto">
               <p className="font-bold" style={{ color: textC }}>
-                دورية الفحص التلقائي بالسيرفر: كل {config?.check_interval_hours || 4} ساعات
+                دورية الفحص التلقائي بالسيرفر: كل {config?.check_interval_hours ? (config.check_interval_hours >= 1 ? `${config.check_interval_hours} ساعات` : `${Math.round(config.check_interval_hours * 60)} دقيقة`) : '30 دقيقة'}
               </p>
               <p className="text-[11px]" style={{ color: mutC }}>
                 يمكنك أيضاً فحص جميع الأرقام قيد المراقبة فورياً بضغطة زر
@@ -655,12 +655,12 @@ export default function VipRedMonitoringSection({ L }: Props) {
 
                           {/* حساب توقيت الفحص القادم للخطوط قيد المراقبة */}
                           {classification.status === 'monitoring' && (() => {
-                            const intervalHours = config?.check_interval_hours || 4;
+                            const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
                             if (!line.last_checked_at) {
                               return (
                                 <>
                                   <span>•</span>
-                                  <span className="text-amber-500 font-medium">دورية: كل {intervalHours} ساعات</span>
+                                  <span className="text-amber-500 font-medium">دورية: كل {intervalHours >= 1 ? `${intervalHours} س` : `${Math.round(intervalHours * 60)} د`}</span>
                                 </>
                               );
                             }

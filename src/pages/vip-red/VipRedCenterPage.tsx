@@ -33,6 +33,7 @@ import {
   Power,
   ToggleLeft,
   ToggleRight,
+  Loader2,
   Play,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -399,21 +400,29 @@ export default function VipRedCenterPage() {
       setSinglePhone('');
       toast.success(`تمت إضافة الرقم ${cleanPhone} بنجاح`, { id: 'add-single' });
 
-      // Refresh list and auto-check the added line
+      // Refresh list and auto-check the added line with prominent UI feedback
       const refreshed = await getMonitoredLines(user.id);
       setLines(refreshed);
       const newlyAdded = refreshed.find(l => l.phone_number === cleanPhone);
       if (newlyAdded) {
-        const checkRes = await checkSingleMonitoredLine(newlyAdded, user.id);
-        if (checkRes.success && checkRes.line) {
-          setLines(prev => prev.map(l => (l.id === checkRes.line!.id ? checkRes.line! : l)));
-          if (checkRes.line.system_status === 'converted') {
-            setActiveTab('converted');
-          } else if (checkRes.line.system_status === 'ineligible') {
-            setActiveTab('ineligible');
-          } else {
-            setActiveTab('monitoring');
+        setCheckingLineId(newlyAdded.id);
+        try {
+          const checkRes = await checkSingleMonitoredLine(newlyAdded, user.id);
+          if (checkRes.success && checkRes.line) {
+            setLines(prev => prev.map(l => (l.id === checkRes.line!.id ? checkRes.line! : l)));
+            if (checkRes.line.system_status === 'converted') {
+              setActiveTab('converted');
+              toast.success(`🎉 مبروك! تحول الرقم ${cleanPhone} إلى فودافون ريد بنجاح!`, { id: 'add-single' });
+            } else if (checkRes.line.system_status === 'ineligible') {
+              setActiveTab('ineligible');
+              toast.warning(`الرقم ${cleanPhone} غير مؤهل حالياً (نظامه: ${checkRes.line.current_system || 'غير معروف'})`, { id: 'add-single' });
+            } else {
+              setActiveTab('monitoring');
+              toast.info(`الرقم ${cleanPhone} قيد المراقبة المستمرة (14 قرش ريح بالك)`, { id: 'add-single' });
+            }
           }
+        } finally {
+          setCheckingLineId(null);
         }
       }
     } catch (err: unknown) {
@@ -1459,7 +1468,7 @@ export default function VipRedCenterPage() {
             displayedLines.map(line => {
               const classification = classifyLineSystem(line.current_system);
               const isLineChecking = checkingLineId === line.id;
-              const intervalHours = config?.check_interval_hours || 4;
+              const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
 
               // Calculate countdown with real-time accuracy and offline awareness
               let countdownLabel = '';
@@ -1468,9 +1477,11 @@ export default function VipRedCenterPage() {
                 : (line.last_checked_at ? new Date(line.last_checked_at).getTime() + intervalHours * 3600 * 1000 : nowTime);
               const diffMs = targetTime - nowTime;
 
-              if (classification.status === 'monitoring') {
-                if (!line.last_checked_at && !line.next_check_at) {
-                  countdownLabel = 'بانتظار أول فحص';
+              if (isLineChecking) {
+                countdownLabel = 'جاري الفحص الآن...';
+              } else if (classification.status === 'monitoring') {
+                if (!line.last_checked_at) {
+                  countdownLabel = 'بانتظار الفحص الأولي (فوراً)';
                 } else if (diffMs <= 0) {
                   if (!isOnline) {
                     countdownLabel = 'بانتظار الإنترنت';
@@ -1496,17 +1507,31 @@ export default function VipRedCenterPage() {
               return (
                 <div
                   key={line.id}
-                  className="p-1.5 rounded-lg border transition-all shadow-xs relative overflow-hidden"
+                  className={`p-1.5 rounded-lg border transition-all shadow-xs relative overflow-hidden ${
+                    isLineChecking ? 'ring-2 ring-amber-500/60 animate-pulse border-amber-500' : ''
+                  }`}
                   style={{
-                    background: cardBg,
-                    borderColor:
-                      classification.status === 'converted'
-                        ? (L ? '#10b981' : 'rgba(16, 185, 129, 0.45)')
-                        : classification.status === 'ineligible'
-                        ? (L ? '#fca5a5' : 'rgba(239, 68, 68, 0.3)')
-                        : cardBdr,
+                    background: isLineChecking ? (L ? '#fffbeb' : 'rgba(245, 158, 11, 0.08)') : cardBg,
+                    borderColor: isLineChecking
+                      ? '#f59e0b'
+                      : classification.status === 'converted'
+                      ? (L ? '#10b981' : 'rgba(16, 185, 129, 0.45)')
+                      : classification.status === 'ineligible'
+                      ? (L ? '#fca5a5' : 'rgba(239, 68, 68, 0.3)')
+                      : cardBdr,
                   }}
                 >
+                  {/* شريط حالة الفحص النشط الصريح */}
+                  {isLineChecking && (
+                    <div className="flex items-center justify-between px-2 py-1 mb-1.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                        <span>جاري فحص نظام الرقم والتحقق مع فودافون الآن...</span>
+                      </span>
+                      <span className="text-[9px] opacity-80">لحظات</span>
+                    </div>
+                  )}
+
                   {/* الشريط المدمج السطر 1: الرقم + الشارة + الباقة + زر النسخ */}
                   <div className="flex items-center justify-between gap-1 pb-1 border-b border-border/40">
                     <div className="flex items-center gap-1.5 min-w-0">
@@ -1536,14 +1561,28 @@ export default function VipRedCenterPage() {
                         </span>
                       )}
 
-                      {/* شارة نظام الخط: ريد أو 14 قرش */}
-                      {classification.status === 'converted' ? (
+                      {/* شارة نظام الخط: جاري الفحص / بانتظار الفحص / ريد / 14 قرش */}
+                      {isLineChecking ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/40 shrink-0 animate-pulse">
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          <span>جاري الفحص</span>
+                        </span>
+                      ) : !line.last_checked_at ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 shrink-0">
+                          <Clock className="w-2.5 h-2.5" />
+                          <span>بانتظار الفحص</span>
+                        </span>
+                      ) : classification.status === 'converted' ? (
                         <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                           ريد
                         </span>
-                      ) : (
+                      ) : classification.status === 'monitoring' ? (
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
                           {classification.shortSystemName || '14 قرش'}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 shrink-0">
+                          غير مؤهل
                         </span>
                       )}
                     </div>
@@ -1638,7 +1677,7 @@ export default function VipRedCenterPage() {
                         title="فحص الرقم"
                       >
                         <RotateCcw className={`w-2.5 h-2.5 text-[#E60000] ${isLineChecking ? 'animate-spin' : ''}`} />
-                        <span>فحص</span>
+                        <span>{isLineChecking ? 'جاري...' : 'فحص'}</span>
                       </button>
 
                       <button
@@ -1799,7 +1838,8 @@ export default function VipRedCenterPage() {
         onClose={() => setSelectedLineForDetails(null)}
         onRecheck={async (line: VipRedLine) => {
           await handleRecheckSingle(line);
-          const updated = lines.find(l => l.id === line.id) || null;
+          const refreshed = await getMonitoredLines(user?.id);
+          const updated = refreshed.find(l => l.id === line.id) || null;
           setSelectedLineForDetails(updated);
         }}
         isRechecking={checkingLineId === selectedLineForDetails?.id}

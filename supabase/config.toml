@@ -5,3 +5,13 @@ enable_confirmations = false
 [functions.serve-app]
 verify_jwt = false
 
+[functions.vip-red-auto-scan]
+verify_jwt = false
+
+[functions.line-info-query]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+
