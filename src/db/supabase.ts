@@ -119,12 +119,36 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
 };
 export { customFetch };
 
+// Safe in-memory lock implementation for Supabase Auth
+// Eliminates "AbortError: Lock broken by another request with the 'steal' option" caused by Web Locks API stealing
+const authLocks = new Map<string, Promise<unknown>>();
+
+async function safeAuthLock<R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+  const currentLock = authLocks.get(_name) || Promise.resolve();
+  let releaseLock: () => void;
+  const nextLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+  authLocks.set(_name, nextLock);
+
+  try {
+    await currentLock.catch(() => {});
+    return await fn();
+  } finally {
+    releaseLock!();
+    if (authLocks.get(_name) === nextLock) {
+      authLocks.delete(_name);
+    }
+  }
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: secureStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false
+    detectSessionInUrl: false,
+    lock: safeAuthLock,
   },
   global: {
     headers: {

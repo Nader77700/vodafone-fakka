@@ -13,6 +13,11 @@ const TYPE_ROUTE_MAP: Record<string, string> = {
   subscription_failed:    '/activate',
   subscription:           '/subscription-history',
   renew:                  '/subscription-history',
+  // فودافون ريد بيزنس VIP
+  vip_red:                '/vip-red',
+  vipred:                 '/vip-red',
+  vip_red_renewals:       '/vip-red/renewals',
+  vip_red_merchants:      '/vip-red/merchants',
   // تحديثات
   update_available:       '/updates',
   update_downloaded:      '/updates',
@@ -72,6 +77,10 @@ const PAGE_ROUTE_MAP: Record<string, string> = {
   statistics:              '/statistics',
   'build-info':            '/build-info',
   activate:                '/activate',
+  'vip-red':               '/vip-red',
+  'red-vip':               '/vip-red',
+  'vip-red-renewals':      '/vip-red/renewals',
+  'vip-red-merchants':     '/vip-red/merchants',
   networks:                '/networks',
   vodafone:                '/networks/vodafone',
   'vodafone-red':          '/networks/vodafone',

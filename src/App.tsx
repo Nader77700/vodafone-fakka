@@ -146,6 +146,11 @@ const AdminHotfixPage              = lazyImport(() => import('./pages/admin/Admi
 const AdminLineInfoDebugPage       = lazyImport(() => import('./pages/admin/AdminLineInfoDebugPage'));
 const AdminOffersCenter            = lazyImport(() => import('./pages/admin/AdminOffersCenter'));
 const AdminVipRedSettingsPage      = lazyImport(() => import('./pages/admin/AdminVipRedSettingsPage'));
+const VipRedCenterPage             = lazyImport(() => import('./pages/vip-red/VipRedCenterPage'));
+const VipRedMerchantsPage          = lazyImport(() => import('./pages/vip-red/VipRedMerchantsPage'));
+const VipRedMerchantDetailsPage    = lazyImport(() => import('./pages/vip-red/VipRedMerchantDetailsPage'));
+const VipRedRenewalsPage           = lazyImport(() => import('./pages/vip-red/VipRedRenewalsPage'));
+const VipRedRequestsPage           = lazyImport(() => import('./pages/vip-red/VipRedRequestsPage'));
 const LineInfoPage                 = lazyImport(() => import('./pages/line-info/LineInfoPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
@@ -669,6 +674,14 @@ function AppInner() {
           <Route path="vodafone-offers/recharge"      element={<PageErrorBoundary pageName="vodafone-offers-recharge"><S><BalanceRechargeShortcutPage /></S></PageErrorBoundary>} />
 
           <Route path="line-info"                    element={<PageErrorBoundary pageName="line-info"><S><LineInfoPage /></S></PageErrorBoundary>} />
+
+          {/* ── VIP RED Center: إدارة باقات فودافون ريد بيزنس VIP ── */}
+          <Route path="vip-red"                      element={<PageErrorBoundary pageName="vip-red"><S><VipRedCenterPage /></S></PageErrorBoundary>} />
+          <Route path="vip-red/merchants"            element={<PageErrorBoundary pageName="vip-red-merchants"><S><VipRedMerchantsPage /></S></PageErrorBoundary>} />
+          <Route path="vip-red/merchants/:id"        element={<PageErrorBoundary pageName="vip-red-merchant-details"><S><VipRedMerchantDetailsPage /></S></PageErrorBoundary>} />
+          <Route path="vip-red/renewals"             element={<PageErrorBoundary pageName="vip-red-renewals"><S><VipRedRenewalsPage /></S></PageErrorBoundary>} />
+          <Route path="vip-red/requests"             element={<PageErrorBoundary pageName="vip-red-requests"><S><VipRedRequestsPage /></S></PageErrorBoundary>} />
+          <Route path="red-vip"                      element={<Navigate to="/vip-red" replace />} />
 
           <Route index element={<Navigate to="/home" replace />} />
         </Route>

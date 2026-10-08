@@ -5,11 +5,12 @@
 import { useState } from 'react';
 import {
   X, Phone, Cpu, Banknote, Info, Copy, Check, CheckCircle2,
-  PackageOpen, RotateCcw, AlertTriangle, Clock
+  PackageOpen, RotateCcw, AlertTriangle, Clock, Crown, Calendar,
+  Package, KeyRound
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { VipRedLine } from '@/types/vipRed';
-import { classifyLineSystem } from '@/types/vipRed';
+import { classifyLineSystem, VIP_RED_PACKAGES } from '@/types/vipRed';
 
 interface Props {
   line: VipRedLine | null;
@@ -129,6 +130,62 @@ export default function VipRedLineDetailsModal({
               </span>
               <span className="font-mono font-bold" style={{ color: textC }} dir="ltr">{line.phone_number}</span>
             </div>
+
+            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+              <span className="flex items-center gap-1.5" style={{ color: mutC }}>
+                <Crown className="w-3.5 h-3.5 text-amber-500" /> التاجر المرتبط
+              </span>
+              <span className="font-bold" style={{ color: line.merchant ? '#f59e0b' : mutC }}>
+                {line.merchant ? line.merchant.name : 'غير محدد'}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+              <span className="flex items-center gap-1.5" style={{ color: mutC }}>
+                <Calendar className="w-3.5 h-3.5 text-purple-500" /> موعد التفعيل
+              </span>
+              <span className="font-bold" style={{ color: line.activation_day ? '#a855f7' : mutC }}>
+                {line.activation_day ? `يوم ${line.activation_day}` : 'غير محدد'}
+              </span>
+            </div>
+
+            {/* باقة الخط وسعرها */}
+            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+              <span className="flex items-center gap-1.5" style={{ color: mutC }}>
+                <Package className="w-3.5 h-3.5 text-[#E60000]" /> باقة ريد بيزنس
+              </span>
+              <div className="text-left font-bold" style={{ color: textC }}>
+                <span>{VIP_RED_PACKAGES[line.package_tier || '100gb']?.gigabytes || 100} جيجا ({Number(line.package_price) || VIP_RED_PACKAGES[line.package_tier || '100gb']?.price || 450} ج.م)</span>
+                <span className="text-[10px] text-muted-foreground block">
+                  {VIP_RED_PACKAGES[line.package_tier || '100gb']?.minutes.toLocaleString() || '6,000'} دقيقة
+                </span>
+              </div>
+            </div>
+
+            {/* باسورد أنا فودافون المسجل من العميل أو التاجر */}
+            {line.ana_vodafone_password && (
+              <div className="flex items-center justify-between py-1 border-b bg-purple-500/10 px-2 rounded-lg" style={{ borderColor: cardBdr }}>
+                <span className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold">
+                  <KeyRound className="w-3.5 h-3.5" /> باسورد أنا فودافون
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-black text-purple-700 dark:text-purple-300 text-xs">
+                    {line.ana_vodafone_password}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(line.ana_vodafone_password || '');
+                      toast.success('تم نسخ باسورد أنا فودافون');
+                    }}
+                    className="p-1 hover:bg-purple-500/20 rounded transition text-purple-600 dark:text-purple-400"
+                    title="نسخ الباسورد"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>

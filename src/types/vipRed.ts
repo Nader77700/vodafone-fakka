@@ -6,6 +6,41 @@ import type { LineInfoResult } from '@/lib/lineInfoProvider';
 
 export type VipRedSystemStatus = 'monitoring' | 'converted' | 'ineligible';
 
+export const VALID_ACTIVATION_DAYS = [7, 11, 25] as const;
+export type VipRedActivationDay = (typeof VALID_ACTIVATION_DAYS)[number];
+
+export type VipRedPaymentStatus = 'unpaid' | 'paid' | 'cancelled';
+
+export interface VipRedMerchant {
+  id: string;
+  name: string;
+  phone?: string | null;
+  user_id?: string | null;
+  created_by?: string | null;
+  is_active: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  user_email?: string | null;
+}
+
+export interface VipRedMerchantStats {
+  totalLines: number;
+  convertedLines: number;
+  monitoringLines: number;
+  countDay7: number;
+  countDay11: number;
+  countDay25: number;
+  nextActivationDate: Date | null;
+  nextActivationDay: VipRedActivationDay | null;
+  daysUntilNextActivation: number | null;
+}
+
+export interface VipRedMerchantWithStats extends VipRedMerchant {
+  stats: VipRedMerchantStats;
+  linesCount: number;
+}
+
 export interface VipRedLine {
   id: string;
   user_id: string;
@@ -14,11 +49,134 @@ export interface VipRedLine {
   system_status: VipRedSystemStatus;
   converted_at: string | null;
   last_checked_at: string | null;
+  next_check_at?: string | null;
   check_count: number;
   last_line_info: Partial<LineInfoResult>;
+  merchant_id?: string | null;
+  activation_day?: VipRedActivationDay | null;
+  customer_name?: string | null;
+  payment_status?: VipRedPaymentStatus;
+  last_payment_date?: string | null;
+  renewal_amount?: number | null;
+  package_tier?: VipRedPackageTier;
+  package_price?: number;
+  ana_vodafone_password?: string | null;
+  ana_vodafone_password_updated_at?: string | null;
+  claimed_by_user_id?: string | null;
+  claim_status?: VipRedClaimStatus;
+  claim_rejection_reason?: string | null;
+  claimed_at?: string | null;
+  merchant?: VipRedMerchant | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type VipRedRoleType = 'merchant' | 'user';
+
+export interface VipRedProfile {
+  id: string;
+  user_id: string;
+  role_type: VipRedRoleType;
+  full_name: string;
+  whatsapp_phone: string;
+  is_approved: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type VipRedPackageTier = '100gb' | '150gb' | '200gb' | 'custom';
+
+export interface VipRedPackageDefinition {
+  tier: VipRedPackageTier;
+  name: string;
+  shortName: string;
+  gigabytes: number;
+  minutes: number;
+  price: number;
+  description: string;
+}
+
+export const VIP_RED_PACKAGES: Record<VipRedPackageTier, VipRedPackageDefinition> = {
+  '100gb': {
+    tier: '100gb',
+    name: 'باقة 100 جيجا + 6,000 دقيقة',
+    shortName: '100 جيجا',
+    gigabytes: 100,
+    minutes: 6000,
+    price: 450,
+    description: '100 جيجابايت إنترنت فائق السرعة + 6,000 دقيقة لجميع الشبكات',
+  },
+  '150gb': {
+    tier: '150gb',
+    name: 'باقة 150 جيجا + 8,500 دقيقة',
+    shortName: '150 جيجا',
+    gigabytes: 150,
+    minutes: 8500,
+    price: 550,
+    description: '150 جيجابايت إنترنت فائق السرعة + 8,500 دقيقة لجميع الشبكات',
+  },
+  '200gb': {
+    tier: '200gb',
+    name: 'باقة 200 جيجا + 10,200 دقيقة',
+    shortName: '200 جيجا',
+    gigabytes: 200,
+    minutes: 10200,
+    price: 700,
+    description: '200 جيجابايت إنترنت فائق السرعة + 10,200 دقيقة لجميع الشبكات',
+  },
+  'custom': {
+    tier: 'custom',
+    name: 'باقة مخصصة',
+    shortName: 'مخصصة',
+    gigabytes: 0,
+    minutes: 0,
+    price: 450,
+    description: 'باقة مخصصة حسب الاتفاق',
+  },
+};
+
+export type VipRedClaimStatus = 'unclaimed' | 'pending' | 'approved' | 'rejected';
+
+export interface VipRedLineClaim {
+  id: string;
+  line_id: string;
+  user_id: string;
+  phone_number: string;
+  requester_name: string;
+  requester_whatsapp: string;
+  requester_role: VipRedRoleType;
+  status: VipRedClaimStatus;
+  rejection_reason?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VipRedInvoiceLineItem {
+  id: string;
+  phoneNumber: string;
+  customerName?: string | null;
+  packageTier: VipRedPackageTier;
+  packagePrice: number;
+  paymentStatus: VipRedPaymentStatus;
+  lastPaymentDate?: string | null;
+}
+
+export interface VipRedCycleInvoice {
+  cycleDay: VipRedActivationDay;
+  totalLines: number;
+  totalAmount: number;
+  paidAmount: number;
+  unpaidAmount: number;
+  lines: VipRedInvoiceLineItem[];
+}
+
+export interface DuplicateLineDetected {
+  phone: string;
+  line: VipRedLine;
 }
 
 export interface VipRedConfig {

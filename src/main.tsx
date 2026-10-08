@@ -48,6 +48,11 @@ if (import.meta.env.PROD) {
 Sentry.init({
   dsn: import.meta.env['VITE_SENTRY_DSN'] as string | undefined,
   environment: import.meta.env.MODE,
+  ignoreErrors: [
+    "Lock broken by another request with the 'steal' option.",
+    "Lock broken by another request",
+    "AbortError: Lock broken by another request with the 'steal' option.",
+  ],
 });
 
 // ── مسح تلقائي للحالة القديمة عند كل تحديث ─────────────────────────────────
@@ -179,10 +184,15 @@ function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
 (function installGlobalErrorRecovery() {
   window.addEventListener('unhandledrejection', (event) => {
     // ── تجاهل خطأ AbortError: Lock broken الخاص بمكتبة Supabase Auth (steal: true) ──
-    // هذا الخطأ متوقع عند عمل Refresh للتوكن في الخلفية وأخذ Lock بقوة من طلب آخر معلّق.
-    if (event.reason?.name === 'AbortError' && typeof event.reason?.message === 'string' && event.reason.message.includes('Lock broken by another request with the')) {
+    const msg = event.reason?.message || String(event.reason || '');
+    if (
+      (event.reason?.name === 'AbortError' && msg.includes('Lock broken')) ||
+      msg.includes("Lock broken by another request with the 'steal' option") ||
+      msg.includes("Lock broken by another request")
+    ) {
       console.warn('[SafeMode] Ignored expected Supabase Auth Lock Steal error');
       event.preventDefault();
+      event.stopImmediatePropagation?.();
       return;
     }
 
@@ -191,6 +201,18 @@ function logToSupabase(error: Error | any, type: string, extraData: any = {}) {
     event.preventDefault();
   });
   window.addEventListener('error', (event) => {
+    const errorMsg = event.message || event.error?.message || '';
+    if (
+      (event.error?.name === 'AbortError' && errorMsg.includes('Lock broken')) ||
+      errorMsg.includes("Lock broken by another request with the 'steal' option") ||
+      errorMsg.includes("Lock broken by another request")
+    ) {
+      console.warn('[SafeMode] Ignored expected Supabase Auth Lock Steal error in window.error');
+      event.preventDefault();
+      event.stopImmediatePropagation?.();
+      return;
+    }
+
     console.error('[SafeMode] Global error:', event.message, event.filename, event.lineno);
     logToSupabase(event.error || new Error(event.message), 'WindowError', {
       file: event.filename, line: event.lineno, col: event.colno

@@ -20,6 +20,10 @@ const AdminHotfixPage          = lazy(() => import('./pages/admin/AdminHotfixPag
 const AdminLineInfoDebugPage   = lazy(() => import('./pages/admin/AdminLineInfoDebugPage'));
 const AdminVipRedSettingsPage  = lazy(() => import('./pages/admin/AdminVipRedSettingsPage'));
 const VipRedCenterPage          = lazy(() => import('./pages/vip-red/VipRedCenterPage'));
+const VipRedMerchantsPage       = lazy(() => import('./pages/vip-red/VipRedMerchantsPage'));
+const VipRedMerchantDetailsPage = lazy(() => import('./pages/vip-red/VipRedMerchantDetailsPage'));
+const VipRedRenewalsPage        = lazy(() => import('./pages/vip-red/VipRedRenewalsPage'));
+const VipRedRequestsPage        = lazy(() => import('./pages/vip-red/VipRedRequestsPage'));
 const SubscriptionHistoryPage = lazy(() => import('./pages/SubscriptionHistoryPage'));
 const UpdatesPage           = lazy(() => import('./pages/UpdatesPage'));
 const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));
@@ -127,6 +131,10 @@ export const routes: RouteConfig[] = [
       // ── VIP RED Center: قسم إدارة باقات ريد VIP المستقل ──
       { name: 'VipRedCenter',             path: '/vip-red',                          element: <S><VipRedCenterPage /></S> },
       { name: 'VipRedCenterAlias',        path: '/red-vip',                          element: <Navigate to="/vip-red" replace /> },
+      { name: 'VipRedMerchants',          path: '/vip-red/merchants',                element: <S><VipRedMerchantsPage /></S> },
+      { name: 'VipRedMerchantDetails',    path: '/vip-red/merchants/:id',            element: <S><VipRedMerchantDetailsPage /></S> },
+      { name: 'VipRedRenewals',           path: '/vip-red/renewals',                 element: <S><VipRedRenewalsPage /></S> },
+      { name: 'VipRedRequests',           path: '/vip-red/requests',                 element: <S><VipRedRequestsPage /></S> },
 
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],

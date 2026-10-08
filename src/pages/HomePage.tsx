@@ -81,7 +81,7 @@ import { saveVaultPin, loadWalletPinFromDb } from '@/lib/balanceSession';
 // ══════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════
-// HomeVipRedCard: كرت إدارة باقات ريد VIP المستقل في الشاشة الرئيسية
+// HomeVipRedCard: كرت إدارة باقات فودافون ريد بيزنس VIP في الشاشة الرئيسية
 // ══════════════════════════════════════════════════════════
 
 function HomeVipRedCard() {
@@ -96,7 +96,7 @@ function HomeVipRedCard() {
         style={{
           boxShadow: L ? '0 4px 24px rgba(230,0,0,0.12)' : '0 10px 40px rgba(0,0,0,0.45)',
         }}
-        aria-label="فتح قسم إدارة باقات ريد VIP"
+        aria-label="فتح قسم إدارة باقات فودافون ريد بيزنس VIP"
       >
         {/* Gradient Background */}
         <div
@@ -145,14 +145,14 @@ function HomeVipRedCard() {
               <div className="text-right">
                 <div className="flex items-center gap-2">
                   <h3 className={`text-base font-black ${L ? 'text-gray-900' : 'text-white'}`}>
-                    إدارة باقات ريد VIP
+                    فودافون ريد بيزنس VIP
                   </h3>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-xs">
-                    Red Center
+                    Red Business
                   </span>
                 </div>
                 <p className={`text-xs mt-0.5 ${L ? 'text-gray-600' : 'text-gray-300'}`}>
-                  مراقبة وتحويل وتفعيل باقات Enterprise member control تلقائياً
+                  إدارة ومراقبة وتحويل وتفعيل باقات وأنظمة فودافون ريد بيزنس وتتبع الخطوط
                 </p>
               </div>
             </div>
@@ -166,28 +166,35 @@ function HomeVipRedCard() {
             </div>
           </div>
 
-          {/* Badges / Pill Tags */}
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          {/* Badges / Pill Tags (معلومات مميزات القسم - النقر على الكرت يفتح دائماً القسم الرئيسي) */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-emerald-100/90 text-emerald-800 border border-emerald-300' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+              }`}
+            >
+              📅 دورات التجديد 7، 11، 25
+            </span>
             <span
               className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                 L ? 'bg-rose-100/80 text-rose-700' : 'bg-rose-500/15 text-rose-300 border border-rose-500/25'
               }`}
             >
-              تجار VIP 👑
+              👑 تجار ومتابعة الخطوط
             </span>
             <span
               className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                 L ? 'bg-amber-100/80 text-amber-700' : 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
               }`}
             >
-              فحص تلقائي كل 4 ساعات ⏱️
+              ⏱️ فحص دوري تلقائي ذكي
             </span>
             <span
               className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                L ? 'bg-emerald-100/80 text-emerald-700' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+                L ? 'bg-purple-100/80 text-purple-700' : 'bg-purple-500/15 text-purple-300 border border-purple-500/25'
               }`}
             >
-              تنبيهات فورية عند التحويل ⚡
+              📊 تقارير وفواتير تفصيلية
             </span>
           </div>
         </div>
