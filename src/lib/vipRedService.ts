@@ -1127,7 +1127,7 @@ export async function searchServerLinesToClaim(
 }> {
   try {
     const clean = phoneNumberQuery.trim().replace(/\D/g, '');
-    if (clean.length < 8) {
+    if (clean.length < 5) {
       return { success: true, lines: [] };
     }
 

@@ -285,73 +285,69 @@ export default function VipRedUserPortal({
 
   return (
     <div className="space-y-2 sm:space-y-2.5 pb-32" dir="rtl">
-      {/* ── بطاقة الملف التعريفي العلوية المدمجة ── */}
+      {/* ── بطاقة الملف التعريفي العلوية فائقة الانكماش ── */}
       <div
-        className="p-2.5 sm:p-3 rounded-xl border shadow-xs"
+        className="p-1.5 sm:p-2 rounded-lg border shadow-xs"
         style={{ background: cardBg, borderColor: cardBdr }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-xs ${
                 profile.role_type === 'merchant'
                   ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
                   : 'bg-rose-500/15 text-[#E60000] border border-rose-500/30'
               }`}
             >
               {profile.role_type === 'merchant' ? (
-                <Crown className="w-6 h-6" />
+                <Crown className="w-3.5 h-3.5" />
               ) : (
-                <User className="w-6 h-6" />
+                <User className="w-3.5 h-3.5" />
               )}
             </div>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-black truncate" style={{ color: textC }}>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-xs sm:text-sm font-black truncate" style={{ color: textC }}>
                   {profile.full_name}
                 </h2>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                  className={`px-1.5 py-0.2 rounded-full text-[9px] font-black shrink-0 ${
                     profile.role_type === 'merchant'
                       ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                       : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
                   }`}
                 >
-                  {profile.role_type === 'merchant' ? '👑 تاجر VIP' : '👤 مستخدم VIP'}
+                  {profile.role_type === 'merchant' ? 'تاجر VIP' : 'مستخدم VIP'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs mt-0.5" style={{ color: mutC }}>
-                <span className="flex items-center gap-1 font-mono text-[11px]" dir="ltr">
-                  <Phone className="w-3 h-3 text-emerald-500" />
+              <div className="flex items-center gap-1.5 text-[10px]" style={{ color: mutC }}>
+                <span className="font-mono" dir="ltr">
                   {profile.whatsapp_phone}
                 </span>
                 <span>•</span>
-                <span>الأرقام المعتمدة: {lines.length}</span>
+                <span className="font-bold text-foreground">الأرقام: {lines.length}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="h-8 px-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
-              style={{ background: innerBg, borderColor: cardBdr, color: textC }}
-              title="تحديث البيانات"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-blue-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">تحديث</span>
-            </button>
-          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="w-6.5 h-6.5 rounded-md border flex items-center justify-center transition-all active:scale-95 shrink-0"
+            style={{ background: innerBg, borderColor: cardBdr, color: textC }}
+            title="تحديث البيانات"
+          >
+            <RefreshCw className={`w-3 h-3 text-blue-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
       {/* ── التبويبات الرئيسية الثلاثة (أرقامي، بحث واعتماد، الفاتورة) ── */}
-      <div className="grid grid-cols-3 gap-1 p-0.5 rounded-xl border shadow-xs" style={{ background: cardBg, borderColor: cardBdr }}>
+      <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg border shadow-xs" style={{ background: cardBg, borderColor: cardBdr }}>
         <button
           onClick={() => setActiveMainTab('lines')}
-          className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
+          className={`h-7 px-1 rounded-md text-[10px] sm:text-[11px] font-black transition-all flex items-center justify-center gap-1 ${
             activeMainTab === 'lines'
               ? 'bg-[#E60000] text-white shadow-xs'
               : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -364,7 +360,7 @@ export default function VipRedUserPortal({
 
         <button
           onClick={() => setActiveMainTab('search')}
-          className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
+          className={`h-7 px-1 rounded-md text-[10px] sm:text-[11px] font-black transition-all flex items-center justify-center gap-1 ${
             activeMainTab === 'search'
               ? 'bg-[#E60000] text-white shadow-xs'
               : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -377,7 +373,7 @@ export default function VipRedUserPortal({
 
         <button
           onClick={() => setActiveMainTab('invoice')}
-          className={`py-1.5 px-1 rounded-lg text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 ${
+          className={`h-7 px-1 rounded-md text-[10px] sm:text-[11px] font-black transition-all flex items-center justify-center gap-1 ${
             activeMainTab === 'invoice'
               ? 'bg-[#E60000] text-white shadow-xs'
               : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -394,63 +390,57 @@ export default function VipRedUserPortal({
       {/* ════════════════════════════════════════════════════════════════════ */}
       {activeMainTab === 'lines' && (
         <div className="space-y-3">
-          {/* شريط الإحصائيات السريع والتنبيهات */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {/* شريط الإحصائيات السريع فائق الانكماش */}
+          <div className="grid grid-cols-3 gap-1">
             <div
-              className="p-2.5 rounded-xl border flex items-center justify-between"
+              className="p-1.5 rounded-lg border flex items-center justify-between"
               style={{ background: cardBg, borderColor: cardBdr }}
             >
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-500" />
-                <div>
-                  <p className="text-[10px]" style={{ color: mutC }}>قيد المراقبة (14 قرش)</p>
-                  <p className="text-sm font-black text-blue-500">{monitoringCount}</p>
-                </div>
+              <div className="min-w-0">
+                <p className="text-[9px] truncate" style={{ color: mutC }}>قيد المراقبة</p>
+                <p className="text-xs font-black text-blue-500 leading-tight">{monitoringCount}</p>
               </div>
+              <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
             </div>
 
             <div
-              className="p-2.5 rounded-xl border flex items-center justify-between"
+              className="p-1.5 rounded-lg border flex items-center justify-between"
               style={{ background: cardBg, borderColor: cardBdr }}
             >
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <div>
-                  <p className="text-[10px]" style={{ color: mutC }}>تم التحويل لريد</p>
-                  <p className="text-sm font-black text-emerald-500">{convertedCount}</p>
-                </div>
+              <div className="min-w-0">
+                <p className="text-[9px] truncate" style={{ color: mutC }}>تم التحويل</p>
+                <p className="text-xs font-black text-emerald-500 leading-tight">{convertedCount}</p>
               </div>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             </div>
 
             <div
-              className="col-span-2 sm:col-span-1 p-2.5 rounded-xl border flex items-center justify-between cursor-pointer hover:border-emerald-500/40 transition"
+              className="p-1.5 rounded-lg border flex items-center justify-between cursor-pointer hover:border-emerald-500/40 transition"
               onClick={() => setActiveMainTab('invoice')}
               style={{ background: cardBg, borderColor: cardBdr }}
             >
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-amber-500" />
-                <div>
-                  <p className="text-[10px]" style={{ color: mutC }}>إجمالي الفاتورة</p>
-                  <p className="text-sm font-black text-amber-600 dark:text-amber-400">
-                    {invoiceData.totalAmount.toLocaleString()} ج.م
-                  </p>
-                </div>
+              <div className="min-w-0">
+                <p className="text-[9px] truncate" style={{ color: mutC }}>إجمالي الفاتورة</p>
+                <p className="text-xs font-black text-amber-600 dark:text-amber-400 leading-tight truncate">
+                  {invoiceData.totalAmount.toLocaleString()} ج.م
+                </p>
               </div>
+              <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             </div>
           </div>
 
-          {/* فلاتر مواعيد التفعيل (7، 11، 25) */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              <span className="text-[11px] font-bold shrink-0" style={{ color: mutC }}>
-                موعد التفعيل:
+          {/* فلاتر مواعيد التفعيل والبحث السريع فائقة الانكماش */}
+          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+              <span className="text-[10px] font-bold shrink-0" style={{ color: mutC }}>
+                الموعد:
               </span>
               <button
                 onClick={() => setSelectedDayFilter('all')}
-                className={`h-7 px-2.5 rounded-lg border text-xs font-bold transition-all ${
+                className={`h-6 px-2 rounded-md text-[10px] font-bold border transition-all ${
                   selectedDayFilter === 'all'
                     ? 'bg-[#E60000] text-white border-transparent'
-                    : 'hover:bg-black/5 dark:hover:bg-white/5'
+                    : ''
                 }`}
                 style={{
                   background: selectedDayFilter === 'all' ? '#E60000' : innerBg,
@@ -467,10 +457,8 @@ export default function VipRedUserPortal({
                   <button
                     key={day}
                     onClick={() => setSelectedDayFilter(day)}
-                    className={`h-7 px-2.5 rounded-lg border text-xs font-bold transition-all ${
-                      isSelected
-                        ? 'bg-purple-600 text-white border-transparent'
-                        : 'hover:bg-black/5 dark:hover:bg-white/5'
+                    className={`h-6 px-1.5 rounded-md text-[10px] font-bold border transition-all ${
+                      isSelected ? 'bg-purple-600 text-white border-transparent' : ''
                     }`}
                     style={{
                       background: isSelected ? '#7e22ce' : innerBg,
@@ -484,15 +472,14 @@ export default function VipRedUserPortal({
               })}
             </div>
 
-            {/* مربع البحث السريع في أرقامي */}
-            <div className="relative w-full sm:w-48">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <div className="relative flex-1 sm:flex-initial sm:w-40 min-w-[120px]">
+              <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="بحث برقم أو اسم..."
                 value={searchInLines}
                 onChange={e => setSearchInLines(e.target.value)}
-                className="w-full h-8 pr-8 pl-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#E60000]"
+                className="w-full h-6 pr-6 pl-2 rounded-md border text-[10px] focus:outline-none focus:ring-1 focus:ring-[#E60000]"
                 style={{ background: innerBg, borderColor: cardBdr, color: textC }}
               />
             </div>
@@ -539,34 +526,37 @@ export default function VipRedUserPortal({
                 return (
                   <div
                     key={line.id}
-                    className="p-2 sm:p-2.5 rounded-xl border space-y-1.5 transition-all shadow-xs"
+                    className="p-1.5 rounded-lg border space-y-1 transition-all shadow-xs"
                     style={{
                       background: cardBg,
                       borderColor: hasConverted ? 'rgba(16, 185, 129, 0.45)' : cardBdr,
                     }}
                   >
-                    {/* رأس الكارت: رقم الهاتف، اسم العميل، الشارات */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-base font-black tracking-wider" dir="ltr" style={{ color: textC }}>
-                            {line.phone_number}
+                    {/* السطر الأول: الرقم + الاسم + الباقة + الشارة */}
+                    <div className="flex items-center justify-between gap-1 pb-1 border-b border-border/40">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-xs sm:text-sm font-black tracking-wide" dir="ltr" style={{ color: textC }}>
+                          {line.phone_number}
+                        </span>
+                        {line.customer_name && (
+                          <span className="text-[10px] font-bold px-1 py-0.2 rounded bg-muted text-foreground truncate max-w-[80px]">
+                            {line.customer_name}
                           </span>
-                          {line.customer_name && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-muted text-foreground">
-                              👤 {line.customer_name}
-                            </span>
-                          )}
-                          {line.activation_day && (
-                            <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
-                              يوم {line.activation_day}
-                            </span>
-                          )}
-                        </div>
+                        )}
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 shrink-0">
+                          {pkg.shortName}
+                        </span>
+                      </div>
 
-                        <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: mutC }}>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {hasConverted ? (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.2 rounded-full bg-emerald-500 text-white shadow-xs">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            <span>تم التحويل</span>
+                          </span>
+                        ) : (
                           <span
-                            className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                            className="px-1.5 py-0.2 rounded-full text-[9px] font-bold border truncate"
                             style={{
                               background: cls.badgeBg,
                               color: cls.badgeText,
@@ -575,36 +565,46 @@ export default function VipRedUserPortal({
                           >
                             {cls.label}
                           </span>
+                        )}
+                      </div>
+                    </div>
 
-                          <span className="text-[11px] font-medium">
-                            الباقة: <strong className="text-foreground">{pkg.shortName}</strong> ({pkg.price} ج.م)
+                    {/* السطر الثاني: موعد التفعيل + حالة السداد + زر الفحص اليدوي السريع */}
+                    <div className="flex items-center justify-between gap-1 pt-0.5 text-[10px]">
+                      <div className="flex items-center gap-1.5 min-w-0 truncate" style={{ color: mutC }}>
+                        {line.activation_day && (
+                          <span className="px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-bold shrink-0">
+                            يوم {line.activation_day}
                           </span>
+                        )}
 
-                          {line.payment_status && (
-                            <span
-                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                line.payment_status === 'paid'
-                                  ? 'bg-emerald-500/15 text-emerald-600'
-                                  : 'bg-amber-500/15 text-amber-600'
-                              }`}
-                            >
-                              {line.payment_status === 'paid' ? '✅ مسدد' : '⏳ بانتظار السداد'}
-                            </span>
-                          )}
-                        </div>
+                        <span className="text-[9px] font-medium">
+                          {pkg.price} ج.م
+                        </span>
+
+                        {line.payment_status && (
+                          <span
+                            className={`text-[9px] font-bold px-1 py-0.2 rounded shrink-0 ${
+                              line.payment_status === 'paid'
+                                ? 'bg-emerald-500/15 text-emerald-600'
+                                : 'bg-amber-500/15 text-amber-600'
+                            }`}
+                          >
+                            {line.payment_status === 'paid' ? 'مسدد' : 'بانتظار السداد'}
+                          </span>
+                        )}
                       </div>
 
-                      {/* زر الفحص اليدوي فقط للمستخدم */}
-                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => handleCheckLine(line)}
                           disabled={isChecking}
-                          className="h-8 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+                          className="h-5.5 px-2 rounded border text-[9px] font-bold flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                           style={{ background: innerBg, borderColor: cardBdr, color: textC }}
                           title="فحص حالة الخط يدوياً الآن"
                         >
-                          <RefreshCw className={`w-3.5 h-3.5 text-blue-500 ${isChecking ? 'animate-spin' : ''}`} />
-                          <span>{isChecking ? 'جاري الفحص...' : 'فحص يدوي'}</span>
+                          <RefreshCw className={`w-2.5 h-2.5 text-blue-500 ${isChecking ? 'animate-spin' : ''}`} />
+                          <span>{isChecking ? 'جاري...' : 'فحص'}</span>
                         </button>
                       </div>
                     </div>
@@ -692,30 +692,29 @@ export default function VipRedUserPortal({
       {activeMainTab === 'search' && (
         <div className="space-y-3 sm:space-y-4">
           <div
-            className="p-3.5 sm:p-4 rounded-2xl border space-y-3 shadow-xs"
+            className="p-2 sm:p-2.5 rounded-lg border space-y-1.5 shadow-xs"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
-            <div className="space-y-1">
-              <h3 className="text-xs sm:text-sm font-black flex items-center gap-1.5" style={{ color: textC }}>
-                <Search className="w-4 h-4 text-[#E60000]" />
-                البحث عن أرقامك على السيرفر وطلب إضافتها واعتمادها
+            <div className="flex items-center justify-between gap-1">
+              <h3 className="text-[11px] sm:text-xs font-black flex items-center gap-1" style={{ color: textC }}>
+                <Search className="w-3.5 h-3.5 text-[#E60000]" />
+                البحث عن أرقامك على السيرفر وطلب اعتمادها
               </h3>
-              <p className="text-xs leading-relaxed" style={{ color: mutC }}>
-                اكتب رقم الهاتف كاملاً أو جزءاً منه للبحث في قاعدة بيانات السيرفر، ثم اضغط على زر
-                «طلب إضافة إلى حسابي». سيتم إرسال الطلب فوراً إلى إدارة القسم للمراجعة والاعتماد.
+              <p className="text-[9px] hidden sm:block truncate" style={{ color: mutC }}>
+                اكتب الرقم كاملاً أو جزءاً منه للبحث والإضافة
               </p>
             </div>
 
-            <form onSubmit={handleSearchServer} className="flex gap-2">
+            <form onSubmit={handleSearchServer} className="flex gap-1.5">
               <div className="flex-1 relative">
-                <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: mutC }} />
+                <Phone className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: mutC }} />
                 <input
                   type="tel"
                   inputMode="numeric"
-                  placeholder="أدخل رقم فودافون (مثال: 01012345678)"
+                  placeholder="أدخل رقم فودافون (مثال: 01097273680)"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full h-10 pr-9 pl-3 rounded-xl border text-xs sm:text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-[#E60000]"
+                  className="w-full h-7.5 pr-8 pl-2 rounded-md border text-xs font-mono tracking-wider focus:outline-none focus:ring-1 focus:ring-[#E60000]"
                   style={{ background: innerBg, borderColor: cardBdr, color: textC }}
                 />
               </div>
@@ -723,11 +722,11 @@ export default function VipRedUserPortal({
               <button
                 type="submit"
                 disabled={isSearchingServer}
-                className="h-10 px-4 rounded-xl font-black text-xs text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                className="h-7.5 px-3 rounded-md font-black text-xs text-white shadow-xs transition-all active:scale-95 flex items-center gap-1 shrink-0 disabled:opacity-50"
                 style={{ background: '#E60000' }}
               >
-                <Search className={`w-3.5 h-3.5 ${isSearchingServer ? 'animate-spin' : ''}`} />
-                <span>{isSearchingServer ? 'جاري البحث...' : 'بحث'}</span>
+                <Search className={`w-3 h-3 ${isSearchingServer ? 'animate-spin' : ''}`} />
+                <span>{isSearchingServer ? 'جاري...' : 'بحث'}</span>
               </button>
             </form>
           </div>
@@ -838,50 +837,35 @@ export default function VipRedUserPortal({
       {/* ════════════════════════════════════════════════════════════════════ */}
       {activeMainTab === 'invoice' && (
         <div className="space-y-3 sm:space-y-4">
-          {/* كروت تسعيرة باقات ريد الرسمية الثلاثة */}
-          <div className="space-y-1.5">
-            <h3 className="text-xs font-black flex items-center gap-1" style={{ color: textC }}>
-              <Crown className="w-3.5 h-3.5 text-amber-500" />
-              تسعيرة باقات فودافون ريد بيزنس المعتمدة
+          {/* كروت تسعيرة باقات ريد الرسمية فائقة الانكماش في صف واحد */}
+          <div className="space-y-1">
+            <h3 className="text-[10px] font-black flex items-center gap-1" style={{ color: textC }}>
+              <Crown className="w-3 h-3 text-amber-500" />
+              تسعيرة باقات ريد بيزنس المعتمدة
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1">
               <div
-                className="p-3 rounded-xl border space-y-1 transition-all"
+                className="p-1.5 rounded-lg border text-center transition-all"
                 style={{ background: cardBg, borderColor: cardBdr }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-[#E60000]">باقة 100 جيجا</span>
-                  <span className="text-sm font-black font-mono text-emerald-600">450 ج.م</span>
-                </div>
-                <p className="text-[10px]" style={{ color: mutC }}>
-                  100 جيجابايت + 6,000 دقيقة لجميع الشبكات
-                </p>
+                <span className="text-[9px] font-black text-[#E60000] block truncate">100 جيجا</span>
+                <span className="text-[11px] font-black font-mono text-emerald-600 block">450 ج</span>
               </div>
 
               <div
-                className="p-3 rounded-xl border space-y-1 transition-all"
+                className="p-1.5 rounded-lg border text-center transition-all"
                 style={{ background: cardBg, borderColor: cardBdr }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-amber-500">باقة 150 جيجا</span>
-                  <span className="text-sm font-black font-mono text-emerald-600">550 ج.م</span>
-                </div>
-                <p className="text-[10px]" style={{ color: mutC }}>
-                  150 جيجابايت + 8,500 دقيقة لجميع الشبكات
-                </p>
+                <span className="text-[9px] font-black text-amber-500 block truncate">150 جيجا</span>
+                <span className="text-[11px] font-black font-mono text-emerald-600 block">550 ج</span>
               </div>
 
               <div
-                className="p-3 rounded-xl border space-y-1 transition-all"
+                className="p-1.5 rounded-lg border text-center transition-all"
                 style={{ background: cardBg, borderColor: cardBdr }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-purple-500">باقة 200 جيجا</span>
-                  <span className="text-sm font-black font-mono text-emerald-600">700 ج.م</span>
-                </div>
-                <p className="text-[10px]" style={{ color: mutC }}>
-                  200 جيجابايت + 10,200 دقيقة لجميع الشبكات
-                </p>
+                <span className="text-[9px] font-black text-purple-500 block truncate">200 جيجا</span>
+                <span className="text-[11px] font-black font-mono text-emerald-600 block">700 ج</span>
               </div>
             </div>
           </div>
@@ -891,7 +875,7 @@ export default function VipRedUserPortal({
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
               <button
                 onClick={() => setInvoiceCycle('all')}
-                className={`h-7 px-3 rounded-lg border text-xs font-bold transition-all ${
+                className={`h-6 px-2 rounded-md border text-[10px] font-bold transition-all ${
                   invoiceCycle === 'all'
                     ? 'bg-[#E60000] text-white border-transparent'
                     : 'hover:bg-black/5 dark:hover:bg-white/5'
@@ -908,7 +892,7 @@ export default function VipRedUserPortal({
                 <button
                   key={day}
                   onClick={() => setInvoiceCycle(day)}
-                  className={`h-7 px-2.5 rounded-lg border text-xs font-bold transition-all ${
+                  className={`h-6 px-2 rounded-md border text-[10px] font-bold transition-all ${
                     invoiceCycle === day
                       ? 'bg-purple-600 text-white border-transparent'
                       : 'hover:bg-black/5 dark:hover:bg-white/5'
