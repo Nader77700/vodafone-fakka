@@ -1140,7 +1140,7 @@ export default function VipRedRenewalsPage() {
     <div className="min-h-screen pb-32 transition-colors duration-200" style={{ backgroundColor: bg }}>
       {/* ── الرأس العلوي فائق الانكماش المزدوج (Ultra-Compact Mobile Header) ── */}
       <div
-        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b space-y-1.5"
+        className="sticky top-[57px] lg:top-0 z-30 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b space-y-1.5 shadow-sm"
         style={{
           backgroundColor: L ? 'rgba(255, 255, 255, 0.95)' : 'rgba(17, 19, 24, 0.95)',
           borderColor: cardBdr,
@@ -1188,11 +1188,11 @@ export default function VipRedRenewalsPage() {
         <div className="grid grid-cols-2 gap-1 pt-0.5">
           <button
             onClick={() => setShowInvoiceModal(true)}
-            className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 text-[#E60000] border-[#E60000]/30 bg-[#E60000]/10 hover:bg-[#E60000]/20 transition active:scale-95"
-            title="استعراض وطباعة الفاتورة التفصيلية لدورات التجديد"
+            className="h-7 px-2.5 rounded-md text-[11px] font-black flex items-center justify-center gap-1.5 text-white bg-gradient-to-r from-[#E60000] to-[#b80000] shadow-sm hover:opacity-95 transition active:scale-95"
+            title="استخراج وطباعة الفاتورة التفصيلية وحساب المبالغ لدورات التجديد"
           >
-            <FileText className="w-3 h-3 shrink-0" />
-            <span className="truncate">الفاتورة التفصيلية</span>
+            <FileText className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">🧾 استخراج الفاتورة وحساب المبالغ</span>
           </button>
 
           <button
