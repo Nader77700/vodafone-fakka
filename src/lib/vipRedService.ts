@@ -99,7 +99,7 @@ export async function getVipRedConfig(): Promise<VipRedConfig> {
       id: data.id,
       is_enabled_globally: data.is_enabled_globally ?? true,
       allowed_user_ids: Array.isArray(data.allowed_user_ids) ? data.allowed_user_ids : [],
-      check_interval_hours: data.check_interval_hours || 4,
+      check_interval_hours: data.check_interval_hours ? Number(data.check_interval_hours) : 4,
       last_batch_run_at: data.last_batch_run_at,
       created_at: data.created_at,
       updated_at: data.updated_at,

@@ -46,7 +46,7 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    const intervalHours = config?.check_interval_hours || 4;
+    const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 4;
     const nowIso = new Date().toISOString();
 
     // 2. فحص الأرقام بنظام الدفعات الصغيرة الآمنة (Chunked Batch)
