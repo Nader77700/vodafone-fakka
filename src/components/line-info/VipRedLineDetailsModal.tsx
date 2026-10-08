@@ -102,7 +102,7 @@ export default function VipRedLineDetailsModal({
         <div className="p-3 sm:p-3.5 overflow-y-auto space-y-2.5 text-xs">
           {/* Status Banner */}
           <div
-            className="p-2.5 sm:p-3 rounded-lg flex items-start gap-2.5 border"
+            className="p-1.5 sm:p-2 rounded-lg flex items-start gap-2 border"
             style={{
               background: classification.badgeBg,
               borderColor: classification.badgeBorder,
@@ -123,15 +123,15 @@ export default function VipRedLineDetailsModal({
           </div>
 
           {/* Core Info */}
-          <div className="rounded-lg p-2.5 space-y-1.5 border" style={{ background: innerBg, borderColor: cardBdr }}>
-            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+          <div className="rounded-lg p-1.5 sm:p-2 space-y-1 border" style={{ background: innerBg, borderColor: cardBdr }}>
+            <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Phone className="w-3.5 h-3.5" /> رقم الهاتف
               </span>
               <span className="font-mono font-bold" style={{ color: textC }} dir="ltr">{line.phone_number}</span>
             </div>
 
-            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Crown className="w-3.5 h-3.5 text-amber-500" /> التاجر المرتبط
               </span>
@@ -140,7 +140,7 @@ export default function VipRedLineDetailsModal({
               </span>
             </div>
 
-            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Calendar className="w-3.5 h-3.5 text-purple-500" /> موعد التفعيل
               </span>
@@ -150,7 +150,7 @@ export default function VipRedLineDetailsModal({
             </div>
 
             {/* باقة الخط وسعرها */}
-            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Package className="w-3.5 h-3.5 text-[#E60000]" /> باقة ريد بيزنس
               </span>
@@ -187,7 +187,7 @@ export default function VipRedLineDetailsModal({
               </div>
             )}
 
-            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Cpu className="w-3.5 h-3.5" /> النظام المسجل
               </span>
@@ -197,7 +197,7 @@ export default function VipRedLineDetailsModal({
             </div>
 
             {info.balance && (
-              <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+              <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
                 <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                   <Banknote className="w-3.5 h-3.5" /> الرصيد المتبقي
                 </span>
@@ -206,7 +206,7 @@ export default function VipRedLineDetailsModal({
             )}
 
             {info.loanDetails && (
-              <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+              <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
                 <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                   <Info className="w-3.5 h-3.5" /> سلفني
                 </span>
@@ -214,7 +214,7 @@ export default function VipRedLineDetailsModal({
               </div>
             )}
 
-            <div className="flex items-center justify-between py-1 border-b" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between py-0.5 border-b" style={{ borderColor: cardBdr }}>
               <span className="flex items-center gap-1.5" style={{ color: mutC }}>
                 <Clock className="w-3.5 h-3.5" /> آخر فحص
               </span>

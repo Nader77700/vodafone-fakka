@@ -393,7 +393,7 @@ export default function VipRedMerchantDetailsPage() {
 
   return (
     <div
-      className="min-h-screen pb-24 font-sans transition-colors duration-200 select-none"
+      className="min-h-screen pb-32 font-sans transition-colors duration-200 select-none"
       style={{ background: bg, color: textC, direction: 'rtl' }}
     >
       {/* ── شريط الرأس الرئيسي ── */}
@@ -467,7 +467,7 @@ export default function VipRedMerchantDetailsPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-4xl mx-auto px-2 sm:px-3 py-2 sm:py-3 space-y-2 sm:space-y-2.5 pb-24">
+      <main className="max-w-4xl mx-auto px-2 sm:px-3 py-2 sm:py-3 space-y-2 sm:space-y-2.5 pb-32">
         {/* بطاقة معلومات التاجر العلوية */}
         {merchant && (
           <div

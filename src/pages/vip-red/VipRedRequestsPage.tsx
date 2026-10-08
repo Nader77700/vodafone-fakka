@@ -182,7 +182,7 @@ export default function VipRedRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24 transition-colors duration-200" style={{ background: pageBg, color: textC, direction: 'rtl' }}>
+    <div className="min-h-screen pb-32 transition-colors duration-200" style={{ background: pageBg, color: textC, direction: 'rtl' }}>
       {/* ── شريط الرأس ── */}
       <header
         className="sticky top-0 z-30 border-b backdrop-blur-md px-2 sm:px-3 py-1.5 transition-colors"
@@ -230,7 +230,7 @@ export default function VipRedRequestsPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-4xl mx-auto p-2 sm:p-3 space-y-2 sm:space-y-2.5 pb-24">
+      <main className="max-w-4xl mx-auto p-2 sm:p-3 space-y-2 sm:space-y-2.5 pb-32">
         {/* شريط التبويبات الثلاثة (Compact Horizontal Tabs) */}
         <div className="grid grid-cols-3 gap-1 p-0.5 rounded-xl border shadow-xs" style={{ background: cardBg, borderColor: cardBdr }}>
           <button

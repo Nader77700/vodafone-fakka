@@ -25,6 +25,7 @@ import {
   Printer,
   Download,
   Package,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -603,168 +604,171 @@ const ItemizedInvoiceModal: React.FC<ItemizedInvoiceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 print:p-0 print:bg-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 print:p-0 print:bg-white" dir="rtl">
       <div
-        className="w-full max-w-2xl max-h-[90vh] rounded-2xl border flex flex-col shadow-2xl overflow-hidden print:max-w-none print:max-h-none print:border-none print:shadow-none"
+        className="w-full max-w-xl max-h-[92vh] rounded-xl border flex flex-col shadow-2xl overflow-hidden print:max-w-none print:max-h-none print:border-none print:shadow-none"
         style={{ backgroundColor: bg, borderColor: border }}
       >
-        {/* رأس الفاتورة */}
-        <div className="p-4 border-b flex items-center justify-between gap-2" style={{ borderColor: border }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#E60000]/10 text-[#E60000] flex items-center justify-center">
-              <FileText className="w-5 h-5" />
+        {/* رأس الفاتورة المضغوط بنظام صفين ذكيين للموبايل */}
+        <div className="p-2 sm:p-2.5 border-b space-y-1.5 shrink-0" style={{ borderColor: border }}>
+          {/* السطر الأول: العنوان وزر الإغلاق */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-[#E60000]/10 text-[#E60000] flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-black truncate" style={{ color: textC }}>
+                  الفاتورة التفصيلية — ريد VIP
+                </h3>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  كشف حساب واشتراكات دورة التجديد الشهرية
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-black" style={{ color: textC }}>
-                الفاتورة التفصيلية لباقات فودافون ريد VIP
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                كشف حساب واشتراكات دورة التجديد الشهرية
-              </p>
-            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-bold hover:bg-muted transition-all active:scale-95 shrink-0"
+              style={{ borderColor: border, color: textC }}
+              title="إغلاق الفاتورة"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
 
+          {/* السطر الثاني: أزرار التنزيل والطباعة بحجم مدمج ومتناسق */}
           <div className="flex items-center gap-1.5 print:hidden">
             <button
               type="button"
               onClick={handleDownloadInvoice}
-              className="h-8 px-2.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 transition-all active:scale-95"
+              className="flex-1 h-7 px-2 rounded-md border text-[11px] font-bold flex items-center justify-center gap-1 bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 transition-all active:scale-95"
               title="تنزيل ملف الفاتورة للحفظ بدون طابعة"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>تنزيل الفاتورة</span>
+              <Download className="w-3 h-3" />
+              <span>تنزيل الفاتورة HTML</span>
             </button>
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-8 px-2.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 hover:bg-muted transition-all active:scale-95"
+              className="flex-1 h-7 px-2 rounded-md border text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-muted transition-all active:scale-95"
               style={{ borderColor: border, color: textC }}
-              title="طباعة مباشرة أو اختيار 'حفظ بتنسيق PDF'"
+              title="طباعة مباشرة أو اختيار حفظ بتنسيق PDF"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-3 h-3" />
               <span>طباعة / PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-8 px-2.5 rounded-lg border text-xs font-bold hover:bg-muted transition-all active:scale-95"
-              style={{ borderColor: border, color: textC }}
-            >
-              إغلاق
             </button>
           </div>
         </div>
 
-        {/* فلاتر الدورات 7 / 11 / 25 */}
-        <div className="p-3 border-b flex items-center justify-between gap-2 flex-wrap print:hidden" style={{ borderColor: border, backgroundColor: innerBg }}>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-muted-foreground">دورة التجديد:</span>
+        {/* فلاتر الدورات 7 / 11 / 25 بحجم فائق الانكماش */}
+        <div className="p-1.5 sm:p-2 border-b flex items-center justify-between gap-1 print:hidden shrink-0" style={{ borderColor: border, backgroundColor: innerBg }}>
+          <div className="flex items-center gap-1">
             {(['all', 7, 11, 25] as const).map(day => (
               <button
                 key={day}
                 type="button"
                 onClick={() => setSelectedCycle(day)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                className={`px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition ${
                   selectedCycle === day
                     ? 'bg-[#E60000] text-white border-[#E60000]'
                     : 'hover:bg-muted border-border text-foreground'
                 }`}
               >
-                {day === 'all' ? 'جميع الدورات' : `يوم ${day}`}
+                {day === 'all' ? 'الكل' : `يوم ${day}`}
               </button>
             ))}
           </div>
 
-          <span className="text-xs font-mono text-muted-foreground">
-            عدد الخطوط: <strong className="text-foreground">{cycleLines.length}</strong>
+          <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+            العدد: <strong className="text-foreground">{cycleLines.length}</strong>
           </span>
         </div>
 
-        {/* كروت ملخص المبالغ */}
-        <div className="grid grid-cols-3 gap-2 p-3 border-b" style={{ borderColor: border }}>
-          <div className="p-2.5 rounded-xl border bg-card text-center">
-            <span className="text-[10px] text-muted-foreground block">إجمالي المستحق</span>
-            <span className="text-sm sm:text-base font-black font-mono text-foreground">
+        {/* كروت ملخص المبالغ الثلاثة بحجم مضغوط */}
+        <div className="grid grid-cols-3 gap-1.5 p-1.5 sm:p-2 border-b shrink-0" style={{ borderColor: border }}>
+          <div className="p-1.5 rounded-lg border bg-card text-center">
+            <span className="text-[9px] text-muted-foreground block">المستحق</span>
+            <span className="text-xs sm:text-sm font-black font-mono text-foreground">
               {totalAmount.toLocaleString()} ج.م
             </span>
           </div>
 
-          <div className="p-2.5 rounded-xl border bg-emerald-500/10 border-emerald-500/20 text-center">
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block">تم تحصيله</span>
-            <span className="text-sm sm:text-base font-black font-mono text-emerald-600 dark:text-emerald-400">
+          <div className="p-1.5 rounded-lg border bg-emerald-500/10 border-emerald-500/20 text-center">
+            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block">المحصل</span>
+            <span className="text-xs sm:text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
               {paidAmount.toLocaleString()} ج.م
             </span>
           </div>
 
-          <div className="p-2.5 rounded-xl border bg-rose-500/10 border-rose-500/20 text-center">
-            <span className="text-[10px] text-rose-600 dark:text-rose-400 block">متبقي لم يسدد</span>
-            <span className="text-sm sm:text-base font-black font-mono text-rose-600 dark:text-rose-400">
+          <div className="p-1.5 rounded-lg border bg-rose-500/10 border-rose-500/20 text-center">
+            <span className="text-[9px] text-rose-600 dark:text-rose-400 block">المتبقي</span>
+            <span className="text-xs sm:text-sm font-black font-mono text-rose-600 dark:text-rose-400">
               {unpaidAmount.toLocaleString()} ج.م
             </span>
           </div>
         </div>
 
-        {/* جدول بنود الخطوط */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-1.5">
-            {cycleLines.length === 0 ? (
-              <div className="p-8 text-center text-xs text-muted-foreground">
-                لا توجد خطوط مسجلة في هذه الدورة
-              </div>
-            ) : (
-              cycleLines.map((line, idx) => {
-                const price = Number(line.package_price) || (line.package_tier === '200gb' ? 700 : line.package_tier === '150gb' ? 550 : 450);
-                const pkg = VIP_RED_PACKAGES[line.package_tier || '100gb'];
-                const isPaid = line.payment_status === 'paid';
+        {/* جدول بنود الخطوط بحجم مضغوط للموبايل */}
+        <div className="flex-1 overflow-y-auto p-1.5 sm:p-2 space-y-1">
+          {cycleLines.length === 0 ? (
+            <div className="p-6 text-center text-xs text-muted-foreground">
+              لا توجد خطوط مسجلة في هذه الدورة
+            </div>
+          ) : (
+            cycleLines.map((line, idx) => {
+              const price = Number(line.package_price) || (line.package_tier === '200gb' ? 700 : line.package_tier === '150gb' ? 550 : 450);
+              const pkg = VIP_RED_PACKAGES[line.package_tier || '100gb'];
+              const isPaid = line.payment_status === 'paid';
 
-                return (
-                  <div
-                    key={line.id}
-                    className="p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs"
-                    style={{ borderColor: border, backgroundColor: innerBg }}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-5 h-5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-foreground">
-                            {line.phone_number}
+              return (
+                <div
+                  key={line.id}
+                  className="p-1.5 sm:p-2 rounded-lg border flex items-center justify-between gap-1.5 text-xs shadow-xs"
+                  style={{ borderColor: border, backgroundColor: innerBg }}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-4 h-4 rounded-full bg-muted text-muted-foreground text-[9px] font-bold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono font-bold text-foreground text-xs" dir="ltr">
+                          {line.phone_number}
+                        </span>
+                        {line.customer_name && (
+                          <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
+                            ({line.customer_name})
                           </span>
-                          {line.customer_name && (
-                            <span className="text-[10px] text-muted-foreground truncate">
-                              ({line.customer_name})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                          <span>دورة: يوم {line.activation_day || '—'}</span>
-                          {line.merchant && <span>التاجر: {line.merchant.name}</span>}
-                          <span>الباقة: {pkg.gigabytes}GB / {pkg.minutes.toLocaleString()}د</span>
-                        </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground truncate">
+                        <span>يوم {line.activation_day || '—'}</span>
+                        {line.merchant && <span>• {line.merchant.name}</span>}
+                        <span>• {pkg.gigabytes}GB</span>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-mono font-black text-sm text-[#E60000]">
-                        {price} ج.م
-                      </span>
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                          isPaid
-                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                        }`}
-                      >
-                        {isPaid ? 'مسدد' : 'غير مسدد'}
-                      </span>
-                    </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-mono font-black text-xs text-[#E60000]">
+                      {price} ج
+                    </span>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                        isPaid
+                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                      }`}
+                    >
+                      {isPaid ? 'مسدد' : 'غير مسدد'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -1133,62 +1137,72 @@ export default function VipRedRenewalsPage() {
   }, [lines, dayFilter, paymentFilter, searchQuery]);
 
   return (
-    <div className="min-h-screen pb-24 transition-colors duration-200" style={{ backgroundColor: bg }}>
-      {/* ── الرأس العلوي (Ultra-compact Mobile Header) ── */}
+    <div className="min-h-screen pb-32 transition-colors duration-200" style={{ backgroundColor: bg }}>
+      {/* ── الرأس العلوي فائق الانكماش المزدوج (Ultra-Compact Mobile Header) ── */}
       <div
-        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b flex items-center justify-between gap-1.5"
+        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 backdrop-blur-md border-b space-y-1.5"
         style={{
-          backgroundColor: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(17, 19, 24, 0.92)',
+          backgroundColor: L ? 'rgba(255, 255, 255, 0.95)' : 'rgba(17, 19, 24, 0.95)',
           borderColor: cardBdr,
         }}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            onClick={() => navigate('/vip-red')}
-            className="w-7 h-7 rounded-lg border flex items-center justify-center transition hover:bg-muted shrink-0"
-            style={{ borderColor: cardBdr }}
-            title="الرجوع لمركز فودافون ريد"
-          >
-            <ArrowRight className="w-3.5 h-3.5 text-primary" />
-          </button>
-          <div className="truncate">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-primary shrink-0" />
-              <h1 className="text-sm font-bold truncate" style={{ color: textC }}>
-                التجديد القادم وسداد خطوط ريد
-              </h1>
+        {/* السطر الأول: الرجوع + العنوان + زر التحديث */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <button
+              onClick={() => navigate('/vip-red')}
+              className="w-7 h-7 rounded-lg border flex items-center justify-center transition active:scale-95 shrink-0"
+              style={{ borderColor: cardBdr }}
+              title="الرجوع لمركز فودافون ريد"
+            >
+              <ArrowRight className="w-3.5 h-3.5 text-primary" />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                <h1 className="text-xs sm:text-sm font-black truncate" style={{ color: textC }}>
+                  تجديد وسداد خطوط ريد
+                </h1>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                  دورات 7/11/25
+                </span>
+              </div>
             </div>
-            <p className="text-[11px] truncate" style={{ color: mutC }}>
-              إدارة تحصيل واشتراكات خطوط ريد (7 / 11 / 25)
-            </p>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-6.5 px-2 rounded-md border text-[10px] font-bold flex items-center gap-1 transition active:scale-95"
+              style={{ borderColor: cardBdr, color: textC }}
+              title="تحديث البيانات"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+              <span className="hidden sm:inline">تحديث</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* السطر الثاني: أزرار الإجراءات الرئيسية المدمجة */}
+        <div className="grid grid-cols-2 gap-1 pt-0.5">
           <button
             onClick={() => setShowInvoiceModal(true)}
-            className="px-2.5 py-1 rounded-lg border text-xs font-bold transition hover:bg-muted flex items-center gap-1.5 text-[#E60000] border-[#E60000]/30 bg-[#E60000]/10"
+            className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 text-[#E60000] border-[#E60000]/30 bg-[#E60000]/10 hover:bg-[#E60000]/20 transition active:scale-95"
             title="استعراض وطباعة الفاتورة التفصيلية لدورات التجديد"
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>الفاتورة التفصيلية</span>
+            <FileText className="w-3 h-3 shrink-0" />
+            <span className="truncate">الفاتورة التفصيلية</span>
           </button>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="p-1.5 rounded-lg border transition hover:bg-muted text-xs flex items-center gap-1"
-            style={{ borderColor: cardBdr, color: textC }}
-            title="تحديث البيانات"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
-          </button>
+
           <button
             onClick={() => navigate('/vip-red/merchants')}
-            className="px-2.5 py-1 rounded-lg border text-xs font-medium transition hover:bg-muted flex items-center gap-1"
+            className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-muted transition active:scale-95"
             style={{ borderColor: cardBdr, color: textC }}
+            title="إدارة التجار ومتابعة أرقامهم"
           >
-            <Users className="w-3.5 h-3.5 text-primary" />
-            <span className="hidden sm:inline">التجار</span>
+            <Users className="w-3 h-3 text-primary shrink-0" />
+            <span className="truncate">إدارة التجار ({stats.total})</span>
           </button>
         </div>
       </div>
@@ -1480,7 +1494,7 @@ export default function VipRedRenewalsPage() {
               return (
                 <div
                   key={line.id}
-                  className="rounded-xl p-2 sm:p-2.5 border transition duration-150 hover:border-primary/40 relative overflow-hidden flex flex-col gap-1.5 shadow-xs"
+                  className="rounded-lg p-1.5 sm:p-2 border transition duration-150 hover:border-primary/40 relative overflow-hidden flex flex-col gap-1 shadow-xs"
                   style={{
                     backgroundColor: cardBg,
                     borderColor: isPaid

@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   Cpu,
   Server,
+  Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/db/supabase';
@@ -57,6 +58,8 @@ import {
   type VipRedConfig,
   type VipRedMerchant,
   type VipRedActivationDay,
+  type VipRedPackageTier,
+  VIP_RED_PACKAGES,
   type DuplicateLineDetected,
   type VipRedProfile,
   type VipRedRoleType,
@@ -96,8 +99,10 @@ export default function VipRedCenterPage() {
   const [merchants, setMerchants] = useState<VipRedMerchant[]>([]);
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   const [selectedActivationDay, setSelectedActivationDay] = useState<VipRedActivationDay | null>(null);
+  const [selectedPackageTier, setSelectedPackageTier] = useState<VipRedPackageTier>('100gb');
   const [bulkMerchantId, setBulkMerchantId] = useState<string>('');
   const [bulkActivationDay, setBulkActivationDay] = useState<VipRedActivationDay | null>(null);
+  const [bulkPackageTier, setBulkPackageTier] = useState<VipRedPackageTier>('100gb');
 
   // Quick Create Merchant modal
   const [showCreateMerchantModal, setShowCreateMerchantModal] = useState(false);
@@ -367,6 +372,7 @@ export default function VipRedCenterPage() {
           phone: cleanPhone,
           merchantId: selectedMerchantId || null,
           activationDay: selectedActivationDay || null,
+          packageTier: selectedPackageTier,
         }
       ], user.id);
 
@@ -428,6 +434,7 @@ export default function VipRedCenterPage() {
         phone,
         merchantId: bulkMerchantId || null,
         activationDay: bulkActivationDay || null,
+        packageTier: bulkPackageTier,
       }));
 
       const res = await addMonitoredLines(inputs, user.id);
@@ -946,91 +953,89 @@ export default function VipRedCenterPage() {
   return (
     <div className="min-h-screen pb-16 transition-colors duration-300" style={{ background: pageBg }}>
       {/* ── رأس الصفحة (Header) للمالك (Admin) ── */}
+      {/* ── شريط الرأس المثبت المضغوط للغاية بدون أي تداخل (Ultra-Compact Sticky Header) ── */}
       <header
-        className="sticky top-0 z-30 px-2 sm:px-3 py-1.5 border-b backdrop-blur-md transition-colors"
+        className="sticky top-0 z-40 px-2 sm:px-3 py-1.5 border-b backdrop-blur-md shadow-xs transition-colors"
         style={{
-          background: L ? 'rgba(255, 255, 255, 0.92)' : 'rgba(11, 11, 20, 0.92)',
+          background: L ? 'rgba(255, 255, 255, 0.95)' : 'rgba(11, 11, 20, 0.95)',
           borderColor: cardBdr,
         }}
       >
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => navigate('/')}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0"
-              style={{ background: innerBg, borderColor: cardBdr, color: textC }}
-              title="العودة للرئيسية"
-            >
-              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-gradient-to-tr from-[#E60000] to-rose-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                  <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        <div className="max-w-3xl mx-auto space-y-1.5">
+          {/* السطر الأول: زر الرجوع + اسم القسم والشارة + زر التحديث */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <button
+                onClick={() => navigate('/')}
+                className="w-7 h-7 rounded-lg border flex items-center justify-center transition-all active:scale-95 shrink-0"
+                style={{ background: innerBg, borderColor: cardBdr, color: textC }}
+                title="العودة للرئيسية"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="w-5 h-5 rounded-md bg-[#E60000] flex items-center justify-center text-white shrink-0">
+                  <Crown className="w-3 h-3" />
                 </span>
                 <h1 className="text-xs sm:text-sm font-black truncate" style={{ color: textC }}>
                   فودافون ريد VIP
                 </h1>
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-xs shrink-0">
-                  Red Business
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#E60000]/15 text-[#E60000] border border-[#E60000]/30 shrink-0">
+                  Business
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[10px] truncate" style={{ color: mutC }}>
-                مراقبة وتحويل وتفعيل باقات ريد بيزنس
-              </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
-            {/* زر طلبات اعتماد الأرقام الجديدة */}
-            <button
-              onClick={() => navigate('/vip-red/requests')}
-              className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg border text-[11px] sm:text-xs font-bold flex items-center gap-1 transition-all active:scale-95 ${
-                pendingClaimsCount > 0
-                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
-                  : 'bg-muted/30 text-muted-foreground border-transparent'
-              }`}
-              title="طلبات ربط الأرقام الجديدة الواردة من المستخدمين والتجار"
-            >
-              <ShieldAlert className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500 shrink-0" />
-              <span>الطلبات ({pendingClaimsCount})</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/vip-red/renewals')}
-              className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg border text-[11px] sm:text-xs font-bold flex items-center gap-1 transition-all active:scale-95 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20"
-              title="التجديد القادم وسداد خطوط ريد (7، 11، 25)"
-            >
-              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 shrink-0" />
-              <span>التجديد ({convertedLines.length})</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/vip-red/merchants')}
-              className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg border text-[11px] sm:text-xs font-bold flex items-center gap-1 transition-all active:scale-95 text-amber-600 dark:text-amber-400"
-              style={{ background: innerBg, borderColor: cardBdr }}
-              title="إدارة التجار ومواعيد التفعيل (7، 11، 25)"
-            >
-              <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-              <span>التجار ({merchants.length})</span>
-            </button>
 
             <button
               onClick={loadData}
               disabled={isLoading}
-              className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg border text-[11px] sm:text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+              className="h-6.5 px-2 rounded-md border text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 shrink-0"
               style={{ background: innerBg, borderColor: cardBdr, color: textC }}
               title="تحديث البيانات"
             >
-              <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 text-blue-500 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">تحديث</span>
+            </button>
+          </div>
+
+          {/* السطر الثاني: أزرار التبويبات الثلاثة المثبتة بحجم مضغوط ومتناسق بدون أي تراكب */}
+          <div className="grid grid-cols-3 gap-1 pt-0.5">
+            <button
+              onClick={() => navigate('/vip-red/renewals')}
+              className="h-6.5 px-1 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+              title="التجديد القادم وسداد خطوط ريد (7، 11، 25)"
+            >
+              <Calendar className="w-3 h-3 text-emerald-500 shrink-0" />
+              <span className="truncate">التجديد ({convertedLines.length})</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/vip-red/merchants')}
+              className="h-6.5 px-1 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
+              title="إدارة التجار ومواعيد التفعيل (7، 11، 25)"
+            >
+              <Crown className="w-3 h-3 shrink-0" />
+              <span className="truncate">التجار ({merchants.length})</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/vip-red/requests')}
+              className={`h-6.5 px-1 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                pendingClaimsCount > 0
+                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
+                  : 'bg-muted/30 text-muted-foreground border-transparent'
+              }`}
+              title="طلبات ربط الأرقام الجديدة"
+            >
+              <ShieldAlert className="w-3 h-3 text-rose-500 shrink-0" />
+              <span className="truncate">الطلبات ({pendingClaimsCount})</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-3xl mx-auto p-2 sm:p-3 space-y-1.5 sm:space-y-2 pb-24">
+      <main className="max-w-3xl mx-auto p-2 sm:p-2.5 space-y-1.5 sm:space-y-2 pb-32">
         {/* ── كارت الإدخال والإضافة المدمج (Ultra-compact Add Bar) ── */}
         <div
           className="p-2 sm:p-2.5 rounded-xl border space-y-1.5 shadow-xs"
@@ -1160,6 +1165,37 @@ export default function VipRedCenterPage() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+
+          {/* سطر اختيار باقة الخط والجيجات (100 جيجا / 150 جيجا / 200 جيجا) المطلوب صراحة */}
+          <div className="flex items-center justify-between gap-1 pt-1.5 border-t text-[10px]" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center gap-1 shrink-0">
+              <Package className="w-3 h-3 text-[#E60000] shrink-0" />
+              <span className="font-bold" style={{ color: mutC }}>باقة الخط:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {(['100gb', '150gb', '200gb'] as const).map(tier => {
+                const pkg = VIP_RED_PACKAGES[tier];
+                const isSelected = selectedPackageTier === tier;
+                return (
+                  <button
+                    key={tier}
+                    type="button"
+                    onClick={() => setSelectedPackageTier(tier)}
+                    className="h-6.5 px-2 rounded-md border text-[10px] font-bold transition-all active:scale-95 flex items-center gap-1"
+                    style={{
+                      background: isSelected ? '#E60000' : innerBg,
+                      color: isSelected ? '#ffffff' : textC,
+                      borderColor: isSelected ? '#E60000' : cardBdr,
+                    }}
+                    title={`${pkg.gigabytes} جيجا + ${pkg.minutes.toLocaleString()} دقيقة بسعر ${pkg.price} ج.م`}
+                  >
+                    <span>{pkg.gigabytes} جيجا</span>
+                    <span className="opacity-75 text-[9px]">({pkg.price}ج)</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

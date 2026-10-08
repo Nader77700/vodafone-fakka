@@ -335,6 +335,7 @@ export interface AddLineInput {
   phone: string;
   merchantId?: string | null;
   activationDay?: VipRedActivationDay | null;
+  packageTier?: VipRedPackageTier | null;
 }
 
 /**
@@ -352,6 +353,9 @@ export async function addMonitoredLines(
     const rawPhone = typeof item === 'string' ? item : item.phone;
     const merchantId = typeof item === 'object' ? item.merchantId : null;
     const activationDay = typeof item === 'object' ? item.activationDay : null;
+    const packageTier: VipRedPackageTier = (typeof item === 'object' && item.packageTier) ? item.packageTier : '100gb';
+    const pkg = VIP_RED_PACKAGES[packageTier] || VIP_RED_PACKAGES['100gb'];
+    const pkgPrice = pkg.price;
     const phone = normalizePhoneNumber(rawPhone);
 
     if (!phone || !/^01[0125]\d{8}$/.test(phone)) {
@@ -384,6 +388,9 @@ export async function addMonitoredLines(
           next_check_at: nextCheck,
           merchant_id: merchantId || null,
           activation_day: activationDay || null,
+          package_tier: packageTier,
+          package_price: pkgPrice,
+          renewal_amount: pkgPrice,
         });
 
       if (error) {

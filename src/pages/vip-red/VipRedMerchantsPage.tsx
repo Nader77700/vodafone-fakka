@@ -187,7 +187,7 @@ export default function VipRedMerchantsPage() {
 
   return (
     <div
-      className="min-h-screen pb-24 font-sans transition-colors duration-200 select-none"
+      className="min-h-screen pb-32 font-sans transition-colors duration-200 select-none"
       style={{ background: bg, color: textC, direction: 'rtl' }}
     >
       {/* ── شريط الرأس الرئيسي ── */}
@@ -255,7 +255,7 @@ export default function VipRedMerchantsPage() {
       </header>
 
       {/* ── المحتوى الرئيسي ── */}
-      <main className="max-w-4xl mx-auto px-2 sm:px-3 py-2 sm:py-3 space-y-2 sm:space-y-2.5 pb-24">
+      <main className="max-w-4xl mx-auto px-2 sm:px-3 py-2 sm:py-3 space-y-2 sm:space-y-2.5 pb-32">
         {/* شريط الإحصائيات العامة المدمج */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
           <div
@@ -454,7 +454,7 @@ export default function VipRedMerchantsPage() {
                 <div
                   key={m.id}
                   onClick={() => navigate(`/vip-red/merchants/${m.id}`)}
-                  className="p-3.5 rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99] space-y-3 group"
+                  className="p-2 sm:p-2.5 rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99] space-y-1.5 group"
                   style={{ background: cardBg, borderColor: cardBdr }}
                 >
                   {/* الرأس: اسم التاجر وحالة الحساب */}

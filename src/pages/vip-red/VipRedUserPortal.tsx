@@ -284,7 +284,7 @@ export default function VipRedUserPortal({
   const monitoringCount = lines.filter(l => l.system_status === 'monitoring').length;
 
   return (
-    <div className="space-y-2 sm:space-y-2.5 pb-24" dir="rtl">
+    <div className="space-y-2 sm:space-y-2.5 pb-32" dir="rtl">
       {/* ── بطاقة الملف التعريفي العلوية المدمجة ── */}
       <div
         className="p-2.5 sm:p-3 rounded-xl border shadow-xs"
