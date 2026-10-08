@@ -1519,6 +1519,11 @@ export default function VipRedRenewalsPage() {
                         {line.phone_number}
                       </span>
 
+                      {/* شارة نظام الخط المدمجة: ريد */}
+                      <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+                        ريد
+                      </span>
+
                       {/* اسم العميل مع زر التعديل السريع */}
                       <button
                         onClick={() => setEditingCustomerLine(line)}

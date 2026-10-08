@@ -139,6 +139,73 @@ export async function updateVipRedConfig(updates: Partial<VipRedConfig>): Promis
 }
 
 /**
+ * حفظ الدورية الجديدة وتطبيقها فوراً على كافة الأرقام قيد المراقبة وإعادة جدولة الفحص
+ * @param intervalHours مدة الدورة بالساعات (يمكن أن تكون كسرية مثل 0.5 لنصف ساعة أو 2 لساعتين)
+ * @param resetAllToNow إذا كانت true سيتم تصفير مواعيد الفحص لتبدأ الآن فوراً لكافة الأرقام
+ */
+export async function saveAndApplyVipRedInterval(
+  intervalHours: number,
+  options?: { resetAllToNow?: boolean }
+): Promise<{ success: boolean; updatedCount: number; error?: string }> {
+  try {
+    // 1. تحديث جدول إعدادات فودافون ريد
+    const { error: cfgErr } = await supabase
+      .from('vip_red_config')
+      .update({
+        check_interval_hours: intervalHours,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 'default');
+
+    if (cfgErr) {
+      return { success: false, updatedCount: 0, error: cfgErr.message };
+    }
+
+    // 2. جلب جميع الأرقام قيد المراقبة لإعادة احتساب next_check_at وتطبيق الدورية فوراً
+    const { data: lines, error: linesErr } = await supabase
+      .from('vip_red_monitored_lines')
+      .select('id, last_checked_at')
+      .eq('system_status', 'monitoring');
+
+    if (linesErr) {
+      return { success: false, updatedCount: 0, error: linesErr.message };
+    }
+
+    const intervalMs = Math.round(intervalHours * 3600 * 1000);
+    const now = Date.now();
+    let updatedCount = 0;
+
+    if (lines && lines.length > 0) {
+      for (const line of lines) {
+        let newNextCheck: string;
+        if (options?.resetAllToNow || !line.last_checked_at) {
+          // بدء موعد الفحص الآن
+          newNextCheck = new Date(now).toISOString();
+        } else {
+          const lastTime = new Date(line.last_checked_at).getTime();
+          const targetTime = lastTime + intervalMs;
+          newNextCheck = new Date(targetTime).toISOString();
+        }
+
+        const { error: updErr } = await supabase
+          .from('vip_red_monitored_lines')
+          .update({
+            next_check_at: newNextCheck,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', line.id);
+
+        if (!updErr) updatedCount++;
+      }
+    }
+
+    return { success: true, updatedCount };
+  } catch (err: unknown) {
+    return { success: false, updatedCount: 0, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
  * التحقق من صلاحية وصول المستخدم لقسم VIP
  */
 export function canUserAccessVipRed(

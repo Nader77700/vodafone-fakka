@@ -15,6 +15,7 @@ import { supabase } from '@/db/supabase';
 import {
   getVipRedConfig,
   updateVipRedConfig,
+  saveAndApplyVipRedInterval,
 } from '@/lib/vipRedService';
 import type { VipRedConfig } from '@/types/vipRed';
 
@@ -35,6 +36,10 @@ export default function AdminVipRedSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [customHours, setCustomHours] = useState('2');
+  const [customMinutes, setCustomMinutes] = useState('0');
+  const [isApplyingInterval, setIsApplyingInterval] = useState(false);
+  const [resetCycleOnSave, setResetCycleOnSave] = useState(false);
 
   // إحصائيات عامة عن الأرقام في المنظومة
   const [stats, setStats] = useState({
@@ -50,6 +55,13 @@ export default function AdminVipRedSettingsPage() {
       // 1. جلب الإعدادات
       const cfg = await getVipRedConfig();
       setConfig(cfg);
+      if (cfg) {
+        const hrs = cfg.check_interval_hours || 2;
+        const wholeHrs = Math.floor(hrs);
+        const remMins = Math.round((hrs - wholeHrs) * 60);
+        setCustomHours(String(wholeHrs));
+        setCustomMinutes(String(remMins));
+      }
 
       // 2. جلب المستخدمين لتحديد الصلاحيات
       const { data: usersData, error: usersErr } = await supabase
@@ -246,41 +258,155 @@ export default function AdminVipRedSettingsPage() {
               </button>
             </div>
 
-            {/* الخيار 2: فترة الفحص التلقائي بالساعات */}
-            <div className="p-3.5 rounded-xl border space-y-2.5" style={{ background: innerBg, borderColor: cardBdr }}>
+            {/* الخيار 2: فترة الفحص التلقائي بالساعات مع إدخال حر وتطبيق فوري */}
+            <div className="p-3.5 rounded-xl border space-y-3" style={{ background: innerBg, borderColor: cardBdr }}>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <p className="text-xs font-black" style={{ color: textC }}>
-                    فترة الفحص التلقائي بالسيرفر
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#E60000]" />
+                    <p className="text-xs font-black" style={{ color: textC }}>
+                      دورية وفترة الفحص التلقائي بالسيرفر
+                    </p>
+                  </div>
                   <p className="text-[11px]" style={{ color: mutC }}>
-                    الفاصل الزمني لفحص الأرقام قيد المراقبة وتحديث حالاتها
+                    اكتب أي عدد ساعات أو دقائق بحرية تامة دون التقيد بخيارات ثابتة، وسيتم تطبيقها فوراً على جميع الأرقام
                   </p>
                 </div>
-                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-[#E60000]/15 text-[#E60000] border border-[#E60000]/25">
-                  كل {config.check_interval_hours} ساعات
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-[#E60000]/15 text-[#E60000] border border-[#E60000]/25 shrink-0">
+                  {config.check_interval_hours >= 1
+                    ? `كل ${config.check_interval_hours} ساعات`
+                    : `كل ${Math.round(config.check_interval_hours * 60)} دقيقة`}
                 </span>
               </div>
 
-              <div className="grid grid-cols-5 gap-2 pt-1">
-                {[2, 4, 6, 12, 24].map((hrs) => (
-                  <button
-                    key={hrs}
-                    onClick={() => {
-                      const updated = { ...config, check_interval_hours: hrs };
-                      setConfig(updated);
-                      handleSaveConfig(updated);
-                    }}
-                    className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all text-center ${
-                      config.check_interval_hours === hrs
-                        ? 'bg-[#E60000] text-white border-[#E60000]'
-                        : 'hover:bg-black/5 dark:hover:bg-white/5 border-border'
-                    }`}
-                  >
-                    {hrs} ساعات
-                  </button>
-                ))}
+              {/* أزرار اختيار سريع */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold block" style={{ color: mutC }}>
+                  اختيارات سريعة شائعة:
+                </label>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                  {[
+                    { label: '15 دقيقة', h: 0, m: 15 },
+                    { label: '30 دقيقة', h: 0, m: 30 },
+                    { label: '1 ساعة', h: 1, m: 0 },
+                    { label: '2 ساعة', h: 2, m: 0 },
+                    { label: '4 ساعات', h: 4, m: 0 },
+                    { label: '6 ساعات', h: 6, m: 0 },
+                    { label: '12 ساعة', h: 12, m: 0 },
+                    { label: '24 ساعة', h: 24, m: 0 },
+                  ].map((preset, idx) => {
+                    const isSelected = customHours === String(preset.h) && customMinutes === String(preset.m);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setCustomHours(String(preset.h));
+                          setCustomMinutes(String(preset.m));
+                        }}
+                        className={`py-1.5 px-1 text-[11px] font-bold rounded-lg border transition-all text-center ${
+                          isSelected
+                            ? 'bg-[#E60000] text-white border-[#E60000] shadow-xs'
+                            : 'hover:bg-black/5 dark:hover:bg-white/5 border-border'
+                        }`}
+                        style={{ color: isSelected ? '#ffffff' : textC }}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* حقول الإدخال اليدوي الحر للساعات والدقائق */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div className="p-2.5 rounded-lg border bg-background/50" style={{ borderColor: cardBdr }}>
+                  <label className="text-[11px] font-bold block mb-1" style={{ color: textC }}>
+                    عدد الساعات (اكتب أي عدد):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="720"
+                    value={customHours}
+                    onChange={(e) => setCustomHours(e.target.value)}
+                    className="w-full h-8 px-3 rounded-md border text-sm font-mono font-bold text-center"
+                    style={{ background: innerBg, borderColor: cardBdr, color: textC }}
+                    placeholder="مثال: 2"
+                  />
+                </div>
+
+                <div className="p-2.5 rounded-lg border bg-background/50" style={{ borderColor: cardBdr }}>
+                  <label className="text-[11px] font-bold block mb-1" style={{ color: textC }}>
+                    عدد الدقائق الإضافية:
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={customMinutes}
+                    onChange={(e) => setCustomMinutes(e.target.value)}
+                    className="w-full h-8 px-3 rounded-md border text-sm font-mono font-bold text-center"
+                    style={{ background: innerBg, borderColor: cardBdr, color: textC }}
+                    placeholder="مثال: 0 أو 30"
+                  />
+                </div>
+              </div>
+
+              {/* خيار تصفير الدورة لتبدأ الآن لجميع الأرقام */}
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-background/30 border border-border/50 text-[11px] font-bold" style={{ color: textC }}>
+                <input
+                  type="checkbox"
+                  checked={resetCycleOnSave}
+                  onChange={(e) => setResetCycleOnSave(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#E60000] focus:ring-[#E60000]"
+                />
+                <span>تصفير مواعيد الفحص وبدء دورة جديدة فوراً الآن لجميع الأرقام قيد المراقبة</span>
+              </label>
+
+              {/* زر الحفظ والتطبيق الفوري */}
+              <button
+                type="button"
+                disabled={isApplyingInterval}
+                onClick={async () => {
+                  const h = parseInt(customHours || '0', 10);
+                  const m = parseInt(customMinutes || '0', 10);
+                  if (h === 0 && m === 0) {
+                    toast.error('يرجى تحديد مدة دورة الفحص (على الأقل دقيقة واحدة)');
+                    return;
+                  }
+                  const totalHours = Math.max(0.02, Number((h + (m / 60)).toFixed(3)));
+                  setIsApplyingInterval(true);
+                  try {
+                    const res = await saveAndApplyVipRedInterval(totalHours, {
+                      resetAllToNow: resetCycleOnSave,
+                    });
+                    if (res.success) {
+                      toast.success(`تم حفظ الدورية (كل ${h > 0 ? `${h} س ` : ''}${m > 0 ? `${m} د` : ''}) وتطبيقها فوراً على ${res.updatedCount} خط قيد المراقبة!`);
+                      setConfig(prev => prev ? { ...prev, check_interval_hours: totalHours } : prev);
+                    } else {
+                      toast.error('فشل تطبيق الدورية: ' + (res.error || 'خطأ'));
+                    }
+                  } catch (err: any) {
+                    toast.error('حدث خطأ أثناء الحفظ والتطبيق: ' + (err?.message || 'خطأ'));
+                  } finally {
+                    setIsApplyingInterval(false);
+                  }
+                }}
+                className="w-full h-9 rounded-xl bg-[#E60000] text-white font-black text-xs flex items-center justify-center gap-1.5 transition active:scale-98 shadow-sm hover:bg-[#cc0000]"
+              >
+                {isApplyingInterval ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>جاري حفظ وتطبيق الدورية على الأرقام...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>حفظ الدورية وتطبيقها فوراً على كافة الأرقام</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         )}

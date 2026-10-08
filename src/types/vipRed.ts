@@ -198,12 +198,13 @@ export interface SystemClassification {
   description: string;
   isRed: boolean;
   is14pt: boolean;
+  shortSystemName: string; // اسم النظام المختصر: 'ريد' أو '14 قرش'
 }
 
 /**
  * تصنيف نظام الخط بدقة تامة:
- * - Enterprise member control أو RED -> تم التحويل بنجاح لنظام ريد
- * - RX_14pt_Raya7Balak أو 14 قرش -> ريح بالك 14 قرش (مؤهل وقيد المراقبة)
+ * - Enterprise member control أو RED -> تم التحويل بنجاح لنظام ريد (مختصر: 'ريد')
+ * - RX_14pt_Raya7Balak أو 14 قرش -> ريح بالك 14 قرش (مؤهل وقيد المراقبة، مختصر: '14 قرش')
  * - أنظمة أخرى (فليكس، كارت عادي، إنترنت) -> غير مؤهل، يلزم التحويل إلى 14 قرش أولاً
  */
 export function classifyLineSystem(systemName: string | null | undefined): SystemClassification {
@@ -216,7 +217,8 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
       badgeBorder: 'rgba(245, 158, 11, 0.3)',
       description: 'جاري استعلام نظام الخط وتحديد حالته.',
       isRed: false,
-      is14pt: false,
+      is14pt: true,
+      shortSystemName: '14 قرش',
     };
   }
 
@@ -241,6 +243,7 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
       description: 'تم التحويل بنجاح لنظام ريد وهو جاهز للتفعيل الآن!',
       isRed: true,
       is14pt: false,
+      shortSystemName: 'ريد',
     };
   }
 
@@ -261,6 +264,7 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
       description: 'الخط مؤهل تماماً وبانتظار صدور أمر التحويل إلى نظام ريد.',
       isRed: false,
       is14pt: true,
+      shortSystemName: '14 قرش',
     };
   }
 
@@ -274,5 +278,6 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
     description: 'النظام غير مؤهل للتحويل لنظام ريد — يرجى التحويل إلى 14 قرش ريح بالك أولاً ثم إعادة الفحص.',
     isRed: false,
     is14pt: false,
+    shortSystemName: '14 قرش',
   };
 }

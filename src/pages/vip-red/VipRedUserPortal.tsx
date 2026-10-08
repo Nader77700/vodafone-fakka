@@ -546,6 +546,17 @@ export default function VipRedUserPortal({
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 shrink-0">
                           {pkg.shortName}
                         </span>
+
+                        {/* شارة نظام الخط: ريد أو 14 قرش */}
+                        {hasConverted ? (
+                          <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+                            ريد
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+                            {cls.shortSystemName || '14 قرش'}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
@@ -779,6 +790,14 @@ export default function VipRedUserPortal({
                                   تفعيل يوم {result.activation_day}
                                 </span>
                               )}
+
+                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${
+                                cls.status === 'converted'
+                                  ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                                  : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                              }`}>
+                                {cls.status === 'converted' ? 'ريد' : (cls.shortSystemName || '14 قرش')}
+                              </span>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-1.5 text-xs">
