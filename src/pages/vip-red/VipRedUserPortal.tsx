@@ -547,14 +547,18 @@ export default function VipRedUserPortal({
                           {pkg.shortName}
                         </span>
 
-                        {/* شارة نظام الخط: ريد أو 14 قرش */}
+                        {/* شارة نظام الخط: ريد أو 14 قرش أو النظام الآخر (فليكس) */}
                         {hasConverted ? (
                           <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                             ريد
                           </span>
-                        ) : (
+                        ) : cls.is14pt ? (
                           <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
-                            {cls.shortSystemName || '14 قرش'}
+                            14 قرش
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 shrink-0">
+                            {cls.shortSystemName || 'غير مؤهل'}
                           </span>
                         )}
                       </div>
@@ -794,9 +798,11 @@ export default function VipRedUserPortal({
                               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${
                                 cls.status === 'converted'
                                   ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
-                                  : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                                  : cls.is14pt
+                                  ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                                  : 'bg-rose-500/15 text-rose-500 border-rose-500/30'
                               }`}>
-                                {cls.status === 'converted' ? 'ريد' : (cls.shortSystemName || '14 قرش')}
+                                {cls.status === 'converted' ? 'ريد' : cls.is14pt ? '14 قرش' : (cls.shortSystemName || 'غير مؤهل')}
                               </span>
                             </div>
 

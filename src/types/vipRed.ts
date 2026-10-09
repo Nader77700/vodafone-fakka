@@ -221,8 +221,8 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
       badgeBorder: 'rgba(245, 158, 11, 0.3)',
       description: 'جاري استعلام نظام الخط وتحديد حالته.',
       isRed: false,
-      is14pt: true,
-      shortSystemName: '14 قرش',
+      is14pt: false,
+      shortSystemName: 'قيد الفحص',
     };
   }
 
@@ -273,6 +273,9 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
   }
 
   // 3. نظام آخر غير مؤهل (مثل Flex)
+  const isFlex = s.includes('flex');
+  const shortName = isFlex ? 'فليكس' : (systemName.split('_')[0].slice(0, 10) || 'غير مؤهل');
+
   return {
     status: 'ineligible',
     label: systemName,
@@ -282,6 +285,6 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
     description: 'النظام غير مؤهل للتحويل لنظام ريد — يرجى التحويل إلى 14 قرش ريح بالك أولاً ثم إعادة الفحص.',
     isRed: false,
     is14pt: false,
-    shortSystemName: '14 قرش',
+    shortSystemName: shortName,
   };
 }

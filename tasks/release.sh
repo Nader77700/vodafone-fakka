@@ -171,8 +171,8 @@ git status --short
 # ════════════════════════════════════════════════════════════════════════
 step "Git commit & push"
 
-# نستبعد .skills لأنها ملفات نظامية خارج التطبيق
-git add . -- ':!.skills'
+# إضافة كل التعديلات
+git add -A
 
 COMMIT_MSG="build(v${NEW_VERSION}): رفع الإصدار ${NEW_VERSION} / versionCode ${NEW_CODE}"
 git commit -m "$COMMIT_MSG" || { warn "لا توجد تغييرات للـ commit"; exit 0; }
