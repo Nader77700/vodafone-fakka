@@ -60,9 +60,11 @@ serve(async (req) => {
       }
     }
     const targetPhone = typeof reqBody.phone === "string" ? reqBody.phone.trim() : null;
+    const forceAll = reqBody.force_all === true || reqBody.all_monitoring === true;
+    const filterUserId = typeof reqBody.user_id === "string" ? reqBody.user_id : null;
     const executionSource = typeof reqBody.execution_source === "string" 
       ? reqBody.execution_source 
-      : (targetPhone ? "server_trigger" : "server_cron");
+      : (targetPhone ? "server_manual" : (forceAll ? "server_batch" : "server_cron"));
 
     // 1. جلب إعدادات القسم لتحديد دورية الفحص (الافتراضي 0.5 ساعة = 30 دقيقة)
     const { data: config } = await supabase
@@ -74,8 +76,7 @@ serve(async (req) => {
     const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
     const nowIso = new Date().toISOString();
 
-    // 2. فحص الأرقام بنظام الدفعات الآمنة (Chunked Batch) — رفع السعة لـ 10 أرقام في الدفعة
-    const CHUNK_SIZE = 10;
+    // 2. فحص الأرقام بنظام الدفعات الآمنة (Chunked Batch)
     let dueLines: any[] = [];
     if (targetPhone) {
       const { data, error } = await supabase
@@ -87,6 +88,42 @@ serve(async (req) => {
         console.error("[vip-red-auto-scan] Query targetPhone error:", error);
       }
       dueLines = data || [];
+      if (dueLines.length > 0) {
+        // وسم الخط فوراً بحالة جاري الفحص
+        await supabase
+          .from("vip_red_monitored_lines")
+          .update({ is_scanning: true })
+          .eq("id", dueLines[0].id);
+      }
+    } else if (forceAll) {
+      // فحص جماعي لكافة خطوط المراقبة وغير المؤهلة بطلب مباشر من المستخدم أو الآدمن
+      let q = supabase
+        .from("vip_red_monitored_lines")
+        .select("*, merchant:vip_red_merchants(name, user_id)")
+        .in("system_status", ["monitoring", "ineligible"]);
+
+      if (filterUserId) {
+        q = q.eq("user_id", filterUserId);
+      }
+
+      const { data, error } = await q
+        .order("last_checked_at", { ascending: true, nullsFirst: true })
+        .limit(50);
+
+      if (error) {
+        console.error("[vip-red-auto-scan] Query forceAll error:", error);
+        return json({ error: error.message }, 200);
+      }
+      dueLines = data || [];
+
+      // وسم كافة الخطوط المستهدفة بحالة جاري الفحص بالسيرفر
+      if (dueLines.length > 0) {
+        const ids = dueLines.map(l => l.id);
+        await supabase
+          .from("vip_red_monitored_lines")
+          .update({ is_scanning: true })
+          .in("id", ids);
+      }
     } else {
       // الأولوية القصوى للأرقام الجديدة التي لم تفحص بعد (last_checked_at is null)
       // ثم الأرقام المستحقة لموعد فحصها
@@ -97,7 +134,7 @@ serve(async (req) => {
         .or(`next_check_at.is.null,next_check_at.lte.${nowIso}`)
         .order("last_checked_at", { ascending: true, nullsFirst: true })
         .order("next_check_at", { ascending: true, nullsFirst: true })
-        .limit(CHUNK_SIZE);
+        .limit(10);
 
       if (error) {
         console.error("[vip-red-auto-scan] Query error:", error);
@@ -157,6 +194,7 @@ serve(async (req) => {
           await supabase
             .from("vip_red_monitored_lines")
             .update({
+              is_scanning: false,
               next_check_at: retryLater,
               updated_at: new Date().toISOString(),
             })
@@ -172,6 +210,7 @@ serve(async (req) => {
         const is14pt = is14ptRaya7Balak(currentSystem);
 
         const updates: Record<string, unknown> = {
+          is_scanning: false,
           current_system: currentSystem,
           last_line_info: lineData,
           last_checked_at: new Date().toISOString(),
@@ -292,6 +331,10 @@ serve(async (req) => {
         }
       } catch (lineErr) {
         console.error(`[vip-red-auto-scan] Error processing ${line.phone_number}:`, lineErr);
+        await supabase
+          .from("vip_red_monitored_lines")
+          .update({ is_scanning: false })
+          .eq("id", line.id);
         errors++;
       }
     }

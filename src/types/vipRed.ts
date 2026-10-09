@@ -51,6 +51,7 @@ export interface VipRedLine {
   converted_at: string | null;
   last_checked_at: string | null;
   next_check_at?: string | null;
+  is_scanning?: boolean | null;
   check_count: number;
   last_line_info: Partial<LineInfoResult>;
   merchant_id?: string | null;

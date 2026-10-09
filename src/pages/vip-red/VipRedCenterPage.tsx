@@ -705,6 +705,7 @@ export default function VipRedCenterPage() {
   const handleRecheckSingle = async (line: VipRedLine) => {
     if (!user) return;
     setCheckingLineId(line.id);
+    setLines(prev => prev.map(l => (l.id === line.id ? { ...l, is_scanning: true } : l)));
     try {
       const res = await checkSingleMonitoredLine(line, user.id);
       if (res.success && res.line) {
@@ -735,7 +736,10 @@ export default function VipRedCenterPage() {
     }
 
     setIsBatchChecking(true);
+    // وسم الأرقام فوراً بحالة جاري الفحص في الواجهة لتوفير تغذية راجعة فورية
+    setLines(prev => prev.map(l => (monitoringList.some(m => m.id === l.id) ? { ...l, is_scanning: true } : l)));
     setBatchProgress({ current: 0, total: monitoringList.length, phone: '' });
+    toast.info('🚀 بدأ الفحص السحابي الشامل! سيستمر السيرفر في فحص كافة الخطوط بالخلفية حتى لو أغلقت التطبيق تماماً.');
 
     try {
       const res = await batchCheckMonitoredLines(
@@ -1133,9 +1137,9 @@ export default function VipRedCenterPage() {
         }}
       >
         <div className="max-w-3xl mx-auto space-y-1.5">
-          {/* السطر الأول: زر الرجوع + اسم القسم والشارة + زر التحديث */}
+          {/* السطر الأول: زر الرجوع + اسم القسم كاملاً وبارزاً بدون أي ضغط + أزرار التحكم المنظمة */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <button
                 onClick={() => navigate('/')}
                 className="w-7 h-7 rounded-lg border flex items-center justify-center transition-all active:scale-95 shrink-0"
@@ -1144,12 +1148,12 @@ export default function VipRedCenterPage() {
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="w-5 h-5 rounded-md bg-[#E60000] flex items-center justify-center text-white shrink-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-5 h-5 rounded-md bg-[#E60000] flex items-center justify-center text-white shrink-0 shadow-xs">
                   <Crown className="w-3 h-3" />
                 </span>
-                <h1 className="text-xs sm:text-sm font-black truncate" style={{ color: textC }}>
-                  فودافون ريد VIP
+                <h1 className="text-xs sm:text-sm font-black whitespace-nowrap" style={{ color: textC }}>
+                  إدارة فودافون ريد VIP
                 </h1>
                 <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#E60000]/15 text-[#E60000] border border-[#E60000]/30 shrink-0">
                   Business
@@ -1158,53 +1162,6 @@ export default function VipRedCenterPage() {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* زر فحص وتفعيل صلاحيات الإشعارات إجبارياً */}
-              <button
-                type="button"
-                onClick={() => {
-                  checkNotificationPermission().then(granted => {
-                    if (granted) {
-                      toast.success('✅ صلاحية الإشعارات مفعلة ونشطة على هاتفك لاستلام تنبيهات الخلفية');
-                    } else {
-                      setShowPermissionModal(true);
-                    }
-                  });
-                }}
-                className={`h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 ${
-                  permissionStatus === 'granted'
-                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
-                    : 'text-amber-600 dark:text-amber-400 bg-amber-500/15 border-amber-500/40 hover:bg-amber-500/25 animate-pulse'
-                }`}
-                title="فحص وحالة صلاحية الإشعارات والتنبيهات المباشرة"
-              >
-                {permissionStatus === 'granted' ? (
-                  <>
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                    <span className="hidden sm:inline">الإشعارات مفعلة</span>
-                    <span className="sm:hidden">مفعلة</span>
-                  </>
-                ) : (
-                  <>
-                    <BellRing className="w-3 h-3 text-amber-500" />
-                    <span className="hidden sm:inline">تفعيل الإشعارات مطلوب</span>
-                    <span className="sm:hidden">تفعيل الإشعارات</span>
-                  </>
-                )}
-              </button>
-
-              {/* زر تجربة إرسال إشعار فوري للتأكد على جهاز المستخدم */}
-              <button
-                type="button"
-                onClick={sendTestNotification}
-                disabled={isSendingTestPush}
-                className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 disabled:opacity-50"
-                title="إرسال إشعار تجريبي فوري لهاتفك للتأكد من وصول الصوت والستارة"
-              >
-                <Send className={`w-3 h-3 text-blue-500 ${isSendingTestPush ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">تجربة إشعار</span>
-                <span className="sm:hidden">تجربة</span>
-              </button>
-
               <button
                 type="button"
                 onClick={() => {
@@ -1215,8 +1172,8 @@ export default function VipRedCenterPage() {
                   setCustomMinutes(String(remMins));
                   setShowIntervalModal(true);
                 }}
-                className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 text-[#E60000] bg-[#E60000]/10 border-[#E60000]/30 hover:bg-[#E60000]/20"
-                title="لوحة تحكم وإعدادات قسم ريد VIP ودورية الفحص"
+                className="h-6.5 px-2.5 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 text-[#E60000] bg-[#E60000]/10 border-[#E60000]/30 hover:bg-[#E60000]/20"
+                title="لوحة تحكم وإعدادات قسم ريد VIP ودورية الفحص وصلاحيات الإشعارات"
               >
                 <Sliders className="w-3 h-3 text-[#E60000]" />
                 <span>لوحة التحكم</span>
@@ -1512,7 +1469,7 @@ export default function VipRedCenterPage() {
         >
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="min-w-0">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <span className="text-[10px] sm:text-[11px] font-bold truncate" style={{ color: textC }}>
                   دورية الفحص: {config?.check_interval_hours ? (
@@ -1537,6 +1494,24 @@ export default function VipRedCenterPage() {
                   <Sliders className="w-2.5 h-2.5" />
                   <span>لوحة التحكم</span>
                 </button>
+
+                {/* شارة صلاحية الإشعارات الأنيقة */}
+                {permissionStatus === 'granted' ? (
+                  <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                    <ShieldCheck className="w-2.5 h-2.5" />
+                    <span>إشعارات نشطة</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowPermissionModal(true)}
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 animate-pulse hover:bg-amber-500/25"
+                    title="تفعيل صلاحية الإشعارات بالخلفية"
+                  >
+                    <BellRing className="w-2.5 h-2.5" />
+                    <span>تفعيل الإشعارات</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1557,6 +1532,16 @@ export default function VipRedCenterPage() {
             </button>
           </div>
         </div>
+
+        {/* تنبيه حالة عدم الاتصال بالإنترنت التوضيحي الهام */}
+        {!isOnline && (
+          <div className="p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-bold flex items-center gap-2">
+            <WifiOff className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+            <div className="flex-1">
+              <span>أنت غير متصل بالإنترنت حالياً: بيانات الأرقام والفواتير متاحة ومحفوظة بالكامل. الفحص السحابي مستمر على السيرفر 24/7 وستصلك الإشعارات فور اتصال هاتفك بالإنترنت.</span>
+            </div>
+          </div>
+        )}
 
         {/* مؤشر الفحص المجمع إن كان نشطاً */}
         {isBatchChecking && batchProgress && (
@@ -1662,7 +1647,7 @@ export default function VipRedCenterPage() {
           ) : (
             displayedLines.map(line => {
               const classification = classifyLineSystem(line.current_system);
-              const isLineChecking = checkingLineId === line.id;
+              const isLineChecking = checkingLineId === line.id || line.is_scanning === true;
               const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
 
               // Calculate countdown with real-time accuracy and offline awareness
@@ -1673,7 +1658,7 @@ export default function VipRedCenterPage() {
               const diffMs = targetTime - nowTime;
 
               if (isLineChecking) {
-                countdownLabel = 'جاري الفحص الآن...';
+                countdownLabel = 'جاري الفحص بالسيرفر...';
               } else if (classification.status === 'monitoring') {
                 if (!line.last_checked_at) {
                   countdownLabel = 'بانتظار الفحص الأولي';
@@ -1726,9 +1711,9 @@ export default function VipRedCenterPage() {
                     <div className="flex items-center justify-between px-2 py-1 mb-1.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
                       <span className="flex items-center gap-1.5">
                         <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
-                        <span>جاري فحص نظام الرقم والتحقق مع فودافون الآن...</span>
+                        <span>جاري فحص نظام الرقم بالسيرفر في الخلفية...</span>
                       </span>
-                      <span className="text-[9px] opacity-80">لحظات</span>
+                      <span className="text-[9px] opacity-80">سحابي مستمر</span>
                     </div>
                   )}
 
@@ -2435,6 +2420,61 @@ export default function VipRedCenterPage() {
                   <ToggleLeft className="w-7 h-7 text-muted-foreground" />
                 )}
               </button>
+            </div>
+
+            {/* بطاقة فحص وتفعيل صلاحيات الإشعارات وتجربة الإشعار الفوري */}
+            <div className="p-3 rounded-xl border space-y-2" style={{ background: innerBg, borderColor: cardBdr }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <BellRing className="w-3.5 h-3.5 text-blue-500" />
+                  <h4 className="text-xs font-black" style={{ color: textC }}>
+                    صلاحية الإشعارات والتنبيهات المباشرة
+                  </h4>
+                </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                  permissionStatus === 'granted'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                    : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse'
+                }`}>
+                  {permissionStatus === 'granted' ? '✅ الصلاحية مفعلة' : '⚠️ يلزم التفعيل'}
+                </span>
+              </div>
+
+              <p className="text-[10px]" style={{ color: mutC }}>
+                تضمن صلاحيات الإشعار استلام تنبيه فوري بالصوت والاهتزاز في ستارة الهاتف فور تحويل أي خط لنظام ريد بالخلفية.
+              </p>
+
+              <div className="flex items-center gap-2 pt-0.5">
+                {permissionStatus !== 'granted' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      checkNotificationPermission().then(granted => {
+                        if (granted) {
+                          toast.success('✅ تم تفعيل صلاحية الإشعارات بنجاح!');
+                        } else {
+                          setShowPermissionModal(true);
+                        }
+                      });
+                    }}
+                    className="flex-1 h-7.5 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 text-white bg-amber-500 hover:bg-amber-600 transition shadow-xs"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>تفعيل صلاحية الإشعارات</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={sendTestNotification}
+                  disabled={isSendingTestPush}
+                  className="flex-1 h-7.5 px-2 rounded-lg border font-bold text-[11px] flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 transition disabled:opacity-50"
+                  title="إرسال إشعار فوري تجريبي لهاتفك للتأكد من عمل الصوت والستارة"
+                >
+                  <Send className={`w-3.5 h-3.5 text-blue-500 ${isSendingTestPush ? 'animate-spin' : ''}`} />
+                  <span>تجربة إشعار فوري لهاتفي</span>
+                </button>
+              </div>
             </div>
 
             {/* ضبط دورة الفحص الزمني مع إدخال حر للساعات والدقائق */}
