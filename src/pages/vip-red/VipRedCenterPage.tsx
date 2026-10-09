@@ -705,7 +705,6 @@ export default function VipRedCenterPage() {
   const handleRecheckSingle = async (line: VipRedLine) => {
     if (!user) return;
     setCheckingLineId(line.id);
-    setLines(prev => prev.map(l => (l.id === line.id ? { ...l, is_scanning: true } : l)));
     try {
       const res = await checkSingleMonitoredLine(line, user.id);
       if (res.success && res.line) {
@@ -736,10 +735,7 @@ export default function VipRedCenterPage() {
     }
 
     setIsBatchChecking(true);
-    // وسم الأرقام فوراً بحالة جاري الفحص في الواجهة لتوفير تغذية راجعة فورية
-    setLines(prev => prev.map(l => (monitoringList.some(m => m.id === l.id) ? { ...l, is_scanning: true } : l)));
     setBatchProgress({ current: 0, total: monitoringList.length, phone: '' });
-    toast.info('🚀 بدأ الفحص السحابي الشامل! سيستمر السيرفر في فحص كافة الخطوط بالخلفية حتى لو أغلقت التطبيق تماماً.');
 
     try {
       const res = await batchCheckMonitoredLines(
@@ -747,6 +743,10 @@ export default function VipRedCenterPage() {
         user.id,
         (current: number, total: number, phone: string) => {
           setBatchProgress({ current, total, phone });
+          const currentLine = monitoringList[current - 1];
+          if (currentLine) {
+            setCheckingLineId(currentLine.id);
+          }
         }
       );
 
@@ -764,6 +764,7 @@ export default function VipRedCenterPage() {
       toast.error(message);
     } finally {
       setIsBatchChecking(false);
+      setCheckingLineId(null);
       setBatchProgress(null);
     }
   };
@@ -1647,7 +1648,7 @@ export default function VipRedCenterPage() {
           ) : (
             displayedLines.map(line => {
               const classification = classifyLineSystem(line.current_system);
-              const isLineChecking = checkingLineId === line.id || line.is_scanning === true;
+              const isLineChecking = checkingLineId === line.id;
               const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
 
               // Calculate countdown with real-time accuracy and offline awareness
@@ -1658,7 +1659,7 @@ export default function VipRedCenterPage() {
               const diffMs = targetTime - nowTime;
 
               if (isLineChecking) {
-                countdownLabel = 'جاري الفحص بالسيرفر...';
+                countdownLabel = 'جاري الفحص الآن...';
               } else if (classification.status === 'monitoring') {
                 if (!line.last_checked_at) {
                   countdownLabel = 'بانتظار الفحص الأولي';
@@ -1666,7 +1667,7 @@ export default function VipRedCenterPage() {
                   if (!isOnline) {
                     countdownLabel = 'بانتظار الإنترنت';
                   } else {
-                    countdownLabel = 'مستحق الفحص (سيرفر)';
+                    countdownLabel = 'مستحق الفحص الآن';
                   }
                 } else {
                   const hrs = Math.floor(diffMs / 3600000);
@@ -1693,12 +1694,12 @@ export default function VipRedCenterPage() {
                 <div
                   key={line.id}
                   className={`p-1.5 rounded-lg border transition-all shadow-xs relative overflow-hidden ${
-                    isLineChecking ? 'ring-2 ring-amber-500/60 animate-pulse border-amber-500' : ''
+                    isLineChecking ? 'ring-1 ring-blue-500/60 border-blue-500' : ''
                   }`}
                   style={{
-                    background: isLineChecking ? (L ? '#fffbeb' : 'rgba(245, 158, 11, 0.08)') : cardBg,
+                    background: cardBg,
                     borderColor: isLineChecking
-                      ? '#f59e0b'
+                      ? '#3b82f6'
                       : classification.status === 'converted'
                       ? (L ? '#10b981' : 'rgba(16, 185, 129, 0.45)')
                       : classification.status === 'ineligible'
@@ -1706,17 +1707,6 @@ export default function VipRedCenterPage() {
                       : cardBdr,
                   }}
                 >
-                  {/* شريط حالة الفحص النشط الصريح */}
-                  {isLineChecking && (
-                    <div className="flex items-center justify-between px-2 py-1 mb-1.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
-                        <span>جاري فحص نظام الرقم بالسيرفر في الخلفية...</span>
-                      </span>
-                      <span className="text-[9px] opacity-80">سحابي مستمر</span>
-                    </div>
-                  )}
-
                   {/* الشريط المدمج السطر 1: الرقم + الشارة + الباقة + زر النسخ */}
                   <div className="flex items-center justify-between gap-1 pb-1 border-b border-border/40">
                     <div className="flex items-center gap-1.5 min-w-0">

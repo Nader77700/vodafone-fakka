@@ -537,7 +537,7 @@ export async function deleteMonitoredLine(lineId: string): Promise<boolean> {
 }
 
 /**
- * فحص رقم محدد وتحديث حالته وإرسال إشعار إذا تحول إلى ريد
+ * فحص رقم محدد وتحديث حالته وإرسال إشعار إذا تحول إلى ريد (فحص محلي على الجهاز وتحديث فوري لقاعدة البيانات)
  */
 export async function checkSingleMonitoredLine(
   line: VipRedLine,
@@ -548,42 +548,124 @@ export async function checkSingleMonitoredLine(
       return { success: false, error: 'يتطلب فحص الخطوط اتصالاً بالإنترنت للتحقق من شبكة فودافون' };
     }
 
-    // 1. وسم الخط فوراً بحالة جاري الفحص بالسيرفر لحفظ الحالة في قاعدة البيانات
-    await supabase
-      .from('vip_red_monitored_lines')
-      .update({ is_scanning: true })
-      .eq('id', line.id);
+    const startTime = performance.now();
+    const res = await fetchLineInfo(line.phone_number);
+    const durationMs = Math.round(performance.now() - startTime);
 
-    // 2. استدعاء السيرفر السحابي vip-red-auto-scan لتنفيذ الفحص في الخلفية
-    // حتى لو أغلق المستخدم التطبيق أو قفل الشاشة، سيستمر السيرفر في تنفيذ الفحص
-    const { data, error } = await supabase.functions.invoke('vip-red-auto-scan', {
-      body: {
-        phone: line.phone_number,
+    if (res.status !== 'success' || !res.data) {
+      const errMsg = res.errorMessage || 'تعذّر استعلام بيانات الخط من فودافون';
+      supabase.from('vip_red_scan_logs').insert({
+        line_id: line.id,
+        phone_number: line.phone_number,
         execution_source: 'client_manual',
-      },
-      headers: {
-        'x-internal-key': 'vfp_internal_push_2025',
-      },
-    });
-
-    // 3. جلب أحدث بيانات للخط من قاعدة البيانات
-    const { data: updatedLine } = await supabase
-      .from('vip_red_monitored_lines')
-      .select('*, merchant:vip_red_merchants(name, user_id)')
-      .eq('id', line.id)
-      .maybeSingle();
-
-    if (error && !updatedLine) {
-      await supabase
-        .from('vip_red_monitored_lines')
-        .update({ is_scanning: false })
-        .eq('id', line.id);
-      return { success: false, error: error.message || 'فشل فحص الخط' };
+        status: 'failed',
+        error_message: errMsg,
+        duration_ms: durationMs,
+      }).then(() => {}, () => {});
+      return { success: false, error: errMsg };
     }
 
-    const finalLine = (updatedLine as VipRedLine) || line;
-    if (finalLine.system_status === 'converted' && line.system_status !== 'converted') {
+    const currentSystem = res.data.system || null;
+    const classification = classifyLineSystem(currentSystem);
+    const wasConverted = line.system_status === 'converted';
+    const isNowConverted = classification.status === 'converted';
+
+    const cfg = await getVipRedConfig();
+    const intervalHours = cfg.check_interval_hours ? Number(cfg.check_interval_hours) : 0.5;
+
+    const updates: Partial<VipRedLine> = {
+      current_system: currentSystem,
+      system_status: classification.status,
+      is_scanning: false,
+      last_checked_at: new Date().toISOString(),
+      check_count: (line.check_count || 0) + 1,
+      last_line_info: res.data,
+      updated_at: new Date().toISOString(),
+    };
+
+    let scanLogStatus: 'success' | 'failed' | 'ineligible' | 'converted' = 'success';
+    if (isNowConverted) {
+      scanLogStatus = 'converted';
+      if (!wasConverted) {
+        updates.converted_at = new Date().toISOString();
+      }
+      // إيقاف المراقبة الدورية فور التحويل
+      updates.next_check_at = null;
+    } else if (classification.status === 'monitoring') {
+      scanLogStatus = 'success';
+      // تجديد دورة الفحص القادم تلقائياً
+      updates.next_check_at = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
+    } else {
+      // غير مؤهل - تظل المراقبة الدورية جارية لاكتشاف أي تحويل مستقبلي
+      scanLogStatus = 'ineligible';
+      updates.next_check_at = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
+    }
+
+    // تسجيل في جدول سجلات التشخيص بالسيرفر
+    supabase.from('vip_red_scan_logs').insert({
+      line_id: line.id,
+      phone_number: line.phone_number,
+      execution_source: 'client_manual',
+      status: scanLogStatus,
+      system_detected: currentSystem,
+      duration_ms: durationMs,
+    }).then(() => {}, () => {});
+
+    const { data: updatedData, error } = await supabase
+      .from('vip_red_monitored_lines')
+      .update(updates)
+      .eq('id', line.id)
+      .select('*, merchant:vip_red_merchants(name, user_id)')
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const finalLine = (updatedData as VipRedLine) || { ...line, ...updates };
+
+    // إذا تحول الخط إلى Enterprise member control لأول مرة:
+    if (isNowConverted && !wasConverted) {
       playSuccessChime();
+      const notifTitle = `🎉 تم تحويل الرقم (${line.phone_number}) لنظام ريد!`;
+      const notifBody = `تم بنجاح تحويل الخط (${line.phone_number}) إلى نظام فودافون ريد بيزنس (${currentSystem || 'Enterprise member control'}) وهو جاهز للتفعيل الآن.`;
+
+      // 1. إرسال إشعار فوري وتنبيه للمشرف / المالك
+      if (userId) {
+        await sendVipPushNotification(userId, notifTitle, notifBody, '/vip-red');
+      }
+
+      // 2. إرسال إشعار للمستخدم المرتبط بالرقم إذا وجد
+      if (line.claimed_by_user_id && line.claimed_by_user_id !== userId) {
+        await sendVipPushNotification(
+          line.claimed_by_user_id,
+          `🎉 تم تحويل رقمك (${line.phone_number}) لريد بيزنس!`,
+          `تهانينا! تم تحويل رقمك (${line.phone_number}) بنجاح إلى نظام فودافون ريد بيزنس وهو جاهز للتفعيل الآن.`,
+          '/vip-red'
+        );
+      }
+
+      // 3. إرسال إشعار للتاجر المرتبط إذا كان لديه حساب مستخدم
+      if (line.merchant_id) {
+        try {
+          const { data: merch } = await supabase
+            .from('vip_red_merchants')
+            .select('user_id, name')
+            .eq('id', line.merchant_id)
+            .maybeSingle();
+
+          if (merch?.user_id && merch.user_id !== userId && merch.user_id !== line.claimed_by_user_id) {
+            await sendVipPushNotification(
+              merch.user_id,
+              `🎉 تحويل رقم للتاجر: ${line.phone_number}`,
+              `تم تحويل الرقم (${line.phone_number}) المسجل بحسابك (${merch.name}) إلى نظام فودافون ريد بيزنس بنجاح!`,
+              '/vip-red'
+            );
+          }
+        } catch (merchErr) {
+          console.warn('[VipRed] Failed to notify merchant:', merchErr);
+        }
+      }
     }
 
     return {
@@ -591,10 +673,6 @@ export async function checkSingleMonitoredLine(
       line: finalLine,
     };
   } catch (err) {
-    await supabase
-      .from('vip_red_monitored_lines')
-      .update({ is_scanning: false })
-      .eq('id', line.id);
     return { success: false, error: String(err) };
   }
 }
