@@ -161,12 +161,12 @@ export function usePushNotifications() {
     const setup = async () => {
       // 1. فحص وطلب الصلاحية
       let permission = await PushNotifications.checkPermissions();
-      if (permission.receive === 'prompt' || permission.receive === 'prompt-with-rationale') {
+      if (permission.receive !== 'granted') {
         permission = await PushNotifications.requestPermissions();
       }
       if (permission.receive !== 'granted') {
-        notifLog('Permission Denied');
-        return;
+        notifLog('Permission Denied or not granted yet');
+        // عدم التوقف هنا حتى يتمكن الجهاز من المحاولة أو إنشاء القناة
       }
 
       // 1.1 إنشاء قنوات الإشعارات لنظام أندرويد لضمان ظهور التنبيهات في الستارة بالصوت والاهتزاز حتى مع غلق التطبيق

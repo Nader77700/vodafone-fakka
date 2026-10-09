@@ -74,8 +74,8 @@ serve(async (req) => {
     const intervalHours = config?.check_interval_hours ? Number(config.check_interval_hours) : 0.5;
     const nowIso = new Date().toISOString();
 
-    // 2. فحص الأرقام بنظام الدفعات الصغيرة الآمنة (Chunked Batch)
-    const CHUNK_SIZE = 5;
+    // 2. فحص الأرقام بنظام الدفعات الآمنة (Chunked Batch) — رفع السعة لـ 10 أرقام في الدفعة
+    const CHUNK_SIZE = 10;
     let dueLines: any[] = [];
     if (targetPhone) {
       const { data, error } = await supabase
@@ -88,11 +88,14 @@ serve(async (req) => {
       }
       dueLines = data || [];
     } else {
+      // الأولوية القصوى للأرقام الجديدة التي لم تفحص بعد (last_checked_at is null)
+      // ثم الأرقام المستحقة لموعد فحصها
       const { data, error } = await supabase
         .from("vip_red_monitored_lines")
         .select("*, merchant:vip_red_merchants(name, user_id)")
         .in("system_status", ["monitoring", "ineligible"])
         .or(`next_check_at.is.null,next_check_at.lte.${nowIso}`)
+        .order("last_checked_at", { ascending: true, nullsFirst: true })
         .order("next_check_at", { ascending: true, nullsFirst: true })
         .limit(CHUNK_SIZE);
 

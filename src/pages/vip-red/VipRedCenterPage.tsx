@@ -1567,20 +1567,14 @@ export default function VipRedCenterPage() {
                         </span>
                       )}
 
-                      {/* شارة نظام الخط: جاري الفحص / بانتظار الفحص / ريد / 14 قرش */}
-                      {isLineChecking ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/40 shrink-0 animate-pulse">
-                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                          <span>جاري الفحص</span>
-                        </span>
-                      ) : !line.last_checked_at ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 shrink-0">
-                          <Clock className="w-2.5 h-2.5" />
-                          <span>بانتظار الفحص</span>
-                        </span>
-                      ) : classification.status === 'converted' ? (
+                      {/* شارة نظام الخط: نظام الخط الفعلي (ريد / 14 قرش / فليكس / غير مؤهل / جديد) دون تكرار عبارات الفحص */}
+                      {classification.status === 'converted' ? (
                         <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                           ريد
+                        </span>
+                      ) : !line.last_checked_at ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-muted/40 text-muted-foreground border border-muted shrink-0">
+                          جديد
                         </span>
                       ) : classification.status === 'monitoring' ? (
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
