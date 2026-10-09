@@ -35,6 +35,7 @@ import {
   ToggleRight,
   Loader2,
   Play,
+  BatteryCharging,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/db/supabase';
@@ -243,7 +244,7 @@ export default function VipRedCenterPage() {
 
   const [nowTime, setNowTime] = useState<number>(Date.now());
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [isAutoScanning, setIsAutoScanning] = useState<boolean>(false);
+  const [showBatteryGuideModal, setShowBatteryGuideModal] = useState<boolean>(false);
   const autoScanLockRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -270,7 +271,7 @@ export default function VipRedCenterPage() {
     };
   }, []);
 
-  // 3. محرك الفحص التلقائي للأرقام المستحقة عبر السيرفر فور استحقاقها أو عودة النت أو فتح التطبيق
+  // 3. محرك تحديث حالة الأرقام المستحقة عند تنشيط التطبيق أو عودة النت بهدوء
   const triggerDueAutoScans = useCallback(async () => {
     if (!user || !isOnline || autoScanLockRef.current) return;
     
@@ -284,31 +285,20 @@ export default function VipRedCenterPage() {
     if (!hasDue) return;
 
     autoScanLockRef.current = true;
-    setIsAutoScanning(true);
     try {
-      // تشغيل فحص السيرفر السحابي المباشر في الخلفية
-      await triggerServerAutoScan();
+      // استعلام أحدث حالة من السيرفر بدون وميض أو تكرار
       const freshLines = await getMonitoredLines(user.id, isAdmin);
       if (freshLines && freshLines.length > 0) {
         setLines(freshLines);
       }
     } catch (err) {
-      console.warn('[VipRed] Auto scan error:', err);
+      console.warn('[VipRed] Refresh due lines error:', err);
     } finally {
       autoScanLockRef.current = false;
-      setIsAutoScanning(false);
     }
   }, [user, isOnline, lines, isAdmin]);
 
-  // فحص دوري كل 10 ثوانٍ للتحقق من المواعيد المستحقة
-  useEffect(() => {
-    const interval = setInterval(() => {
-      triggerDueAutoScans();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [triggerDueAutoScans]);
-
-  // فحص عند عودة الإنترنت أو تنشيط الشاشة
+  // فحص هادئ عند عودة الإنترنت أو فتح التطبيق مجدداً
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -1012,6 +1002,17 @@ export default function VipRedCenterPage() {
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
+                onClick={() => setShowBatteryGuideModal(true)}
+                className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20"
+                title="إرشادات إشعارات الخلفية وصلاحيات البطارية"
+              >
+                <BatteryCharging className="w-3 h-3 text-emerald-500" />
+                <span className="hidden sm:inline">إشعارات الخلفية</span>
+                <span className="sm:hidden">الخلفية</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => {
                   const currentHours = config?.check_interval_hours || 2;
                   const wholeHrs = Math.floor(currentHours);
@@ -1481,14 +1482,12 @@ export default function VipRedCenterPage() {
                 countdownLabel = 'جاري الفحص الآن...';
               } else if (classification.status === 'monitoring') {
                 if (!line.last_checked_at) {
-                  countdownLabel = 'بانتظار الفحص الأولي (فوراً)';
+                  countdownLabel = 'بانتظار الفحص الأولي';
                 } else if (diffMs <= 0) {
                   if (!isOnline) {
                     countdownLabel = 'بانتظار الإنترنت';
-                  } else if (isAutoScanning) {
-                    countdownLabel = 'جاري الفحص التلقائي...';
                   } else {
-                    countdownLabel = 'مستحق الفحص الآن';
+                    countdownLabel = 'مستحق الفحص (سيرفر)';
                   }
                 } else {
                   const hrs = Math.floor(diffMs / 3600000);
@@ -2429,6 +2428,81 @@ export default function VipRedCenterPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── مودال إرشادات استمرار الإشعارات بالخلفية وضبط البطارية ── */}
+      {showBatteryGuideModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div
+            className="w-full max-w-md rounded-2xl border p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            style={{ background: cardBg, borderColor: cardBdr }}
+          >
+            <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: cardBdr }}>
+              <div className="flex items-center gap-2">
+                <BatteryCharging className="w-5 h-5 text-emerald-500" />
+                <h3 className="text-sm font-black" style={{ color: textC }}>
+                  دليل استلام الإشعارات أثناء إغلاق التطبيق
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowBatteryGuideModal(false)}
+                className="w-7 h-7 rounded-lg border flex items-center justify-center text-xs"
+                style={{ background: innerBg, borderColor: cardBdr, color: mutC }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs leading-relaxed">
+              ⚡ <strong>الفحص السحابي يعمل دائماً على السيرفر كل دقيقتين</strong> حتى لو كان هاتفك مغلقاً تماماً! لضمان ظهور صوت وإشعار الستارة فوراً على هاتفك عند تحويل أي خط، يُرجى التأكد من الخطوات التالية:
+            </div>
+
+            <div className="space-y-3 text-xs" style={{ color: textC }}>
+              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
+                <p className="font-bold text-[#E60000] flex items-center gap-1.5">
+                  <span>1.</span> إشعارات التطبيق والستارة (Notifications)
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-normal">
+                  افتح إعدادات الهاتف ← التطبيقات ← Vodafone Fakka ← الإشعارات ← تأكد من تفعيل جميع فئات الإشعارات، وخاصة <strong>"إشعارات فودافون ريد والتنبيهات الهامة"</strong>، والسماح بالنوافذ المنبثقة (Pop-up/Heads-up).
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
+                <p className="font-bold text-amber-500 flex items-center gap-1.5">
+                  <span>2.</span> توفير البطارية (Battery Saver)
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-normal">
+                  في معلومات التطبيق ← البطارية ← اختر <strong>"غير مقيد" (Unrestricted / لا توجد قيود)</strong>، حتى لا يقوم نظام أندرويد بقتل خدمة استقبال الإشعارات في الخلفية.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
+                <p className="font-bold text-blue-500 flex items-center gap-1.5">
+                  <span>3.</span> التشغيل التلقائي (Auto-start) - لهواتف شاومي وأوبو وريلمي وفيفو
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-normal">
+                  إذا كان هاتفك Xiaomi / Redmi / Poco / Oppo / Realme: ادخل إلى إعدادات التطبيق وفعل خيار <strong>"التشغيل التلقائي" (Autostart)</strong> للسماح باستلام التنبيهات حتى عند إغلاق التطبيق من شاشة التطبيقات الحديثة.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
+                <p className="font-bold text-purple-500 flex items-center gap-1.5">
+                  <span>4.</span> بيانات الخلفية (Background Data)
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-normal">
+                  تأكد من تفعيل "استخدام بيانات الخلفية" (Background Data) حتى يتمكن الهاتف من مزامنة إشعارات التحويل عبر الإنترنت طوال اليوم.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowBatteryGuideModal(false)}
+              className="w-full h-9 rounded-xl bg-[#E60000] text-white text-xs font-bold transition active:scale-95"
+            >
+              فهمت ذلك، تم ضبط الإعدادات
+            </button>
           </div>
         </div>
       )}

@@ -169,6 +169,23 @@ export function usePushNotifications() {
         return;
       }
 
+      // 1.1 إنشاء قنوات الإشعارات لنظام أندرويد لضمان ظهور التنبيهات في الستارة بالصوت والاهتزاز حتى مع غلق التطبيق
+      try {
+        await PushNotifications.createChannel({
+          id: 'default',
+          name: 'إشعارات فودافون ريد والتنبيهات الهامة',
+          description: 'تنبيهات تحويل الخطوط وتحديثات الباقات والنظام في الخلفية',
+          importance: 5, // IMPORTANCE_HIGH (5): تظهر فوراً كنافذة منبثقة Heads-up مع صوت واهتزاز
+          visibility: 1, // VISIBILITY_PUBLIC (1): يظهر محتوى الإشعار على شاشة القفل بالكامل
+          sound: 'default',
+          vibration: true,
+          lights: true,
+        });
+        notifLog('Push Notification Channel "default" created successfully (importance 5)');
+      } catch (channelErr) {
+        console.warn('[PushNotifications] createChannel error:', channelErr);
+      }
+
       // 2. تسجيل الجهاز — دائماً عند كل تشغيل لتحديث app_version
       await PushNotifications.register();
 

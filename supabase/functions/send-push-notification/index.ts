@@ -103,8 +103,16 @@ async function sendFCMv1(
           notification: { title, body },
           data,
           android: {
-            priority: highPriority ? "high" : "normal",
-            notification: { sound: "default", channel_id: "default" },
+            priority: "high",
+            notification: {
+              sound: "default",
+              channel_id: "default",
+              default_sound: true,
+              default_vibrate_timings: true,
+              priority: highPriority ? "high" : "default",
+              visibility: "public",
+              notification_priority: "PRIORITY_MAX",
+            },
           },
         },
       }),
