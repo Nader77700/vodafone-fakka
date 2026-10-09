@@ -4,15 +4,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.8.4',
-  versionCode:    530,
+  appVersion:      '3.8.5',
+  versionCode:    531,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_8_4_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.8.4.apk',
-  bundleHash:     'apk_v3_8_4_code530',
-  apkHash:        'apk_v3_8_4_code530',
-  dbVersion:      'v3.8.4',
+  sourceHash:     'build_v3_8_5_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.8.5.apk',
+  bundleHash:     'apk_v3_8_5_code531',
+  apkHash:        'apk_v3_8_5_code531',
+  dbVersion:      'v3.8.5',
   releaseNotes: [
+    'v3.8.5: إصلاح حاسم لوصول إشعارات فودافون ريد في الخلفية (FCM HTTP v1 payload fix) وتأكيد تسليم الإشعارات 100%',
+    'v3.8.5: مشغل قاعدة بيانات فوري (Database Trigger) لفحص أي رقم فور إضافته بالسيرفر حتى لو أغلق المستخدم التطبيق في نفس اللحظة',
+    'v3.8.5: نافذة طلب صلاحيات الإشعارات إجبارياً عند دخول القسم والتحقق اللحظي التلقائي منها مع زر تجربة الإشعار المباشر على الهاتف',
     'v3.8.4: إضافة صلاحيات الإشعارات وإيقاظ الجهاز في AndroidManifest.xml (POST_NOTIFICATIONS / WAKE_LOCK / VIBRATE) لحل وصول إشعارات الخلفية على أندرويد 13+',
     'v3.8.4: إعطاء الأولوية القصوى للأرقام الجديدة في فحص السيرفر (last_checked_at NULLS FIRST) ورفع سعة الدفعة لـ 10 أرقام وجدولة السيرفر كل دقيقتين',
     'v3.8.4: إزالة التكرار المزدوج لشارة (جاري الفحص) و(بانتظار الفحص) في كارت الخط وضبط عرض النظام والعداد بشكل منفصل ومنظم',

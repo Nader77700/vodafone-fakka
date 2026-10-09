@@ -36,7 +36,12 @@ import {
   Loader2,
   Play,
   BatteryCharging,
+  BellRing,
+  ShieldCheck,
+  Send,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { toast } from 'sonner';
 import { supabase } from '@/db/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -244,8 +249,161 @@ export default function VipRedCenterPage() {
 
   const [nowTime, setNowTime] = useState<number>(Date.now());
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [showBatteryGuideModal, setShowBatteryGuideModal] = useState<boolean>(false);
+  const [permissionStatus, setPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'checking'>('checking');
+  const [showPermissionModal, setShowPermissionModal] = useState<boolean>(false);
+  const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
+  const [isSendingTestPush, setIsSendingTestPush] = useState<boolean>(false);
   const autoScanLockRef = useRef<boolean>(false);
+
+  // فحص حالة صلاحية الإشعارات
+  const checkNotificationPermission = useCallback(async () => {
+    if (!Capacitor.isNativePlatform()) {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          setPermissionStatus('granted');
+          return true;
+        } else if (Notification.permission === 'denied') {
+          setPermissionStatus('denied');
+          setShowPermissionModal(true);
+          return false;
+        } else {
+          setPermissionStatus('prompt');
+          setShowPermissionModal(true);
+          return false;
+        }
+      }
+      setPermissionStatus('granted');
+      return true;
+    }
+
+    try {
+      const perm = await PushNotifications.checkPermissions();
+      if (perm.receive === 'granted') {
+        setPermissionStatus('granted');
+        return true;
+      } else if (perm.receive === 'denied') {
+        setPermissionStatus('denied');
+        setShowPermissionModal(true);
+        return false;
+      } else {
+        setPermissionStatus('prompt');
+        setShowPermissionModal(true);
+        return false;
+      }
+    } catch (err) {
+      console.warn('[VipRed] checkPermissions error:', err);
+      setPermissionStatus('granted');
+      return true;
+    }
+  }, []);
+
+  // طلب الصلاحية إجبارياً وتفعيل القناة والتسجيل
+  const requestNotificationPermission = async () => {
+    setIsRequestingPermission(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const perm = await PushNotifications.requestPermissions();
+        if (perm.receive === 'granted') {
+          try {
+            await PushNotifications.createChannel({
+              id: 'default',
+              name: 'إشعارات فودافون ريد والتنبيهات الهامة',
+              description: 'تنبيهات تحويل الخطوط وتحديثات الباقات والنظام في الخلفية',
+              importance: 5,
+              visibility: 1,
+              sound: 'default',
+              vibration: true,
+              lights: true,
+            });
+          } catch {}
+          await PushNotifications.register();
+          setPermissionStatus('granted');
+          setShowPermissionModal(false);
+          toast.success('تم تفعيل الصلاحية بنجاح! يعمل الفحص السحابي الآن في الخلفية.');
+        } else {
+          setPermissionStatus('denied');
+          toast.error('لم يتم منح الصلاحية من النظام. يرجى تفعيلها من إعدادات الهاتف.');
+        }
+      } else if (typeof window !== 'undefined' && 'Notification' in window) {
+        const res = await Notification.requestPermission();
+        if (res === 'granted') {
+          setPermissionStatus('granted');
+          setShowPermissionModal(false);
+          toast.success('تم تفعيل صلاحية الإشعارات بنجاح!');
+        } else {
+          setPermissionStatus('denied');
+          toast.error('تم رفض الصلاحية في المتصفح.');
+        }
+      }
+    } catch (err) {
+      toast.error('حدث خطأ أثناء طلب الصلاحية: ' + String(err));
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
+
+  // فتح إعدادات التطبيق بالهاتف
+  const openPhoneAppSettings = () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        window.location.href = 'intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;data=package:com.vodafone.fakka;end';
+      } else {
+        toast.info('يرجى تمكين إشعارات المتصفح من إعدادات الموقع بشريط العنوان');
+      }
+    } catch (e) {
+      toast.info('ادخل إلى إعدادات الهاتف ← التطبيقات ← Vodafone Fakka ← الإشعارات');
+    }
+  };
+
+  // إرسال إشعار تجريبي مباشر لهاتف المستخدم للتأكد التام
+  const sendTestNotification = async () => {
+    if (!user) return;
+    setIsSendingTestPush(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          user_id: user.id,
+          title: '🎉 تجربة إشعار فودافون ريد',
+          body: 'نظام إشعارات الخلفية وصوت التنبيه بالستارة يعمل بنجاح تام على هاتفك الآن!',
+          type: 'vip_red',
+          priority: 'urgent',
+          action_url: '/vip-red',
+          send_push: true,
+          skip_duplicate_check: true,
+        },
+        headers: {
+          'x-internal-key': 'vfp_internal_push_2025',
+        },
+      });
+
+      if (error) {
+        toast.error('فشل إرسال الإشعار التجريبي: ' + error.message);
+      } else if (data?.fcm_sent === 0) {
+        toast.warning('لم يتم العثور على جهاز مسجل برمز FCM لهذا الحساب. تأكد من فتح التطبيق على الموبايل.');
+      } else {
+        toast.success('تم إرسال الإشعار فوراً إلى هاتفك بنجاح! تفقد شاشة القفل والستارة.');
+      }
+    } catch (err) {
+      toast.error('خطأ في إرسال الإشعار: ' + String(err));
+    } finally {
+      setIsSendingTestPush(false);
+    }
+  };
+
+  useEffect(() => {
+    checkNotificationPermission();
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkNotificationPermission();
+      }
+    };
+    window.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [checkNotificationPermission]);
 
   useEffect(() => {
     loadData();
@@ -1000,15 +1158,51 @@ export default function VipRedCenterPage() {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* زر فحص وتفعيل صلاحيات الإشعارات إجبارياً */}
               <button
                 type="button"
-                onClick={() => setShowBatteryGuideModal(true)}
-                className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20"
-                title="إرشادات إشعارات الخلفية وصلاحيات البطارية"
+                onClick={() => {
+                  checkNotificationPermission().then(granted => {
+                    if (granted) {
+                      toast.success('✅ صلاحية الإشعارات مفعلة ونشطة على هاتفك لاستلام تنبيهات الخلفية');
+                    } else {
+                      setShowPermissionModal(true);
+                    }
+                  });
+                }}
+                className={`h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 ${
+                  permissionStatus === 'granted'
+                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
+                    : 'text-amber-600 dark:text-amber-400 bg-amber-500/15 border-amber-500/40 hover:bg-amber-500/25 animate-pulse'
+                }`}
+                title="فحص وحالة صلاحية الإشعارات والتنبيهات المباشرة"
               >
-                <BatteryCharging className="w-3 h-3 text-emerald-500" />
-                <span className="hidden sm:inline">إشعارات الخلفية</span>
-                <span className="sm:hidden">الخلفية</span>
+                {permissionStatus === 'granted' ? (
+                  <>
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    <span className="hidden sm:inline">الإشعارات مفعلة</span>
+                    <span className="sm:hidden">مفعلة</span>
+                  </>
+                ) : (
+                  <>
+                    <BellRing className="w-3 h-3 text-amber-500" />
+                    <span className="hidden sm:inline">تفعيل الإشعارات مطلوب</span>
+                    <span className="sm:hidden">تفعيل الإشعارات</span>
+                  </>
+                )}
+              </button>
+
+              {/* زر تجربة إرسال إشعار فوري للتأكد على جهاز المستخدم */}
+              <button
+                type="button"
+                onClick={sendTestNotification}
+                disabled={isSendingTestPush}
+                className="h-6.5 px-2 rounded-md border text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 disabled:opacity-50"
+                title="إرسال إشعار تجريبي فوري لهاتفك للتأكد من وصول الصوت والستارة"
+              >
+                <Send className={`w-3 h-3 text-blue-500 ${isSendingTestPush ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">تجربة إشعار</span>
+                <span className="sm:hidden">تجربة</span>
               </button>
 
               <button
@@ -2426,77 +2620,129 @@ export default function VipRedCenterPage() {
         </div>
       )}
 
-      {/* ── مودال إرشادات استمرار الإشعارات بالخلفية وضبط البطارية ── */}
-      {showBatteryGuideModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+      {/* ── مودال الصلاحيات الإجباري والتحقق التلقائي ── */}
+      {showPermissionModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div
-            className="w-full max-w-md rounded-2xl border p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-md rounded-2xl border p-5 space-y-4 shadow-2xl"
             style={{ background: cardBg, borderColor: cardBdr }}
           >
-            <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: cardBdr }}>
               <div className="flex items-center gap-2">
-                <BatteryCharging className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-sm font-black" style={{ color: textC }}>
-                  دليل استلام الإشعارات أثناء إغلاق التطبيق
-                </h3>
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
+                  <BellRing className="w-4.5 h-4.5 text-amber-500 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black" style={{ color: textC }}>
+                    تفعيل صلاحية إشعارات الهاتف (إجباري)
+                  </h3>
+                  <p className="text-[10px]" style={{ color: mutC }}>
+                    قسم فودافون ريد VIP يتطلب تفعيل الإشعارات والتنبيهات المباشرة
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={() => setShowBatteryGuideModal(false)}
-                className="w-7 h-7 rounded-lg border flex items-center justify-center text-xs"
-                style={{ background: innerBg, borderColor: cardBdr, color: mutC }}
-              >
-                ✕
-              </button>
+              {permissionStatus === 'granted' && (
+                <button
+                  onClick={() => setShowPermissionModal(false)}
+                  className="w-7 h-7 rounded-lg border flex items-center justify-center text-xs"
+                  style={{ background: innerBg, borderColor: cardBdr, color: mutC }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs leading-relaxed">
-              ⚡ <strong>الفحص السحابي يعمل دائماً على السيرفر كل دقيقتين</strong> حتى لو كان هاتفك مغلقاً تماماً! لضمان ظهور صوت وإشعار الستارة فوراً على هاتفك عند تحويل أي خط، يُرجى التأكد من الخطوات التالية:
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>لتلقي تنبيهات تحويل الأرقام وأنت خارج التطبيق</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                يعمل سيرفر المراقبة في الخلفية دائماً، وحتى يظهر إشعار فودافون ريد في ستارة هاتفك بالصوت والاهتزاز فور تحويل أي خط أثناء إغلاق التطبيق، يجب منح وتفعيل صلاحية الإشعارات للهاتف.
+              </p>
             </div>
 
-            <div className="space-y-3 text-xs" style={{ color: textC }}>
-              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
-                <p className="font-bold text-[#E60000] flex items-center gap-1.5">
-                  <span>1.</span> إشعارات التطبيق والستارة (Notifications)
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-normal">
-                  افتح إعدادات الهاتف ← التطبيقات ← Vodafone Fakka ← الإشعارات ← تأكد من تفعيل جميع فئات الإشعارات، وخاصة <strong>"إشعارات فودافون ريد والتنبيهات الهامة"</strong>، والسماح بالنوافذ المنبثقة (Pop-up/Heads-up).
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
-                <p className="font-bold text-amber-500 flex items-center gap-1.5">
-                  <span>2.</span> توفير البطارية (Battery Saver)
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-normal">
-                  في معلومات التطبيق ← البطارية ← اختر <strong>"غير مقيد" (Unrestricted / لا توجد قيود)</strong>، حتى لا يقوم نظام أندرويد بقتل خدمة استقبال الإشعارات في الخلفية.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
-                <p className="font-bold text-blue-500 flex items-center gap-1.5">
-                  <span>3.</span> التشغيل التلقائي (Auto-start) - لهواتف شاومي وأوبو وريلمي وفيفو
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-normal">
-                  إذا كان هاتفك Xiaomi / Redmi / Poco / Oppo / Realme: ادخل إلى إعدادات التطبيق وفعل خيار <strong>"التشغيل التلقائي" (Autostart)</strong> للسماح باستلام التنبيهات حتى عند إغلاق التطبيق من شاشة التطبيقات الحديثة.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border space-y-1" style={{ background: innerBg, borderColor: cardBdr }}>
-                <p className="font-bold text-purple-500 flex items-center gap-1.5">
-                  <span>4.</span> بيانات الخلفية (Background Data)
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-normal">
-                  تأكد من تفعيل "استخدام بيانات الخلفية" (Background Data) حتى يتمكن الهاتف من مزامنة إشعارات التحويل عبر الإنترنت طوال اليوم.
-                </p>
-              </div>
+            {/* حالة الصلاحية الحالية */}
+            <div className="p-3 rounded-xl border flex items-center justify-between" style={{ background: innerBg, borderColor: cardBdr }}>
+              <span className="text-xs font-bold" style={{ color: textC }}>الحالة الحالية للصلاحية:</span>
+              <span className={`px-2 py-0.5 rounded-md text-[11px] font-black border ${
+                permissionStatus === 'granted'
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                  : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+              }`}>
+                {permissionStatus === 'granted' ? '✅ مفعلة ومؤكدة' : '❌ غير مفعلة (مطلوبة)'}
+              </span>
             </div>
 
-            <button
-              onClick={() => setShowBatteryGuideModal(false)}
-              className="w-full h-9 rounded-xl bg-[#E60000] text-white text-xs font-bold transition active:scale-95"
-            >
-              فهمت ذلك، تم ضبط الإعدادات
-            </button>
+            {/* أزرار العمليات المباشرة لطلب وتأكيد الصلاحية */}
+            <div className="space-y-2 pt-1">
+              {permissionStatus !== 'granted' && (
+                <button
+                  type="button"
+                  onClick={requestNotificationPermission}
+                  disabled={isRequestingPermission}
+                  className="w-full h-10 rounded-xl bg-[#E60000] text-white text-xs font-black flex items-center justify-center gap-2 transition active:scale-95 shadow-md hover:bg-[#cc0000] disabled:opacity-50"
+                >
+                  {isRequestingPermission ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>جاري طلب الصلاحية من النظام...</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellRing className="w-4 h-4" />
+                      <span>منح وتفعيل الصلاحية الآن (مباشر)</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openPhoneAppSettings}
+                  className="flex-1 h-9 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+                  style={{ background: innerBg, borderColor: cardBdr, color: textC }}
+                >
+                  <Settings className="w-3.5 h-3.5 text-blue-500" />
+                  <span>فتح إعدادات التطبيق بالهاتف</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const granted = await checkNotificationPermission();
+                    if (granted) {
+                      toast.success('تم التأكد بنجاح! الصلاحية مفعلة الآن.');
+                    } else {
+                      toast.warning('ما زالت الصلاحية غير مفعلة. تأكد من تفعيلها في إعدادات الهاتف.');
+                    }
+                  }}
+                  className="h-9 px-3.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>التحقق من التفعيل</span>
+                </button>
+              </div>
+
+              {permissionStatus === 'granted' ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionModal(false)}
+                  className="w-full h-9 rounded-xl bg-emerald-600 text-white text-xs font-bold transition active:scale-95"
+                >
+                  دخول القسم الآن (الصلاحية مؤكدة)
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionModal(false)}
+                  className="w-full h-7 text-[11px] text-muted-foreground hover:text-foreground transition text-center"
+                >
+                  المتابعة على أي حال مؤقتاً
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
