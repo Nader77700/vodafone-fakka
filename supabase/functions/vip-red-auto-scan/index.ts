@@ -31,6 +31,18 @@ function isConvertedToRed(systemName: string | null | undefined): boolean {
   );
 }
 
+function is14ptRaya7Balak(systemName: string | null | undefined): boolean {
+  if (!systemName) return false;
+  const s = systemName.toLowerCase();
+  return (
+    s.includes("14pt") ||
+    s.includes("raya7balak") ||
+    s.includes("raya7_balak") ||
+    s.includes("14 قرش") ||
+    s.includes("ريح بالك")
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
 
@@ -39,7 +51,20 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // 1. جلب إعدادات القسم لتحديد دورية الفحص (الافتراضي 4 ساعات)
+    let reqBody: Record<string, unknown> = {};
+    if (req.method === "POST") {
+      try {
+        reqBody = await req.json();
+      } catch {
+        // empty body ok
+      }
+    }
+    const targetPhone = typeof reqBody.phone === "string" ? reqBody.phone.trim() : null;
+    const executionSource = typeof reqBody.execution_source === "string" 
+      ? reqBody.execution_source 
+      : (targetPhone ? "server_trigger" : "server_cron");
+
+    // 1. جلب إعدادات القسم لتحديد دورية الفحص (الافتراضي 0.5 ساعة = 30 دقيقة)
     const { data: config } = await supabase
       .from("vip_red_config")
       .select("check_interval_hours, is_enabled_globally")
@@ -50,19 +75,32 @@ serve(async (req) => {
     const nowIso = new Date().toISOString();
 
     // 2. فحص الأرقام بنظام الدفعات الصغيرة الآمنة (Chunked Batch)
-    // نأخذ دفعة بحد أقصى 5 أرقام مستحقة في كل دورة cron لتجنب الضغط أو الحظر
     const CHUNK_SIZE = 5;
-    const { data: dueLines, error: linesErr } = await supabase
-      .from("vip_red_monitored_lines")
-      .select("*, merchant:vip_red_merchants(name, user_id)")
-      .eq("system_status", "monitoring")
-      .or(`next_check_at.is.null,next_check_at.lte.${nowIso}`)
-      .order("next_check_at", { ascending: true, nullsFirst: true })
-      .limit(CHUNK_SIZE);
+    let dueLines: any[] = [];
+    if (targetPhone) {
+      const { data, error } = await supabase
+        .from("vip_red_monitored_lines")
+        .select("*, merchant:vip_red_merchants(name, user_id)")
+        .eq("phone_number", targetPhone)
+        .limit(1);
+      if (error) {
+        console.error("[vip-red-auto-scan] Query targetPhone error:", error);
+      }
+      dueLines = data || [];
+    } else {
+      const { data, error } = await supabase
+        .from("vip_red_monitored_lines")
+        .select("*, merchant:vip_red_merchants(name, user_id)")
+        .in("system_status", ["monitoring", "ineligible"])
+        .or(`next_check_at.is.null,next_check_at.lte.${nowIso}`)
+        .order("next_check_at", { ascending: true, nullsFirst: true })
+        .limit(CHUNK_SIZE);
 
-    if (linesErr) {
-      console.error("[vip-red-auto-scan] Query error:", linesErr);
-      return json({ error: linesErr.message }, 200);
+      if (error) {
+        console.error("[vip-red-auto-scan] Query error:", error);
+        return json({ error: error.message }, 200);
+      }
+      dueLines = data || [];
     }
 
     if (!dueLines || dueLines.length === 0) {
@@ -79,11 +117,12 @@ serve(async (req) => {
     let errors = 0;
     const convertedPhones: string[] = [];
 
-    // معالجة كل رقم داخل الدفعة بتسلسل مع فاصل زمني آمن (2.5 ثانية بين كل رقم)
+    // معالجة كل رقم داخل الدفعة بتسلسل مع فاصل زمني آمن
     for (let i = 0; i < dueLines.length; i++) {
       const line = dueLines[i];
+      const startTime = Date.now();
       try {
-        console.log(`[vip-red-auto-scan] Checking chunk item ${i + 1}/${dueLines.length}: ${line.phone_number}`);
+        console.log(`[vip-red-auto-scan] Checking line ${i + 1}/${dueLines.length}: ${line.phone_number} (source: ${executionSource})`);
 
         // استعلام حالة الخط من خلال line-info-query مع الترويسات الداخلية الموثوقة
         const queryRes = await supabase.functions.invoke("line-info-query", {
@@ -94,8 +133,22 @@ serve(async (req) => {
           },
         });
 
+        const durationMs = Date.now() - startTime;
+
         if (queryRes.error || !queryRes.data?.success || !queryRes.data?.data) {
-          console.warn(`[vip-red-auto-scan] Query failed for ${line.phone_number}:`, queryRes.error || queryRes.data);
+          const errDetail = queryRes.data?.message || queryRes.error?.message || "فشل الاستعلام من شبكة فودافون";
+          console.warn(`[vip-red-auto-scan] Query failed for ${line.phone_number}:`, errDetail);
+          
+          // تسجيل في سجلات التشخيص بدقة
+          await supabase.from("vip_red_scan_logs").insert({
+            line_id: line.id,
+            phone_number: line.phone_number,
+            execution_source: executionSource,
+            status: "failed",
+            error_message: errDetail,
+            duration_ms: durationMs,
+          });
+
           // في حال فشل الاستعلام، نؤخر موعد الفحص القادم 15 دقيقة لتفادي التكرار المباشر لنفس الرقم
           const retryLater = new Date(Date.now() + 15 * 60 * 1000).toISOString();
           await supabase
@@ -113,6 +166,7 @@ serve(async (req) => {
         const lineData = queryRes.data.data;
         const currentSystem = lineData.system || null;
         const converted = isConvertedToRed(currentSystem);
+        const is14pt = is14ptRaya7Balak(currentSystem);
 
         const updates: Record<string, unknown> = {
           current_system: currentSystem,
@@ -122,14 +176,20 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         };
 
+        let scanStatus = "success";
         if (converted) {
+          scanStatus = "converted";
           updates.system_status = "converted";
           updates.converted_at = new Date().toISOString();
           updates.next_check_at = null; // إيقاف المراقبة فور التحويل
+        } else if (is14pt) {
+          scanStatus = "success";
+          updates.system_status = "monitoring";
+          updates.next_check_at = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
         } else {
-          // تجديد دورة الفحص القادمة (حسب الإعدادات مثلاً 4 ساعات)
-          const nextCheck = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
-          updates.next_check_at = nextCheck;
+          scanStatus = "ineligible";
+          updates.system_status = "ineligible";
+          updates.next_check_at = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
         }
 
         const { error: updateErr } = await supabase
@@ -142,6 +202,16 @@ serve(async (req) => {
           errors++;
           continue;
         }
+
+        // تسجيل في سجلات التشخيص
+        await supabase.from("vip_red_scan_logs").insert({
+          line_id: line.id,
+          phone_number: line.phone_number,
+          execution_source: executionSource,
+          status: scanStatus,
+          system_detected: currentSystem,
+          duration_ms: durationMs,
+        });
 
         checked++;
 

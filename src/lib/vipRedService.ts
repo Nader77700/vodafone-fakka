@@ -477,8 +477,9 @@ export async function addMonitoredLines(
         }
       } else {
         added++;
-        // تشغيل فحص السيرفر في الخلفية فوراً دون انتظار المستخدم حتى لو أُغلق التطبيق
+        // تشغيل فحص السيرفر في الخلفية فوراً للرقم المضاف حديثاً دون انتظار المستخدم حتى لو أُغلق التطبيق
         supabase.functions.invoke('vip-red-auto-scan', {
+          body: { phone, execution_source: 'server_trigger' },
           headers: { 'x-internal-key': 'vfp_internal_push_2025' },
         }).catch(e => console.warn('[vip-red] auto-scan invoke error:', e));
       }
@@ -543,9 +544,21 @@ export async function checkSingleMonitoredLine(
   userId: string
 ): Promise<{ success: boolean; line?: VipRedLine; error?: string }> {
   try {
+    const startTime = performance.now();
     const res = await fetchLineInfo(line.phone_number);
+    const durationMs = Math.round(performance.now() - startTime);
+
     if (res.status !== 'success' || !res.data) {
-      return { success: false, error: res.errorMessage || 'تعذّر استعلام بيانات الخط' };
+      const errMsg = res.errorMessage || 'تعذّر استعلام بيانات الخط';
+      supabase.from('vip_red_scan_logs').insert({
+        line_id: line.id,
+        phone_number: line.phone_number,
+        execution_source: 'client_manual',
+        status: 'failed',
+        error_message: errMsg,
+        duration_ms: durationMs,
+      }).then(() => {}, () => {});
+      return { success: false, error: errMsg };
     }
 
     const currentSystem = res.data.system || null;
@@ -565,19 +578,33 @@ export async function checkSingleMonitoredLine(
       updated_at: new Date().toISOString(),
     };
 
+    let scanLogStatus: 'success' | 'failed' | 'ineligible' | 'converted' = 'success';
     if (isNowConverted) {
+      scanLogStatus = 'converted';
       if (!wasConverted) {
         updates.converted_at = new Date().toISOString();
       }
       // إيقاف المراقبة الدورية فور التحويل
       updates.next_check_at = null;
     } else if (classification.status === 'monitoring') {
-      // تجديد دورة الفحص القادم تلقائياً (4 ساعات من الآن)
+      scanLogStatus = 'success';
+      // تجديد دورة الفحص القادم تلقائياً
       updates.next_check_at = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
     } else {
-      // غير مؤهل
-      updates.next_check_at = null;
+      // غير مؤهل - تظل المراقبة الدورية جارية لاكتشاف أي تحويل مستقبلي
+      scanLogStatus = 'ineligible';
+      updates.next_check_at = new Date(Date.now() + intervalHours * 3600 * 1000).toISOString();
     }
+
+    // تسجيل في جدول سجلات التشخيص بالسيرفر
+    supabase.from('vip_red_scan_logs').insert({
+      line_id: line.id,
+      phone_number: line.phone_number,
+      execution_source: 'client_manual',
+      status: scanLogStatus,
+      system_detected: currentSystem,
+      duration_ms: durationMs,
+    }).then(() => {}, () => {});
 
     const { data: updatedData, error } = await supabase
       .from('vip_red_monitored_lines')
@@ -1653,3 +1680,50 @@ export function calculateCycleInvoice(
 }
 
 
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── سجلات التشخيص والفحص الشاملة ──
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface VipRedScanLog {
+  id: string;
+  line_id?: string | null;
+  phone_number: string;
+  execution_source: 'server_cron' | 'server_trigger' | 'client_manual' | string;
+  status: 'success' | 'failed' | 'ineligible' | 'converted';
+  system_detected?: string | null;
+  error_message?: string | null;
+  duration_ms?: number | null;
+  created_at: string;
+}
+
+export async function getVipRedScanLogs(options?: {
+  lineId?: string;
+  phoneNumber?: string;
+  limit?: number;
+}): Promise<VipRedScanLog[]> {
+  try {
+    let query = supabase
+      .from('vip_red_scan_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(options?.limit || 50);
+
+    if (options?.lineId) {
+      query = query.eq('line_id', options.lineId);
+    }
+    if (options?.phoneNumber) {
+      query = query.eq('phone_number', options.phoneNumber);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn('[VipRed] getVipRedScanLogs error:', error);
+      return [];
+    }
+    return (data || []) as VipRedScanLog[];
+  } catch (err) {
+    console.warn('[VipRed] getVipRedScanLogs exception:', err);
+    return [];
+  }
+}

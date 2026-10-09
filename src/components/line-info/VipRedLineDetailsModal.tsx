@@ -2,15 +2,16 @@
  * VipRedLineDetailsModal — نافذة تفاصيل الخط المحفوظ في مراقبة ريد VIP
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X, Phone, Cpu, Banknote, Info, Copy, Check, CheckCircle2,
   PackageOpen, RotateCcw, AlertTriangle, Clock, Crown, Calendar,
-  Package, KeyRound
+  Package, KeyRound, Server, Activity, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { VipRedLine } from '@/types/vipRed';
 import { classifyLineSystem, VIP_RED_PACKAGES } from '@/types/vipRed';
+import { getVipRedScanLogs, type VipRedScanLog } from '@/lib/vipRedService';
 
 interface Props {
   line: VipRedLine | null;
@@ -30,6 +31,20 @@ export default function VipRedLineDetailsModal({
   L,
 }: Props) {
   const [copied, setCopied] = useState(false);
+  const [scanLogs, setScanLogs] = useState<VipRedScanLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !line) {
+      setScanLogs([]);
+      return;
+    }
+    setIsLoadingLogs(true);
+    getVipRedScanLogs({ lineId: line.id, phoneNumber: line.phone_number, limit: 10 })
+      .then(logs => setScanLogs(logs))
+      .catch(() => setScanLogs([]))
+      .finally(() => setIsLoadingLogs(false));
+  }, [isOpen, line?.id, line?.phone_number]);
 
   if (!isOpen || !line) return null;
 
@@ -249,6 +264,73 @@ export default function VipRedLineDetailsModal({
               </div>
             </div>
           )}
+
+          {/* Diagnostic Scan Logs */}
+          <div className="space-y-1.5 pt-1 border-t" style={{ borderColor: cardBdr }}>
+            <div className="flex items-center justify-between">
+              <p className="font-bold flex items-center gap-1.5 text-xs" style={{ color: textC }}>
+                <Server className="w-3.5 h-3.5 text-emerald-500" /> سجلات الفحص والتشخيص الحية ({scanLogs.length})
+              </p>
+              {isLoadingLogs && <span className="text-[10px] text-muted-foreground animate-pulse">جاري التحميل...</span>}
+            </div>
+
+            {scanLogs.length === 0 && !isLoadingLogs ? (
+              <p className="text-[11px] p-2 rounded-lg text-center" style={{ background: innerBg, color: mutC }}>
+                لا توجد سجلات فحص سابقة مسجلة لهذا الرقم حتى الآن.
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                {scanLogs.map((log) => {
+                  const isSuccess = log.status === 'success' || log.status === 'converted';
+                  const isFailed = log.status === 'failed';
+                  const sourceLabel = 
+                    log.execution_source === 'server_cron' ? 'خادم مجدول (pg_cron)' :
+                    log.execution_source === 'server_trigger' ? 'خادم فوري (Trigger)' :
+                    log.execution_source === 'client_manual' ? 'يدوي من التطبيق' : log.execution_source;
+
+                  return (
+                    <div
+                      key={log.id}
+                      className="p-2 rounded-lg border text-[11px] flex flex-col gap-1"
+                      style={{
+                        background: innerBg,
+                        borderColor: isFailed ? 'rgba(239,68,68,0.25)' : cardBdr,
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1 font-bold" style={{ color: isFailed ? '#ef4444' : isSuccess ? '#10b981' : '#f59e0b' }}>
+                          <Activity className="w-3 h-3" />
+                          {log.status === 'converted' ? 'تم التحويل لريد' :
+                           log.status === 'success' ? 'ناجح (14 قرش)' :
+                           log.status === 'ineligible' ? 'غير مؤهل' : 'تعذر الفحص'}
+                        </span>
+                        <span className="text-[10px] font-mono" style={{ color: mutC }}>
+                          {new Date(log.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px]" style={{ color: mutC }}>
+                        <span>المصدر: {sourceLabel}</span>
+                        {log.duration_ms && <span>المدة: {(log.duration_ms / 1000).toFixed(1)} ث</span>}
+                      </div>
+
+                      {log.system_detected && (
+                        <div className="text-[10px] truncate" style={{ color: textC }}>
+                          النظام المكتشف: <span className="font-mono font-bold" dir="ltr">{log.system_detected}</span>
+                        </div>
+                      )}
+
+                      {log.error_message && (
+                        <div className="text-[10px] text-red-500 font-medium">
+                          الخطأ: {log.error_message}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Fakka Cards if any */}
           {Array.isArray(info.fakkaCards) && info.fakkaCards.length > 0 && (

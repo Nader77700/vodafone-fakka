@@ -270,13 +270,13 @@ export default function VipRedCenterPage() {
     };
   }, []);
 
-  // 3. محرك الفحص التلقائي للأرقام المستحقة عند انتهاء 4 ساعات أو عودة النت أو فتح التطبيق
+  // 3. محرك الفحص التلقائي للأرقام المستحقة عبر السيرفر فور استحقاقها أو عودة النت أو فتح التطبيق
   const triggerDueAutoScans = useCallback(async () => {
     if (!user || !isOnline || autoScanLockRef.current) return;
     
     // فحص ما إذا كان هناك أرقام مستحقة
     const hasDue = lines.some(l => {
-      if (l.system_status !== 'monitoring') return false;
+      if (l.system_status !== 'monitoring' && l.system_status !== 'ineligible') return false;
       if (!l.next_check_at) return true;
       return new Date(l.next_check_at).getTime() <= Date.now();
     });
@@ -286,12 +286,11 @@ export default function VipRedCenterPage() {
     autoScanLockRef.current = true;
     setIsAutoScanning(true);
     try {
-      const res = await runAutoScanDueLines(user.id, (updatedLine) => {
-        setLines(prev => prev.map(l => l.id === updatedLine.id ? updatedLine : l));
-      });
-
-      if (res.convertedNow > 0) {
-        toast.success(`🎉 تم اكتشاف تحويل ${res.convertedNow} أرقام إلى نظام ريد بنجاح!`);
+      // تشغيل فحص السيرفر السحابي المباشر في الخلفية
+      await triggerServerAutoScan();
+      const freshLines = await getMonitoredLines(user.id, isAdmin);
+      if (freshLines && freshLines.length > 0) {
+        setLines(freshLines);
       }
     } catch (err) {
       console.warn('[VipRed] Auto scan error:', err);
@@ -299,7 +298,7 @@ export default function VipRedCenterPage() {
       autoScanLockRef.current = false;
       setIsAutoScanning(false);
     }
-  }, [user, isOnline, lines]);
+  }, [user, isOnline, lines, isAdmin]);
 
   // فحص دوري كل 10 ثوانٍ للتحقق من المواعيد المستحقة
   useEffect(() => {
@@ -331,6 +330,7 @@ export default function VipRedCenterPage() {
   // 4. اشتراك Realtime لحظي في قاعدة البيانات لأي تحديثات خارجية
   useEffect(() => {
     if (!user) return;
+    const filter = isAdmin ? undefined : `user_id=eq.${user.id}`;
     const channel = supabase
       .channel('vip_red_lines_changes')
       .on(
@@ -339,7 +339,7 @@ export default function VipRedCenterPage() {
           event: '*',
           schema: 'public',
           table: 'vip_red_monitored_lines',
-          filter: `user_id=eq.${user.id}`,
+          ...(filter ? { filter } : {}),
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -350,7 +350,7 @@ export default function VipRedCenterPage() {
             });
           } else if (payload.eventType === 'UPDATE') {
             const updated = payload.new as VipRedLine;
-            setLines(prev => prev.map(l => l.id === updated.id ? updated : l));
+            setLines(prev => prev.map(l => l.id === updated.id ? { ...l, ...updated } : l));
           } else if (payload.eventType === 'DELETE') {
             const oldId = (payload.old as { id: string }).id;
             setLines(prev => prev.filter(l => l.id !== oldId));
@@ -362,7 +362,7 @@ export default function VipRedCenterPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Add single phone
   const handleAddSingle = async () => {
@@ -401,7 +401,7 @@ export default function VipRedCenterPage() {
       toast.success(`تمت إضافة الرقم ${cleanPhone} بنجاح`, { id: 'add-single' });
 
       // Refresh list and auto-check the added line with prominent UI feedback
-      const refreshed = await getMonitoredLines(user.id);
+      const refreshed = await getMonitoredLines(user.id, isAdmin);
       setLines(refreshed);
       const newlyAdded = refreshed.find(l => l.phone_number === cleanPhone);
       if (newlyAdded) {
@@ -1501,6 +1501,13 @@ export default function VipRedCenterPage() {
                   } else {
                     countdownLabel = `القادم بعد ${secs} ث`;
                   }
+                }
+              } else if (classification.status === 'ineligible' && line.next_check_at) {
+                if (diffMs <= 0) {
+                  countdownLabel = 'مستحق إعادة الفحص';
+                } else {
+                  const mins = Math.floor(diffMs / 60000);
+                  countdownLabel = `إعادة الفحص بعد ${mins} د`;
                 }
               }
 
