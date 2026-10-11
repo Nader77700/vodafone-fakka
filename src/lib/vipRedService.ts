@@ -1735,3 +1735,133 @@ export async function getVipRedScanLogs(options?: {
     return [];
   }
 }
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── ترحيل ونقل الأرقام بين دورات المحاسبة (7 / 11 / 25) ──
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * ترحيل أرقام المراقبة (التي لم تتحول بعد) إلى موعد محاسبة محدد (مثل يوم 25)
+ * تدعم:
+ * 1. ترحيل جميع الأرقام قيد المراقبة
+ * 2. ترحيل أرقام دورة محددة فقط (مثل من يوم 11 إلى يوم 25)
+ * 3. ترحيل عدد محدد فقط من الأرقام
+ * 4. ترحيل أرقام معينة بمعرفاتها
+ */
+export async function transferUnconvertedMonitoringLines(params: {
+  targetDay: VipRedActivationDay;
+  fromDay?: VipRedActivationDay | 'all';
+  limitCount?: number;
+  specificLineIds?: string[];
+}): Promise<{ success: boolean; transferredCount: number; error?: string }> {
+  try {
+    const nowIso = new Date().toISOString();
+    let targetIds: string[] = [];
+
+    if (params.specificLineIds && params.specificLineIds.length > 0) {
+      targetIds = params.specificLineIds;
+    } else {
+      let query = supabase
+        .from('vip_red_monitored_lines')
+        .select('id, activation_day, system_status')
+        .eq('system_status', 'monitoring');
+
+      if (params.fromDay && params.fromDay !== 'all') {
+        query = query.eq('activation_day', params.fromDay);
+      }
+
+      if (params.limitCount && params.limitCount > 0) {
+        query = query.limit(params.limitCount);
+      }
+
+      const { data, error } = await query;
+      if (error || !data) {
+        return { success: false, transferredCount: 0, error: error?.message || 'فشل جلب الأرقام' };
+      }
+
+      // استبعاد الأرقام التي تنتمي بالفعل لنفس الموعد المستهدف
+      targetIds = data.filter(d => d.activation_day !== params.targetDay).map(d => d.id);
+    }
+
+    if (targetIds.length === 0) {
+      return { success: true, transferredCount: 0 };
+    }
+
+    const { error: updateErr } = await supabase
+      .from('vip_red_monitored_lines')
+      .update({
+        activation_day: params.targetDay,
+        updated_at: nowIso,
+      })
+      .in('id', targetIds);
+
+    if (updateErr) {
+      return { success: false, transferredCount: 0, error: updateErr.message };
+    }
+
+    return { success: true, transferredCount: targetIds.length };
+  } catch (err) {
+    return { success: false, transferredCount: 0, error: String(err) };
+  }
+}
+
+/**
+ * ترحيل أرقام التجديد والسداد غير المسددة أو غير المجددة إلى موعد المحاسبة التالي
+ * (مثلاً: ترحيل خطوط يوم 11 التي لم تسدد أو لم تجدد إلى يوم 25)
+ */
+export async function transferUnpaidRenewalLines(params: {
+  fromDay: VipRedActivationDay;
+  targetDay: VipRedActivationDay;
+  filterType?: 'all_unpaid' | 'all_unrenewed' | 'all_in_cycle';
+  specificLineIds?: string[];
+}): Promise<{ success: boolean; transferredCount: number; error?: string }> {
+  try {
+    const nowIso = new Date().toISOString();
+    let targetIds: string[] = [];
+
+    if (params.specificLineIds && params.specificLineIds.length > 0) {
+      targetIds = params.specificLineIds;
+    } else {
+      let query = supabase
+        .from('vip_red_monitored_lines')
+        .select('id, payment_status, bundle_status')
+        .eq('system_status', 'converted')
+        .eq('activation_day', params.fromDay);
+
+      if (params.filterType === 'all_unpaid') {
+        query = query.neq('payment_status', 'paid');
+      } else if (params.filterType === 'all_unrenewed') {
+        query = query.neq('bundle_status', 'renewed');
+      }
+
+      const { data, error } = await query;
+      if (error || !data) {
+        return { success: false, transferredCount: 0, error: error?.message || 'فشل جلب الأرقام' };
+      }
+
+      targetIds = data.map(d => d.id);
+    }
+
+    if (targetIds.length === 0) {
+      return { success: true, transferredCount: 0 };
+    }
+
+    const { error: updateErr } = await supabase
+      .from('vip_red_monitored_lines')
+      .update({
+        activation_day: params.targetDay,
+        bundle_status: 'pending',
+        updated_at: nowIso,
+      })
+      .in('id', targetIds);
+
+    if (updateErr) {
+      return { success: false, transferredCount: 0, error: updateErr.message };
+    }
+
+    return { success: true, transferredCount: targetIds.length };
+  } catch (err) {
+    return { success: false, transferredCount: 0, error: String(err) };
+  }
+}

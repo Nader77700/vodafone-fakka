@@ -28,6 +28,9 @@ import {
   X,
   CreditCard,
   RotateCcw,
+  Zap,
+  Crown,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +47,7 @@ import {
   deleteMonitoredLine,
   getMerchants,
   getLinkedMerchantForUser,
+  transferUnpaidRenewalLines,
 } from '@/lib/vipRedService';
 import {
   runActivationRemindersCheck,
@@ -58,6 +62,9 @@ import {
   type VipRedBundleStatus,
   type VipRedMerchant,
   type VipRedPackageTier,
+  VALID_ACTIVATION_DAYS,
+  getUpcomingActivationDay,
+  getActivationDayBadgeConfig,
 } from '@/types/vipRed';
 import { SingleLineInvoiceModal } from '@/components/vip-red/SingleLineInvoiceModal';
 
@@ -810,6 +817,16 @@ export default function VipRedRenewalsPage() {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid' | 'cancelled'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // الكشف الذكي عن موعد المحاسبة القادم
+  const upcomingDayInfo = useMemo(() => getUpcomingActivationDay(), []);
+
+  // نافذة ترحيل الأرقام غير المجددة / غير المسددة لدورة قادمة
+  const [showRenewalsTransferModal, setShowRenewalsTransferModal] = useState(false);
+  const [transferFromDay, setTransferFromDay] = useState<VipRedActivationDay>(11);
+  const [transferToDay, setTransferToDay] = useState<VipRedActivationDay>(upcomingDayInfo.day);
+  const [transferFilterType, setTransferFilterType] = useState<'all_unpaid' | 'all_unrenewed' | 'all_in_cycle'>('all_unpaid');
+  const [isTransferringRenewals, setIsTransferringRenewals] = useState(false);
+
   // الحوارات
   const [editingCustomerLine, setEditingCustomerLine] = useState<VipRedLine | null>(null);
   const [editingDayLine, setEditingDayLine] = useState<VipRedLine | null>(null);
@@ -1363,27 +1380,27 @@ export default function VipRedRenewalsPage() {
           </div>
         </div>
 
-        {/* ── شريط توزيع المواعيد (7 / 11 / 25) السريع ── */}
+        {/* ── شريط توزيع المواعيد (7 / 11 / 25) مع هوية بصرية مميزة وأداة الترحيل للمحاسبة القادمة ── */}
         <div
-          className="rounded-xl p-2 border flex items-center justify-between gap-1 text-[11px]"
+          className="rounded-xl p-2 border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-[11px]"
           style={{ backgroundColor: innerBg, borderColor: cardBdr }}
         >
-          <div className="flex items-center gap-1.5 px-2 font-medium shrink-0" style={{ color: mutC }}>
+          <div className="flex items-center gap-1.5 px-1 font-bold shrink-0" style={{ color: mutC }}>
             <Clock className="w-3.5 h-3.5 text-primary" />
-            <span className="hidden sm:inline">توزيع المواعيد:</span>
+            <span>مواعيد المحاسبة:</span>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            {/* يوم 7 */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1">
+            {/* يوم 7 - أخضر زمردي */}
             <button
               onClick={() => setDayFilter(dayFilter === '7' ? 'all' : '7')}
-              className={`px-2 py-1 rounded-lg border transition text-center shrink-0 flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-lg border transition text-center shrink-0 flex items-center gap-1.5 ${
                 dayFilter === '7'
-                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-sm'
-                  : 'bg-background hover:bg-muted text-foreground'
+                  ? 'bg-emerald-600 text-white border-emerald-600 font-black shadow-sm'
+                  : 'bg-background hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
               }`}
-              style={{ borderColor: cardBdr }}
             >
+              <Zap className="w-3 h-3" />
               <span>يوم 7:</span>
               <span className="font-mono font-bold">{stats.count7}</span>
               {stats.unpaid7 > 0 && (
@@ -1393,16 +1410,16 @@ export default function VipRedRenewalsPage() {
               )}
             </button>
 
-            {/* يوم 11 */}
+            {/* يوم 11 - بنفسجي ملكي */}
             <button
               onClick={() => setDayFilter(dayFilter === '11' ? 'all' : '11')}
-              className={`px-2 py-1 rounded-lg border transition text-center shrink-0 flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-lg border transition text-center shrink-0 flex items-center gap-1.5 ${
                 dayFilter === '11'
-                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-sm'
-                  : 'bg-background hover:bg-muted text-foreground'
+                  ? 'bg-purple-600 text-white border-purple-600 font-black shadow-sm'
+                  : 'bg-background hover:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
               }`}
-              style={{ borderColor: cardBdr }}
             >
+              <Crown className="w-3 h-3" />
               <span>يوم 11:</span>
               <span className="font-mono font-bold">{stats.count11}</span>
               {stats.unpaid11 > 0 && (
@@ -1412,18 +1429,21 @@ export default function VipRedRenewalsPage() {
               )}
             </button>
 
-            {/* يوم 25 */}
+            {/* يوم 25 - ذهبي ناري بريميوم مع علامة المحاسبة القادمة */}
             <button
               onClick={() => setDayFilter(dayFilter === '25' ? 'all' : '25')}
-              className={`px-2 py-1 rounded-lg border transition text-center shrink-0 flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-lg border transition text-center shrink-0 flex items-center gap-1.5 ${
                 dayFilter === '25'
-                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-sm'
-                  : 'bg-background hover:bg-muted text-foreground'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-500 font-black shadow-md ring-2 ring-amber-400/40'
+                  : 'bg-background hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/50 shadow-xs'
               }`}
-              style={{ borderColor: cardBdr }}
             >
+              <Sparkles className="w-3 h-3 text-amber-500" />
               <span>يوم 25:</span>
               <span className="font-mono font-bold">{stats.count25}</span>
+              <span className="text-[9px] font-bold px-1 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                القادمة ⭐
+              </span>
               {stats.unpaid25 > 0 && (
                 <span className="bg-red-500 text-white text-[9px] px-1 rounded-full font-mono">
                   {stats.unpaid25} متبقي
@@ -1431,6 +1451,21 @@ export default function VipRedRenewalsPage() {
               )}
             </button>
           </div>
+
+          {/* زر ترحيل الأرقام غير المجددة / غير المسددة من يوم 11 إلى يوم 25 */}
+          <button
+            type="button"
+            onClick={() => {
+              setTransferFromDay(11);
+              setTransferToDay(25);
+              setShowRenewalsTransferModal(true);
+            }}
+            className="px-2.5 py-1 rounded-lg border text-xs font-black transition active:scale-95 bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 shrink-0 flex items-center justify-center gap-1.5 shadow-xs"
+            title="ترحيل الأرقام غير المسددة أو غير المجددة من دورة سابقة إلى موعد المحاسبة القادم"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5 text-amber-500" />
+            <span>ترحيل للمحاسبة (11 ← 25)</span>
+          </button>
         </div>
 
         {/* ── فلاتر التحكم وأدوات الإجراءات الجماعية (Compact Control Panel) ── */}
@@ -1558,14 +1593,26 @@ export default function VipRedRenewalsPage() {
               const isPaid = line.payment_status === 'paid';
               const isRenewed = line.bundle_status === 'renewed';
               const isCancelled = line.payment_status === 'cancelled';
+              const dayBadge = getActivationDayBadgeConfig(line.activation_day, { lightMode: L });
+
+              let dayAccentClasses = '';
+              if (line.activation_day === 25) {
+                dayAccentClasses = 'border-r-4 border-r-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.12)]';
+              } else if (line.activation_day === 7) {
+                dayAccentClasses = 'border-r-4 border-r-emerald-500';
+              } else if (line.activation_day === 11) {
+                dayAccentClasses = 'border-r-4 border-r-purple-500';
+              }
 
               return (
                 <div
                   key={line.id}
-                  className="rounded-lg p-1.5 sm:p-2 border transition duration-150 hover:border-primary/40 relative overflow-hidden flex flex-col gap-1 shadow-xs"
+                  className={`rounded-lg p-1.5 sm:p-2 border transition duration-150 hover:border-primary/40 relative overflow-hidden flex flex-col gap-1 shadow-xs ${dayAccentClasses}`}
                   style={{
                     backgroundColor: cardBg,
-                    borderColor: isPaid
+                    borderColor: line.activation_day === 25
+                      ? 'rgba(245, 158, 11, 0.45)'
+                      : isPaid
                       ? 'rgba(16, 185, 129, 0.3)'
                       : isCancelled
                       ? cardBdr
@@ -1672,21 +1719,29 @@ export default function VipRedRenewalsPage() {
                       )}
                     </div>
 
-                    {/* موعد التجديد */}
+                    {/* موعد التجديد بهوية بصرية مميزة وشارة متطورة لكل يوم */}
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => setEditingDayLine(line)}
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 transition ${
-                          line.activation_day
-                            ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
-                            : 'bg-muted text-muted-foreground border-border'
-                        }`}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 transition active:scale-95 shadow-xs"
+                        style={dayBadge.badgeStyle}
                         title="انقر لتعديل موعد التجديد (7، 11، 25)"
                       >
-                        <Calendar className="w-3 h-3" />
+                        {line.activation_day === 25 ? (
+                          <Sparkles className="w-2.5 h-2.5" />
+                        ) : line.activation_day === 7 ? (
+                          <Zap className="w-2.5 h-2.5" />
+                        ) : line.activation_day === 11 ? (
+                          <Crown className="w-2.5 h-2.5" />
+                        ) : (
+                          <Calendar className="w-2.5 h-2.5" />
+                        )}
                         <span>
-                          {line.activation_day ? `يوم ${line.activation_day}` : 'حدد موعداً'}
+                          {dayBadge.label}
                         </span>
+                        {dayBadge.isUpcoming && (
+                          <span className="text-[8px] font-black opacity-90">⭐</span>
+                        )}
                         <ChevronDown className="w-2.5 h-2.5 opacity-60" />
                       </button>
                     </div>
@@ -1889,6 +1944,203 @@ export default function VipRedRenewalsPage() {
         onClose={() => setSelectedInvoiceLine(null)}
         isLight={L}
       />
+
+      {/* ── نافذة ترحيل الأرقام غير المسددة / غير المجددة لدورة قادمة (11 ← 25) ── */}
+      {showRenewalsTransferModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in">
+          <div
+            className="w-full max-w-md rounded-2xl border p-4 sm:p-5 space-y-4 shadow-2xl"
+            style={{ backgroundColor: cardBg, borderColor: 'rgba(245, 158, 11, 0.45)' }}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: cardBdr }}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
+                  <ArrowRightLeft className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black" style={{ color: textC }}>
+                    ترحيل الخطوط إلى موعد المحاسبة القادم
+                  </h3>
+                  <p className="text-[10px]" style={{ color: mutC }}>
+                    نقل الأرقام غير المسددة أو المتأخرة من دورة منتهية لموعد جديد
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRenewalsTransferModal(false)}
+                className="w-7 h-7 rounded-lg border flex items-center justify-center text-xs hover:bg-muted"
+                style={{ borderColor: cardBdr, color: textC }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* 1. اختيار الدورة الحالية (المصدر) */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold block" style={{ color: textC }}>
+                1. دورة المحاسبة الحالية المُنتهية (المصدر):
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {VALID_ACTIVATION_DAYS.map(day => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => setTransferFromDay(day)}
+                    className={`p-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1 ${
+                      transferFromDay === day
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-md font-black'
+                        : 'hover:bg-muted border-border text-foreground'
+                    }`}
+                  >
+                    <span>يوم {day}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. اختيار دورة المحاسبة القادمة (الهدف) */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold block" style={{ color: textC }}>
+                2. موعد المحاسبة القادم (المستهدف للنقل):
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {VALID_ACTIVATION_DAYS.map(day => {
+                  const isUpcoming = day === upcomingDayInfo.day;
+                  const isSelected = transferToDay === day;
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setTransferToDay(day)}
+                      className={`p-2 rounded-xl border text-xs font-black flex flex-col items-center justify-center gap-0.5 transition ${
+                        isSelected
+                          ? day === 25
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-400/40'
+                            : day === 7
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                            : 'bg-purple-600 text-white border-purple-600 shadow-md'
+                          : 'hover:bg-muted border-border text-foreground'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        {day === 25 ? '⭐ يوم 25' : `يوم ${day}`}
+                      </span>
+                      {isUpcoming && (
+                        <span className="text-[8px] px-1 py-0.2 rounded bg-white/20 font-bold">
+                          المحاسبة القادمة
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. نوع الأرقام المطلوب ترحيلها */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold block" style={{ color: textC }}>
+                3. أي أرقام ترغب في ترحيلها؟
+              </label>
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/30" style={{ borderColor: cardBdr }}>
+                  <input
+                    type="radio"
+                    name="renewal_transfer_type"
+                    checked={transferFilterType === 'all_unpaid'}
+                    onChange={() => setTransferFilterType('all_unpaid')}
+                    className="accent-primary"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-foreground">الأرقام التي لم تُسدد قيمتها فقط</span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      ترحيل الخطوط المعلقة مالياً من دورة يوم {transferFromDay} إلى يوم {transferToDay}
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/30" style={{ borderColor: cardBdr }}>
+                  <input
+                    type="radio"
+                    name="renewal_transfer_type"
+                    checked={transferFilterType === 'all_unrenewed'}
+                    onChange={() => setTransferFilterType('all_unrenewed')}
+                    className="accent-primary"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-foreground">الأرقام التي لم تُجدد باقتها بعد</span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      ترحيل الخطوط التي تنتظر التجديد ولم تنفذ باقتها
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/30" style={{ borderColor: cardBdr }}>
+                  <input
+                    type="radio"
+                    name="renewal_transfer_type"
+                    checked={transferFilterType === 'all_in_cycle'}
+                    onChange={() => setTransferFilterType('all_in_cycle')}
+                    className="accent-primary"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-foreground">ترحيل كل خطوط دورة يوم {transferFromDay}</span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      نقل كافة الأرقام المقيدة في دورة يوم {transferFromDay} إلى موعد يوم {transferToDay}
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* الأزرار */}
+            <div className="pt-2 flex items-center justify-end gap-2 border-t" style={{ borderColor: cardBdr }}>
+              <button
+                type="button"
+                onClick={() => setShowRenewalsTransferModal(false)}
+                className="h-8 px-3 rounded-lg border text-xs font-bold hover:bg-muted"
+                style={{ borderColor: cardBdr, color: textC }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                disabled={isTransferringRenewals || transferFromDay === transferToDay}
+                onClick={async () => {
+                  if (transferFromDay === transferToDay) {
+                    toast.error('يرجى اختيار موعد قادم مختلف عن الموعد الحالي');
+                    return;
+                  }
+                  try {
+                    setIsTransferringRenewals(true);
+                    toast.loading(`جاري ترحيل الأرقام من يوم ${transferFromDay} إلى يوم ${transferToDay}...`, { id: 'transfer-renewals' });
+                    const res = await transferUnpaidRenewalLines({
+                      fromDay: transferFromDay,
+                      targetDay: transferToDay,
+                      filterType: transferFilterType,
+                    });
+                    if (res.success) {
+                      toast.success(`تم بنجاح ترحيل (${res.transferredCount}) خط إلى دورة يوم ${transferToDay} 🎉`, { id: 'transfer-renewals' });
+                      setShowRenewalsTransferModal(false);
+                      await loadData();
+                    } else {
+                      toast.error('تعذر الترحيل: ' + (res.error || 'خطأ غير معروف'), { id: 'transfer-renewals' });
+                    }
+                  } catch {
+                    toast.error('حدث خطأ أثناء الترحيل', { id: 'transfer-renewals' });
+                  } finally {
+                    setIsTransferringRenewals(false);
+                  }
+                }}
+                className="h-8 px-4 rounded-lg text-xs font-black text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 flex items-center gap-1.5 shadow-md disabled:opacity-50"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                <span>تأكيد الترحيل إلى يوم {transferToDay}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

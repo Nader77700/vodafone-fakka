@@ -1,43 +1,37 @@
 ## Vibe
-- Dark premium telecom utility with Vodafone red accents on a near-black surface; restrained hierarchy through typography and spacing.
+- Telecom Premium Dark VIP Dashboard with high-contrast activation-day chromatic coding (Vodafone Red signature)
 
 ## Color
 - Primary: #E60000
 - On Primary: #FFFFFF
-- Accent: #FF3B3B
+- Accent: #10B981
 - On Accent: #FFFFFF
-- Background: #0B0B14
-- Foreground: #FFFFFF
-- Muted: #151523
-- Border: rgba(255, 255, 255, 0.08)
-- Secondary: #FFFFFF
-- Color rules:
-  - Primary and Accent are red family; Accent is a lighter, more energetic red used for selected states and highlights.
-  - Background is near-black with a subtle red undertone; Muted is the card surface.
-  - Border is a low-opacity white line to keep separation without heavy strokes.
-  - Primary/On and Accent/On ≥ 4.5:1.
-  - Red appears only on CTAs, active states, and key icons; never as large flat fills.
+- Background: #0B0E14
+- Foreground: #F1F5F9
+- Muted: #1E232E
+- Border: #2B3242
+- Secondary: #8B5CF6
+
+## Activation Day Distinct Theming
+- Day 7 (يوم 7): Emerald/Teal luminous theme (Badge: #064E3B bg, #10B981 text, #059669 border, Icon: CalendarClock)
+- Day 11 (يوم 11): Deep Violet/Indigo royal theme (Badge: #3B0764 bg, #A855F7 text, #7E22CE border, Icon: CheckCircle2)
+- Day 25 (يوم 25 - المحاسبة القادمة): Radiant Amber/Gold VIP theme with distinct glow/border (Badge: #451A03 bg, #F59E0B text, #D97706 border, Star/Sparkles icon, glowing subtle border)
 
 ## Typography
-- Heading & Body: Montserrat (family: 'Montserrat Variable', weight: 400-700, url: https://resource-static.bj.bcebos.com/fonts/Montserrat-VariableFont_wght.woff2)
+- Heading: Cairo (family: 'Cairo', sans-serif, weight: 700, url: https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap)
+- Body: Cairo (family: 'Cairo', sans-serif, weight: 500, url: https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600&display=swap)
 
 ## Visual Language
-- Core visual signature: red glow on active/focus elements and 1px low-opacity white borders against deep dark cards.
-- Material & depth: flat cards with subtle inner glow; minimal shadows; depth created by surface brightness (Background → Muted → Popover).
-- Containers & buttons: rounded rectangles, small red icon badges, white text labels, compact CTAs with full red fill only on primary actions.
-- Layout rhythm: generous vertical spacing, clear section titles, grouped cards with consistent padding; accent red reserved for CTAs and status indicators.
+- Core visual signature: Day-distinct high-contrast chromatic indicators that give Day 7, Day 11, and Day 25 immediate instant recognition without opening details.
+- Material & depth: Layered dark cards with subtle borders, glowing pill indicators for the upcoming cycle (Day 25), and clean action buttons.
+- Containers & buttons: Ultra-compact line cards with single-row data, instant transfer modal with clear quantity/all radio toggles, and fast local batch actions.
+- Layout rhythm: Dense, organized telecom grid with mobile-first sticky controls, non-intrusive dialogs, and clear visual hierarchy.
 
 ## Animation
-- Entrance: cards fade up 200-300ms with ease-out.
-- Interaction: scale-press on tappable cards (0.97), color transition on focus/hover.
-- Scroll / transition: page-level slide/fade between sibling routes, content lists lazy-render with fade-in rows.
+- Entrance: Fade-in and slight scale for transfer modals (150ms ease-out)
+- Interaction: Smooth background hover on day buttons and cards (100ms)
 
 ## Forbidden
-- No large flat red fills on backgrounds or hero sections.
-- No generic drop shadows or left-border accent bars.
-- No emojis or CSS-faked logos.
-
-## Additional Notes
-- RTL layout for Arabic.
-- Maintain existing Header and Bottom Navigation across all Vodafone offers pages.
-- Mobile-first: compact cards, no horizontal overflow, touch targets ≥ 48×48px.
+- Identical visual styling for Day 7, Day 11, and Day 25
+- Large obstructive full-screen blocking banners
+- Moving lines without user confirmation dialog

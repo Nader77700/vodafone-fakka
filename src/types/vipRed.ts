@@ -289,3 +289,162 @@ export function classifyLineSystem(systemName: string | null | undefined): Syste
     shortSystemName: shortName,
   };
 }
+
+/**
+ * حساب وتحديد موعد المحاسبة والتفعيل القادم تلقائياً:
+ * - مواعيد المحاسبة هي: 7، 11، 25 من كل شهر
+ * - إذا كان اليوم الحالي < 7 -> القادم هو 7
+ * - إذا كان اليوم الحالي < 11 -> القادم هو 11
+ * - إذا كان اليوم الحالي <= 25 -> القادم هو 25 (الحالة الحالية الآن)
+ * - إذا كان اليوم الحالي > 25 -> القادم هو 7 (من الشهر القادم)
+ */
+export function getUpcomingActivationDay(referenceDate: Date = new Date()): {
+  day: VipRedActivationDay;
+  label: string;
+  isCurrentMonth: boolean;
+  daysRemaining: number;
+} {
+  const currentDay = referenceDate.getDate();
+  const currentMonth = referenceDate.getMonth();
+  const currentYear = referenceDate.getFullYear();
+
+  let targetDay: VipRedActivationDay;
+  let targetDate: Date;
+  let isCurrentMonth = true;
+
+  if (currentDay < 7) {
+    targetDay = 7;
+    targetDate = new Date(currentYear, currentMonth, 7);
+  } else if (currentDay < 11) {
+    targetDay = 11;
+    targetDate = new Date(currentYear, currentMonth, 11);
+  } else if (currentDay <= 25) {
+    targetDay = 25;
+    targetDate = new Date(currentYear, currentMonth, 25);
+  } else {
+    targetDay = 7;
+    targetDate = new Date(currentYear, currentMonth + 1, 7);
+    isCurrentMonth = false;
+  }
+
+  const diffTime = targetDate.getTime() - referenceDate.getTime();
+  const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+  return {
+    day: targetDay,
+    label: `يوم ${targetDay}`,
+    isCurrentMonth,
+    daysRemaining,
+  };
+}
+
+/**
+ * تصميم بصري متباين جداً وشديد الوضوح لكل موعد محاسبة (يوم 7، يوم 11، يوم 25)
+ * يضمن تفريق فوري وواضح بين الأرقام المحجوزة لكل موعد في كافة الشاشات والبطاقات
+ */
+export interface ActivationDayBadgeConfig {
+  day: VipRedActivationDay | null | undefined;
+  label: string;
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+  ringClass?: string;
+  badgeStyle: {
+    backgroundColor: string;
+    color: string;
+    borderColor: string;
+    boxShadow?: string;
+  };
+  iconName: 'calendar' | 'zap' | 'crown' | 'sparkles' | 'clock';
+  tagTitle: string;
+  isUpcoming: boolean;
+}
+
+export function getActivationDayBadgeConfig(
+  day: VipRedActivationDay | null | undefined,
+  options?: { isUpcoming?: boolean; lightMode?: boolean }
+): ActivationDayBadgeConfig {
+  const upcomingDay = getUpcomingActivationDay().day;
+  const isUpcoming = options?.isUpcoming ?? (day === upcomingDay);
+  const L = options?.lightMode ?? false;
+
+  if (day === 7) {
+    // يوم 7: لمسة خضراء زمردية مشعة ونظيفة (Emerald / Mint)
+    return {
+      day: 7,
+      label: 'يوم 7',
+      bgClass: L ? 'bg-emerald-100' : 'bg-emerald-950/70',
+      textClass: L ? 'text-emerald-800' : 'text-emerald-300',
+      borderClass: 'border-emerald-500/50',
+      ringClass: isUpcoming ? 'ring-1 ring-emerald-400' : undefined,
+      badgeStyle: {
+        backgroundColor: L ? '#ecfdf5' : 'rgba(6, 78, 59, 0.75)',
+        color: L ? '#065f46' : '#34d399',
+        borderColor: L ? '#10b981' : '#059669',
+        boxShadow: isUpcoming ? '0 0 8px rgba(16, 185, 129, 0.3)' : undefined,
+      },
+      iconName: 'zap',
+      tagTitle: isUpcoming ? 'يوم 7 (المحاسبة القادمة)' : 'دورة يوم 7',
+      isUpcoming,
+    };
+  }
+
+  if (day === 11) {
+    // يوم 11: لمسة بنفسجية ملكية فخمة ومميزة (Deep Violet / Royal Purple)
+    return {
+      day: 11,
+      label: 'يوم 11',
+      bgClass: L ? 'bg-purple-100' : 'bg-purple-950/70',
+      textClass: L ? 'text-purple-800' : 'text-purple-300',
+      borderClass: 'border-purple-500/50',
+      ringClass: isUpcoming ? 'ring-1 ring-purple-400' : undefined,
+      badgeStyle: {
+        backgroundColor: L ? '#f3e8ff' : 'rgba(59, 7, 100, 0.75)',
+        color: L ? '#6b21a8' : '#c084fc',
+        borderColor: L ? '#a855f7' : '#7e22ce',
+        boxShadow: isUpcoming ? '0 0 8px rgba(168, 85, 247, 0.3)' : undefined,
+      },
+      iconName: 'crown',
+      tagTitle: isUpcoming ? 'يوم 11 (المحاسبة القادمة)' : 'دورة يوم 11',
+      isUpcoming,
+    };
+  }
+
+  if (day === 25) {
+    // يوم 25: لمسة برتقالية ذهبية ساطعة ومميزة جداً (Amber / Flame Gold) مع وهج للمحاسبة القادمة
+    return {
+      day: 25,
+      label: 'يوم 25',
+      bgClass: L ? 'bg-amber-100' : 'bg-amber-950/80',
+      textClass: L ? 'text-amber-800' : 'text-amber-300',
+      borderClass: 'border-amber-500/60',
+      ringClass: 'ring-1 ring-amber-400/80',
+      badgeStyle: {
+        backgroundColor: L ? '#fffbeb' : 'rgba(69, 26, 3, 0.85)',
+        color: L ? '#92400e' : '#f59e0b',
+        borderColor: L ? '#f59e0b' : '#d97706',
+        boxShadow: '0 0 10px rgba(245, 158, 11, 0.35)',
+      },
+      iconName: 'sparkles',
+      tagTitle: isUpcoming ? 'يوم 25 (المحاسبة القادمة ⭐)' : 'دورة يوم 25',
+      isUpcoming,
+    };
+  }
+
+  // بدون موعد محدد
+  return {
+    day: null,
+    label: 'بدون موعد',
+    bgClass: 'bg-muted',
+    textClass: 'text-muted-foreground',
+    borderClass: 'border-border',
+    badgeStyle: {
+      backgroundColor: L ? '#f1f5f9' : 'rgba(30, 41, 59, 0.5)',
+      color: L ? '#64748b' : '#94a3b8',
+      borderColor: L ? '#cbd5e1' : '#334155',
+    },
+    iconName: 'calendar',
+    tagTitle: 'بدون موعد تفعيل',
+    isUpcoming: false,
+  };
+}

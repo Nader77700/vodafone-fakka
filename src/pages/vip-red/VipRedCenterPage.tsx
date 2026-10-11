@@ -66,6 +66,7 @@ import {
   getPendingLineClaims,
   saveAndApplyVipRedInterval,
   updateVipRedConfig,
+  transferUnconvertedMonitoringLines,
 } from '@/lib/vipRedService';
 import {
   classifyLineSystem,
@@ -79,6 +80,8 @@ import {
   type VipRedProfile,
   type VipRedRoleType,
   VALID_ACTIVATION_DAYS,
+  getUpcomingActivationDay,
+  getActivationDayBadgeConfig,
 } from '@/types/vipRed';
 import VipRedLineDetailsModal from '@/components/line-info/VipRedLineDetailsModal';
 import VipRedUserPortal from './VipRedUserPortal';
@@ -110,14 +113,25 @@ export default function VipRedCenterPage() {
   // Details modal
   const [selectedLineForDetails, setSelectedLineForDetails] = useState<VipRedLine | null>(null);
 
+  // Upcoming activation day intelligence
+  const upcomingDayInfo = useMemo(() => getUpcomingActivationDay(), []);
+
   // Merchant and Activation Day states
   const [merchants, setMerchants] = useState<VipRedMerchant[]>([]);
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
-  const [selectedActivationDay, setSelectedActivationDay] = useState<VipRedActivationDay | null>(null);
+  const [selectedActivationDay, setSelectedActivationDay] = useState<VipRedActivationDay | null>(upcomingDayInfo.day);
   const [selectedPackageTier, setSelectedPackageTier] = useState<VipRedPackageTier>('100gb');
   const [bulkMerchantId, setBulkMerchantId] = useState<string>('');
-  const [bulkActivationDay, setBulkActivationDay] = useState<VipRedActivationDay | null>(null);
+  const [bulkActivationDay, setBulkActivationDay] = useState<VipRedActivationDay | null>(upcomingDayInfo.day);
   const [bulkPackageTier, setBulkPackageTier] = useState<VipRedPackageTier>('100gb');
+
+  // Modal ترحيل الأرقام للمحاسبة القادمة
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetDay, setTransferTargetDay] = useState<VipRedActivationDay>(upcomingDayInfo.day);
+  const [transferSourceDay, setTransferSourceDay] = useState<VipRedActivationDay | 'all'>('all');
+  const [transferScope, setTransferScope] = useState<'all' | 'count'>('all');
+  const [transferCount, setTransferCount] = useState<string>('10');
+  const [isTransferring, setIsTransferring] = useState(false);
 
   // Quick Create Merchant modal
   const [showCreateMerchantModal, setShowCreateMerchantModal] = useState(false);
@@ -830,6 +844,34 @@ export default function VipRedCenterPage() {
       });
   }, [lines]);
 
+  // فلاتر تبويب الأرقام قيد المراقبة
+  const [monitoringSearch, setMonitoringSearch] = useState('');
+  const [monitoringDayFilter, setMonitoringDayFilter] = useState<'all' | '7' | '11' | '25'>('all');
+  const [monitoringMerchantFilter, setMonitoringMerchantFilter] = useState<string>('all');
+
+  const filteredMonitoringLines = useMemo(() => {
+    return monitoringLines.filter(line => {
+      if (monitoringDayFilter !== 'all' && String(line.activation_day) !== monitoringDayFilter) {
+        return false;
+      }
+      if (monitoringMerchantFilter !== 'all') {
+        if (monitoringMerchantFilter === 'unassigned') {
+          if (line.merchant_id) return false;
+        } else if (line.merchant_id !== monitoringMerchantFilter) {
+          return false;
+        }
+      }
+      if (monitoringSearch.trim()) {
+        const q = monitoringSearch.trim().toLowerCase();
+        const matchPhone = line.phone_number.includes(q);
+        const matchCustomer = line.customer_name?.toLowerCase().includes(q);
+        const matchMerchant = line.merchant?.name?.toLowerCase().includes(q);
+        if (!matchPhone && !matchCustomer && !matchMerchant) return false;
+      }
+      return true;
+    });
+  }, [monitoringLines, monitoringDayFilter, monitoringMerchantFilter, monitoringSearch]);
+
   // فلاتر تبويب الأرقام المحولة
   const [convertedSearch, setConvertedSearch] = useState('');
   const [convertedDayFilter, setConvertedDayFilter] = useState<'all' | '7' | '11' | '25'>('all');
@@ -868,9 +910,9 @@ export default function VipRedCenterPage() {
         return ineligibleLines;
       case 'monitoring':
       default:
-        return monitoringLines;
+        return filteredMonitoringLines;
     }
-  }, [activeTab, filteredConvertedLines, ineligibleLines, monitoringLines]);
+  }, [activeTab, filteredConvertedLines, ineligibleLines, filteredMonitoringLines]);
 
   // Design Tokens
   const pageBg = L ? '#f8fafc' : '#0B0B14';
@@ -1339,23 +1381,47 @@ export default function VipRedCenterPage() {
               <div className="flex items-center gap-1">
                 {VALID_ACTIVATION_DAYS.map(day => {
                   const isSelected = selectedActivationDay === day;
+                  const isUpcoming = day === upcomingDayInfo.day;
+                  let activeBg = '#7e22ce';
+                  let activeBdr = '#6b21a8';
+                  let idleText = textC;
+                  let idleBdr = cardBdr;
+
+                  if (day === 25) {
+                    activeBg = '#d97706';
+                    activeBdr = '#b45309';
+                    idleText = L ? '#92400e' : '#f59e0b';
+                    idleBdr = 'rgba(245, 158, 11, 0.4)';
+                  } else if (day === 7) {
+                    activeBg = '#059669';
+                    activeBdr = '#047857';
+                    idleText = L ? '#065f46' : '#10b981';
+                    idleBdr = 'rgba(16, 185, 129, 0.4)';
+                  } else if (day === 11) {
+                    activeBg = '#7e22ce';
+                    activeBdr = '#6b21a8';
+                    idleText = L ? '#581c87' : '#c084fc';
+                    idleBdr = 'rgba(168, 85, 247, 0.4)';
+                  }
+
                   return (
                     <button
                       key={day}
                       type="button"
                       onClick={() => setSelectedActivationDay(isSelected ? null : day)}
-                      className="h-7 px-2 rounded-md border text-[10px] font-black transition-all active:scale-95"
+                      className={`h-7 px-2 rounded-md border text-[10px] font-black transition-all active:scale-95 flex items-center gap-1 ${
+                        isUpcoming && !isSelected ? 'ring-1 ring-amber-400/50' : ''
+                      }`}
                       style={{
-                        background: isSelected
-                          ? (L ? '#7e22ce' : '#9333ea')
-                          : innerBg,
-                        color: isSelected ? '#ffffff' : textC,
-                        borderColor: isSelected
-                          ? (L ? '#6b21a8' : '#a855f7')
-                          : cardBdr,
+                        background: isSelected ? activeBg : innerBg,
+                        color: isSelected ? '#ffffff' : idleText,
+                        borderColor: isSelected ? activeBdr : idleBdr,
+                        boxShadow: isSelected && day === 25 ? '0 0 10px rgba(245, 158, 11, 0.35)' : undefined,
                       }}
                     >
-                      يوم {day}
+                      {day === 25 && <Sparkles className="w-2.5 h-2.5" />}
+                      <span>يوم {day}</span>
+                      {isUpcoming && <span className="text-[8px] font-bold opacity-90">⭐ القادمة</span>}
                     </button>
                   );
                 })}
@@ -1516,21 +1582,35 @@ export default function VipRedCenterPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleBatchCheckAll}
-              disabled={isBatchChecking || monitoringLines.length === 0}
-              className="h-6.5 px-2 rounded-md font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 border transition-all active:scale-95 disabled:opacity-50 shrink-0"
-              style={{
-                background: innerBg,
-                borderColor: cardBdr,
-                color: textC,
-              }}
-            >
-              <RotateCcw className={`w-3 h-3 text-[#E60000] ${isBatchChecking ? 'animate-spin' : ''}`} />
-              <span className="truncate">
-                {isBatchChecking ? `(${batchProgress?.current}/${batchProgress?.total})` : 'فحص الكل الآن'}
-              </span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* زر ترحيل الأرقام قيد المراقبة للمحاسبة القادمة */}
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(true)}
+                disabled={monitoringLines.length === 0}
+                className="h-6.5 px-2 rounded-md font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 border transition-all active:scale-95 bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 shadow-xs shrink-0"
+                title="ترحيل الأرقام التي لم تتحول بعد إلى موعد المحاسبة القادم"
+              >
+                <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                <span>ترحيل للمحاسبة (25)</span>
+              </button>
+
+              <button
+                onClick={handleBatchCheckAll}
+                disabled={isBatchChecking || monitoringLines.length === 0}
+                className="h-6.5 px-2 rounded-md font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 border transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                style={{
+                  background: innerBg,
+                  borderColor: cardBdr,
+                  color: textC,
+                }}
+              >
+                <RotateCcw className={`w-3 h-3 text-[#E60000] ${isBatchChecking ? 'animate-spin' : ''}`} />
+                <span className="truncate">
+                  {isBatchChecking ? `(${batchProgress?.current}/${batchProgress?.total})` : 'فحص الكل الآن'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1560,6 +1640,92 @@ export default function VipRedCenterPage() {
           </div>
         )}
 
+        {/* شريط البحث والفلترة الخاص بتبويب قيد المراقبة */}
+        {activeTab === 'monitoring' && monitoringLines.length > 0 && (
+          <div
+            className="p-2 sm:p-2.5 rounded-xl border space-y-2 shadow-xs"
+            style={{ background: cardBg, borderColor: cardBdr }}
+          >
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2">
+              <div className="relative w-full sm:flex-1">
+                <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={monitoringSearch}
+                  onChange={(e) => setMonitoringSearch(e.target.value)}
+                  placeholder="بحث في أرقام المراقبة برقم الهاتف أو التاجر..."
+                  className="w-full h-7 pr-8 pl-3 rounded-lg border text-xs bg-transparent"
+                  style={{ borderColor: cardBdr, color: textC }}
+                />
+              </div>
+
+              {/* أزرار فلترة الموعد في المراقبة مرتبة حسب الأولوية الذكية */}
+              <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto pb-0.5">
+                <span className="text-[10px] font-bold shrink-0" style={{ color: mutC }}>الموعد:</span>
+                {(['all', '25', '7', '11'] as const).map(day => {
+                  const isSelected = monitoringDayFilter === day;
+                  const isUpcoming = day === '25';
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setMonitoringDayFilter(day)}
+                      className={`h-6.5 px-2 rounded-md border text-[10px] font-bold transition shrink-0 flex items-center gap-1 ${
+                        isSelected
+                          ? day === '25'
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                            : day === '7'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : day === '11'
+                            ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                            : 'bg-primary text-primary-foreground border-primary shadow-xs'
+                          : 'hover:bg-muted border-border'
+                      }`}
+                      style={{
+                        borderColor: !isSelected && day === '25' ? 'rgba(245, 158, 11, 0.4)' : undefined,
+                        color: !isSelected && day === '25' ? (L ? '#92400e' : '#f59e0b') : undefined,
+                      }}
+                    >
+                      {day === '25' && <Sparkles className="w-2.5 h-2.5" />}
+                      <span>{day === 'all' ? 'الكل' : `يوم ${day}`}</span>
+                      {isUpcoming && <span className="text-[8px] font-bold">⭐</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* فلترة التاجر */}
+              <select
+                value={monitoringMerchantFilter}
+                onChange={(e) => setMonitoringMerchantFilter(e.target.value)}
+                className="h-7 px-2 rounded-md border text-[10px] font-bold bg-transparent shrink-0"
+                style={{ borderColor: cardBdr, color: textC }}
+              >
+                <option value="all">جميع التجار</option>
+                <option value="unassigned">بدون تاجر</option>
+                {merchants.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] pt-1 border-t" style={{ borderColor: cardBdr }}>
+              <span className="text-muted-foreground">
+                المعروض: <strong className="font-mono text-foreground">{filteredMonitoringLines.length}</strong> من أصل{' '}
+                <strong className="font-mono">{monitoringLines.length}</strong> خط قيد المراقبة
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(true)}
+                className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 transition"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>ترحيل خطوط لم تتحول إلى يوم 25</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* شريط البحث والفلترة الخاص بتبويب تم التحويل */}
         {activeTab === 'converted' && (
           <div
@@ -1579,23 +1745,39 @@ export default function VipRedCenterPage() {
                 />
               </div>
 
-              {/* أزرار دورة التجديد 7 / 11 / 25 */}
+              {/* أزرار دورة التجديد مرتبة بذكاء: الكل ثم 25 (المحاسبة القادمة) ثم 7 ثم 11 */}
               <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto pb-0.5">
                 <span className="text-[10px] font-bold shrink-0" style={{ color: mutC }}>الموعد:</span>
-                {(['all', '7', '11', '25'] as const).map(day => (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => setConvertedDayFilter(day)}
-                    className={`h-7 px-2.5 rounded-md border text-[11px] font-bold transition shrink-0 ${
-                      convertedDayFilter === day
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                        : 'hover:bg-muted border-border'
-                    }`}
-                  >
-                    {day === 'all' ? 'الكل' : `يوم ${day}`}
-                  </button>
-                ))}
+                {(['all', '25', '7', '11'] as const).map(day => {
+                  const isSelected = convertedDayFilter === day;
+                  const isUpcoming = day === '25';
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setConvertedDayFilter(day)}
+                      className={`h-7 px-2.5 rounded-md border text-[11px] font-bold transition shrink-0 flex items-center gap-1 ${
+                        isSelected
+                          ? day === '25'
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                            : day === '7'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : day === '11'
+                            ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                            : 'bg-primary text-primary-foreground border-primary shadow-xs'
+                          : 'hover:bg-muted border-border'
+                      }`}
+                      style={{
+                        borderColor: !isSelected && day === '25' ? 'rgba(245, 158, 11, 0.4)' : undefined,
+                        color: !isSelected && day === '25' ? (L ? '#92400e' : '#f59e0b') : undefined,
+                      }}
+                    >
+                      {day === '25' && <Sparkles className="w-2.5 h-2.5" />}
+                      <span>{day === 'all' ? 'الكل' : `يوم ${day}`}</span>
+                      {isUpcoming && <span className="text-[8px] font-bold">⭐</span>}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* قائمة اختيار التاجر */}
@@ -1690,16 +1872,30 @@ export default function VipRedCenterPage() {
                 }
               }
 
+              const dayBadge = getActivationDayBadgeConfig(line.activation_day, { lightMode: L });
+
+              // حدود وتأثيرات تمييز إطار البطاقة حسب موعد المحاسبة (7 / 11 / 25)
+              let dayAccentClasses = '';
+              if (line.activation_day === 25) {
+                dayAccentClasses = 'border-r-4 border-r-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.12)]';
+              } else if (line.activation_day === 7) {
+                dayAccentClasses = 'border-r-4 border-r-emerald-500';
+              } else if (line.activation_day === 11) {
+                dayAccentClasses = 'border-r-4 border-r-purple-500';
+              }
+
               return (
                 <div
                   key={line.id}
-                  className={`p-1.5 rounded-lg border transition-all shadow-xs relative overflow-hidden ${
+                  className={`p-1.5 rounded-lg border transition-all shadow-xs relative overflow-hidden ${dayAccentClasses} ${
                     isLineChecking ? 'ring-1 ring-blue-500/60 border-blue-500' : ''
                   }`}
                   style={{
                     background: cardBg,
                     borderColor: isLineChecking
                       ? '#3b82f6'
+                      : line.activation_day === 25
+                      ? 'rgba(245, 158, 11, 0.45)'
                       : classification.status === 'converted'
                       ? (L ? '#10b981' : 'rgba(16, 185, 129, 0.45)')
                       : classification.status === 'ineligible'
@@ -1793,9 +1989,23 @@ export default function VipRedCenterPage() {
                   {/* السطر 2: بيانات التاجر والموعد والرصيد والإجراءات فائقة الانكماش */}
                   <div className="flex items-center justify-between gap-1 pt-1 text-[10px]">
                     <div className="flex items-center gap-1.5 min-w-0 truncate" style={{ color: mutC }}>
-                      {/* موعد التفعيل */}
-                      <span className="px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-bold shrink-0">
-                        {line.activation_day ? `يوم ${line.activation_day}` : 'بدون موعد'}
+                      {/* موعد التفعيل مع تصميم وهوية لونية منفصلة وشارة متطورة لكل يوم */}
+                      <span
+                        className="px-1.5 py-0.2 rounded font-bold text-[9px] shrink-0 flex items-center gap-1 border"
+                        style={dayBadge.badgeStyle}
+                        title={dayBadge.tagTitle}
+                      >
+                        {line.activation_day === 25 ? (
+                          <Sparkles className="w-2.5 h-2.5" />
+                        ) : line.activation_day === 7 ? (
+                          <Zap className="w-2.5 h-2.5" />
+                        ) : line.activation_day === 11 ? (
+                          <Crown className="w-2.5 h-2.5" />
+                        ) : null}
+                        <span>{dayBadge.label}</span>
+                        {dayBadge.isUpcoming && (
+                          <span className="text-[8px] font-black opacity-90">⭐</span>
+                        )}
                       </span>
 
                       {/* التاجر */}
@@ -1943,19 +2153,46 @@ export default function VipRedCenterPage() {
                 <div className="flex items-center gap-1">
                   {VALID_ACTIVATION_DAYS.map(day => {
                     const isSelected = bulkActivationDay === day;
+                    const isUpcoming = day === upcomingDayInfo.day;
+                    let activeBg = '#7e22ce';
+                    let activeBdr = '#6b21a8';
+                    let idleText = textC;
+                    let idleBdr = cardBdr;
+
+                    if (day === 25) {
+                      activeBg = '#d97706';
+                      activeBdr = '#b45309';
+                      idleText = L ? '#92400e' : '#f59e0b';
+                      idleBdr = 'rgba(245, 158, 11, 0.4)';
+                    } else if (day === 7) {
+                      activeBg = '#059669';
+                      activeBdr = '#047857';
+                      idleText = L ? '#065f46' : '#10b981';
+                      idleBdr = 'rgba(16, 185, 129, 0.4)';
+                    } else if (day === 11) {
+                      activeBg = '#7e22ce';
+                      activeBdr = '#6b21a8';
+                      idleText = L ? '#581c87' : '#c084fc';
+                      idleBdr = 'rgba(168, 85, 247, 0.4)';
+                    }
+
                     return (
                       <button
                         key={day}
                         type="button"
                         onClick={() => setBulkActivationDay(isSelected ? null : day)}
-                        className="flex-1 h-8 rounded-lg border text-xs font-bold transition-all active:scale-95"
+                        className={`flex-1 h-8 rounded-lg border text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                          isUpcoming && !isSelected ? 'ring-1 ring-amber-400/50' : ''
+                        }`}
                         style={{
-                          background: isSelected ? (L ? '#7e22ce' : '#9333ea') : cardBg,
-                          color: isSelected ? '#ffffff' : textC,
-                          borderColor: isSelected ? '#a855f7' : cardBdr,
+                          background: isSelected ? activeBg : cardBg,
+                          color: isSelected ? '#ffffff' : idleText,
+                          borderColor: isSelected ? activeBdr : idleBdr,
                         }}
                       >
-                        يوم {day}
+                        {day === 25 && <Sparkles className="w-3 h-3" />}
+                        <span>يوم {day}</span>
+                        {isUpcoming && <span className="text-[9px] font-bold">⭐</span>}
                       </button>
                     );
                   })}
@@ -2772,6 +3009,201 @@ export default function VipRedCenterPage() {
                   المتابعة على أي حال مؤقتاً
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── نافذة منبثقة لترحيل الأرقام للمحاسبة القادمة ── */}
+      {showTransferModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in">
+          <div
+            className="w-full max-w-md rounded-2xl border p-4 sm:p-5 space-y-4 shadow-2xl"
+            style={{ background: cardBg, borderColor: 'rgba(245, 158, 11, 0.45)' }}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: cardBdr }}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black" style={{ color: textC }}>
+                    ترحيل الأرقام لموعد المحاسبة القادم
+                  </h3>
+                  <p className="text-[10px]" style={{ color: mutC }}>
+                    نقل الأرقام التي لم تتحول بعد إلى موعد دورة جديدة بسهولة
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTransferModal(false)}
+                className="w-7 h-7 rounded-lg border flex items-center justify-center text-xs hover:bg-muted"
+                style={{ borderColor: cardBdr, color: textC }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* اختيار موعد المحاسبة المستهدف */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold block" style={{ color: textC }}>
+                1. حدد موعد المحاسبة المستهدف (الذي ستُنقل إليه الأرقام):
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {VALID_ACTIVATION_DAYS.map(day => {
+                  const isUpcoming = day === upcomingDayInfo.day;
+                  const isSelected = transferTargetDay === day;
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setTransferTargetDay(day)}
+                      className={`p-2 rounded-xl border text-xs font-black flex flex-col items-center justify-center gap-1 transition ${
+                        isSelected
+                          ? day === 25
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-400/50'
+                            : day === 7
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                            : 'bg-purple-600 text-white border-purple-600 shadow-md'
+                          : 'hover:bg-muted/60 border-border text-foreground'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        {day === 25 ? '⭐ يوم 25' : `يوم ${day}`}
+                      </span>
+                      {isUpcoming && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/20 font-bold">
+                          المحاسبة القادمة
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* تحديد مصدر الأرقام المُراد ترحيلها */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold block" style={{ color: textC }}>
+                2. مصدر الأرقام المطلوب ترحيلها:
+              </label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setTransferSourceDay('all')}
+                  className={`p-2 rounded-lg border font-bold text-center transition ${
+                    transferSourceDay === 'all'
+                      ? 'bg-primary/10 border-primary text-primary'
+                      : 'border-border text-muted-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  جميع أرقام المراقبة ({monitoringLines.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTransferSourceDay(11)}
+                  className={`p-2 rounded-lg border font-bold text-center transition ${
+                    transferSourceDay === 11
+                      ? 'bg-purple-500/15 border-purple-500 text-purple-600 dark:text-purple-400'
+                      : 'border-border text-muted-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  أرقام يوم 11 فقط ({monitoringLines.filter(l => l.activation_day === 11).length})
+                </button>
+              </div>
+            </div>
+
+            {/* خيارات الكمية */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold block" style={{ color: textC }}>
+                3. كمية الأرقام المُراد ترحيلها:
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/30" style={{ borderColor: cardBdr }}>
+                  <input
+                    type="radio"
+                    name="scope"
+                    checked={transferScope === 'all'}
+                    onChange={() => setTransferScope('all')}
+                    className="accent-primary"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-foreground">ترحيل جميع الأرقام المؤهلة المتبقية</span>
+                    <span className="text-[10px] text-muted-foreground block">نقل كل الأرقام التي لم تتحول بعد دفعة واحدة للموعد المحدد</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/30" style={{ borderColor: cardBdr }}>
+                  <input
+                    type="radio"
+                    name="scope"
+                    checked={transferScope === 'count'}
+                    onChange={() => setTransferScope('count')}
+                    className="accent-primary"
+                  />
+                  <div className="flex-1 flex items-center justify-between gap-2 text-xs">
+                    <div>
+                      <span className="font-bold text-foreground">ترحيل عدد محدد فقط من الأرقام:</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={transferCount}
+                      disabled={transferScope !== 'count'}
+                      onChange={(e) => setTransferCount(e.target.value)}
+                      className="w-20 h-7 px-2 rounded-md border text-center font-bold font-mono text-xs bg-transparent"
+                      style={{ borderColor: cardBdr, color: textC }}
+                    />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* أزرار الإجراء والتنفيذ */}
+            <div className="pt-2 flex items-center justify-end gap-2 border-t" style={{ borderColor: cardBdr }}>
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(false)}
+                className="h-8 px-3 rounded-lg border text-xs font-bold hover:bg-muted"
+                style={{ borderColor: cardBdr, color: textC }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                disabled={isTransferring}
+                onClick={async () => {
+                  try {
+                    setIsTransferring(true);
+                    toast.loading(`جاري ترحيل الأرقام إلى يوم ${transferTargetDay}...`, { id: 'transfer-lines' });
+                    const countNum = transferScope === 'count' ? parseInt(transferCount, 10) || 10 : undefined;
+                    const res = await transferUnconvertedMonitoringLines({
+                      targetDay: transferTargetDay,
+                      fromDay: transferSourceDay,
+                      limitCount: countNum,
+                    });
+                    if (res.success) {
+                      toast.success(`تم بنجاح ترحيل (${res.transferredCount}) خط إلى دورة يوم ${transferTargetDay} 🎉`, { id: 'transfer-lines' });
+                      setShowTransferModal(false);
+                      if (user?.id) {
+                        const fresh = await getMonitoredLines(user.id, isAdmin);
+                        setLines(fresh);
+                      }
+                    } else {
+                      toast.error('تعذر الترحيل: ' + (res.error || 'خطأ غير معروف'), { id: 'transfer-lines' });
+                    }
+                  } catch {
+                    toast.error('حدث خطأ أثناء الترحيل', { id: 'transfer-lines' });
+                  } finally {
+                    setIsTransferring(false);
+                  }
+                }}
+                className="h-8 px-4 rounded-lg text-xs font-black text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 flex items-center gap-1.5 shadow-md disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>تأكيد الترحيل إلى يوم {transferTargetDay}</span>
+              </button>
             </div>
           </div>
         </div>
