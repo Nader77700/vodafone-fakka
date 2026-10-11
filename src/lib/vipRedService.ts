@@ -627,8 +627,12 @@ export async function checkSingleMonitoredLine(
     // إذا تحول الخط إلى Enterprise member control لأول مرة:
     if (isNowConverted && !wasConverted) {
       playSuccessChime();
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const dateStr = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric' });
+
       const notifTitle = `🎉 تم تحويل الرقم (${line.phone_number}) لنظام ريد!`;
-      const notifBody = `تم بنجاح تحويل الخط (${line.phone_number}) إلى نظام فودافون ريد بيزنس (${currentSystem || 'Enterprise member control'}) وهو جاهز للتفعيل الآن.`;
+      const notifBody = `تم بنجاح تحويل الخط (${line.phone_number}) لنظام فودافون ريد بيزنس (${currentSystem || 'Enterprise member control'}) بتاريخ ${dateStr} الساعة ${timeStr}، وهو جاهز للتفعيل وسداد الدورة الآن.`;
 
       // 1. إرسال إشعار فوري وتنبيه للمشرف / المالك
       if (userId) {
@@ -640,7 +644,7 @@ export async function checkSingleMonitoredLine(
         await sendVipPushNotification(
           line.claimed_by_user_id,
           `🎉 تم تحويل رقمك (${line.phone_number}) لريد بيزنس!`,
-          `تهانينا! تم تحويل رقمك (${line.phone_number}) بنجاح إلى نظام فودافون ريد بيزنس وهو جاهز للتفعيل الآن.`,
+          `تهانينا! تم تحويل رقمك (${line.phone_number}) بنجاح لنظام فودافون ريد بيزنس بتاريخ ${dateStr} الساعة ${timeStr} وهو جاهز للتفعيل الآن.`,
           '/vip-red'
         );
       }
@@ -658,7 +662,7 @@ export async function checkSingleMonitoredLine(
             await sendVipPushNotification(
               merch.user_id,
               `🎉 تحويل رقم للتاجر: ${line.phone_number}`,
-              `تم تحويل الرقم (${line.phone_number}) المسجل بحسابك (${merch.name}) إلى نظام فودافون ريد بيزنس بنجاح!`,
+              `تم تحويل الرقم (${line.phone_number}) المسجل بحسابك (${merch.name}) لنظام فودافون ريد بيزنس بنجاح بتاريخ ${dateStr} الساعة ${timeStr}!`,
               '/vip-red'
             );
           }
@@ -775,6 +779,20 @@ export async function batchCheckMonitoredLines(
     // استراحة أطول بين الدفعات (2500 مللي ثانية) لتهدئة حركة المرور
     if (c < chunks.length - 1) {
       await new Promise(r => setTimeout(r, 2500));
+    }
+  }
+
+  // إذا تم تحويل أكثر من رقم في نفس الفحص، إرسال إشعار تجميعي شامل لكل الأرقام
+  if (convertedNow > 1 && userId) {
+    try {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const dateStr = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric' });
+      const aggTitle = `🎉 تم تحويل (${convertedNow}) خطوط بنجاح لنظام ريد!`;
+      const aggBody = `تم بنجاح تحويل ${convertedNow} أرقام في نفس الفحص: (${convertedPhones.join('، ')}) بتاريخ ${dateStr} الساعة ${timeStr}، وجميعها جاهزة للتفعيل الآن.`;
+      await sendVipPushNotification(userId, aggTitle, aggBody, '/vip-red');
+    } catch (aggErr) {
+      console.warn('[VipRed] Failed sending batch aggregated notif:', aggErr);
     }
   }
 

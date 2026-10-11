@@ -257,21 +257,32 @@ serve(async (req) => {
 
         checked++;
 
-        // إذا تم التحويل بنجاح، إرسال إشعار للمالك والتاجر في الخلفية
+        // إذا تم التحويل بنجاح، تسجيل التفاصيل لإرسال الإشعار المناسب (فردي أو تجميعي)
         if (converted && line.system_status !== "converted") {
           convertedNow++;
           convertedPhones.push(line.phone_number);
-          const notifTitle = `🎉 تم تحويل الرقم ${line.phone_number} بنجاح لريد!`;
-          const notifBody = `تم تحويل الرقم (${line.phone_number}) بنجاح إلى نظام فودافون ريد بيزنس (${currentSystem || "Enterprise member control"}) وهو جاهز للتفعيل وسداد الدورة الآن.`;
 
-          // 1. تحديد جميع المستخدمين المعنيين (المالك، المطالب، التاجر، والمشرفين/الآدمن)
+          const conversionDate = new Date();
+          const timeStr = conversionDate.toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'Africa/Cairo'
+          });
+          const dateStr = conversionDate.toLocaleDateString('ar-EG', {
+            day: 'numeric',
+            month: 'numeric',
+            year: 'numeric',
+            timeZone: 'Africa/Cairo'
+          });
+
+          // تحديد جميع المستخدمين المعنيين (المالك، المطالب، التاجر، والمشرفين/الآدمن)
           const targetRecipients = new Set<string>();
           if (line.user_id) targetRecipients.add(line.user_id);
           if (line.claimed_by_user_id) targetRecipients.add(line.claimed_by_user_id);
           const merchantUserId = line.merchant?.user_id;
           if (merchantUserId) targetRecipients.add(merchantUserId);
 
-          // التأكد من وصول الإشعار دائماً لحسابات المشرفين والمدير العام
           try {
             const { data: adminProfiles } = await supabase
               .from("profiles")
@@ -284,11 +295,13 @@ serve(async (req) => {
             console.warn("[vip-red-auto-scan] Failed fetching admins for notif:", admErr);
           }
 
-          // 2. إرسال الإشعار والتنبيه الفوري لكل المستهدفين
+          // إرسال إشعار فوري للرقم المتحول مع تحديد دقيق لوقت وتاريخ التحويل الفعلي
+          const notifTitle = `🎉 تم تحويل الرقم ${line.phone_number} بنجاح لريد!`;
+          const notifBody = `تم تحويل الرقم (${line.phone_number}) لنظام فودافون ريد بيزنس بتاريخ ${dateStr} الساعة ${timeStr} وهو جاهز للتفعيل وسداد الدورة الآن.`;
+
           for (const recipientId of targetRecipients) {
             try {
-              // إرسال FCM Push Notification للشاشة وستارة الهاتف وحفظ الإشعار تلقائياً
-              const pushRes = await supabase.functions.invoke("send-push-notification", {
+              await supabase.functions.invoke("send-push-notification", {
                 body: {
                   user_id: recipientId,
                   title: notifTitle,
@@ -304,21 +317,6 @@ serve(async (req) => {
                   "Authorization": `Bearer ${serviceKey}`,
                 },
               });
-
-              if (pushRes.error) {
-                console.warn(`[vip-red-auto-scan] Push invoke error for ${recipientId}:`, pushRes.error);
-                // احتياطي: حفظ الإشعار في جدول notifications مباشرة
-                await supabase.from("notifications").insert({
-                  user_id: recipientId,
-                  title: notifTitle,
-                  body: notifBody,
-                  type: "vip_red",
-                  priority: "urgent",
-                  action_url: "/vip-red",
-                  is_read: false,
-                  is_global: false,
-                });
-              }
             } catch (notifErr) {
               console.warn(`[vip-red-auto-scan] Notification failed for ${recipientId}:`, notifErr);
             }

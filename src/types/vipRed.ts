@@ -369,64 +369,58 @@ export function getActivationDayBadgeConfig(
   const L = options?.lightMode ?? false;
 
   if (day === 7) {
-    // يوم 7: لمسة خضراء زمردية مشعة ونظيفة (Emerald / Mint)
+    // يوم 7: لمسة خضراء زمردية هادئة وبسيطة
     return {
       day: 7,
       label: 'يوم 7',
-      bgClass: L ? 'bg-emerald-100' : 'bg-emerald-950/70',
-      textClass: L ? 'text-emerald-800' : 'text-emerald-300',
-      borderClass: 'border-emerald-500/50',
-      ringClass: isUpcoming ? 'ring-1 ring-emerald-400' : undefined,
+      bgClass: L ? 'bg-emerald-50' : 'bg-emerald-950/40',
+      textClass: L ? 'text-emerald-700' : 'text-emerald-400',
+      borderClass: 'border-emerald-500/40',
       badgeStyle: {
-        backgroundColor: L ? '#ecfdf5' : 'rgba(6, 78, 59, 0.75)',
+        backgroundColor: L ? '#ecfdf5' : 'rgba(6, 78, 59, 0.4)',
         color: L ? '#065f46' : '#34d399',
         borderColor: L ? '#10b981' : '#059669',
-        boxShadow: isUpcoming ? '0 0 8px rgba(16, 185, 129, 0.3)' : undefined,
       },
-      iconName: 'zap',
-      tagTitle: isUpcoming ? 'يوم 7 (المحاسبة القادمة)' : 'دورة يوم 7',
+      iconName: 'calendar',
+      tagTitle: 'دورة يوم 7',
       isUpcoming,
     };
   }
 
   if (day === 11) {
-    // يوم 11: لمسة بنفسجية ملكية فخمة ومميزة (Deep Violet / Royal Purple)
+    // يوم 11: لمسة بنفسجية هادئة وبسيطة
     return {
       day: 11,
       label: 'يوم 11',
-      bgClass: L ? 'bg-purple-100' : 'bg-purple-950/70',
-      textClass: L ? 'text-purple-800' : 'text-purple-300',
-      borderClass: 'border-purple-500/50',
-      ringClass: isUpcoming ? 'ring-1 ring-purple-400' : undefined,
+      bgClass: L ? 'bg-purple-50' : 'bg-purple-950/40',
+      textClass: L ? 'text-purple-700' : 'text-purple-300',
+      borderClass: 'border-purple-500/40',
       badgeStyle: {
-        backgroundColor: L ? '#f3e8ff' : 'rgba(59, 7, 100, 0.75)',
+        backgroundColor: L ? '#f3e8ff' : 'rgba(59, 7, 100, 0.4)',
         color: L ? '#6b21a8' : '#c084fc',
         borderColor: L ? '#a855f7' : '#7e22ce',
-        boxShadow: isUpcoming ? '0 0 8px rgba(168, 85, 247, 0.3)' : undefined,
       },
-      iconName: 'crown',
-      tagTitle: isUpcoming ? 'يوم 11 (المحاسبة القادمة)' : 'دورة يوم 11',
+      iconName: 'calendar',
+      tagTitle: 'دورة يوم 11',
       isUpcoming,
     };
   }
 
   if (day === 25) {
-    // يوم 25: لمسة برتقالية ذهبية ساطعة ومميزة جداً (Amber / Flame Gold) مع وهج للمحاسبة القادمة
+    // يوم 25: لمسة كهرمانية ذهبية هادئة ومميزة بلونها البسيط فقط دون نجوم أو زحمة
     return {
       day: 25,
       label: 'يوم 25',
-      bgClass: L ? 'bg-amber-100' : 'bg-amber-950/80',
-      textClass: L ? 'text-amber-800' : 'text-amber-300',
-      borderClass: 'border-amber-500/60',
-      ringClass: 'ring-1 ring-amber-400/80',
+      bgClass: L ? 'bg-amber-50' : 'bg-amber-950/40',
+      textClass: L ? 'text-amber-700' : 'text-amber-400',
+      borderClass: 'border-amber-500/40',
       badgeStyle: {
-        backgroundColor: L ? '#fffbeb' : 'rgba(69, 26, 3, 0.85)',
-        color: L ? '#92400e' : '#f59e0b',
+        backgroundColor: L ? '#fffbeb' : 'rgba(69, 26, 3, 0.5)',
+        color: L ? '#92400e' : '#fbbf24',
         borderColor: L ? '#f59e0b' : '#d97706',
-        boxShadow: '0 0 10px rgba(245, 158, 11, 0.35)',
       },
-      iconName: 'sparkles',
-      tagTitle: isUpcoming ? 'يوم 25 (المحاسبة القادمة ⭐)' : 'دورة يوم 25',
+      iconName: 'calendar',
+      tagTitle: 'دورة يوم 25',
       isUpcoming,
     };
   }

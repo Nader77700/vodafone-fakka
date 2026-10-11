@@ -111,6 +111,7 @@ async function sendFCMv1(
               default_vibrate_timings: true,
               visibility: "PUBLIC",
               notification_priority: highPriority ? "PRIORITY_MAX" : "PRIORITY_HIGH",
+              tag: `vip_notif_${notificationId || Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
             },
           },
         },

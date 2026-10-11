@@ -13,6 +13,7 @@ import {
   Clock,
   AlertTriangle,
   ArrowRight,
+  ArrowRightLeft,
   ShieldAlert,
   Sparkles,
   RefreshCw,
@@ -831,7 +832,17 @@ export default function VipRedCenterPage() {
   };
 
   // Categorized lines
-  const monitoringLines = useMemo(() => lines.filter(l => l.system_status === 'monitoring'), [lines]);
+  const monitoringLines = useMemo(() => {
+    return [...lines]
+      .filter(l => l.system_status === 'monitoring')
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [lines]);
+
+  // أحدث 5 أرقام مضافة في النظام فقط تأخذ شارة "جديد"
+  const newestLineIds = useMemo(() => {
+    const sorted = [...lines].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return new Set(sorted.slice(0, 5).map(l => l.id));
+  }, [lines]);
   
   // الخطوط المحولة مرتبة بالأحدث تحويلاً أولاً مع دعم تاريخ التحويل
   const convertedLines = useMemo(() => {
@@ -1583,16 +1594,16 @@ export default function VipRedCenterPage() {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* زر ترحيل الأرقام قيد المراقبة للمحاسبة القادمة */}
+              {/* زر ترحيل الأرقام قيد المراقبة */}
               <button
                 type="button"
                 onClick={() => setShowTransferModal(true)}
                 disabled={monitoringLines.length === 0}
                 className="h-6.5 px-2 rounded-md font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 border transition-all active:scale-95 bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 shadow-xs shrink-0"
-                title="ترحيل الأرقام التي لم تتحول بعد إلى موعد المحاسبة القادم"
+                title="ترحيل أرقام المراقبة إلى موعد محاسبة آخر"
               >
-                <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
-                <span>ترحيل للمحاسبة (25)</span>
+                <ArrowRightLeft className="w-3 h-3 text-amber-500 shrink-0" />
+                <span>ترحيل</span>
               </button>
 
               <button
@@ -1686,9 +1697,7 @@ export default function VipRedCenterPage() {
                         color: !isSelected && day === '25' ? (L ? '#92400e' : '#f59e0b') : undefined,
                       }}
                     >
-                      {day === '25' && <Sparkles className="w-2.5 h-2.5" />}
                       <span>{day === 'all' ? 'الكل' : `يوم ${day}`}</span>
-                      {isUpcoming && <span className="text-[8px] font-bold">⭐</span>}
                     </button>
                   );
                 })}
@@ -1714,14 +1723,6 @@ export default function VipRedCenterPage() {
                 المعروض: <strong className="font-mono text-foreground">{filteredMonitoringLines.length}</strong> من أصل{' '}
                 <strong className="font-mono">{monitoringLines.length}</strong> خط قيد المراقبة
               </span>
-              <button
-                type="button"
-                onClick={() => setShowTransferModal(true)}
-                className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 transition"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>ترحيل خطوط لم تتحول إلى يوم 25</span>
-              </button>
             </div>
           </div>
         )}
@@ -1772,9 +1773,7 @@ export default function VipRedCenterPage() {
                         color: !isSelected && day === '25' ? (L ? '#92400e' : '#f59e0b') : undefined,
                       }}
                     >
-                      {day === '25' && <Sparkles className="w-2.5 h-2.5" />}
                       <span>{day === 'all' ? 'الكل' : `يوم ${day}`}</span>
-                      {isUpcoming && <span className="text-[8px] font-bold">⭐</span>}
                     </button>
                   );
                 })}
@@ -1874,10 +1873,10 @@ export default function VipRedCenterPage() {
 
               const dayBadge = getActivationDayBadgeConfig(line.activation_day, { lightMode: L });
 
-              // حدود وتأثيرات تمييز إطار البطاقة حسب موعد المحاسبة (7 / 11 / 25)
+              // حدود وتمييز إطار البطاقة حسب موعد المحاسبة (7 / 11 / 25)
               let dayAccentClasses = '';
               if (line.activation_day === 25) {
-                dayAccentClasses = 'border-r-4 border-r-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.12)]';
+                dayAccentClasses = 'border-r-4 border-r-amber-500';
               } else if (line.activation_day === 7) {
                 dayAccentClasses = 'border-r-4 border-r-emerald-500';
               } else if (line.activation_day === 11) {
@@ -1932,14 +1931,17 @@ export default function VipRedCenterPage() {
                         </span>
                       )}
 
-                      {/* شارة نظام الخط: نظام الخط الفعلي (ريد / 14 قرش / فليكس / غير مؤهل / جديد) دون تكرار عبارات الفحص */}
+                      {/* شارة جديد فقط لأحدث 5 أرقام مضافة في النظام */}
+                      {newestLineIds.has(line.id) && (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 shrink-0">
+                          جديد
+                        </span>
+                      )}
+
+                      {/* شارة نظام الخط: نظام الخط الفعلي (ريد / 14 قرش / فليكس / غير مؤهل) */}
                       {classification.status === 'converted' ? (
                         <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                           ريد
-                        </span>
-                      ) : !line.last_checked_at ? (
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-muted/40 text-muted-foreground border border-muted shrink-0">
-                          جديد
                         </span>
                       ) : classification.status === 'monitoring' ? (
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
@@ -1989,27 +1991,17 @@ export default function VipRedCenterPage() {
                   {/* السطر 2: بيانات التاجر والموعد والرصيد والإجراءات فائقة الانكماش */}
                   <div className="flex items-center justify-between gap-1 pt-1 text-[10px]">
                     <div className="flex items-center gap-1.5 min-w-0 truncate" style={{ color: mutC }}>
-                      {/* موعد التفعيل مع تصميم وهوية لونية منفصلة وشارة متطورة لكل يوم */}
+                      {/* موعد التفعيل بهوية لونية هادئة وبسيطة بدون أي إيموجي أو نجوم */}
                       <span
-                        className="px-1.5 py-0.2 rounded font-bold text-[9px] shrink-0 flex items-center gap-1 border"
+                        className="px-1.5 py-0.2 rounded font-bold text-[9px] shrink-0 border"
                         style={dayBadge.badgeStyle}
                         title={dayBadge.tagTitle}
                       >
-                        {line.activation_day === 25 ? (
-                          <Sparkles className="w-2.5 h-2.5" />
-                        ) : line.activation_day === 7 ? (
-                          <Zap className="w-2.5 h-2.5" />
-                        ) : line.activation_day === 11 ? (
-                          <Crown className="w-2.5 h-2.5" />
-                        ) : null}
-                        <span>{dayBadge.label}</span>
-                        {dayBadge.isUpcoming && (
-                          <span className="text-[8px] font-black opacity-90">⭐</span>
-                        )}
+                        {dayBadge.label}
                       </span>
 
                       {/* التاجر */}
-                      <span className="truncate max-w-[100px] text-[10px]" title={line.merchant?.name || 'بدون تاجر'}>
+                      <span className="truncate max-w-[130px] text-[10px]" title={line.merchant?.name || 'بدون تاجر'}>
                         {line.merchant ? line.merchant.name : 'بدون تاجر'}
                       </span>
 
@@ -3024,14 +3016,14 @@ export default function VipRedCenterPage() {
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: cardBdr }}>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
-                  <Sparkles className="w-4 h-4" />
+                  <ArrowRightLeft className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black" style={{ color: textC }}>
-                    ترحيل الأرقام لموعد المحاسبة القادم
+                    ترحيل أرقام المراقبة
                   </h3>
                   <p className="text-[10px]" style={{ color: mutC }}>
-                    نقل الأرقام التي لم تتحول بعد إلى موعد دورة جديدة بسهولة
+                    نقل الأرقام التي لم تتحول بعد إلى موعد محاسبة آخر بسهولة
                   </p>
                 </div>
               </div>
@@ -3051,7 +3043,6 @@ export default function VipRedCenterPage() {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {VALID_ACTIVATION_DAYS.map(day => {
-                  const isUpcoming = day === upcomingDayInfo.day;
                   const isSelected = transferTargetDay === day;
                   return (
                     <button
@@ -3061,21 +3052,14 @@ export default function VipRedCenterPage() {
                       className={`p-2 rounded-xl border text-xs font-black flex flex-col items-center justify-center gap-1 transition ${
                         isSelected
                           ? day === 25
-                            ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-400/50'
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-md'
                             : day === 7
                             ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                             : 'bg-purple-600 text-white border-purple-600 shadow-md'
                           : 'hover:bg-muted/60 border-border text-foreground'
                       }`}
                     >
-                      <span className="flex items-center gap-1">
-                        {day === 25 ? '⭐ يوم 25' : `يوم ${day}`}
-                      </span>
-                      {isUpcoming && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/20 font-bold">
-                          المحاسبة القادمة
-                        </span>
-                      )}
+                      <span>يوم {day}</span>
                     </button>
                   );
                 })}
