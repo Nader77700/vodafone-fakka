@@ -62,7 +62,7 @@ import {
   AlertCircle, Pencil, Save, X as XIcon,
   Link as LinkIcon, ShieldCheck, ShieldAlert, ShieldX, Wallet,
   User, Share2, Check, Building2, ExternalLink,
-  FlaskConical, Terminal, ScrollText, Sparkles,
+  FlaskConical, Terminal, ScrollText, Sparkles, MessageSquareCode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,7 +104,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer' | 'offers_center' | 'vip_red';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer' | 'offers_center' | 'vip_red' | 'whatsapp_business';
 
 interface TabMeta {
   id: AdminTab;
@@ -152,6 +152,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'hotfix',            label: '🔧 HotFix',         desc: 'تعطيل/تفعيل الخدمات فوراً بدون APK',      icon: ShieldAlert },
   { id: 'line_info_debug',   label: '🔍 تشخيص معلومات الخط', desc: 'اختبار وتشخيص flow معلومات الخط خطوة بخطوة', icon: Terminal },
   { id: 'vip_red',           label: '👑 مراقبة ريد VIP',    desc: 'إعدادات وصلاحيات مراقبة تحويلات أنظمة ريد', icon: Crown },
+  { id: 'whatsapp_business', label: '💬 إدارة WhatsApp Business', desc: 'لوحة التحكم والاتصال مع Meta وسجلات Webhook', icon: MessageSquareCode },
 ];
 
 // المحرك الداخلي — لا يظهر في الشريط الجانبي لكن قابل للوصول برمجياً
@@ -1491,6 +1492,9 @@ function AdminDashboard() {
     }
     if (activeTab === 'vip_red') {
       navigate('/admin/vip-red', { replace: true });
+    }
+    if (activeTab === 'whatsapp_business') {
+      navigate('/admin/whatsapp', { replace: true });
     }
   }, [activeTab, navigate]);
   useEffect(() => { if (activeTab === 'logs')           loadLogs(); },          [activeTab, loadLogs]);

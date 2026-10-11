@@ -321,6 +321,82 @@ serve(async (req) => {
               console.warn(`[vip-red-auto-scan] Notification failed for ${recipientId}:`, notifErr);
             }
           }
+
+          // إدراج حدث تحويل الخط إلى طابور أتمتة الواتساب بشكل ذري وغير متزامن
+          try {
+            const { data: rules } = await supabase
+              .from("whatsapp_automation_rules")
+              .select("is_global_paused, conversion_enabled, templates_mapping")
+              .eq("id", "default")
+              .maybeSingle();
+
+            if (rules && !rules.is_global_paused && rules.conversion_enabled) {
+              const tmpl = rules.templates_mapping?.conversion?.template_name || "red_conversion_success";
+              const convEventId = `conv_${line.id}_${updates.converted_at}`;
+
+              const { data: pref } = await supabase
+                .from("whatsapp_customer_preferences")
+                .select("whatsapp_recipient, is_enabled, is_paused, allow_conversion_notif, consent_status")
+                .or(`entity_id.eq.${line.id},line_phone_number.eq.${line.phone_number}`)
+                .maybeSingle();
+
+              let allowSend = true;
+              let skipReason = null;
+              if (pref?.is_paused || pref?.is_enabled === false) {
+                allowSend = false;
+                skipReason = "customer_paused";
+              } else if (pref?.allow_conversion_notif === false) {
+                allowSend = false;
+                skipReason = "category_disabled_by_customer";
+              } else if (pref && pref.consent_status !== "consented") {
+                allowSend = false;
+                skipReason = "missing_customer_consent";
+              }
+
+              const targetWhatsapp = pref?.whatsapp_recipient || line.merchant?.phone || line.phone_number;
+              const cleanRecipient = targetWhatsapp.replace(/[^0-9]/g, "");
+              const formattedRecipient = cleanRecipient.startsWith("01") && cleanRecipient.length === 11 
+                ? "20" + cleanRecipient.substring(1) 
+                : cleanRecipient;
+
+              if (allowSend && formattedRecipient.length >= 10) {
+                await supabase
+                  .from("whatsapp_automation_queue")
+                  .insert({
+                    event_category: "conversion",
+                    source_event_id: convEventId,
+                    line_id: line.id,
+                    customer_name: line.customer_name || line.merchant?.name || "عميل فودافون ريد",
+                    recipient_phone: formattedRecipient,
+                    template_name: tmpl,
+                    template_language: "ar",
+                    template_parameters: {
+                      customer_name: line.customer_name || "العميل المحترم",
+                      phone_number: line.phone_number,
+                      converted_at: dateStr + " " + timeStr,
+                    },
+                    status: "pending",
+                  });
+              } else if (!allowSend) {
+                await supabase
+                  .from("whatsapp_automation_queue")
+                  .insert({
+                    event_category: "conversion",
+                    source_event_id: convEventId,
+                    line_id: line.id,
+                    customer_name: line.customer_name || line.merchant?.name || "عميل فودافون ريد",
+                    recipient_phone: formattedRecipient || line.phone_number,
+                    template_name: tmpl,
+                    template_language: "ar",
+                    template_parameters: {},
+                    status: "skipped",
+                    skip_reason: skipReason || "invalid_recipient",
+                  });
+              }
+            }
+          } catch (waErr) {
+            console.warn("[vip-red-auto-scan] WhatsApp queue enqueue error:", waErr);
+          }
         }
 
         // فاصل زمني آمن وتدريجي بين الأرقام داخل الدفعة (2000 مللي ثانية) لتفادي الحظر

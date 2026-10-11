@@ -1,37 +1,31 @@
-## Vibe
-- Telecom Premium Dark VIP Dashboard with high-contrast activation-day chromatic coding (Vodafone Red signature)
+# Theme Name: Minimal Executive
 
-## Color
-- Primary: #E60000
-- On Primary: #FFFFFF
-- Accent: #10B981
-- On Accent: #FFFFFF
-- Background: #0B0E14
-- Foreground: #F1F5F9
-- Muted: #1E232E
-- Border: #2B3242
-- Secondary: #8B5CF6
+# Vibe & Description:
+Classical serif typography, a cool-gray paper-textured background, and restrained blue accents create a quiet, refined, trustworthy business presence through fine lines, generous whitespace, and editorial-style composition.
 
-## Activation Day Distinct Theming
-- Day 7 (يوم 7): Emerald/Teal luminous theme (Badge: #064E3B bg, #10B981 text, #059669 border, Icon: CalendarClock)
-- Day 11 (يوم 11): Deep Violet/Indigo royal theme (Badge: #3B0764 bg, #A855F7 text, #7E22CE border, Icon: CheckCircle2)
-- Day 25 (يوم 25 - المحاسبة القادمة): Radiant Amber/Gold VIP theme with distinct glow/border (Badge: #451A03 bg, #F59E0B text, #D97706 border, Star/Sparkles icon, glowing subtle border)
+# Color
 
-## Typography
-- Heading: Cairo (family: 'Cairo', sans-serif, weight: 700, url: https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap)
-- Body: Cairo (family: 'Cairo', sans-serif, weight: 500, url: https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600&display=swap)
+- Keep the palette extremely restrained, using cool gray, deep black, pure white, and blue as the only accent color.
+- Use a cool-gray paper tone (#F9F9F9) for the background, deep black (#1A1A1A) for primary text, pure white (#FFFFFF) for card surfaces, and clear blue (#1C82F5) as the accent color. Avoid high saturation and harsh contrast overall, presenting the readability and elegance of a publication.
 
-## Visual Language
-- Core visual signature: Day-distinct high-contrast chromatic indicators that give Day 7, Day 11, and Day 25 immediate instant recognition without opening details.
-- Material & depth: Layered dark cards with subtle borders, glowing pill indicators for the upcoming cycle (Day 25), and clean action buttons.
-- Containers & buttons: Ultra-compact line cards with single-row data, instant transfer modal with clear quantity/all radio toggles, and fast local batch actions.
-- Layout rhythm: Dense, organized telecom grid with mobile-first sticky controls, non-intrusive dialogs, and clear visual hierarchy.
+# Font
 
-## Animation
-- Entrance: Fade-in and slight scale for transfer modals (150ms ease-out)
-- Interaction: Smooth background hover on day buttons and cards (100ms)
+- Use "SourceHanSerifCN-SemiBold" as the title font. (https://resource-static.bj.bcebos.com/fonts-skill/SourceHanSerifCN-SemiBold.woff2)
+- Use "AlibabaPuHuiTi" as the body font. (https://resource-static.bj.bcebos.com/fonts-skill/AlibabaPuHuiTi_Regular.ttf)
 
-## Forbidden
-- Identical visual styling for Day 7, Day 11, and Day 25
-- Large obstructive full-screen blocking banners
-- Moving lines without user confirmation dialog
+# Animation
+
+- Motion is restrained, smooth, and bounce-free. Buttons rise or settle slightly on touch, while cards express state only through changes in shadow, border, and background brightness.
+- Elements appear with a slow fade-in of about 200-600ms, emphasizing a quiet, stable, editorial-grade reading rhythm.
+
+# Layout
+
+- Pages use generous whitespace and narrow content columns to create the reading feel of a premium publication. On mobile, maintain ample margins to avoid crowding information.
+- Use 1px cool-gray fine lines between sections to establish order. Titles are centered or arranged with subtle asymmetry, card spacing is relaxed, and body text line height remains airy.
+
+# Elements
+
+- Buttons use 6px corner radius. Primary buttons have a blue background with white text, while secondary buttons use a fine outlined style, with only slight brightness and shadow changes on interaction.
+- Cards use a white background, 8px corner radius, a fine gray border, and an extremely subtle shadow, with an optional 2px blue accent line at the top.
+- Section labels use small monospaced uppercase text with wide letter spacing, paired with fine lines extending across both sides to form a distinctive editorial structure.
+- The background may layer in extremely subtle paper noise and low-opacity blue glows, but it must remain clean, calm, and restrained.
