@@ -8,22 +8,46 @@ const CORS_HEADERS = {
 };
 
 const BASE_URL = "https://mab.etisalat.com.eg:11003";
-const DEVICE_ID = "b61c90c58c612671";
 
-const BASE_HEADERS: Record<string, string> = {
-  "applicationVersion": "2",
-  "applicationName": "MAB",
-  "Accept": "text/xml",
-  "Language": "ar",
-  "APP-BuildNumber": "10744",
-  "APP-Version": "36.1.0",
-  "OS-Type": "Android",
-  "OS-Version": "16",
-  "APP-STORE": "GOOGLE",
-  "C-Type": "WIFI",
-  "Is-Corporate": "false",
-  "User-Agent": "okhttp/5.0.0-alpha.11",
-  "Content-Type": "text/xml; charset=UTF-8",
+export interface DeviceProfile {
+  deviceId: string;
+  modelType: string;
+  osVersion: string;
+  userAgent: string;
+  simulatedIp: string;
+}
+
+export interface BridgeConfig {
+  bridge_enabled: boolean;
+  bridge_url: string;
+  bridge_mode: string;
+  bridge_auth?: string;
+  owner_device_id: string;
+  owner_model_type: string;
+  owner_os_version: string;
+  owner_user_agent: string;
+  owner_simulated_ip: string;
+  child_device_id: string;
+  child_model_type: string;
+  child_os_version: string;
+  child_user_agent: string;
+  child_simulated_ip: string;
+}
+
+const DEFAULT_BRIDGE_CONFIG: BridgeConfig = {
+  bridge_enabled: false,
+  bridge_url: "",
+  bridge_mode: "direct",
+  owner_device_id: "b61c90c58c612671",
+  owner_model_type: "CPH2737",
+  owner_os_version: "16",
+  owner_user_agent: "okhttp/5.0.0-alpha.11",
+  owner_simulated_ip: "196.205.142.23", // Etisalat Misr ASN AS36935
+  child_device_id: "f28a90d41e7391b5", // Distinct Child Device ID
+  child_model_type: "SM-S928B",       // Samsung Galaxy S24 Ultra (Distinct)
+  child_os_version: "14",
+  child_user_agent: "okhttp/4.12.0",
+  child_simulated_ip: "156.204.81.44", // WE / Telecom Egypt ASN AS8452
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -34,13 +58,6 @@ async function sha256Hex(str: string): Promise<string> {
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-async function generateSignatures(urlPath: string, bodyXml: string) {
-  const headerSig = await sha256Hex(`${urlPath}${DEVICE_ID}`);
-  const urlSig = await sha256Hex(urlPath);
-  const bodySig = bodyXml ? await sha256Hex(bodyXml) : "";
-  return { headerSig, urlSig, bodySig };
 }
 
 function decodeStoredPassword(pw: string): string {
@@ -55,11 +72,34 @@ function decodeStoredPassword(pw: string): string {
 }
 
 class EtisalatEngine {
+  public device: DeviceProfile;
+  public bridgeConfig: BridgeConfig;
   private authToken: string | null = null;
   public currentDial: string | null = null;
   public ownerDial: string | null = null;
   public childDial: string | null = null;
   public logs: Array<{ time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }> = [];
+
+  constructor(role: 'owner' | 'child', config?: BridgeConfig) {
+    this.bridgeConfig = config || DEFAULT_BRIDGE_CONFIG;
+    if (role === 'owner') {
+      this.device = {
+        deviceId: this.bridgeConfig.owner_device_id || DEFAULT_BRIDGE_CONFIG.owner_device_id,
+        modelType: this.bridgeConfig.owner_model_type || DEFAULT_BRIDGE_CONFIG.owner_model_type,
+        osVersion: this.bridgeConfig.owner_os_version || DEFAULT_BRIDGE_CONFIG.owner_os_version,
+        userAgent: this.bridgeConfig.owner_user_agent || DEFAULT_BRIDGE_CONFIG.owner_user_agent,
+        simulatedIp: this.bridgeConfig.owner_simulated_ip || DEFAULT_BRIDGE_CONFIG.owner_simulated_ip,
+      };
+    } else {
+      this.device = {
+        deviceId: this.bridgeConfig.child_device_id || DEFAULT_BRIDGE_CONFIG.child_device_id,
+        modelType: this.bridgeConfig.child_model_type || DEFAULT_BRIDGE_CONFIG.child_model_type,
+        osVersion: this.bridgeConfig.child_os_version || DEFAULT_BRIDGE_CONFIG.child_os_version,
+        userAgent: this.bridgeConfig.child_user_agent || DEFAULT_BRIDGE_CONFIG.child_user_agent,
+        simulatedIp: this.bridgeConfig.child_simulated_ip || DEFAULT_BRIDGE_CONFIG.child_simulated_ip,
+      };
+    }
+  }
 
   public log(message: string, level: 'info' | 'success' | 'warn' | 'error' = 'info') {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
@@ -67,7 +107,6 @@ class EtisalatEngine {
     console.log(`[${time}] ${message}`);
   }
 
-  // Plan translation function matching new etisalat_bot.py
   public getPlanName(planId: string): string {
     if (!planId) return "غير معروف";
     if (planId.includes("Parent_7")) return "حكاية ميكسات 270";
@@ -77,29 +116,76 @@ class EtisalatEngine {
     return planId;
   }
 
+  private async generateSignatures(urlPath: string, bodyXml: string) {
+    const headerSig = await sha256Hex(`${urlPath}${this.device.deviceId}`);
+    const urlSig = await sha256Hex(urlPath);
+    const bodySig = bodyXml ? await sha256Hex(bodyXml) : "";
+    return { headerSig, urlSig, bodySig };
+  }
+
+  private getBaseHeaders(): Record<string, string> {
+    return {
+      "applicationVersion": "2",
+      "applicationName": "MAB",
+      "Accept": "text/xml",
+      "Language": "ar",
+      "APP-BuildNumber": "10744",
+      "APP-Version": "36.1.0",
+      "OS-Type": "Android",
+      "OS-Version": this.device.osVersion,
+      "APP-STORE": "GOOGLE",
+      "C-Type": "WIFI",
+      "Is-Corporate": "false",
+      "User-Agent": this.device.userAgent,
+      "Content-Type": "text/xml; charset=UTF-8",
+      // Egyptian Telecom Geo-IP Simulation Headers (Passes local ISP routing)
+      "X-Forwarded-For": this.device.simulatedIp,
+      "X-Real-IP": this.device.simulatedIp,
+      "Client-IP": this.device.simulatedIp,
+      "CF-Connecting-IP": this.device.simulatedIp,
+    };
+  }
+
+  private getRequestUrl(urlPath: string): string {
+    if (this.bridgeConfig.bridge_enabled && this.bridgeConfig.bridge_url?.trim()) {
+      const cleanBridge = this.bridgeConfig.bridge_url.trim().replace(/\/$/, "");
+      // If bridge URL is proxy query style: https://bridge.eg/proxy?url=...
+      if (cleanBridge.includes("?")) {
+        return `${cleanBridge}&url=${encodeURIComponent(BASE_URL + urlPath)}`;
+      }
+      return `${cleanBridge}/proxy?url=${encodeURIComponent(BASE_URL + urlPath)}`;
+    }
+    return `${BASE_URL}${urlPath}`;
+  }
+
   async login(email: string, rawPassword: string, isOwner = false, silent = false): Promise<boolean> {
     const cleanPw = decodeStoredPassword(rawPassword);
     const masked = email.includes("@") ? `${email.substring(0, 3)}***@${email.split("@")[1]}` : email;
     if (!silent) {
-      this.log(`[*] جاري تسجيل الدخول للحساب: ${masked} ...`, "info");
+      this.log(`[*] جاري تسجيل الدخول للحساب: ${masked} [جهاز: ${this.device.modelType}] ...`, "info");
     }
 
     const authB64 = btoa(`${email}:${cleanPw}`);
-    const loginXml = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><loginRequest><deviceId>${DEVICE_ID}</deviceId><firstLoginAttempt>true</firstLoginAttempt><modelType>CPH2737</modelType><osVersion>16</osVersion><platform>Android</platform><udid>${DEVICE_ID}</udid></loginRequest>`;
+    const loginXml = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><loginRequest><deviceId>${this.device.deviceId}</deviceId><firstLoginAttempt>true</firstLoginAttempt><modelType>${this.device.modelType}</modelType><osVersion>${this.device.osVersion}</osVersion><platform>Android</platform><udid>${this.device.deviceId}</udid></loginRequest>`;
     const urlPath = "/Saytar/rest/authentication/loginWithPlan";
 
-    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, loginXml);
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, loginXml);
     const headers = {
-      ...BASE_HEADERS,
+      ...this.getBaseHeaders(),
       "Authorization": `Basic ${authB64}`,
       "headerSignature": headerSig,
       "urlSignature": urlSig,
       "bodySignature": bodySig,
     };
 
+    if (this.bridgeConfig.bridge_auth) {
+      headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
+    }
+
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const res = await fetch(`${BASE_URL}${urlPath}`, {
+        const targetUrl = this.getRequestUrl(urlPath);
+        const res = await fetch(targetUrl, {
           method: "POST",
           headers,
           body: loginXml,
@@ -120,7 +206,7 @@ class EtisalatEngine {
               this.childDial = this.currentDial;
             }
             if (!silent) {
-              this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial})`, "success");
+              this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial} | بصمة الجهاز: ${this.device.modelType})`, "success");
             }
             return true;
           }
@@ -150,16 +236,21 @@ class EtisalatEngine {
     const encodedReq = encodeURIComponent(xmlBody).replace(/%2F/g, "/");
     const urlPath = `/Saytar/rest/servicemanagement/getGenericConsumptionsV2?requestParam=${encodedReq}`;
 
-    const { headerSig, urlSig } = await generateSignatures(urlPath, "");
+    const { headerSig, urlSig } = await this.generateSignatures(urlPath, "");
     const headers = {
-      ...BASE_HEADERS,
+      ...this.getBaseHeaders(),
       "auth": `Bearer ${this.authToken}`,
       "headerSignature": headerSig,
       "urlSignature": urlSig,
     };
 
+    if (this.bridgeConfig.bridge_auth) {
+      headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
+    }
+
     try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
         method: "GET",
         headers,
       });
@@ -195,8 +286,6 @@ class EtisalatEngine {
         }
 
         return { planId, remainingMix, childNumber };
-      } else {
-        console.warn(`[getStatusAndChild] Non-200 status: ${res.status}`);
       }
     } catch (err: any) {
       console.error(`[getStatusAndChild] Error:`, err);
@@ -205,7 +294,6 @@ class EtisalatEngine {
     return { planId: "غير معروف", remainingMix: 0, childNumber: null };
   }
 
-  // Renewal activation motion matching etisalat_bot.py renew_bundle_action
   async renewBundleAction(planName: string, amount: string): Promise<boolean> {
     const displayName = this.getPlanName(planName);
     this.log(`[*] جاري إرسال حركة تنشيطية لنظام ${displayName}...`, "info");
@@ -213,9 +301,9 @@ class EtisalatEngine {
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>FULL_RENEW</operation><parameters /><paymentOptions><paymentOption><amount>${amount}</amount><optionID>BALANCE</optionID></paymentOption></paymentOptions><productName>${planName}</productName><requestId>ALFA_PAYMENT_OPTIONS</requestId></generalSubmitOrderRequest>`;
     const urlPath = "/Saytar/rest/General/submitOrder";
 
-    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, xmlBody);
     const headers = {
-      ...BASE_HEADERS,
+      ...this.getBaseHeaders(),
       "auth": `Bearer ${this.authToken}`,
       "headerSignature": headerSig,
       "urlSignature": urlSig,
@@ -223,26 +311,59 @@ class EtisalatEngine {
     };
 
     try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
       });
       const text = await res.text();
-      const ok = res.status === 200 && (text.includes("<status>true</status>") || text.includes("<orderId>"));
-      if (ok) {
-        this.log(`[+] تم إرسال الحركة التنشيطية.`, "success");
-      } else {
+      const ok = res.status === 200 && text.includes("<status>true</status>");
+      if (!ok) {
         this.log(`[-] فشل إرسال الحركة التنشيطية.`, "warn");
       }
       return ok;
     } catch {
-      this.log(`[-] فشل إرسال الحركة التنشيطية.`, "warn");
       return false;
     }
   }
 
-  // Change plan matching etisalat_bot.py change_plan
+  async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
+    const target = toDial.startsWith("0") ? "20" + toDial.substring(1) : toDial;
+    this.log(`[*] جاري تحويل (${amount.toLocaleString('en-US')}) ميكس إلى الرقم: ${toDial} ...`, "info");
+
+    const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>CONSUME_SERVICE</operation><parameters><parameter><name>TRANSFERED_MSISDN</name><value>${target}</value></parameter><parameter><name>RENEW_FLAG</name><value>0</value></parameter><parameter><name>TRANSFERED_AMOUNT</name><value>${amount}</value></parameter></parameters><productName>${productName}</productName><requestId>TRANSFER_METER</requestId></generalSubmitOrderRequest>`;
+    const urlPath = "/Saytar/rest/General/submitOrder";
+
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, xmlBody);
+    const headers = {
+      ...this.getBaseHeaders(),
+      "auth": `Bearer ${this.authToken}`,
+      "headerSignature": headerSig,
+      "urlSignature": urlSig,
+      "bodySignature": bodySig,
+    };
+
+    try {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
+        method: "POST",
+        headers,
+        body: xmlBody,
+      });
+      const text = await res.text();
+      const ok = res.status === 200 && text.includes("<status>true</status>");
+      if (ok) {
+        this.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
+      } else {
+        this.log(`[-] فشل تحويل الميكسات.`, "warn");
+      }
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
   async changePlan(planName: string, planId = ""): Promise<boolean> {
     const displayName = this.getPlanName(planName);
     this.log(`[*] جاري تغيير النظام إلى: ${displayName} ...`, "info");
@@ -250,9 +371,9 @@ class EtisalatEngine {
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><migrateRequest><addonName></addonName><oMSRatePlan>true</oMSRatePlan><operation>FULL_MIGRATE</operation><productName>${planName}</productName><ratePlanID>${planId}</ratePlanID><subscriberNumber>${this.currentDial}</subscriberNumber></migrateRequest>`;
     const urlPath = "/Saytar/rest/HekayaPartial/migrate";
 
-    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, xmlBody);
     const headers = {
-      ...BASE_HEADERS,
+      ...this.getBaseHeaders(),
       "auth": `Bearer ${this.authToken}`,
       "headerSignature": headerSig,
       "urlSignature": urlSig,
@@ -260,7 +381,8 @@ class EtisalatEngine {
     };
 
     try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
@@ -272,57 +394,16 @@ class EtisalatEngine {
     }
   }
 
-  // Transfer mix quota matching etisalat_bot.py transfer_mix
-  async transferMix(receiverNumber: string, quotaAmount: number, productName: string): Promise<boolean> {
-    const quota = Math.floor(quotaAmount);
-    this.log(`[*] جاري تحويل ${quota.toLocaleString('ar-EG')} ميكس ...`, "info");
-
-    const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${this.currentDial}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${receiverNumber}</receiverMsisdn><senderMsisdn>${this.currentDial}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
-    const urlPath = "/Saytar/rest/services/newTransfer/v2";
-
-    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
-    const headers = {
-      ...BASE_HEADERS,
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": headerSig,
-      "urlSignature": urlSig,
-      "bodySignature": bodySig,
-    };
-
-    try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
-        method: "POST",
-        headers,
-        body: xmlBody,
-      });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        this.log(`[+] تم تحويل ${quota.toLocaleString('ar-EG')} ميكس بنجاح!`, "success");
-      } else {
-        this.log(`[-] فشل تحويل الميكسات إلى (${receiverNumber}).`, "error");
-      }
-      return ok;
-    } catch (err: any) {
-      this.log(`[-] خطأ أثناء تحويل الميكسات: ${err?.message || err}`, "error");
-      return false;
-    }
-  }
-
-  // Send add child request matching etisalat_bot.py add_child_temp
-  async sendAddChildRequest(childNumber: string, productName: string): Promise<boolean> {
-    let childIntl = childNumber;
-    if (childNumber.startsWith("0")) {
-      childIntl = "20" + childNumber.slice(1);
-    }
-    this.log(`[*] جاري إرسال دعوة لإضافة الرقم ${childIntl}...`, "info");
+  async sendAddChildRequest(childDial: string, productName = "Hekaya_XRP_MIX_Parent_7"): Promise<boolean> {
+    const childIntl = childDial.startsWith("0") ? "20" + childDial.substring(1) : childDial;
+    this.log(`[*] جاري إرسال دعوة إضافة خط الفرد (${childIntl}) للعائلة بنسبة 10%...`, "info");
 
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><addChildRequest><childNumber>${childIntl}</childNumber><childPercentage>0.10</childPercentage><productId>${productName}</productId><subscriberNumber>${this.currentDial}</subscriberNumber></addChildRequest>`;
     const urlPath = "/Saytar/rest/services/addChild";
 
-    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, xmlBody);
     const headers = {
-      ...BASE_HEADERS,
+      ...this.getBaseHeaders(),
       "auth": `Bearer ${this.authToken}`,
       "headerSignature": headerSig,
       "urlSignature": urlSig,
@@ -330,7 +411,8 @@ class EtisalatEngine {
     };
 
     try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
@@ -354,8 +436,196 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { action, session_id } = body;
+    const { action } = body;
 
+    // ══════════════════════════════════════════════════════════════════
+    // GLOBAL ACTION 1: test_bridge (Probe Etisalat & measure ping)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "test_bridge") {
+      const { data: bridgeRow } = await supabase
+        .from("vip_bridge_config")
+        .select("*")
+        .eq("id", "primary_bridge_config")
+        .single();
+
+      const bridgeConfig = (bridgeRow as BridgeConfig) || DEFAULT_BRIDGE_CONFIG;
+      const startTime = Date.now();
+      let statusText = "ok";
+      let statusCode = 200;
+      let latencyMs = 0;
+
+      try {
+        const probeUrl = bridgeConfig.bridge_enabled && bridgeConfig.bridge_url?.trim()
+          ? (bridgeConfig.bridge_url.includes("?") 
+              ? `${bridgeConfig.bridge_url}&url=${encodeURIComponent(BASE_URL + "/Saytar/rest/authentication/loginWithPlan")}`
+              : `${bridgeConfig.bridge_url.replace(/\/$/, "")}/proxy?url=${encodeURIComponent(BASE_URL + "/Saytar/rest/authentication/loginWithPlan")}`)
+          : `${BASE_URL}/Saytar/rest/authentication/loginWithPlan`;
+
+        const res = await fetch(probeUrl, {
+          method: "OPTIONS",
+          headers: {
+            "User-Agent": "okhttp/5.0.0-alpha.11",
+            "X-Forwarded-For": bridgeConfig.owner_simulated_ip || "196.205.142.23",
+          },
+        });
+        latencyMs = Date.now() - startTime;
+        statusCode = res.status;
+        statusText = res.ok || res.status === 405 || res.status === 200 ? "connected" : `HTTP ${res.status}`;
+      } catch (err: any) {
+        latencyMs = Date.now() - startTime;
+        statusCode = 502;
+        statusText = err?.message || "connection_failed";
+      }
+
+      await supabase
+        .from("vip_bridge_config")
+        .update({
+          last_ping_status: statusText,
+          last_ping_ms: latencyMs,
+          last_ping_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", "primary_bridge_config");
+
+      return new Response(JSON.stringify({
+        success: true,
+        status: statusText,
+        status_code: statusCode,
+        latency_ms: latencyMs,
+        bridge_enabled: bridgeConfig.bridge_enabled,
+        bridge_url: bridgeConfig.bridge_url,
+        owner_ip: bridgeConfig.owner_simulated_ip,
+        child_ip: bridgeConfig.child_simulated_ip,
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // GLOBAL ACTION 2: get_bridge_config
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "get_bridge_config") {
+      const { data, error } = await supabase
+        .from("vip_bridge_config")
+        .select("*")
+        .eq("id", "primary_bridge_config")
+        .single();
+
+      return new Response(JSON.stringify({
+        success: !error,
+        config: data || DEFAULT_BRIDGE_CONFIG,
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // GLOBAL ACTION 3: update_bridge_config
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "update_bridge_config") {
+      const updateData = {
+        bridge_enabled: body.bridge_enabled ?? false,
+        bridge_url: body.bridge_url ?? "",
+        bridge_mode: body.bridge_mode ?? "direct",
+        bridge_auth: body.bridge_auth ?? "",
+        owner_device_id: body.owner_device_id ?? DEFAULT_BRIDGE_CONFIG.owner_device_id,
+        owner_model_type: body.owner_model_type ?? DEFAULT_BRIDGE_CONFIG.owner_model_type,
+        owner_os_version: body.owner_os_version ?? DEFAULT_BRIDGE_CONFIG.owner_os_version,
+        owner_user_agent: body.owner_user_agent ?? DEFAULT_BRIDGE_CONFIG.owner_user_agent,
+        owner_simulated_ip: body.owner_simulated_ip ?? DEFAULT_BRIDGE_CONFIG.owner_simulated_ip,
+        child_device_id: body.child_device_id ?? DEFAULT_BRIDGE_CONFIG.child_device_id,
+        child_model_type: body.child_model_type ?? DEFAULT_BRIDGE_CONFIG.child_model_type,
+        child_os_version: body.child_os_version ?? DEFAULT_BRIDGE_CONFIG.child_os_version,
+        child_user_agent: body.child_user_agent ?? DEFAULT_BRIDGE_CONFIG.child_user_agent,
+        child_simulated_ip: body.child_simulated_ip ?? DEFAULT_BRIDGE_CONFIG.child_simulated_ip,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from("vip_bridge_config")
+        .upsert({ id: "primary_bridge_config", ...updateData })
+        .select()
+        .single();
+
+      return new Response(JSON.stringify({
+        success: !error,
+        config: data,
+        error: error?.message,
+      }), {
+        status: error ? 400 : 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // GLOBAL ACTION 4: get_bot_scripts
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "get_bot_scripts") {
+      const { data, error } = await supabase
+        .from("vip_bot_scripts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      return new Response(JSON.stringify({
+        success: !error,
+        scripts: data || [],
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // GLOBAL ACTION 5: save_bot_script
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "save_bot_script") {
+      const { script_id, name, version, script_code, is_active, notes } = body;
+      if (!script_code) {
+        return new Response(JSON.stringify({ success: false, error: "كود الاسكريبت فارغ" }), {
+          status: 400,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
+
+      if (is_active) {
+        await supabase
+          .from("vip_bot_scripts")
+          .update({ is_active: false })
+          .neq("id", "none");
+      }
+
+      const upsertPayload = {
+        id: script_id || `script_${Date.now()}`,
+        name: name || "اسكريبت مخصص جديد",
+        version: version || "v1.1.0",
+        script_code,
+        is_active: is_active ?? true,
+        notes: notes || "",
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from("vip_bot_scripts")
+        .upsert(upsertPayload)
+        .select()
+        .single();
+
+      return new Response(JSON.stringify({
+        success: !error,
+        script: data,
+        error: error?.message,
+      }), {
+        status: error ? 400 : 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SESSION SPECIFIC ACTIONS
+    // ══════════════════════════════════════════════════════════════════
+    const { session_id } = body;
     if (!session_id) {
       return new Response(JSON.stringify({ success: false, error: "Missing session_id" }), {
         status: 400,
@@ -363,7 +633,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // 1. Fetch Session from Supabase
+    // Fetch Session from Supabase
     const { data: session, error: sessErr } = await supabase
       .from("vip_sessions")
       .select("*")
@@ -377,6 +647,15 @@ serve(async (req: Request) => {
       });
     }
 
+    // Fetch Bridge & Device Config
+    const { data: bridgeRow } = await supabase
+      .from("vip_bridge_config")
+      .select("*")
+      .eq("id", "primary_bridge_config")
+      .single();
+
+    const bridgeConfig = (bridgeRow as BridgeConfig) || DEFAULT_BRIDGE_CONFIG;
+
     const ownerEmail = body.owner_email || session.owner_email;
     const ownerPass = body.owner_password || session.owner_password_enc;
     const childEmail = body.individual_email || session.individual_email;
@@ -385,14 +664,14 @@ serve(async (req: Request) => {
     if (!ownerEmail || !ownerPass) {
       return new Response(JSON.stringify({
         success: false,
-        error: "بيانات اعتماد حساب الأونر (البريد وكلمة المرور) غير متوفرة في هذه الجلسة. يرجى تعديل الجلسة وإدخال البريد وكلمة المرور.",
+        error: "بيانات اعتماد حساب الأونر (البريد وكلمة المرور) غير متوفرة في هذه الجلسة.",
       }), {
         status: 400,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
-    const engine = new EtisalatEngine();
+    const engine = new EtisalatEngine("owner", bridgeConfig);
 
     // ══════════════════════════════════════════════════════════════════
     // ACTION 1: check_status
@@ -444,19 +723,19 @@ serve(async (req: Request) => {
         engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة (يلزم إضافة الفرد بالعائلة أولاً).`, "warn");
       }
 
-      // Check Child account balance & dial if credentials exist
+      // Check Child account with distinct device profile & IP
       let childBalance: number | null = null;
       let childDial: string | null = null;
       let childPlan: string | null = null;
 
       if (childEmail && childPass) {
-        const childEngine = new EtisalatEngine();
+        const childEngine = new EtisalatEngine("child", bridgeConfig);
         if (await childEngine.login(childEmail, childPass, false, true)) {
           childDial = childEngine.childDial;
           const childStatus = await childEngine.getStatusAndChild(true);
           childBalance = childStatus.remainingMix;
           childPlan = engine.getPlanName(childStatus.planId);
-          engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial} | الميكسات: ${(childBalance ?? 0).toLocaleString('en-US')})`, "info");
+          engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial} | الميكسات: ${(childBalance ?? 0).toLocaleString('en-US')} | جهاز: ${childEngine.device.modelType})`, "info");
         }
       }
 
@@ -485,13 +764,15 @@ serve(async (req: Request) => {
         owner: {
           dial: engine.ownerDial,
           plan: engine.getPlanName(ownerPlanId),
-          mix: status.remainingMix,
+          mix_balance: status.remainingMix,
+          has_child_in_family: hasChild,
+          child_number_found: status.childNumber,
+          device: engine.device,
         },
         child: {
-          dial: status.childNumber || childDial,
+          dial: childDial,
           plan: childPlan,
-          mix: childBalance,
-          linked: hasChild,
+          mix_balance: childBalance,
         },
         logs: engine.logs,
       }), {
@@ -501,7 +782,7 @@ serve(async (req: Request) => {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // ACTION 2: add_child (Exact sequence from etisalat_bot.py lines 270-340)
+    // ACTION 2: add_child
     // ══════════════════════════════════════════════════════════════════
     if (action === "add_child") {
       const childNumber = body.child_number || session.individual_account_identifier;
@@ -524,12 +805,12 @@ serve(async (req: Request) => {
       }
 
       await engine.renewBundleAction("Hekaya_XRP_MIX_Parent_7", "270");
-      await sleep(3000);
+      await sleep(2500);
 
       // Step 2: Login to Child and activate account
       if (childEmail && childPass) {
         engine.log(`[*] الخطوة 2/4: تسجيل الدخول للفرد لتفعيل حسابه قبل الدعوة...`, "info");
-        const childEngine = new EtisalatEngine();
+        const childEngine = new EtisalatEngine("child", bridgeConfig);
         if (await childEngine.login(childEmail, childPass, false)) {
           const childStatus = await childEngine.getStatusAndChild(true);
           if (childStatus.planId && childStatus.planId.includes("Parent_7")) {
@@ -537,13 +818,13 @@ serve(async (req: Request) => {
           } else {
             await childEngine.renewBundleAction("Hekaya_XRP_MIX_Parent_6", "180");
           }
-          await sleep(3000);
+          await sleep(2500);
         }
       }
 
       // Step 3: Switch back to Owner to send addChild invitation
       engine.log(`[*] الخطوة 3/4: الرجوع للأونر لإرسال دعوة الإضافة بنسبة 10%...`, "info");
-      const ownerEngine = new EtisalatEngine();
+      const ownerEngine = new EtisalatEngine("owner", bridgeConfig);
       if (!await ownerEngine.login(ownerEmail, ownerPass, true, true)) {
         return new Response(JSON.stringify({
           success: false,
@@ -563,15 +844,14 @@ serve(async (req: Request) => {
           ownerEngine.log(`[*] جاري الدخول للفرد وتحديث البيانات لقبول الدعوة...`, "info");
 
           if (childEmail && childPass) {
-            const childAcceptEngine = new EtisalatEngine();
+            const childAcceptEngine = new EtisalatEngine("child", bridgeConfig);
             if (await childAcceptEngine.login(childEmail, childPass, false, true)) {
               await childAcceptEngine.renewBundleAction("Hekaya_XRP_MIX_Parent_7", "270");
-              await sleep(3000);
+              await sleep(2500);
             }
           }
 
-          // Check if child appears in owner's fafNumberList
-          const verifyOwner = new EtisalatEngine();
+          const verifyOwner = new EtisalatEngine("owner", bridgeConfig);
           await verifyOwner.login(ownerEmail, ownerPass, true, true);
           const st = await verifyOwner.getStatusAndChild(true);
           if (st.childNumber) {
@@ -583,8 +863,8 @@ serve(async (req: Request) => {
             ownerEngine.log(`[-] الدعوة لم يتم تأكيدها بعد (السيرفر ما زال يحدّث).`, "warn");
           }
         } else {
-          ownerEngine.log(`[-] فشل إرسال الدعوة. المحاولة التالية بعد 5 ثواني...`, "warn");
-          await sleep(5000);
+          ownerEngine.log(`[-] فشل إرسال الدعوة. المحاولة التالية بعد 4 ثواني...`, "warn");
+          await sleep(4000);
         }
       }
 
@@ -603,8 +883,7 @@ serve(async (req: Request) => {
 
         return new Response(JSON.stringify({
           success: true,
-          message: `مبروك! تم تأكيد إضافة الفرد: ${finalChildNumber}`,
-          child_number: finalChildNumber,
+          message: `تم ربط وتأكيد الفرد ${finalChildNumber} في عائلة الأونر بنجاح!`,
           logs: allLogs,
         }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
@@ -617,7 +896,7 @@ serve(async (req: Request) => {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // ACTION 3: single_cycle / run_single_cycle (Exact loop steps from etisalat_bot.py lines 350-440)
+    // ACTION 3: single_cycle / run_single_cycle
     // ══════════════════════════════════════════════════════════════════
     if (action === "single_cycle" || action === "run_single_cycle") {
       // 1. Login to Owner
@@ -680,11 +959,11 @@ serve(async (req: Request) => {
       } else {
         engine.log(`[*] الأونر ليس لديه ميكسات حالياً. جاري فحص الفرد...`, "info");
         if (childEmail && childPass) {
-          const childEngine = new EtisalatEngine();
+          const childEngine = new EtisalatEngine("child", bridgeConfig);
           if (await childEngine.login(childEmail, childPass, false, true)) {
             const childStatus = await childEngine.getStatusAndChild(true);
             if (childStatus.remainingMix > 0) {
-              engine.log(`[+] الفرد لديه (${childStatus.remainingMix.toLocaleString('ar-EG')}) ميكس. سيكمل السكريبت خطواته.`, "success");
+              engine.log(`[+] الفرد لديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس. سيكمل السكريبت خطواته.`, "success");
             }
           }
         }
@@ -715,10 +994,10 @@ serve(async (req: Request) => {
         }
       }
 
-      // 6. Login to Child and retrieve mix back to Owner
+      // 6. Login to Child with distinct child fingerprint & retrieve mix back to Owner
       if (childEmail && childPass) {
         engine.log(`[*] تسجيل الدخول للفرد واسترجاع الميكسات للأونر...`, "info");
-        const childTransferEngine = new EtisalatEngine();
+        const childTransferEngine = new EtisalatEngine("child", bridgeConfig);
         if (await childTransferEngine.login(childEmail, childPass, false, true)) {
           const childSt = await childTransferEngine.getStatusAndChild(true);
           engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
@@ -731,41 +1010,43 @@ serve(async (req: Request) => {
       }
 
       // 7. Login back to Owner and read final mix
-      const finalOwnerEngine = new EtisalatEngine();
-      if (await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
-        const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
-        engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس`, "success");
-        engine.logs.push(...finalOwnerEngine.logs);
-
-        const newCycleCount = (session.current_cycle || 0) + 1;
-        const targetMix = session.target_mix_balance || 50000;
-        const targetReached = finalStatus.remainingMix >= targetMix;
-
-        // Update database
-        await supabase
-          .from("vip_sessions")
-          .update({
-            owner_mix_balance: finalStatus.remainingMix,
-            owner_current_plan: engine.getPlanName(finalStatus.planId),
-            current_cycle: newCycleCount,
-            last_successful_op_at: new Date().toISOString(),
-            last_actual_operation: "single_cycle_completed",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", session_id);
-
+      const finalOwnerEngine = new EtisalatEngine("owner", bridgeConfig);
+      if (!await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
         return new Response(JSON.stringify({
-          success: true,
-          cycle_number: newCycleCount,
-          final_mix: finalStatus.remainingMix,
-          target_reached: targetReached,
+          success: false,
+          error: "فشل العودة لحساب الأونر.",
           logs: engine.logs,
-        }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
+
+      const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
+      engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس`, "success");
+      engine.logs.push(...finalOwnerEngine.logs);
+
+      const newCycleCount = (session.current_cycle || 0) + 1;
+      const targetMix = session.target_mix_balance || 50000;
+      const targetReached = finalStatus.remainingMix >= targetMix;
+
+      // Update database
+      await supabase
+        .from("vip_sessions")
+        .update({
+          owner_mix_balance: finalStatus.remainingMix,
+          owner_current_plan: engine.getPlanName(finalStatus.planId),
+          current_cycle: newCycleCount,
+          last_successful_op_at: new Date().toISOString(),
+          last_actual_operation: "single_cycle_completed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
 
       return new Response(JSON.stringify({
         success: true,
-        message: "اكتملت خطوات الدورة",
+        cycle_number: newCycleCount,
+        final_mix: finalStatus.remainingMix,
+        target_reached: targetReached,
+        target_mix: targetMix,
+        owner_plan: engine.getPlanName(finalStatus.planId),
         logs: engine.logs,
       }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
@@ -788,7 +1069,7 @@ serve(async (req: Request) => {
 
       if (ok) {
         engine.log(`[+] تم إرسال أمر الترحيل إلى: ${engine.getPlanName(targetPlan)} بنجاح!`, "success");
-        await sleep(3000);
+        await sleep(2500);
         const st = await engine.getStatusAndChild(true);
         await supabase
           .from("vip_sessions")

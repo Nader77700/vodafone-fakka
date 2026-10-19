@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Lock,
   ChevronLeft,
+  Code2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -43,6 +44,7 @@ import { VipAutomationControlsTab } from './VipAutomationControlsTab';
 import { VipCycleHistoryTab } from './VipCycleHistoryTab';
 import { VipSystemEligibilityTab } from './VipSystemEligibilityTab';
 import { VipOperationHistoryTab } from './VipOperationHistoryTab';
+import { VipBotScriptTab } from './VipBotScriptTab';
 
 export default function VipPage() {
   const navigate = useNavigate();
@@ -312,6 +314,11 @@ export default function VipPage() {
                   <History className="w-3.5 h-3.5" />
                   <span>سجل العمليات</span>
                 </TabsTrigger>
+
+                <TabsTrigger value="script" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
+                  <Code2 className="w-3.5 h-3.5 text-primary" />
+                  <span>الاسكريبت والجسر والأجهزة</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -351,6 +358,11 @@ export default function VipPage() {
                 activeSession={activeSession}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
               />
+            </TabsContent>
+
+            {/* Tab 5: Dynamic Script, Egypt Bridge & Device Fingerprints */}
+            <TabsContent value="script" className="space-y-4 focus-visible:outline-none">
+              <VipBotScriptTab />
             </TabsContent>
 
           </Tabs>

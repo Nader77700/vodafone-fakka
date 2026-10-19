@@ -312,6 +312,9 @@ export interface VipExecutionResponse {
   error?: string;
   message?: string;
   data?: any;
+  config?: any;
+  scripts?: any[];
+  script?: any;
   logs?: VipExecutionLog[];
   cycle_number?: number;
   final_mix?: number;
@@ -321,6 +324,13 @@ export interface VipExecutionResponse {
   remaining_mix?: number;
   owner_final_mix?: number;
   post_renew_balance?: number;
+  status?: string;
+  status_code?: number;
+  latency_ms?: number;
+  bridge_enabled?: boolean;
+  bridge_url?: string;
+  owner_ip?: string;
+  child_ip?: string;
 }
 
 /**
@@ -384,6 +394,85 @@ export async function getVipDefaultChildCredentials(): Promise<{
     console.error('[vipApi] getVipDefaultChildCredentials error:', err);
     return { success: false, child_email: '', child_password: '', child_dial: '' };
   }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BRIDGE, PROXY & DYNAMIC SCRIPT CONFIGURATION APIs
+// ══════════════════════════════════════════════════════════════════
+
+export interface VipBridgeConfigData {
+  id?: string;
+  bridge_enabled: boolean;
+  bridge_url: string;
+  bridge_mode: string;
+  bridge_auth?: string;
+  owner_device_id: string;
+  owner_model_type: string;
+  owner_os_version: string;
+  owner_user_agent: string;
+  owner_simulated_ip: string;
+  child_device_id: string;
+  child_model_type: string;
+  child_os_version: string;
+  child_user_agent: string;
+  child_simulated_ip: string;
+  last_ping_status?: string;
+  last_ping_ms?: number;
+  last_ping_at?: string;
+}
+
+export interface VipBotScriptData {
+  id: string;
+  name: string;
+  version: string;
+  script_code: string;
+  is_active: boolean;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getVipBridgeConfig(): Promise<VipBridgeConfigData> {
+  const res = await invokeVipExecutor('get_bridge_config', {});
+  return res.config || res.data;
+}
+
+export async function updateVipBridgeConfig(
+  config: Partial<VipBridgeConfigData>
+): Promise<VipBridgeConfigData> {
+  const res = await invokeVipExecutor('update_bridge_config', config);
+  return res.config || res.data;
+}
+
+export async function testVipBridgeConnection(): Promise<{
+  success: boolean;
+  status: string;
+  status_code: number;
+  latency_ms: number;
+  bridge_enabled: boolean;
+  bridge_url: string;
+  owner_ip: string;
+  child_ip: string;
+}> {
+  const res = await invokeVipExecutor('test_bridge', {});
+  return res as any;
+}
+
+export async function getVipBotScripts(): Promise<VipBotScriptData[]> {
+  const res = await invokeVipExecutor('get_bot_scripts', {});
+  return res.scripts || [];
+}
+
+export async function saveVipBotScript(payload: {
+  script_id?: string;
+  name?: string;
+  version?: string;
+  script_code: string;
+  is_active?: boolean;
+  notes?: string;
+}): Promise<VipBotScriptData> {
+  const res = await invokeVipExecutor('save_bot_script', payload);
+  return res.script || res.data;
 }
 
 /**
