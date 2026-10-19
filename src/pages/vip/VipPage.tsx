@@ -278,37 +278,22 @@ export default function VipPage() {
         ) : dashboardData && activeSession ? (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-2.5">
             
-            {/* Scrollable Tabs List */}
+            {/* Streamlined Clean Tabs */}
             <div className="overflow-x-auto pb-1 scrollbar-none">
               <TabsList className="bg-muted/50 p-1 rounded-xl h-auto border border-border inline-flex min-w-full sm:min-w-0">
-                <TabsTrigger value="dashboard" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>لوحة التحكم</span>
+                <TabsTrigger value="dashboard" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
+                  <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
+                  <span>لوحة الجلسة النشطة والأتمتة</span>
                 </TabsTrigger>
 
                 <TabsTrigger value="cycles" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>سجل الدورات</span>
-                </TabsTrigger>
-                
-                <TabsTrigger value="setup" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <UserCog className="w-3.5 h-3.5" />
-                  <span>إعداد الحسابات</span>
+                  <span>سجل الدورات المكتملة</span>
                 </TabsTrigger>
 
                 <TabsTrigger value="manual" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
                   <Sliders className="w-3.5 h-3.5" />
-                  <span>التحكم اليدوي</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="automation" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>الأتمتة والجدولة</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="eligibility" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span>الأنظمة والأهلية</span>
+                  <span>الأوامر اليدوية المباشرة</span>
                 </TabsTrigger>
 
                 <TabsTrigger value="history" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
@@ -318,7 +303,7 @@ export default function VipPage() {
               </TabsList>
             </div>
 
-            {/* Tab 1: Dashboard */}
+            {/* Tab 1: Dashboard (Unified Master Card + Auto Loop + Live Terminal) */}
             <TabsContent value="dashboard" className="space-y-4 focus-visible:outline-none">
               <VipDashboardTab
                 data={dashboardData}
@@ -338,15 +323,7 @@ export default function VipPage() {
               />
             </TabsContent>
 
-            {/* Tab 3: Account Setup */}
-            <TabsContent value="setup" className="space-y-4 focus-visible:outline-none">
-              <VipAccountSetupTab
-                session={activeSession}
-                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
-              />
-            </TabsContent>
-
-            {/* Tab 4: Manual Controls */}
+            {/* Tab 3: Manual Direct Controls */}
             <TabsContent value="manual" className="space-y-4 focus-visible:outline-none">
               <VipManualControlsTab
                 data={dashboardData}
@@ -355,23 +332,7 @@ export default function VipPage() {
               />
             </TabsContent>
 
-            {/* Tab 5: Automation Controls */}
-            <TabsContent value="automation" className="space-y-4 focus-visible:outline-none">
-              <VipAutomationControlsTab
-                data={dashboardData}
-                activeSession={activeSession}
-                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
-              />
-            </TabsContent>
-
-            {/* Tab 6: Eligibility Rules */}
-            <TabsContent value="eligibility" className="space-y-4 focus-visible:outline-none">
-              <VipSystemEligibilityTab
-                systems={dashboardData.supported_systems}
-              />
-            </TabsContent>
-
-            {/* Tab 7: Operation History */}
+            {/* Tab 4: Operation History */}
             <TabsContent value="history" className="space-y-4 focus-visible:outline-none">
               <VipOperationHistoryTab
                 initialRecords={dashboardData.recent_operations}

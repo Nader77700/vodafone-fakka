@@ -298,21 +298,88 @@ export interface VipExecutionResponse {
 }
 
 /**
- * Invoke the live EtisalatBot Edge Function executor.
+ * Invoke the live EtisalatBot Edge Function executor directly with full auth headers.
  */
 export async function invokeVipExecutor(
   action: string,
   payload: Record<string, any>
 ): Promise<VipExecutionResponse> {
-  const { data, error } = await supabase.functions.invoke('etisalat-vip-executor', {
-    body: { action, ...payload },
-  });
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vchmsnavyhripakyvzom.supabase.co';
+  const anonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyODc4NTUsImV4cCI6MjA5Nzg2Mzg1NX0.pnqdmg5BApYx3HAPWR2UFhuV5ewyayvKR_dZk8of4s8';
 
-  if (error) {
-    throw new Error(error.message || 'حدث خطأ أثناء الاتصال بمحرك اتصالات المباشر');
+  let token = anonKey;
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      token = data.session.access_token;
+    }
+  } catch {
+    // fallback to anonKey
   }
 
-  return data as VipExecutionResponse;
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': anonKey,
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action, ...payload }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.error || json.message || `خطأ استجابة الخادم (${res.status})`);
+    }
+    return json as VipExecutionResponse;
+  } catch (err: any) {
+    console.error('[vipApi] invokeVipExecutor error:', err);
+    throw new Error(err?.message || 'حدث خطأ أثناء الاتصال بمحرك اتصالات المباشر');
+  }
+}
+
+/**
+ * Get default saved child credentials (email, password, dial).
+ */
+export async function getVipDefaultChildCredentials(): Promise<{
+  success: boolean;
+  child_email: string;
+  child_password?: string;
+  child_dial?: string;
+}> {
+  try {
+    const { data, error } = await supabase.rpc('vip_get_default_child_credentials');
+    if (error) throw error;
+    return data || { success: true, child_email: '', child_password: '', child_dial: '' };
+  } catch (err) {
+    console.error('[vipApi] getVipDefaultChildCredentials error:', err);
+    return { success: false, child_email: '', child_password: '', child_dial: '' };
+  }
+}
+
+/**
+ * Save default child credentials (email, password, dial).
+ */
+export async function saveVipDefaultChildCredentials(
+  email: string,
+  password?: string,
+  dial?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('vip_save_default_child_credentials', {
+      p_child_email: email.trim(),
+      p_child_password: (password || '').trim(),
+      p_child_dial: (dial || '').trim() || null,
+    });
+    if (error) throw error;
+    return data;
+  } catch (err: any) {
+    console.error('[vipApi] saveVipDefaultChildCredentials error:', err);
+    throw err;
+  }
 }
 
 /**

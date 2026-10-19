@@ -310,7 +310,7 @@ class EtisalatEngine {
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
+    return new Response("ok", { status: 200, headers: CORS_HEADERS });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -761,9 +761,30 @@ serve(async (req: Request) => {
         });
       }
 
-      const ownerPlanPre = initialStatus.planId;
-      const ownerPlanName = ownerPlanPre.includes("7") ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
-      const renewCost = ownerPlanPre.includes("7") ? "270" : "180";
+      let ownerPlanPre = initialStatus.planId;
+      const isSeven = ownerPlanPre.includes("7") || ownerPlanPre.includes("270");
+      const isSix = ownerPlanPre.includes("6") || ownerPlanPre.includes("180") || ownerPlanPre.includes("951");
+
+      // Auto-migrate non-matching plans (e.g., 240 or other plans) to Parent 7 (270)
+      if (!isSeven && !isSix) {
+        engine.log(`[!] النظام الحالي (${ownerPlanPre}) غير متوافق (المطلوب Parent 7 بـ 270ج أو Parent 6 بـ 180ج).`, "warn");
+        engine.log(`[*] جاري الترحيل التلقائي إلى Parent 7 (270ج)...`, "info");
+        const migOk = await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
+        if (!migOk) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: `فشل التحويل التلقائي للنظام إلى 270 (النظام الحالي: ${ownerPlanPre}).`,
+            logs: engine.logs,
+          }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+        }
+        await sleep(3000);
+        const recheck = await engine.getStatusAndChild();
+        ownerPlanPre = recheck.planId;
+        engine.log(`[+] تم الترحيل التلقائي بنجاح إلى: ${ownerPlanPre}`, "success");
+      }
+
+      const ownerPlanName = ownerPlanPre.includes("6") ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7";
+      const renewCost = ownerPlanPre.includes("6") ? "180" : "270";
 
       // 3. Renew bundle
       if (!await engine.renewBundle(ownerPlanName, renewCost)) {
