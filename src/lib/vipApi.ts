@@ -269,3 +269,115 @@ export async function getVipCycleHistory(
   if (error) throw error;
   return (data || []) as VipCycleRecord[];
 }
+
+
+// ══════════════════════════════════════════════════════════════════
+// REAL ETISALAT BOT EXECUTOR INTEGRATION (MAB API ENGINE)
+// ══════════════════════════════════════════════════════════════════
+
+export interface VipExecutionLog {
+  time: string;
+  level: 'info' | 'success' | 'warn' | 'error';
+  message: string;
+}
+
+export interface VipExecutionResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  data?: any;
+  logs?: VipExecutionLog[];
+  cycle_number?: number;
+  final_mix?: number;
+  target_reached?: boolean;
+  child_number?: string;
+  current_plan?: string;
+  remaining_mix?: number;
+  owner_final_mix?: number;
+  post_renew_balance?: number;
+}
+
+/**
+ * Invoke the live EtisalatBot Edge Function executor.
+ */
+export async function invokeVipExecutor(
+  action: string,
+  payload: Record<string, any>
+): Promise<VipExecutionResponse> {
+  const { data, error } = await supabase.functions.invoke('etisalat-vip-executor', {
+    body: { action, ...payload },
+  });
+
+  if (error) {
+    throw new Error(error.message || 'حدث خطأ أثناء الاتصال بمحرك اتصالات المباشر');
+  }
+
+  return data as VipExecutionResponse;
+}
+
+/**
+ * Action 1: Live Status & Child Check
+ */
+export async function executeVipCheckStatus(sessionId: string): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('check_status', { session_id: sessionId });
+}
+
+/**
+ * Action 2: Add Child with Automatic Child Login Confirmation
+ */
+export async function executeVipAddChild(
+  sessionId: string,
+  childNumber: string
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('add_child', {
+    session_id: sessionId,
+    child_number: childNumber,
+  });
+}
+
+/**
+ * Action 3: Renew Bundle (270 for Parent 7 or 180 for Parent 6)
+ */
+export async function executeVipRenewBundle(sessionId: string): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('renew_bundle', { session_id: sessionId });
+}
+
+/**
+ * Action 4: Transfer Mixes to Child Line
+ */
+export async function executeVipTransferToChild(
+  sessionId: string,
+  amount?: number
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('transfer_to_child', {
+    session_id: sessionId,
+    amount,
+  });
+}
+
+/**
+ * Action 5: Change Plan (Migrate Parent 7 <-> Parent 6)
+ */
+export async function executeVipChangePlan(
+  sessionId: string,
+  targetPlan?: '6' | '7'
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('change_plan', {
+    session_id: sessionId,
+    target_plan: targetPlan,
+  });
+}
+
+/**
+ * Action 6: Return Child Mixes to Owner
+ */
+export async function executeVipReturnChildMixes(sessionId: string): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('return_child_mixes', { session_id: sessionId });
+}
+
+/**
+ * Action 7: Execute Full Single Cycle of Script
+ */
+export async function executeVipRunSingleCycle(sessionId: string): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('run_single_cycle', { session_id: sessionId });
+}

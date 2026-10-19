@@ -35,7 +35,14 @@ import {
   Smartphone,
 } from 'lucide-react';
 import type { VipDashboardData, VipSupportedSystem, VipSession } from '@/types/vip';
-import { submitVipManualOperation } from '@/lib/vipApi';
+import {
+  submitVipManualOperation,
+  executeVipChangePlan,
+  executeVipTransferToChild,
+  executeVipReturnChildMixes,
+  executeVipRenewBundle,
+  executeVipCheckStatus,
+} from '@/lib/vipApi';
 
 interface Props {
   data: VipDashboardData;
@@ -63,26 +70,44 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
   const [selectedSystem, setSelectedSystem] = useState<string>('');
   const [transferAmount, setTransferAmount] = useState<string>('5000');
 
-  // Submit manual operation
+  // Submit manual operation via live Etisalat Engine
   const handleSubmitOperation = async (opType: string, actionLabel: string, planId?: string, amount?: number) => {
     setSubmitting(true);
     try {
-      const res = await submitVipManualOperation(
-        opType,
-        actionLabel,
-        planId,
-        amount,
-        session.id
-      );
-
-      if (res.success) {
-        toast.success(res.message || 'تم تسجيل طلب العملية بنجاح في سجل الجلسة');
-        setActiveModal(null);
-        onRefresh();
+      let liveRes: any = null;
+      if (opType === 'change_system') {
+        const target = planId?.includes('6') ? '6' : '7';
+        liveRes = await executeVipChangePlan(session.id, target);
+      } else if (opType === 'transfer_to_individual') {
+        liveRes = await executeVipTransferToChild(session.id, amount);
+      } else if (opType === 'transfer_to_owner') {
+        liveRes = await executeVipReturnChildMixes(session.id);
+      } else if (opType === 'renew_bundle') {
+        liveRes = await executeVipRenewBundle(session.id);
+      } else if (opType === 'refresh_data') {
+        liveRes = await executeVipCheckStatus(session.id);
       }
+
+      if (liveRes && liveRes.success) {
+        toast.success(liveRes.message || 'تم تنفيذ العملية بنجاح عبر محرك اتصالات!');
+      } else if (liveRes && !liveRes.success) {
+        toast.error(liveRes.error || 'فشل تنفيذ العملية المباشرة');
+      } else {
+        const res = await submitVipManualOperation(
+          opType,
+          actionLabel,
+          planId,
+          amount,
+          session.id
+        );
+        toast.success(res.message || 'تم تسجيل العملية بنجاح');
+      }
+
+      setActiveModal(null);
+      onRefresh();
     } catch (err: any) {
       console.error('[VipManual] Submit operation failed:', err);
-      toast.error('تعذر تسجيل العملية: ' + (err?.message || 'خطأ غير متوقع'));
+      toast.error('تعذر تنفيذ العملية: ' + (err?.message || 'خطأ غير متوقع'));
     } finally {
       setSubmitting(false);
     }
