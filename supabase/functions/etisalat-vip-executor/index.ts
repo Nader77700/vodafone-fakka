@@ -146,7 +146,8 @@ class EtisalatEngine {
     }
 
     const xmlBody = `<dialAndLanguageRequest><segmentId>XRP</segmentId><subscriberNumber>${this.currentDial}</subscriberNumber><language>1</language><shortCode>ALFTL</shortCode></dialAndLanguageRequest>`;
-    const encodedReq = encodeURIComponent(xmlBody);
+    // CRITICAL: Python urllib.parse.quote defaults to safe='/' so '/' is NOT encoded to '%2F'
+    const encodedReq = encodeURIComponent(xmlBody).replace(/%2F/g, "/");
     const urlPath = `/Saytar/rest/servicemanagement/getGenericConsumptionsV2?requestParam=${encodedReq}`;
 
     const { headerSig, urlSig } = await generateSignatures(urlPath, "");
@@ -165,26 +166,40 @@ class EtisalatEngine {
 
       if (res.status === 200) {
         const text = await res.text();
-        const planMatch = text.match(/<productId>([^<]+)<\/productId>/);
-        const mixMatch = text.match(/<remainingValue>([0-9]+)<\/remainingValue>/);
 
-        const planId = planMatch ? planMatch[1] : "غير معروف";
+        // 1. Plan productId (ratePlanConsumption/productId)
+        const planMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i) ||
+                          text.match(/<productId>([^<]+)<\/productId>/i);
+        const planId = planMatch ? planMatch[1].trim() : "غير معروف";
+
+        // 2. Mixes (newMeterConsumption/consumptionList/consumption/remainingValue)
+        const mixMatch = text.match(/<newMeterConsumption>[\s\S]*?<remainingValue>([0-9]+)<\/remainingValue>/i) ||
+                         text.match(/<consumptionList>[\s\S]*?<remainingValue>([0-9]+)<\/remainingValue>/i) ||
+                         text.match(/<remainingValue>([0-9]+)<\/remainingValue>/i);
         const remainingMix = mixMatch ? parseInt(mixMatch[1], 10) : 0;
 
+        // 3. Child in family (fafNumberList/fafNumber/value)
         let childNumber: string | null = null;
-        const fafMatches = text.matchAll(/<fafNumber>.*?<value>([0-9]+)<\/value>.*?<\/fafNumber>/gs);
-        for (const m of fafMatches) {
-          const val = m[1];
-          if (val !== this.currentDial) {
-            childNumber = val;
-            break;
+        const fafListMatch = text.match(/<fafNumberList>([\s\S]*?)<\/fafNumberList>/i);
+        if (fafListMatch) {
+          const valMatches = [...fafListMatch[1].matchAll(/<value>([^<]+)<\/value>/gi)];
+          for (const m of valMatches) {
+            const val = m[1].trim();
+            const cleanVal = val.replace(/^20/, "0");
+            const cleanDial = (this.currentDial || "").replace(/^20/, "0");
+            if (cleanVal && cleanVal !== cleanDial && !cleanDial.endsWith(cleanVal) && !cleanVal.endsWith(cleanDial)) {
+              childNumber = cleanVal;
+              break;
+            }
           }
         }
 
         return { planId, remainingMix, childNumber };
+      } else {
+        console.warn(`[getStatusAndChild] Non-200 status: ${res.status}`);
       }
-    } catch {
-      // ignore
+    } catch (err: any) {
+      console.error(`[getStatusAndChild] Error:`, err);
     }
 
     return { planId: "غير معروف", remainingMix: 0, childNumber: null };
@@ -399,7 +414,7 @@ serve(async (req: Request) => {
       let ownerPlanId = status.planId;
       const displayPlan = engine.getPlanName(ownerPlanId);
 
-      engine.log(`[+] فحص الأونر: النظام (${displayPlan}) | الميكسات: ${status.remainingMix.toLocaleString('ar-EG')}`, "success");
+      engine.log(`[+] فحص الأونر: النظام (${displayPlan}) | الميكسات: ${status.remainingMix.toLocaleString('en-US')}`, "success");
 
       // Auto-migrate if plan is not 270 or 180 (e.g. 240 or other plans)
       const isSeven = ownerPlanId.includes("Parent_7");
@@ -409,8 +424,8 @@ serve(async (req: Request) => {
         const migOk = await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
         if (migOk) {
           engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
-          for (let attempt = 0; attempt < 8; attempt++) {
-            await sleep(3000);
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await sleep(2000);
             const recheck = await engine.getStatusAndChild(true);
             if (recheck.planId && recheck.planId.includes("Parent_7")) {
               status = recheck;
@@ -426,7 +441,7 @@ serve(async (req: Request) => {
       if (hasChild) {
         engine.log(`[+] تم تأكيد وجود فرد مضاف في العيلة: ${status.childNumber}`, "success");
       } else {
-        engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة.`, "warn");
+        engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة (يلزم إضافة الفرد بالعائلة أولاً).`, "warn");
       }
 
       // Check Child account balance & dial if credentials exist
@@ -441,7 +456,7 @@ serve(async (req: Request) => {
           const childStatus = await childEngine.getStatusAndChild(true);
           childBalance = childStatus.remainingMix;
           childPlan = engine.getPlanName(childStatus.planId);
-          engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial} | الميكسات: ${childBalance.toLocaleString('ar-EG')})`, "info");
+          engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial} | الميكسات: ${(childBalance ?? 0).toLocaleString('en-US')})`, "info");
         }
       }
 
@@ -619,12 +634,12 @@ serve(async (req: Request) => {
       let ownerPlanPre = status.planId;
 
       // Auto-migrate if not 270 or 180
-      if (!ownerPlanPre.includes("Parent_7") && !ownerPlanPre.includes("Parent_6")) {
+      if (!ownerPlanPre.includes("Parent_7") && !ownerPlanPre.includes("Parent_6") && ownerPlanPre !== "غير معروف") {
         engine.log(`[!] النظام الحالي (${engine.getPlanName(ownerPlanPre)}) غير متوافق. جاري تحويله لـ 270...`, "warn");
         await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
         engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
-        for (let attempt = 0; attempt < 8; attempt++) {
-          await sleep(3000);
+        for (let attempt = 0; attempt < 4; attempt++) {
+          await sleep(2000);
           const recheck = await engine.getStatusAndChild(true);
           if (recheck.planId && recheck.planId.includes("Parent_7")) {
             status = recheck;
@@ -635,11 +650,12 @@ serve(async (req: Request) => {
         }
       }
 
-      const childNum = status.childNumber || session.individual_account_identifier;
+      const childNum = status.childNumber;
       if (!childNum) {
+        engine.log(`[-] تنبيه حاسم: لا يوجد فرد مضاف في عائلة الأونر على السيرفر.`, "error");
         return new Response(JSON.stringify({
           success: false,
-          error: "لا يوجد فرد مربوط بالعائلة! يرجى إضافة الفرد وتأكيده أولاً قبل بدء الدورة.",
+          error: "لا يوجد فرد مضاف داخل عائلة الأونر حالياً. يرجى الضغط على زر «إضافة وتأكيد الفرد الآن» لإضافة خط الفرد إلى العائلة وتأكيده أولاً قبل بدء الدورة.",
           logs: engine.logs,
         }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
@@ -650,7 +666,7 @@ serve(async (req: Request) => {
 
       // 3. Send activation motion to owner
       await engine.renewBundleAction(ownerPlanName, renewCost);
-      await sleep(3000);
+      await sleep(2000);
 
       // 4. Check mix balance & transfer to child
       const statusAfterRenew = await engine.getStatusAndChild(true);
@@ -674,7 +690,7 @@ serve(async (req: Request) => {
         }
       }
 
-      await sleep(2000);
+      await sleep(1500);
 
       // 5. Switch Plan: if 7 -> switch to 6 (951), if 6 -> switch to 7 ("")
       let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
@@ -688,13 +704,13 @@ serve(async (req: Request) => {
       }
 
       await engine.changePlan(targetPlanId, ratePlanId);
-      engine.log(`[*] في انتظار تحديث السيرفر (ممكن ياخد وقت)...`, "info");
+      engine.log(`[*] في انتظار تحديث السيرفر...`, "info");
 
-      for (let attempt = 0; attempt < 12; attempt++) {
-        await sleep(2500);
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await sleep(2000);
         const currentCheck = await engine.getStatusAndChild(true);
         if (currentCheck.planId && currentCheck.planId.includes(targetPlanId) && currentCheck.remainingMix > 0) {
-          engine.log(`[+] السيرفر استجاب! (النظام: ${targetPlanDisplay} | الميكسات: ${currentCheck.remainingMix.toLocaleString('ar-EG')})`, "success");
+          engine.log(`[+] السيرفر استجاب! (النظام: ${targetPlanDisplay} | الميكسات: ${currentCheck.remainingMix.toLocaleString('en-US')})`, "success");
           break;
         }
       }
@@ -705,7 +721,7 @@ serve(async (req: Request) => {
         const childTransferEngine = new EtisalatEngine();
         if (await childTransferEngine.login(childEmail, childPass, false, true)) {
           const childSt = await childTransferEngine.getStatusAndChild(true);
-          engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('ar-EG')}`, "info");
+          engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
 
           if (childSt.remainingMix > 0 && engine.ownerDial) {
             await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
@@ -718,7 +734,7 @@ serve(async (req: Request) => {
       const finalOwnerEngine = new EtisalatEngine();
       if (await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
         const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
-        engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('ar-EG')} ميكس`, "success");
+        engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس`, "success");
         engine.logs.push(...finalOwnerEngine.logs);
 
         const newCycleCount = (session.current_cycle || 0) + 1;

@@ -64,19 +64,20 @@ export function VipUnifiedMasterCard({
     session.owner_current_plan?.includes('951');
   const isSupported = isSeven || isSix;
 
+  // Strict check: Only true if verified and linked inside owner's family
   const hasChild =
-    session.relationship_verified ||
-    !!session.individual_account_identifier ||
-    (session.relationship_status as string) === 'verified' ||
-    session.relationship_status === 'linked_and_verified';
+    session.relationship_verified === true &&
+    (session.relationship_status === 'linked_and_verified' ||
+      (session.relationship_status as string) === 'verified');
 
   const formatBalance = (val: number | null | undefined) => {
     if (val === null || val === undefined) {
       return <span className="text-muted-foreground text-xs font-normal">بانتظار الفحص</span>;
     }
+    const num = Number(val);
     return (
       <span className="font-mono font-bold text-foreground">
-        {val.toLocaleString('ar-EG')}{' '}
+        {num.toLocaleString('en-US')}{' '}
         <span className="text-[11px] font-normal text-muted-foreground">ميكس</span>
       </span>
     );
@@ -92,7 +93,7 @@ export function VipUnifiedMasterCard({
     <>
       <div className="space-y-3.5" dir="rtl">
         {/* ══════════════════════════════════════════════════════════ */}
-        {/* 1. LUXURY CONSOLE CARD: «نظام أتمتة اتصالات» (Inspired by Screenshot 2) */}
+        {/* 1. LUXURY CONSOLE CARD: «نظام أتمتة اتصالات» (Exact match to terminal output) */}
         {/* ══════════════════════════════════════════════════════════ */}
         <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-card via-card/95 to-card/90 shadow-lg relative overflow-hidden p-4 sm:p-5">
           {/* Decorative ambient glow */}
@@ -134,7 +135,7 @@ export function VipUnifiedMasterCard({
 
           {/* Console Grid Structure: Row 1 (Owner Details) & Row 2 (Targets & Metrics) */}
           <div className="pt-3.5 space-y-3 font-mono text-xs">
-            {/* ═══ Segment 1: Owner & Plan Credentials (Screenshot 2 Match) ═══ */}
+            {/* ═══ Segment 1: Owner & Plan Credentials ═══ */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 p-3 rounded-xl bg-background/60 border border-border/60">
               {/* Owner Email */}
               <div className="flex flex-col justify-center p-2 rounded-lg bg-card/60 border border-border/40">
@@ -191,14 +192,14 @@ export function VipUnifiedMasterCard({
                     </Badge>
                   ) : (
                     <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[9px] px-1 py-0">
-                      سيتم الترحيل لـ 270
+                      غير معروف (سيتم الفحص)
                     </Badge>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* ═══ Segment 2: Cycle & Target Status (Screenshot 2 Match) ═══ */}
+            {/* ═══ Segment 2: Cycle & Target Status ═══ */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 p-3 rounded-xl bg-background/60 border border-border/60">
               {/* Current Cycle */}
               <div className="flex flex-col justify-center p-2 rounded-lg bg-card/60 border border-border/40">
@@ -218,7 +219,7 @@ export function VipUnifiedMasterCard({
                   || الهدف المطلوب:
                 </span>
                 <span className="text-sm sm:text-base font-extrabold text-foreground mt-1">
-                  {(session.target_mix_balance || 50000).toLocaleString('ar-EG')}{' '}
+                  {(session.target_mix_balance || 50000).toLocaleString('en-US')}{' '}
                   <span className="text-xs font-normal text-muted-foreground font-sans">ميكس</span>
                 </span>
               </div>
@@ -231,7 +232,7 @@ export function VipUnifiedMasterCard({
                 </span>
                 <span className="text-sm sm:text-base font-extrabold text-emerald-400 mt-1">
                   {session.owner_mix_balance !== null && session.owner_mix_balance !== undefined
-                    ? session.owner_mix_balance.toLocaleString('ar-EG')
+                    ? Number(session.owner_mix_balance).toLocaleString('en-US')
                     : 'بانتظار الفحص'}{' '}
                   <span className="text-xs font-normal text-muted-foreground font-sans">ميكس</span>
                 </span>
@@ -265,15 +266,21 @@ export function VipUnifiedMasterCard({
                 الفرد مربوط بالعائلة ومؤكد
               </Badge>
             ) : (
-              <Button
-                size="sm"
-                onClick={() => setOpenAddChildModal(true)}
-                disabled={addingChild}
-                className="h-8 text-xs px-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 font-bold shadow"
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>إضافة وتأكيد الفرد الآن</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-rose-500/15 text-rose-500 border-rose-500/30 text-xs px-2 py-0.5 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  غير مضاف في العيلة
+                </Badge>
+                <Button
+                  size="sm"
+                  onClick={() => setOpenAddChildModal(true)}
+                  disabled={addingChild}
+                  className="h-8 text-xs px-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 font-bold shadow"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>إضافة وتأكيد الفرد الآن</span>
+                </Button>
+              </div>
             )}
           </CardHeader>
 
@@ -294,7 +301,7 @@ export function VipUnifiedMasterCard({
                   رقم خط الفرد
                 </span>
                 <span className="font-mono text-xs font-bold text-foreground mt-0.5 block truncate" dir="ltr">
-                  {session.individual_account_identifier || 'غير مضاف بالعائلة'}
+                  {session.individual_account_identifier || 'غير محدد'}
                 </span>
               </div>
 
@@ -335,7 +342,7 @@ export function VipUnifiedMasterCard({
               إضافة وتأكيد فرد جديد في العائلة (Add Child)
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              وفقاً لمنطق اسكريبت اتصالات بوت المعتمد، سيقوم النظام تلقائياً بتجديد باقة الأونر (270) وإرسال دعوة إضافة للرقم، ثم تسجيل الدخول لحساب الفرد وقبول وتأكيد الدعوة، ثم إعادة التحقق من الأونر.
+              وفقاً لمنطق اسكريبت اتصالات بوت المعتمد، سيقوم النظام تلقائياً بتجديد باقة الأونر (270) وإرسال دعوة إضافة للرقم، ثم تسجيل الدخول لحساب الفرد وتجديد باقته لقبول الدعوة فورياً، ثم إعادة فحص حساب الأونر للتأكد.
             </DialogDescription>
           </DialogHeader>
 
@@ -345,7 +352,7 @@ export function VipUnifiedMasterCard({
                 رقم هاتف الفرد المراد إضافته:
               </label>
               <Input
-                placeholder="مثال: 011xxxxxxxx أو 01286398851"
+                placeholder="مثال: 011xxxxxxxx أو 01140427996"
                 value={childPhoneInput}
                 onChange={(e) => setChildPhoneInput(e.target.value)}
                 className="font-mono text-sm h-9"
