@@ -7,7 +7,7 @@ import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import {
   Home, Radio, Heart, Clock, Bell, Settings, Download,
   Shield, Menu, X, LogOut, ChevronLeft, Share2, Check, Building2, Gift,
-  Sun, Moon
+  Sun, Moon, Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -157,6 +157,22 @@ export default function MainLayout() {
               </NavLink>
             </>
           )}
+
+          {isAdmin && (
+            <NavLink
+              to="/vip"
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                }`
+              }
+            >
+              <Crown className="w-4 h-4 shrink-0 text-amber-500" />
+              <span>إدارة باقات VIP</span>
+            </NavLink>
+          )}
         </nav>
 
         {/* معلومات المستخدم */}
@@ -215,14 +231,25 @@ export default function MainLayout() {
                 : <Share2 className="w-4 h-4" />}
             </Button>
             {isAdmin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary"
-                onClick={() => navigate('/admin')}
-              >
-                <Shield className="w-4 h-4" />
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                  onClick={() => navigate('/vip')}
+                  title="إدارة باقات VIP"
+                >
+                  <Crown className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary"
+                  onClick={() => navigate('/admin')}
+                >
+                  <Shield className="w-4 h-4" />
+                </Button>
+              </>
             )}
             {isMerchant && (
               <Button
@@ -299,6 +326,24 @@ export default function MainLayout() {
                       >
                         <Building2 className="w-5 h-5 shrink-0" />
                         <span>لوحة التاجر</span>
+                        <ChevronLeft className="w-4 h-4 mr-auto opacity-40" />
+                      </NavLink>
+                    )}
+
+                    {isAdmin && (
+                      <NavLink
+                        to="/vip"
+                        onClick={() => setMobileOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all min-h-12 ${
+                            isActive
+                              ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                              : 'text-sidebar-foreground hover:bg-sidebar-accent'
+                          }`
+                        }
+                      >
+                        <Crown className="w-5 h-5 shrink-0 text-amber-500" />
+                        <span>إدارة باقات VIP للأونر</span>
                         <ChevronLeft className="w-4 h-4 mr-auto opacity-40" />
                       </NavLink>
                     )}

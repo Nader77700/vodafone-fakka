@@ -203,6 +203,129 @@ function HomeVipRedCard() {
   );
 }
 
+function HomeVipOwnerCard() {
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+  const L = useIsLight();
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
+  if (!isAdmin) return null;
+
+  return (
+    <div className="px-4 pt-3">
+      <div
+        onClick={() => navigate('/vip')}
+        className="group relative rounded-[28px] overflow-hidden flex flex-col justify-end cursor-pointer transition-all duration-500 min-h-[140px] hover:scale-[1.02] active:scale-95"
+        style={{
+          boxShadow: L ? '0 4px 24px rgba(245,158,11,0.15)' : '0 10px 40px rgba(0,0,0,0.55)',
+        }}
+        aria-label="فتح قسم إدارة باقات VIP للأونر والفرد"
+      >
+        {/* Gradient Background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: L
+              ? 'linear-gradient(135deg, #fffbeb 0%, #fef2f2 50%, #ffffff 100%)'
+              : 'linear-gradient(135deg, #181207 0%, #150608 50%, #0d0b16 100%)',
+          }}
+        />
+        {/* Glowing radial accent */}
+        <div
+          className="absolute inset-0 opacity-70 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at 25% 65%, rgba(245,158,11,${L ? '0.18' : '0.28'}) 0%, transparent 65%), radial-gradient(ellipse at 85% 25%, rgba(230,0,0,${L ? '0.14' : '0.25'}) 0%, transparent 55%)`,
+          }}
+        />
+        {/* Border outline with gold/red sheen */}
+        <div
+          className={`absolute inset-0 rounded-[28px] transition-colors duration-300 pointer-events-none ${
+            L ? 'border border-amber-200 group-hover:border-amber-400' : 'border border-amber-500/25 group-hover:border-amber-400/50'
+          }`}
+        />
+        {/* Top accent line */}
+        <div
+          className="absolute top-0 left-0 right-0 h-0.5 rounded-t-[28px]"
+          style={{ background: 'linear-gradient(90deg, #f59e0b 0%, #E60000 50%, #f59e0b 100%)' }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 p-4 sm:p-5 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner relative"
+                style={{
+                  background: L
+                    ? 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(230,0,0,0.12))'
+                    : 'linear-gradient(135deg, rgba(245,158,11,0.35), rgba(230,0,0,0.25))',
+                  border: L ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(245,158,11,0.35)',
+                }}
+              >
+                <Crown className="w-6 h-6 text-amber-500 drop-shadow-sm" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse border-2 border-white dark:border-[#0d0b16]" />
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-2">
+                  <h3 className={`text-base font-black ${L ? 'text-gray-900' : 'text-white'}`}>
+                    إدارة باقات VIP (الأونر والفرد)
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-rose-600 text-white shadow-xs">
+                    Phase 1 VIP
+                  </span>
+                </div>
+                <p className={`text-xs mt-0.5 ${L ? 'text-gray-600' : 'text-gray-300'}`}>
+                  مركز التحكم المشفر والموثق لدورات تجديد وميكسات الحسابات مع أمان الخادم المشدد
+                </p>
+              </div>
+            </div>
+
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:-translate-x-1 ${
+                L ? 'bg-amber-100 text-amber-700' : 'bg-white/10 text-amber-400'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-amber-100/90 text-amber-900 border border-amber-300' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              }`}
+            >
+              👑 حساب الأونر والفرد
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-rose-100/80 text-rose-700' : 'bg-rose-500/15 text-rose-300 border border-rose-500/25'
+              }`}
+            >
+              ⚡ تحكم يدوي وأتمتة
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-emerald-100/80 text-emerald-700' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+              }`}
+            >
+              🔒 توثيق محمي بالسيرفر
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                L ? 'bg-purple-100/80 text-purple-700' : 'bg-purple-500/15 text-purple-300 border border-purple-500/25'
+              }`}
+            >
+              📜 سجل عمليات وتدقيق
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HomeServicesCard() {
   const navigate = useNavigate();
   const L = useIsLight();
@@ -3397,6 +3520,11 @@ function HomePage() {
           3.9 VIP RED CENTER CARD — إدارة باقات ريد VIP
          ══════════════════════════════════════ */}
       <HomeVipRedCard />
+
+      {/* ══════════════════════════════════════
+          3.10 VIP OWNER MANAGEMENT (Phase 1) — قسم إدارة باقات VIP للأونر
+         ══════════════════════════════════════ */}
+      <HomeVipOwnerCard />
 
       {/* ══════════════════════════════════════
           4. SERVICES HUB CARD

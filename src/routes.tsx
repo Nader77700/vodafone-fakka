@@ -24,6 +24,7 @@ const VipRedMerchantsPage       = lazy(() => import('./pages/vip-red/VipRedMerch
 const VipRedMerchantDetailsPage = lazy(() => import('./pages/vip-red/VipRedMerchantDetailsPage'));
 const VipRedRenewalsPage        = lazy(() => import('./pages/vip-red/VipRedRenewalsPage'));
 const VipRedRequestsPage        = lazy(() => import('./pages/vip-red/VipRedRequestsPage'));
+const VipPage                   = lazy(() => import('./pages/vip/VipPage'));
 const SubscriptionHistoryPage = lazy(() => import('./pages/SubscriptionHistoryPage'));
 const UpdatesPage           = lazy(() => import('./pages/UpdatesPage'));
 const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));
@@ -135,6 +136,9 @@ export const routes: RouteConfig[] = [
       { name: 'VipRedMerchantDetails',    path: '/vip-red/merchants/:id',            element: <S><VipRedMerchantDetailsPage /></S> },
       { name: 'VipRedRenewals',           path: '/vip-red/renewals',                 element: <S><VipRedRenewalsPage /></S> },
       { name: 'VipRedRequests',           path: '/vip-red/requests',                 element: <S><VipRedRequestsPage /></S> },
+
+      // ── VIP Section (Phase 1): قسم إدارة باقات VIP المستقل للأونر ──
+      { name: 'VipManagement',            path: '/vip',                              element: <S><VipPage /></S> },
 
       { name: 'Redirect',            path: '',                      element: <Navigate to="/home" replace /> },
     ],

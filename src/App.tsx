@@ -152,6 +152,7 @@ const VipRedMerchantsPage          = lazyImport(() => import('./pages/vip-red/Vi
 const VipRedMerchantDetailsPage    = lazyImport(() => import('./pages/vip-red/VipRedMerchantDetailsPage'));
 const VipRedRenewalsPage           = lazyImport(() => import('./pages/vip-red/VipRedRenewalsPage'));
 const VipRedRequestsPage           = lazyImport(() => import('./pages/vip-red/VipRedRequestsPage'));
+const VipPage                      = lazyImport(() => import('./pages/vip/VipPage'));
 const LineInfoPage                 = lazyImport(() => import('./pages/line-info/LineInfoPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
@@ -683,6 +684,7 @@ function AppInner() {
           <Route path="vip-red/renewals"             element={<PageErrorBoundary pageName="vip-red-renewals"><S><VipRedRenewalsPage /></S></PageErrorBoundary>} />
           <Route path="vip-red/requests"             element={<PageErrorBoundary pageName="vip-red-requests"><S><VipRedRequestsPage /></S></PageErrorBoundary>} />
           <Route path="red-vip"                      element={<Navigate to="/vip-red" replace />} />
+          <Route path="vip"                          element={<PageErrorBoundary pageName="vip"><S><VipPage /></S></PageErrorBoundary>} />
 
           <Route index element={<Navigate to="/home" replace />} />
         </Route>
