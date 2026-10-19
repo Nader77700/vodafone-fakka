@@ -21,14 +21,17 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  Layers,
   Plus,
-  Check,
-  ChevronDown,
-  Smartphone,
-  ShieldCheck,
-  Zap,
   Trash2,
+  Mail,
+  Eye,
+  EyeOff,
+  Zap,
+  Timer,
+  Info,
+  ShieldCheck,
+  CheckCircle2,
+  Bot,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import { createVipSession, deleteVipSession } from '@/lib/vipApi';
@@ -52,38 +55,82 @@ export function VipSessionSwitcher({
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // New session form
+  // New session form states matching EtisalatBot script
   const [sessionName, setSessionName] = useState('');
-  const [ownerIdentifier, setOwnerIdentifier] = useState('');
-  const [individualIdentifier, setIndividualIdentifier] = useState('');
-  const [targetBalance, setTargetBalance] = useState('50000');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [individualEmail, setIndividualEmail] = useState('');
+  const [individualPassword, setIndividualPassword] = useState('');
+  const [targetPreset, setTargetPreset] = useState('50000');
+  const [customTarget, setCustomTarget] = useState('');
+  const [cycleDelaySeconds, setCycleDelaySeconds] = useState(20);
   const [description, setDescription] = useState('');
+
+  // Password visibility toggles
+  const [showOwnerPassword, setShowOwnerPassword] = useState(false);
+  const [showIndivPassword, setShowIndivPassword] = useState(false);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
 
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionName.trim()) {
-      toast.error('يرجى كتابة اسم للجلسة الجديدة.');
+
+    if (!ownerEmail.trim()) {
+      toast.error('يرجى إدخال البريد الإلكتروني لحساب الأونر (Owner).');
       return;
     }
+    if (!ownerPassword.trim()) {
+      toast.error('يرجى إدخال كلمة مرور حساب الأونر (Owner).');
+      return;
+    }
+    if (!individualEmail.trim()) {
+      toast.error('يرجى إدخال البريد الإلكتروني لحساب الفرد (Child).');
+      return;
+    }
+    if (!individualPassword.trim()) {
+      toast.error('يرجى إدخال كلمة مرور حساب الفرد (Child).');
+      return;
+    }
+
+    let finalTarget = 50000;
+    if (targetPreset === 'custom') {
+      const parsed = parseInt(customTarget, 10);
+      if (isNaN(parsed) || parsed <= 0) {
+        toast.error('يرجى إدخال قيمة عددية موجبة للرصيد المستهدف.');
+        return;
+      }
+      finalTarget = parsed;
+    } else {
+      finalTarget = parseInt(targetPreset, 10) || 50000;
+    }
+
+    const delay = Math.max(0, Number(cycleDelaySeconds) || 20);
 
     setSubmitting(true);
     try {
       const res = await createVipSession({
-        session_name: sessionName.trim(),
-        owner_identifier: ownerIdentifier.trim() || undefined,
-        individual_identifier: individualIdentifier.trim() || undefined,
-        target_balance: Number(targetBalance) || 50000,
+        session_name: sessionName.trim() || undefined,
+        owner_email: ownerEmail.trim(),
+        owner_password: ownerPassword.trim(),
+        individual_email: individualEmail.trim(),
+        individual_password: individualPassword.trim(),
+        target_balance: finalTarget,
+        cycle_delay_seconds: delay,
         description: description.trim() || undefined,
       });
 
       if (res.success && res.session) {
-        toast.success(`تم إنشاء الجلسة «${res.session.session_name}» بنجاح.`);
+        toast.success(`تم إنشاء جلسة اتصالات VIP «${res.session.session_name}» بنجاح.`);
         setOpenAddModal(false);
+        // Reset form
         setSessionName('');
-        setOwnerIdentifier('');
-        setIndividualIdentifier('');
+        setOwnerEmail('');
+        setOwnerPassword('');
+        setIndividualEmail('');
+        setIndividualPassword('');
+        setTargetPreset('50000');
+        setCustomTarget('');
+        setCycleDelaySeconds(20);
         setDescription('');
         onSessionsChanged();
         onSelectSession(res.session.id);
@@ -128,18 +175,18 @@ export function VipSessionSwitcher({
         {/* Active Session Info & Dropdown */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
-            <Layers className="w-5 h-5" />
+            <Bot className="w-5 h-5" />
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted-foreground font-medium">الجلسة النشطة:</span>
+              <span className="text-xs text-muted-foreground font-medium">جلسة اتصالات VIP:</span>
               <Select
                 value={activeSessionId}
                 onValueChange={onSelectSession}
                 disabled={disabled}
               >
-                <SelectTrigger className="h-8 text-xs font-bold border-amber-500/40 bg-background/80 w-auto min-w-[180px] max-w-[260px] gap-2">
+                <SelectTrigger className="h-8 text-xs font-bold border-amber-500/40 bg-background/80 w-auto min-w-[190px] max-w-[270px] gap-2">
                   <SelectValue placeholder="اختر الجلسة" />
                 </SelectTrigger>
                 <SelectContent align="start" className="max-h-72">
@@ -151,7 +198,7 @@ export function VipSessionSwitcher({
                           variant="outline"
                           className="text-[10px] px-1 py-0 shrink-0 font-mono"
                         >
-                          {sess.owner_account_identifier || 'غير مضبوط'}
+                          {sess.owner_account_identifier || sess.owner_email || 'جلسة جديدة'}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -168,17 +215,21 @@ export function VipSessionSwitcher({
             {activeSession && (
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1 truncate">
                 <span className="flex items-center gap-1">
-                  <Smartphone className="w-3 h-3 text-primary shrink-0" />
-                  الأونر: <strong className="text-foreground font-mono dir-ltr">{activeSession.owner_account_identifier || 'غير مربوط'}</strong>
+                  خط الأونر: <strong className="text-foreground font-mono dir-ltr">{activeSession.owner_account_identifier || 'يظهر بعد أول دخول'}</strong>
                 </span>
                 <span>•</span>
                 <span>
-                  الفرد: <strong className="text-foreground font-mono dir-ltr">{activeSession.individual_account_identifier || 'غير مربوط'}</strong>
+                  خط الفرد: <strong className="text-foreground font-mono dir-ltr">{activeSession.individual_account_identifier || 'يظهر بعد التحقق'}</strong>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <Zap className="w-3 h-3 text-amber-500 shrink-0" />
                   الهدف: <strong className="text-foreground">{activeSession.target_mix_balance?.toLocaleString('ar-EG')}</strong> ميكس
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Timer className="w-3 h-3 text-sky-500 shrink-0" />
+                  الفاصل: <strong className="text-foreground font-mono">{activeSession.cycle_delay_seconds ?? 20}ث</strong>
                 </span>
               </div>
             )}
@@ -215,85 +266,214 @@ export function VipSessionSwitcher({
 
       {/* ── Modal: Add New Session ── */}
       <Dialog open={openAddModal} onOpenChange={setOpenAddModal}>
-        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-lg" dir="rtl">
+        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-xl max-h-[90dvh] overflow-y-auto" dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <Layers className="w-5 h-5 text-primary" />
-              إضافة جلسة VIP جديدة ومستقلة
+              <Bot className="w-5 h-5 text-primary" />
+              إضافة جلسة اتصالات VIP جديدة
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              يتم إنشاء جلسة معزولة تماماً في قاعدة البيانات برقم تعريفي وسجلات وأهداف مستقلة دون التأثير على الجلسات الحالية.
+              تُنشئ جلسة أتمتة جديدة معزولة بالكامل بحسابات الاعتماد الخاصة بمحرك EtisalatBot وأهداف ميكسات مخصصة.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateSession} className="space-y-3.5 py-1 text-xs">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">اسم الجلسة <span className="text-destructive">*</span></Label>
+            {/* 1. Optional Session Name */}
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">
+                اسم الجلسة <span className="text-muted-foreground text-[10px] font-normal">(اختياري - سيتم التوليد تلقائياً إذا تُرك فارغاً)</span>
+              </Label>
               <Input
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                placeholder="مثال: جلسة خطوط العمل 2 أو حساب فودافون الرئيسي"
-                className="text-xs h-9"
-                required
+                placeholder="مثال: جلسة حكاية ميكس الرئيسية"
+                className="text-xs h-8"
               />
-              <p className="text-[11px] text-muted-foreground">
-                اسم مميز يسهل عليك تمييز حسابات هذه الجلسة في القائمة.
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">رقم / معرّف الأونر (Owner)</Label>
-                <Input
-                  value={ownerIdentifier}
-                  onChange={(e) => setOwnerIdentifier(e.target.value)}
-                  placeholder="010xxxxxxxx"
-                  className="text-xs h-9 font-mono dir-ltr"
-                />
-                <p className="text-[10px] text-muted-foreground">رقم الهاتف الأساسي المستلم للميكسات</p>
+            {/* 2. Owner Credentials */}
+            <div className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  بيانات حساب الأونر الرئيسي (Owner Account)
+                </span>
+                <span className="text-[10px] text-muted-foreground">مستلم الميكسات</span>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">رقم / معرّف الفرد (Individual)</Label>
-                <Input
-                  value={individualIdentifier}
-                  onChange={(e) => setIndividualIdentifier(e.target.value)}
-                  placeholder="010yyyyyyyy"
-                  className="text-xs h-9 font-mono dir-ltr"
-                />
-                <p className="text-[10px] text-muted-foreground">الخط الفردي المربوط بالأونر</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">البريد الإلكتروني للأونر <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="email"
+                    value={ownerEmail}
+                    onChange={(e) => setOwnerEmail(e.target.value)}
+                    placeholder="owner@example.com"
+                    className="text-xs h-8 font-mono dir-ltr"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">كلمة مرور الأونر <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      type={showOwnerPassword ? 'text' : 'password'}
+                      value={ownerPassword}
+                      onChange={(e) => setOwnerPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="text-xs h-8 font-mono dir-ltr pl-8"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOwnerPassword(!showOwnerPassword)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showOwnerPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">الرصيد المستهدف المبدئي (ميكس)</Label>
-              <Select value={targetBalance} onValueChange={setTargetBalance}>
-                <SelectTrigger className="text-xs h-9">
-                  <SelectValue placeholder="اختر الرصيد المستهدف" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="50000">50,000 ميكس (الافتراضي)</SelectItem>
-                  <SelectItem value="100000">100,000 ميكس</SelectItem>
-                  <SelectItem value="150000">150,000 ميكس</SelectItem>
-                  <SelectItem value="200000">200,000 ميكس</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* 3. Child Credentials */}
+            <div className="p-2.5 rounded-xl bg-sky-500/5 border border-sky-500/20 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-sky-500 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  بيانات حساب الفرد التابع (FAF Child Account)
+                </span>
+                <span className="text-[10px] text-muted-foreground">الخط الفردي المربوط</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">البريد الإلكتروني للفرد <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="email"
+                    value={individualEmail}
+                    onChange={(e) => setIndividualEmail(e.target.value)}
+                    placeholder="child@example.com"
+                    className="text-xs h-8 font-mono dir-ltr"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">كلمة مرور الفرد <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      type={showIndivPassword ? 'text' : 'password'}
+                      value={individualPassword}
+                      onChange={(e) => setIndividualPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="text-xs h-8 font-mono dir-ltr pl-8"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowIndivPassword(!showIndivPassword)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showIndivPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
+            {/* 4. Target Mix Selector & Custom Option */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">هدف الميكسات (Target Mixes)</Label>
+                <Select value={targetPreset} onValueChange={setTargetPreset}>
+                  <SelectTrigger className="text-xs h-8">
+                    <SelectValue placeholder="اختر هدف الميكسات" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="50000">50,000 ميكس (الافتراضي)</SelectItem>
+                    <SelectItem value="100000">100,000 ميكس</SelectItem>
+                    <SelectItem value="150000">150,000 ميكس</SelectItem>
+                    <SelectItem value="200000">200,000 ميكس</SelectItem>
+                    <SelectItem value="custom">قيمة مخصصة يدوياً...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {targetPreset === 'custom' ? (
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">القيمة المخصصة (عدد صحيح موجب)</Label>
+                  <Input
+                    type="number"
+                    min="1000"
+                    step="1000"
+                    value={customTarget}
+                    onChange={(e) => setCustomTarget(e.target.value)}
+                    placeholder="مثال: 75000"
+                    className="text-xs h-8 font-mono dir-ltr"
+                    required
+                  />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">مدة الانتظار بين الدورات (بالثواني)</Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="300"
+                      value={cycleDelaySeconds}
+                      onChange={(e) => setCycleDelaySeconds(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      className="text-xs h-8 font-mono dir-ltr pr-8"
+                    />
+                    <Timer className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {targetPreset === 'custom' && (
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">مدة الانتظار بين الدورات (بالثواني)</Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="300"
+                    value={cycleDelaySeconds}
+                    onChange={(e) => setCycleDelaySeconds(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    className="text-xs h-8 font-mono dir-ltr pr-8"
+                  />
+                  <Timer className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+            )}
+
+            {/* Automatic line discovery note */}
+            <div className="p-2 rounded-xl bg-background border border-border flex items-start gap-2 text-[11px] text-muted-foreground">
+              <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-foreground block">استخراج أرقام الخطوط آلياً:</strong>
+                لا يتطلب النموذج إدخال أرقام الهواتف؛ سيقوم محرك EtisalatBot باستخراج رقم خط الأونر ورقم الفرد تلقائياً وعرضهما في لوحة الجلسة بمجرد نجاح أول تسجيل دخول بالبريد وكلمة المرور.
+              </div>
+            </div>
+
+            {/* 5. Optional Admin Notes */}
+            <div className="space-y-1">
               <Label className="text-xs font-semibold">ملاحظات / وصف اختياري</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="أية ملاحظات إدارية عن هذه الجلسة..."
-                rows={2}
+                placeholder="أية ملاحظات إدارية خاصة بهذه الجلسة..."
+                rows={1}
                 className="text-xs resize-none"
               />
             </div>
 
-            <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground leading-relaxed">
+            <div className="p-2 rounded-xl bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground leading-relaxed">
               <ShieldCheck className="w-4 h-4 text-primary inline ml-1 shrink-0" />
-              <strong>تنبيه الأمان:</strong> لا يتم تخزين كلمات المرور كنصوص صريحة. جميع العمليات تسجل بحالة أولية «معلقة بانتظار التكامل» لحماية البيانات.
+              <strong>تأمين بيانات الاعتماد:</strong> تشفير كامل لبيانات الدخول وتطبيق عزل تام للجلسات دون أي خلط في الاستعلامات أو حالات التشغيل.
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0 pt-2">
@@ -310,9 +490,10 @@ export function VipSessionSwitcher({
                 type="submit"
                 size="sm"
                 disabled={submitting}
-                className="text-xs h-8 bg-primary text-primary-foreground font-semibold"
+                className="text-xs h-8 bg-primary text-primary-foreground font-semibold gap-1.5"
               >
-                {submitting ? 'جاري الإنشاء...' : 'إنشاء الجلسة'}
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {submitting ? 'جاري إنشاء الجلسة...' : 'إنشاء جلسة اتصالات VIP'}
               </Button>
             </DialogFooter>
           </form>
@@ -335,7 +516,7 @@ export function VipSessionSwitcher({
           <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive space-y-1">
             <p className="font-semibold">سيتم إيقاف ظهور هذه الجلسة في القائمة النشطة.</p>
             <p className="text-[11px] text-muted-foreground">
-              ستبقى سجلات العمليات السابقة محفوظة في الأرشيف الآمن لأغراض التدقيق.
+              ستبقى سجلات الدورات والعمليات السابقة محفوظة في الأرشيف الآمن لأغراض التدقيق.
             </p>
           </div>
 
@@ -350,11 +531,10 @@ export function VipSessionSwitcher({
               تراجع
             </Button>
             <Button
-              type="button"
-              variant="destructive"
               size="sm"
-              disabled={submitting}
+              variant="destructive"
               onClick={handleDeleteActiveSession}
+              disabled={submitting}
               className="text-xs h-8 font-semibold"
             >
               {submitting ? 'جاري الأرشفة...' : 'تأكيد الأرشفة'}

@@ -43,19 +43,25 @@ export async function listVipSessions(): Promise<VipSession[]> {
  * Create a new isolated VIP session.
  */
 export async function createVipSession(params: {
-  session_name: string;
-  owner_identifier?: string;
-  individual_identifier?: string;
+  session_name?: string;
+  owner_email: string;
+  owner_password: string;
+  individual_email: string;
+  individual_password: string;
   target_balance?: number;
+  cycle_delay_seconds?: number;
   description?: string;
 }): Promise<{ success: boolean; session?: VipSession; message: string }> {
   try {
     const { data, error } = await supabase.rpc('vip_create_session', {
-      p_session_name: params.session_name,
-      p_owner_identifier: params.owner_identifier || null,
-      p_individual_identifier: params.individual_identifier || null,
+      p_session_name: params.session_name?.trim() || null,
+      p_owner_email: params.owner_email.trim(),
+      p_owner_password: params.owner_password.trim(),
+      p_individual_email: params.individual_email.trim(),
+      p_individual_password: params.individual_password.trim(),
       p_target_balance: params.target_balance || 50000,
-      p_description: params.description || null,
+      p_cycle_delay_seconds: params.cycle_delay_seconds !== undefined ? params.cycle_delay_seconds : 20,
+      p_description: params.description?.trim() || null,
     });
     if (error) throw error;
     return data;

@@ -118,12 +118,49 @@ class EtisalatVipBot:
             except Exception as e:
                 print(f"[-] خطأ حفظ السجل بالخادم: {e}")
 
+    def sync_session_identifiers(self, owner_dial=None, child_dial=None, current_plan=None, mix_balance=None):
+        """Update session line numbers and status in Supabase as soon as discovered."""
+        if self.supabase_url and self.supabase_key:
+            try:
+                update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+                if owner_dial:
+                    update_data["owner_account_identifier"] = owner_dial
+                    update_data["owner_account_status"] = "connected"
+                if child_dial:
+                    update_data["individual_account_identifier"] = child_dial
+                    update_data["individual_account_status"] = "connected"
+                    update_data["relationship_verified"] = True
+                    update_data["relationship_status"] = "verified"
+                if current_plan:
+                    update_data["owner_current_plan"] = current_plan
+                if mix_balance is not None:
+                    update_data["owner_mix_balance"] = mix_balance
+
+                url = f"{self.supabase_url}/rest/v1/vip_sessions?id=eq.{self.session_id}"
+                headers = {
+                    "apikey": self.supabase_key,
+                    "Authorization": f"Bearer {self.supabase_key}",
+                    "Content-Type": "application/json"
+                }
+                requests.patch(url, headers=headers, json=update_data, timeout=5)
+            except Exception as e:
+                print(f"[-] خطأ تحديث معرفات الخطوط: {e}")
+
     def login(self, email, password, is_owner=False, silent=False):
         if not silent:
             masked_email = email[:3] + "***@" + email.split("@")[-1] if "@" in email else email[:4] + "***"
             print(f"[*] جاري تسجيل الدخول للحساب: {masked_email} ...")
 
-        auth_b64 = base64.b64encode(f"{email}:{password}".encode()).decode()
+        # Handle potential base64 stored passwords safely
+        clean_pw = password
+        try:
+            decoded = base64.b64decode(password).decode('utf-8')
+            if base64.b64encode(decoded.encode('utf-8')).decode('utf-8') == password:
+                clean_pw = decoded
+        except Exception:
+            clean_pw = password
+
+        auth_b64 = base64.b64encode(f"{email}:{clean_pw}".encode()).decode()
         headers = self.base_headers.copy()
         headers["Authorization"] = f"Basic {auth_b64}"
 
@@ -261,6 +298,12 @@ class EtisalatVipBot:
             return False, "no_child"
 
         print(f"[+] حالة الأونر: {plan_id} | الميكسات: {mix_amount:,}")
+        self.sync_session_identifiers(
+            owner_dial=self.owner_dial,
+            child_dial=child_num,
+            current_plan=plan_id,
+            mix_balance=mix_amount
+        )
         owner_start_balance = mix_amount
         owner_plan_pre = plan_id
 
