@@ -259,21 +259,33 @@ export default function VipPage() {
       {/* ── Main Container (Compact layout matching Vodafone Red Business density) ── */}
       <main className="max-w-6xl mx-auto p-2.5 sm:p-4 space-y-2.5">
         
-        {/* ── Multi-Session Switcher Bar ── */}
-        {sessions.length > 0 && (
-          <VipSessionSwitcher
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            onSelectSession={handleSelectSession}
-            onSessionsChanged={() => loadSessionsAndData(activeSessionId, false)}
-            disabled={loadingData || refreshing}
-          />
-        )}
+        {/* ── Multi-Session Switcher Bar (Always visible) ── */}
+        <VipSessionSwitcher
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onSelectSession={handleSelectSession}
+          onSessionsChanged={() => loadSessionsAndData(activeSessionId, false)}
+          disabled={loadingData || refreshing}
+        />
 
         {loadingData && !dashboardData ? (
           <div className="min-h-[40vh] flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 text-primary animate-spin" />
             <p className="text-xs text-muted-foreground">جاري استرجاع بيانات الجلسة من الخادم...</p>
+          </div>
+        ) : sessions.length === 0 || !activeSession ? (
+          <div className="rounded-2xl border-2 border-dashed border-border/80 bg-card/60 p-8 sm:p-12 text-center space-y-4 max-w-2xl mx-auto my-8">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto">
+              <Crown className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base sm:text-lg font-black text-foreground">
+                لا توجد أي جلسة اتصالات VIP مسجلة حالياً
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                تم إيقاف كافة الأتمتة المفتوحة بنجاح حتى لا تبدأ أي عملية تلقائياً. يمكنك الآن إضافة جلسة جديدة بحساب الأونر والفرد للبدء بالفحص والتحويل.
+              </p>
+            </div>
           </div>
         ) : dashboardData && activeSession ? (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-2.5">

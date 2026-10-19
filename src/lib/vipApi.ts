@@ -116,6 +116,32 @@ export async function deleteVipSession(
 }
 
 /**
+ * Delete / Archive all active VIP sessions.
+ */
+export async function deleteAllVipSessions(): Promise<{ success: boolean; deleted_count: number; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('vip_delete_all_sessions');
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[vipApi] deleteAllVipSessions error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Get Arabic Plan Display Name matching etisalat_bot.py
+ */
+export function getVipPlanDisplayName(planId: string | null | undefined): string {
+  if (!planId) return 'غير معروف';
+  if (planId.includes('Parent_7') || planId.includes('270')) return 'حكاية ميكسات 270';
+  if (planId.includes('Parent_6') || planId.includes('180') || planId.includes('951')) return 'حكاية ميكسات 180';
+  if (planId.includes('Parent_5') || planId.includes('240')) return 'حكاية ميكسات 240';
+  if (planId.includes('Parent_8') || planId.includes('52')) return 'حكاية ميكسات 52';
+  return planId;
+}
+
+/**
  * Fetch detailed state for a specific session.
  */
 export async function getVipSessionDetails(
@@ -385,8 +411,19 @@ export async function saveVipDefaultChildCredentials(
 /**
  * Action 1: Live Status & Child Check
  */
-export async function executeVipCheckStatus(sessionId: string): Promise<VipExecutionResponse> {
-  return invokeVipExecutor('check_status', { session_id: sessionId });
+export async function executeVipCheckStatus(
+  sessionId: string,
+  credentials?: {
+    owner_email?: string;
+    owner_password?: string;
+    individual_email?: string;
+    individual_password?: string;
+  }
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('check_status', {
+    session_id: sessionId,
+    ...credentials,
+  });
 }
 
 /**

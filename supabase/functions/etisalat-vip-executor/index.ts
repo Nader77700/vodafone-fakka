@@ -49,7 +49,7 @@ function decodeStoredPassword(pw: string): string {
     const decoded = atob(pw);
     if (btoa(decoded) === pw) return decoded;
   } catch {
-    // Not valid base64, return as is
+    // Not base64
   }
   return pw;
 }
@@ -58,18 +58,31 @@ class EtisalatEngine {
   private authToken: string | null = null;
   public currentDial: string | null = null;
   public ownerDial: string | null = null;
+  public childDial: string | null = null;
   public logs: Array<{ time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }> = [];
 
-  private log(message: string, level: 'info' | 'success' | 'warn' | 'error' = 'info') {
+  public log(message: string, level: 'info' | 'success' | 'warn' | 'error' = 'info') {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
     this.logs.push({ time, level, message });
     console.log(`[${time}] ${message}`);
   }
 
-  async login(email: string, rawPassword: string, isOwner = false): Promise<boolean> {
+  // Plan translation function matching new etisalat_bot.py
+  public getPlanName(planId: string): string {
+    if (!planId) return "غير معروف";
+    if (planId.includes("Parent_7")) return "حكاية ميكسات 270";
+    if (planId.includes("Parent_6")) return "حكاية ميكسات 180";
+    if (planId.includes("Parent_5")) return "حكاية ميكسات 240";
+    if (planId.includes("Parent_8")) return "حكاية ميكسات 52";
+    return planId;
+  }
+
+  async login(email: string, rawPassword: string, isOwner = false, silent = false): Promise<boolean> {
     const cleanPw = decodeStoredPassword(rawPassword);
     const masked = email.includes("@") ? `${email.substring(0, 3)}***@${email.split("@")[1]}` : email;
-    this.log(`[*] جاري تسجيل الدخول للحساب: ${masked} ...`, "info");
+    if (!silent) {
+      this.log(`[*] جاري تسجيل الدخول للحساب: ${masked} ...`, "info");
+    }
 
     const authB64 = btoa(`${email}:${cleanPw}`);
     const loginXml = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><loginRequest><deviceId>${DEVICE_ID}</deviceId><firstLoginAttempt>true</firstLoginAttempt><modelType>CPH2737</modelType><osVersion>16</osVersion><platform>Android</platform><udid>${DEVICE_ID}</udid></loginRequest>`;
@@ -84,38 +97,46 @@ class EtisalatEngine {
       "bodySignature": bodySig,
     };
 
-    try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
-        method: "POST",
-        headers,
-        body: loginXml,
-      });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch(`${BASE_URL}${urlPath}`, {
+          method: "POST",
+          headers,
+          body: loginXml,
+        });
 
-      const text = await res.text();
-      if (res.status === 200 && text.includes("<status>true</status>")) {
-        const auth = res.headers.get("auth");
-        if (auth) {
-          this.authToken = auth;
-          const tokenPayload = auth.split(".")[1];
-          const padded = tokenPayload + "=".repeat((4 - (tokenPayload.length % 4)) % 4);
-          const decoded = JSON.parse(atob(padded));
-          this.currentDial = decoded.selectedDial || null;
-          if (isOwner) {
-            this.ownerDial = this.currentDial;
+        const text = await res.text();
+        if (res.status === 200 && text.includes("<status>true</status>")) {
+          const auth = res.headers.get("auth");
+          if (auth) {
+            this.authToken = auth;
+            const tokenPayload = auth.split(".")[1];
+            const padded = tokenPayload + "=".repeat((4 - (tokenPayload.length % 4)) % 4);
+            const decoded = JSON.parse(atob(padded));
+            this.currentDial = decoded.selectedDial || null;
+            if (isOwner) {
+              this.ownerDial = this.currentDial;
+            } else {
+              this.childDial = this.currentDial;
+            }
+            if (!silent) {
+              this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial})`, "success");
+            }
+            return true;
           }
-          this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial})`, "success");
-          return true;
         }
+      } catch {
+        await sleep(2000);
       }
-      this.log(`[-] فشل تسجيل الدخول للحساب (${masked}).`, "error");
-      return false;
-    } catch (err: any) {
-      this.log(`[-] خطأ اتصال أثناء تسجيل الدخول: ${err?.message || err}`, "error");
-      return false;
     }
+
+    if (!silent) {
+      this.log(`[-] فشل تسجيل الدخول للحساب (${masked}) بعد 3 محاولات.`, "error");
+    }
+    return false;
   }
 
-  async getStatusAndChild(): Promise<{
+  async getStatusAndChild(silent = false): Promise<{
     planId: string;
     remainingMix: number;
     childNumber: string | null;
@@ -145,66 +166,35 @@ class EtisalatEngine {
       if (res.status === 200) {
         const text = await res.text();
         const planMatch = text.match(/<productId>([^<]+)<\/productId>/);
-        const planId = planMatch ? planMatch[1] : "غير معروف";
+        const mixMatch = text.match(/<remainingValue>([0-9]+)<\/remainingValue>/);
 
-        const mixMatch = text.match(/<remainingValue>([^<]+)<\/remainingValue>/);
-        const remainingMix = mixMatch ? parseInt(mixMatch[1], 10) || 0 : 0;
+        const planId = planMatch ? planMatch[1] : "غير معروف";
+        const remainingMix = mixMatch ? parseInt(mixMatch[1], 10) : 0;
 
         let childNumber: string | null = null;
-        const fafMatches = Array.from(text.matchAll(/<value>([^<]+)<\/value>/g));
+        const fafMatches = text.matchAll(/<fafNumber>.*?<value>([0-9]+)<\/value>.*?<\/fafNumber>/gs);
         for (const m of fafMatches) {
-          const num = m[1].trim();
-          if (num && num !== this.currentDial) {
-            childNumber = num;
+          const val = m[1];
+          if (val !== this.currentDial) {
+            childNumber = val;
             break;
           }
         }
 
         return { planId, remainingMix, childNumber };
       }
-    } catch (err: any) {
-      this.log(`[-] خطأ أثناء فحص الباقة: ${err?.message || err}`, "warn");
+    } catch {
+      // ignore
     }
 
     return { planId: "غير معروف", remainingMix: 0, childNumber: null };
   }
 
-  async changePlan(planName: string, planId: string): Promise<boolean> {
-    this.log(`[*] جاري إرسال أمر تغيير النظام إلى: ${planName} ...`, "info");
-    const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><migrateRequest><addonName></addonName><oMSRatePlan>true</oMSRatePlan><operation>FULL_MIGRATE</operation><productName>${planName}</productName><ratePlanID>${planId}</ratePlanID><subscriberNumber>${this.currentDial}</subscriberNumber></migrateRequest>`;
-    const urlPath = "/Saytar/rest/HekayaPartial/migrate";
+  // Renewal activation motion matching etisalat_bot.py renew_bundle_action
+  async renewBundleAction(planName: string, amount: string): Promise<boolean> {
+    const displayName = this.getPlanName(planName);
+    this.log(`[*] جاري إرسال حركة تنشيطية لنظام ${displayName}...`, "info");
 
-    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
-    const headers = {
-      ...BASE_HEADERS,
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": headerSig,
-      "urlSignature": urlSig,
-      "bodySignature": bodySig,
-    };
-
-    try {
-      const res = await fetch(`${BASE_URL}${urlPath}`, {
-        method: "POST",
-        headers,
-        body: xmlBody,
-      });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        this.log(`[+] تم إرسال أمر ترحيل النظام بنجاح إلى (${planName})`, "success");
-      } else {
-        this.log(`[-] السيرفر رفض ترحيل النظام إلى (${planName})`, "error");
-      }
-      return ok;
-    } catch (err: any) {
-      this.log(`[-] خطأ أثناء تغيير النظام: ${err?.message || err}`, "error");
-      return false;
-    }
-  }
-
-  async renewBundle(planName: string, amount: string): Promise<boolean> {
-    this.log(`[*] جاري تجديد باقة ${planName} بمبلغ ${amount} ج ...`, "info");
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>FULL_RENEW</operation><parameters /><paymentOptions><paymentOption><amount>${amount}</amount><optionID>BALANCE</optionID></paymentOption></paymentOptions><productName>${planName}</productName><requestId>ALFA_PAYMENT_OPTIONS</requestId></generalSubmitOrderRequest>`;
     const urlPath = "/Saytar/rest/General/submitOrder";
 
@@ -224,22 +214,54 @@ class EtisalatEngine {
         body: xmlBody,
       });
       const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
+      const ok = res.status === 200 && (text.includes("<status>true</status>") || text.includes("<orderId>"));
       if (ok) {
-        this.log(`[+] تم تجديد الباقة بنجاح (${amount} ج)!`, "success");
+        this.log(`[+] تم إرسال الحركة التنشيطية.`, "success");
       } else {
-        this.log(`[-] فشل تجديد الباقة من الخادم.`, "error");
+        this.log(`[-] فشل إرسال الحركة التنشيطية.`, "warn");
       }
       return ok;
-    } catch (err: any) {
-      this.log(`[-] خطأ أثناء طلب التجديد: ${err?.message || err}`, "error");
+    } catch {
+      this.log(`[-] فشل إرسال الحركة التنشيطية.`, "warn");
       return false;
     }
   }
 
+  // Change plan matching etisalat_bot.py change_plan
+  async changePlan(planName: string, planId = ""): Promise<boolean> {
+    const displayName = this.getPlanName(planName);
+    this.log(`[*] جاري تغيير النظام إلى: ${displayName} ...`, "info");
+
+    const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><migrateRequest><addonName></addonName><oMSRatePlan>true</oMSRatePlan><operation>FULL_MIGRATE</operation><productName>${planName}</productName><ratePlanID>${planId}</ratePlanID><subscriberNumber>${this.currentDial}</subscriberNumber></migrateRequest>`;
+    const urlPath = "/Saytar/rest/HekayaPartial/migrate";
+
+    const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
+    const headers = {
+      ...BASE_HEADERS,
+      "auth": `Bearer ${this.authToken}`,
+      "headerSignature": headerSig,
+      "urlSignature": urlSig,
+      "bodySignature": bodySig,
+    };
+
+    try {
+      const res = await fetch(`${BASE_URL}${urlPath}`, {
+        method: "POST",
+        headers,
+        body: xmlBody,
+      });
+      const text = await res.text();
+      return res.status === 200 && text.includes("<status>true</status>");
+    } catch {
+      return false;
+    }
+  }
+
+  // Transfer mix quota matching etisalat_bot.py transfer_mix
   async transferMix(receiverNumber: string, quotaAmount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(quotaAmount);
-    this.log(`[*] جاري تحويل ${quota.toLocaleString('ar-EG')} ميكس إلى (${receiverNumber}) ...`, "info");
+    this.log(`[*] جاري تحويل ${quota.toLocaleString('ar-EG')} ميكس ...`, "info");
+
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${this.currentDial}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${receiverNumber}</receiverMsisdn><senderMsisdn>${this.currentDial}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
     const urlPath = "/Saytar/rest/services/newTransfer/v2";
 
@@ -272,10 +294,15 @@ class EtisalatEngine {
     }
   }
 
-  async addChild(childNumber: string, planName: string): Promise<boolean> {
-    const childIntl = childNumber.startsWith("0") ? "20" + childNumber.slice(1) : childNumber;
-    this.log(`[*] جاري إرسال دعوة لإضافة الرقم ${childIntl} للعائلة ...`, "info");
-    const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><addChildRequest><childNumber>${childIntl}</childNumber><childPercentage>0.10</childPercentage><productId>${planName}</productId><subscriberNumber>${this.currentDial}</subscriberNumber></addChildRequest>`;
+  // Send add child request matching etisalat_bot.py add_child_temp
+  async sendAddChildRequest(childNumber: string, productName: string): Promise<boolean> {
+    let childIntl = childNumber;
+    if (childNumber.startsWith("0")) {
+      childIntl = "20" + childNumber.slice(1);
+    }
+    this.log(`[*] جاري إرسال دعوة لإضافة الرقم ${childIntl}...`, "info");
+
+    const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><addChildRequest><childNumber>${childIntl}</childNumber><childPercentage>0.10</childPercentage><productId>${productName}</productId><subscriberNumber>${this.currentDial}</subscriberNumber></addChildRequest>`;
     const urlPath = "/Saytar/rest/services/addChild";
 
     const { headerSig, urlSig, bodySig } = await generateSignatures(urlPath, xmlBody);
@@ -294,15 +321,8 @@ class EtisalatEngine {
         body: xmlBody,
       });
       const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        this.log(`[+] تم إرسال دعوة إضافة الفرد (${childIntl}) بنجاح!`, "success");
-      } else {
-        this.log(`[-] فشل إرسال دعوة إضافة الفرد. تأكد من صحة الرقم وأهليته.`, "error");
-      }
-      return ok;
-    } catch (err: any) {
-      this.log(`[-] خطأ أثناء دعوة الفرد: ${err?.message || err}`, "error");
+      return res.status === 200 && text.includes("<status>true</status>");
+    } catch {
       return false;
     }
   }
@@ -350,7 +370,7 @@ serve(async (req: Request) => {
     if (!ownerEmail || !ownerPass) {
       return new Response(JSON.stringify({
         success: false,
-        error: "بيانات اعتماد حساب الأونر (البريد وكلمة المرور) غير متوفرة في هذه الجلسة.",
+        error: "بيانات اعتماد حساب الأونر (البريد وكلمة المرور) غير متوفرة في هذه الجلسة. يرجى تعديل الجلسة وإدخال البريد وكلمة المرور.",
       }), {
         status: 400,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
@@ -359,7 +379,9 @@ serve(async (req: Request) => {
 
     const engine = new EtisalatEngine();
 
-    // ── Action: check_status ──────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 1: check_status
+    // ══════════════════════════════════════════════════════════════════
     if (action === "check_status") {
       const loginOk = await engine.login(ownerEmail, ownerPass, true);
       if (!loginOk) {
@@ -373,530 +395,412 @@ serve(async (req: Request) => {
         });
       }
 
-      const status = await engine.getStatusAndChild();
-      const hasChild = !!status.childNumber;
-      engine.log(`[+] فحص الأونر: النظام (${status.planId}) | الميكسات: ${status.remainingMix.toLocaleString('ar-EG')}`, "success");
-      if (hasChild) {
-        engine.log(`[+] تم اكتشاف فرد مربوط بالعائلة: ${status.childNumber}`, "success");
-      } else {
-        engine.log(`[!] لا يوجد فرد مربوط بالعائلة حالياً.`, "warn");
-      }
+      let status = await engine.getStatusAndChild();
+      let ownerPlanId = status.planId;
+      const displayPlan = engine.getPlanName(ownerPlanId);
 
-      // Check child account balance if child credentials exist
-      let childBalance: number | null = null;
-      if (childEmail && childPass) {
-        const childEngine = new EtisalatEngine();
-        if (await childEngine.login(childEmail, childPass, false)) {
-          const childStatus = await childEngine.getStatusAndChild();
-          childBalance = childStatus.remainingMix;
-          engine.log(`[+] حالة الفرد: الميكسات لديه = ${childBalance.toLocaleString('ar-EG')}`, "info");
-        }
-      }
+      engine.log(`[+] فحص الأونر: النظام (${displayPlan}) | الميكسات: ${status.remainingMix.toLocaleString('ar-EG')}`, "success");
 
-      // Update Supabase
-      const updateData: Record<string, any> = {
-        owner_account_identifier: engine.ownerDial,
-        owner_account_status: "connected",
-        owner_current_plan: status.planId,
-        owner_mix_balance: status.remainingMix,
-        last_owner_refresh_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      if (status.childNumber) {
-        updateData.individual_account_identifier = status.childNumber;
-        updateData.individual_account_status = "connected";
-        updateData.relationship_verified = true;
-        updateData.relationship_status = "verified";
-      } else {
-        updateData.relationship_verified = false;
-        updateData.relationship_status = "unverified";
-      }
-
-      if (childBalance !== null) {
-        updateData.individual_mix_balance = childBalance;
-        updateData.last_individual_refresh_at = new Date().toISOString();
-      }
-
-      await supabase.from("vip_sessions").update(updateData).eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        data: {
-          owner_dial: engine.ownerDial,
-          current_plan: status.planId,
-          remaining_mix: status.remainingMix,
-          child_number: status.childNumber,
-          has_child: hasChild,
-          child_mix_balance: childBalance,
-        },
-        logs: engine.logs,
-      }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Action: add_child ─────────────────────────────────────
-    if (action === "add_child") {
-      const childNumber = body.child_number;
-      if (!childNumber) {
-        return new Response(JSON.stringify({ success: false, error: "يرجى تحديد رقم هاتف الفرد المراد إضافته." }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({ success: false, error: "فشل دخول الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const status = await engine.getStatusAndChild();
-      const planName = status.planId.includes("Parent_7") || status.planId.includes("Parent_6")
-        ? status.planId
-        : "Hekaya_XRP_MIX_Parent_7";
-
-      const inviteOk = await engine.addChild(childNumber, planName);
-      if (!inviteOk) {
-        return new Response(JSON.stringify({ success: false, error: "فشل إرسال الدعوة من الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      // Auto Confirm by logging into child account
-      if (childEmail && childPass) {
-        engine.log("[*] جاري تسجيل الدخول لحساب الفرد لتأكيد الدعوة آلياً...", "info");
-        await sleep(2000);
-        const childEngine = new EtisalatEngine();
-        if (await childEngine.login(childEmail, childPass, false)) {
-          engine.log("[+] تم تسجيل دخول الفرد وتأكيد الدعوة بنجاح!", "success");
-          await sleep(3000);
-        } else {
-          engine.log("[-] تعذر تسجيل دخول الفرد آلياً. يمكن قبول الدعوة يدوياً من تطبيق ماي اتصالات.", "warn");
-        }
-      }
-
-      // Re-check owner to verify child
-      const recheck = await engine.getStatusAndChild();
-      const confirmedChild = recheck.childNumber || childNumber;
-
-      await supabase.from("vip_sessions").update({
-        individual_account_identifier: confirmedChild,
-        individual_account_status: "connected",
-        relationship_verified: true,
-        relationship_status: "verified",
-        updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: `تمت إضافة وتأكيد الفرد (${confirmedChild}) بنجاح!`,
-        child_number: confirmedChild,
-        logs: engine.logs,
-      }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Action: renew_bundle ──────────────────────────────────
-    if (action === "renew_bundle") {
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({ success: false, error: "فشل دخول الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const status = await engine.getStatusAndChild();
-      const isSeven = status.planId.includes("7");
-      const planName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
-      const cost = isSeven ? "270" : "180";
-
-      const renewOk = await engine.renewBundle(planName, cost);
-      if (!renewOk) {
-        return new Response(JSON.stringify({ success: false, error: "فشل تجديد الباقة.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      await sleep(3000);
-      const postRenew = await engine.getStatusAndChild();
-      await supabase.from("vip_sessions").update({
-        owner_mix_balance: postRenew.remainingMix,
-        updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: `تم تجديد باقة ${planName} بمبلغ ${cost} ج بنجاح!`,
-        post_renew_balance: postRenew.remainingMix,
-        logs: engine.logs,
-      }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Action: transfer_to_child ─────────────────────────────
-    if (action === "transfer_to_child") {
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({ success: false, error: "فشل دخول الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const status = await engine.getStatusAndChild();
-      if (!status.childNumber) {
-        return new Response(JSON.stringify({ success: false, error: "لا يوجد فرد مربوط بالعائلة لتحويل الميكسات له.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const amountToTransfer = body.amount ? parseInt(body.amount, 10) : status.remainingMix;
-      if (amountToTransfer <= 0) {
-        return new Response(JSON.stringify({ success: false, error: "لا يوجد رصيد ميكسات كافٍ للتحويل.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const planName = status.planId.includes("7") ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
-      const transferOk = await engine.transferMix(status.childNumber, amountToTransfer, planName);
-
-      if (!transferOk) {
-        return new Response(JSON.stringify({ success: false, error: "فشل تحويل الميكسات.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      await sleep(2000);
-      const postStatus = await engine.getStatusAndChild();
-      await supabase.from("vip_sessions").update({
-        owner_mix_balance: postStatus.remainingMix,
-        updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: `تم تحويل ${amountToTransfer.toLocaleString('ar-EG')} ميكس إلى الفرد بنجاح.`,
-        remaining_owner_mix: postStatus.remainingMix,
-        logs: engine.logs,
-      }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Action: change_plan ───────────────────────────────────
-    if (action === "change_plan") {
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({ success: false, error: "فشل دخول الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const status = await engine.getStatusAndChild();
-      const targetPlan = body.target_plan === "6" || status.planId.includes("7")
-        ? { name: "Hekaya_XRP_MIX_Parent_6", id: "951" }
-        : { name: "Hekaya_XRP_MIX_Parent_7", id: "" };
-
-      const changeOk = await engine.changePlan(targetPlan.name, targetPlan.id);
-      if (!changeOk) {
-        return new Response(JSON.stringify({ success: false, error: "فشل إرسال أمر ترحيل النظام.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      engine.log("[*] في انتظار نزول الميكسات على السيرفر (فحص كل ثانيتين)...", "info");
-      let pollCount = 0;
-      let finalPlan = status.planId;
-      let finalMix = status.remainingMix;
-
-      while (pollCount < 15) {
-        await sleep(2000);
-        pollCount++;
-        const check = await engine.getStatusAndChild();
-        if (check.planId && check.planId.includes(targetPlan.name) && check.remainingMix > 0) {
-          engine.log(`[+] السيرفر استجاب بنجاح! (النظام: ${check.planId} | الميكسات: ${check.remainingMix.toLocaleString('ar-EG')})`, "success");
-          finalPlan = check.planId;
-          finalMix = check.remainingMix;
-          break;
-        }
-      }
-
-      await supabase.from("vip_sessions").update({
-        owner_current_plan: finalPlan,
-        owner_mix_balance: finalMix,
-        updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: `تم ترحيل النظام إلى ${finalPlan} بنجاح!`,
-        current_plan: finalPlan,
-        remaining_mix: finalMix,
-        logs: engine.logs,
-      }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Action: return_child_mixes ────────────────────────────
-    if (action === "return_child_mixes") {
-      if (!childEmail || !childPass) {
-        return new Response(JSON.stringify({ success: false, error: "بيانات اعتماد حساب الفرد غير متوفرة." }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({ success: false, error: "فشل دخول الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-      const ownerDial = engine.ownerDial;
-
-      const childEngine = new EtisalatEngine();
-      childEngine.logs = engine.logs;
-      if (!await childEngine.login(childEmail, childPass, false)) {
-        return new Response(JSON.stringify({ success: false, error: "فشل تسجيل الدخول لحساب الفرد.", logs: childEngine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const childStatus = await childEngine.getStatusAndChild();
-      if (childStatus.remainingMix <= 0) {
-        return new Response(JSON.stringify({
-          success: true,
-          message: "رصيد الفرد الحالي 0 ميكس، لا يوجد ما يمكن استرجاعه.",
-          child_mix: 0,
-          logs: childEngine.logs,
-        }), {
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const returnOk = await childEngine.transferMix(ownerDial!, childStatus.remainingMix, "Hekaya_XRP_MIX_Child_1");
-      if (!returnOk) {
-        return new Response(JSON.stringify({ success: false, error: "فشل تحويل ميكسات الفرد للأونر.", logs: childEngine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      await sleep(2000);
-      const ownerFinalEngine = new EtisalatEngine();
-      ownerFinalEngine.logs = childEngine.logs;
-      await ownerFinalEngine.login(ownerEmail, ownerPass, true);
-      const finalStatus = await ownerFinalEngine.getStatusAndChild();
-      ownerFinalEngine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('ar-EG')} ميكس`, "success");
-
-      await supabase.from("vip_sessions").update({
-        owner_mix_balance: finalStatus.remainingMix,
-        individual_mix_balance: 0,
-        updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: `تم استرجاع ${childStatus.remainingMix.toLocaleString('ar-EG')} ميكس للأونر بنجاح!`,
-        owner_final_mix: finalStatus.remainingMix,
-        logs: ownerFinalEngine.logs,
-      }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Action: run_single_cycle (Exact Script 8-step Auto Cycle) ──
-    if (action === "run_single_cycle") {
-      const cycleNumber = (session.current_cycle || 0) + 1;
-      const startedAt = new Date().toISOString();
-      engine.log(`==================================================`, "info");
-      engine.log(`--- [الدورة رقم ${cycleNumber} - الجلسة: ${session.session_name}] ---`, "info");
-
-      // 1. Login owner
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({ success: false, error: "تعذر تسجيل دخول الأونر.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      // 2. Status & child check
-      const initialStatus = await engine.getStatusAndChild();
-      engine.log(`[+] حالة الأونر: ${initialStatus.planId} | الميكسات: ${initialStatus.remainingMix.toLocaleString('ar-EG')}`, "info");
-
-      if (!initialStatus.childNumber) {
-        engine.log(`[-] لا يوجد فرد مضاف بالعائلة! يجب إضافة فرد أولاً.`, "error");
-        return new Response(JSON.stringify({
-          success: false,
-          error: "لا يوجد فرد مضاف بالعائلة. يرجى استخدام بطاقة إضافة الفرد أولاً.",
-          logs: engine.logs,
-        }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      const targetMix = session.target_mix_balance || 50000;
-      if (initialStatus.remainingMix >= targetMix) {
-        engine.log(`[🎉] تم الوصول للهدف: ${initialStatus.remainingMix.toLocaleString('ar-EG')} ميكس!`, "success");
-        return new Response(JSON.stringify({
-          success: true,
-          target_reached: true,
-          final_mix: initialStatus.remainingMix,
-          logs: engine.logs,
-        }), {
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      let ownerPlanPre = initialStatus.planId;
-      const isSeven = ownerPlanPre.includes("7") || ownerPlanPre.includes("270");
-      const isSix = ownerPlanPre.includes("6") || ownerPlanPre.includes("180") || ownerPlanPre.includes("951");
-
-      // Auto-migrate non-matching plans (e.g., 240 or other plans) to Parent 7 (270)
-      if (!isSeven && !isSix) {
-        engine.log(`[!] النظام الحالي (${ownerPlanPre}) غير متوافق (المطلوب Parent 7 بـ 270ج أو Parent 6 بـ 180ج).`, "warn");
-        engine.log(`[*] جاري الترحيل التلقائي إلى Parent 7 (270ج)...`, "info");
+      // Auto-migrate if plan is not 270 or 180 (e.g. 240 or other plans)
+      const isSeven = ownerPlanId.includes("Parent_7");
+      const isSix = ownerPlanId.includes("Parent_6");
+      if (!isSeven && !isSix && ownerPlanId !== "غير معروف") {
+        engine.log(`[!] النظام الحالي هو (${displayPlan}). جاري تحويله لـ 270 لدعم العيلة...`, "warn");
         const migOk = await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
-        if (!migOk) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: `فشل التحويل التلقائي للنظام إلى 270 (النظام الحالي: ${ownerPlanPre}).`,
-            logs: engine.logs,
-          }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
-        }
-        await sleep(3000);
-        const recheck = await engine.getStatusAndChild();
-        ownerPlanPre = recheck.planId;
-        engine.log(`[+] تم الترحيل التلقائي بنجاح إلى: ${ownerPlanPre}`, "success");
-      }
-
-      const ownerPlanName = ownerPlanPre.includes("6") ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7";
-      const renewCost = ownerPlanPre.includes("6") ? "180" : "270";
-
-      // 3. Renew bundle
-      if (!await engine.renewBundle(ownerPlanName, renewCost)) {
-        engine.log(`[-] فشل التجديد. سيتم المحاولة لاحقاً.`, "error");
-        return new Response(JSON.stringify({ success: false, error: "فشل تجديد الباقة.", logs: engine.logs }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      await sleep(3000);
-      const postRenew = await engine.getStatusAndChild();
-      const ownerPostRenewal = postRenew.remainingMix;
-
-      // 4. Transfer mixes to child
-      let transferredToChild = 0;
-      if (ownerPostRenewal > 0) {
-        if (await engine.transferMix(initialStatus.childNumber, ownerPostRenewal, ownerPlanName)) {
-          transferredToChild = ownerPostRenewal;
-        }
-      }
-
-      // 5. Change Plan
-      const targetPlan = ownerPlanPre.includes("7")
-        ? { name: "Hekaya_XRP_MIX_Parent_6", id: "951" }
-        : { name: "Hekaya_XRP_MIX_Parent_7", id: "" };
-      await engine.changePlan(targetPlan.name, targetPlan.id);
-
-      // 6. Polling: strict 2s delay
-      engine.log(`[*] في انتظار نزول الميكسات على السيرفر (فحص كل ثانيتين)...`, "info");
-      let pollCount = 0;
-      let postMigratePlan = targetPlan.name;
-      while (pollCount < 20) {
-        await sleep(2000);
-        pollCount++;
-        const currentCheck = await engine.getStatusAndChild();
-        if (currentCheck.planId && currentCheck.planId.includes(targetPlan.name) && currentCheck.remainingMix > 0) {
-          engine.log(`[+] السيرفر استجاب! (النظام: ${currentCheck.planId} | الميكسات: ${currentCheck.remainingMix.toLocaleString('ar-EG')})`, "success");
-          postMigratePlan = currentCheck.planId;
-          break;
-        }
-      }
-
-      // 7. Transfer child to owner
-      let transferredToOwner = 0;
-      if (childEmail && childPass) {
-        const childEngine = new EtisalatEngine();
-        childEngine.logs = engine.logs;
-        if (await childEngine.login(childEmail, childPass, false)) {
-          const childStatus = await childEngine.getStatusAndChild();
-          if (childStatus.remainingMix > 0) {
-            if (await childEngine.transferMix(engine.ownerDial!, childStatus.remainingMix, "Hekaya_XRP_MIX_Child_1")) {
-              transferredToOwner = childStatus.remainingMix;
+        if (migOk) {
+          engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
+          for (let attempt = 0; attempt < 8; attempt++) {
+            await sleep(3000);
+            const recheck = await engine.getStatusAndChild(true);
+            if (recheck.planId && recheck.planId.includes("Parent_7")) {
+              status = recheck;
+              ownerPlanId = recheck.planId;
+              engine.log(`[+] تم تأكيد تغيير النظام بنجاح إلى: ${engine.getPlanName(ownerPlanId)}`, "success");
+              break;
             }
           }
         }
       }
 
-      // 8. Return to owner and verify final balance
-      await sleep(2000);
-      const ownerFinal = new EtisalatEngine();
-      ownerFinal.logs = engine.logs;
-      await ownerFinal.login(ownerEmail, ownerPass, true);
-      const finalStatus = await ownerFinal.getStatusAndChild();
-      ownerFinal.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('ar-EG')} ميكس`, "success");
+      const hasChild = !!status.childNumber;
+      if (hasChild) {
+        engine.log(`[+] تم تأكيد وجود فرد مضاف في العيلة: ${status.childNumber}`, "success");
+      } else {
+        engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة.`, "warn");
+      }
 
-      const endedAt = new Date().toISOString();
-      const isTargetReached = finalStatus.remainingMix >= targetMix;
+      // Check Child account balance & dial if credentials exist
+      let childBalance: number | null = null;
+      let childDial: string | null = null;
+      let childPlan: string | null = null;
 
-      // Persist cycle to history
-      await supabase.from("vip_cycle_history").insert({
-        session_id: session_id,
-        cycle_number: cycleNumber,
-        started_at: startedAt,
-        ended_at: endedAt,
-        owner_balance_start: initialStatus.remainingMix,
-        owner_balance_post_renewal: ownerPostRenewal,
-        amount_transferred_owner_to_indiv: transferredToChild,
-        system_pre_migration: ownerPlanPre,
-        system_post_migration: postMigratePlan,
-        amount_transferred_indiv_to_owner: transferredToOwner,
-        final_balance: finalStatus.remainingMix,
-        target_balance: targetMix,
-        cycle_status: isTargetReached ? "stopped_at_target" : "completed",
-      });
+      if (childEmail && childPass) {
+        const childEngine = new EtisalatEngine();
+        if (await childEngine.login(childEmail, childPass, false, true)) {
+          childDial = childEngine.childDial;
+          const childStatus = await childEngine.getStatusAndChild(true);
+          childBalance = childStatus.remainingMix;
+          childPlan = engine.getPlanName(childStatus.planId);
+          engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial} | الميكسات: ${childBalance.toLocaleString('ar-EG')})`, "info");
+        }
+      }
 
-      // Update session state
-      await supabase.from("vip_sessions").update({
-        current_cycle: cycleNumber,
-        owner_mix_balance: finalStatus.remainingMix,
-        owner_current_plan: postMigratePlan,
-        last_successful_op_at: endedAt,
-        updated_at: endedAt,
-      }).eq("id", session_id);
+      // Update Supabase Database session
+      await supabase
+        .from("vip_sessions")
+        .update({
+          owner_account_identifier: engine.ownerDial || session.owner_account_identifier,
+          owner_account_status: "verified",
+          owner_current_plan: engine.getPlanName(ownerPlanId),
+          owner_mix_balance: status.remainingMix,
+          last_owner_refresh_at: new Date().toISOString(),
+          individual_account_identifier: status.childNumber || childDial || session.individual_account_identifier,
+          individual_account_status: childDial ? "verified" : session.individual_account_status,
+          individual_current_plan: childPlan || session.individual_current_plan,
+          individual_mix_balance: childBalance !== null ? childBalance : session.individual_mix_balance,
+          last_individual_refresh_at: childBalance !== null ? new Date().toISOString() : session.last_individual_refresh_at,
+          relationship_verified: hasChild,
+          relationship_status: hasChild ? "linked_and_verified" : "no_child_linked",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
 
       return new Response(JSON.stringify({
         success: true,
-        cycle_number: cycleNumber,
-        final_mix: finalStatus.remainingMix,
-        target_reached: isTargetReached,
-        logs: ownerFinal.logs,
+        owner: {
+          dial: engine.ownerDial,
+          plan: engine.getPlanName(ownerPlanId),
+          mix: status.remainingMix,
+        },
+        child: {
+          dial: status.childNumber || childDial,
+          plan: childPlan,
+          mix: childBalance,
+          linked: hasChild,
+        },
+        logs: engine.logs,
       }), {
+        status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ success: false, error: `Unknown action: ${action}` }), {
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 2: add_child (Exact sequence from etisalat_bot.py lines 270-340)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "add_child") {
+      const childNumber = body.child_number || session.individual_account_identifier;
+      if (!childNumber) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "رقم الفرد المطلوب إضافته غير محدد.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      // Step 1: Login to Owner and Renew bundle (270)
+      engine.log(`[*] الخطوة 1/4: تسجيل دخول الأونر وتفعيل باقة Parent 7...`, "info");
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      await engine.renewBundleAction("Hekaya_XRP_MIX_Parent_7", "270");
+      await sleep(3000);
+
+      // Step 2: Login to Child and activate account
+      if (childEmail && childPass) {
+        engine.log(`[*] الخطوة 2/4: تسجيل الدخول للفرد لتفعيل حسابه قبل الدعوة...`, "info");
+        const childEngine = new EtisalatEngine();
+        if (await childEngine.login(childEmail, childPass, false)) {
+          const childStatus = await childEngine.getStatusAndChild(true);
+          if (childStatus.planId && childStatus.planId.includes("Parent_7")) {
+            await childEngine.renewBundleAction("Hekaya_XRP_MIX_Parent_7", "270");
+          } else {
+            await childEngine.renewBundleAction("Hekaya_XRP_MIX_Parent_6", "180");
+          }
+          await sleep(3000);
+        }
+      }
+
+      // Step 3: Switch back to Owner to send addChild invitation
+      engine.log(`[*] الخطوة 3/4: الرجوع للأونر لإرسال دعوة الإضافة بنسبة 10%...`, "info");
+      const ownerEngine = new EtisalatEngine();
+      if (!await ownerEngine.login(ownerEmail, ownerPass, true, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل العودة لحساب الأونر.",
+          logs: [...engine.logs, ...ownerEngine.logs],
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      let childConfirmed = false;
+      let finalChildNumber: string | null = null;
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        ownerEngine.log(`[*] جاري إرسال دعوة للرقم ${childNumber} (محاولة ${attempt}/3)...`, "info");
+        const invited = await ownerEngine.sendAddChildRequest(childNumber, "Hekaya_XRP_MIX_Parent_7");
+        if (invited) {
+          ownerEngine.log(`[+] تم إرسال الدعوة بنجاح!`, "success");
+          ownerEngine.log(`[*] جاري الدخول للفرد وتحديث البيانات لقبول الدعوة...`, "info");
+
+          if (childEmail && childPass) {
+            const childAcceptEngine = new EtisalatEngine();
+            if (await childAcceptEngine.login(childEmail, childPass, false, true)) {
+              await childAcceptEngine.renewBundleAction("Hekaya_XRP_MIX_Parent_7", "270");
+              await sleep(3000);
+            }
+          }
+
+          // Check if child appears in owner's fafNumberList
+          const verifyOwner = new EtisalatEngine();
+          await verifyOwner.login(ownerEmail, ownerPass, true, true);
+          const st = await verifyOwner.getStatusAndChild(true);
+          if (st.childNumber) {
+            ownerEngine.log(`[+] مبروك! تم تأكيد إضافة الفرد بنجاح: ${st.childNumber}`, "success");
+            childConfirmed = true;
+            finalChildNumber = st.childNumber;
+            break;
+          } else {
+            ownerEngine.log(`[-] الدعوة لم يتم تأكيدها بعد (السيرفر ما زال يحدّث).`, "warn");
+          }
+        } else {
+          ownerEngine.log(`[-] فشل إرسال الدعوة. المحاولة التالية بعد 5 ثواني...`, "warn");
+          await sleep(5000);
+        }
+      }
+
+      const allLogs = [...engine.logs, ...ownerEngine.logs];
+
+      if (childConfirmed && finalChildNumber) {
+        await supabase
+          .from("vip_sessions")
+          .update({
+            individual_account_identifier: finalChildNumber,
+            relationship_verified: true,
+            relationship_status: "linked_and_verified",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", session_id);
+
+        return new Response(JSON.stringify({
+          success: true,
+          message: `مبروك! تم تأكيد إضافة الفرد: ${finalChildNumber}`,
+          child_number: finalChildNumber,
+          logs: allLogs,
+        }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      return new Response(JSON.stringify({
+        success: false,
+        error: "فشلت محاولات إضافة الفرد تلقائياً. يرجى قبول الدعوة يدوياً من تطبيق My Etisalat على هاتف الفرد ثم إعادة الفحص.",
+        logs: allLogs,
+      }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 3: single_cycle / run_single_cycle (Exact loop steps from etisalat_bot.py lines 350-440)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "single_cycle" || action === "run_single_cycle") {
+      // 1. Login to Owner
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      // 2. Check Plan & Child existence
+      let status = await engine.getStatusAndChild(true);
+      let ownerPlanPre = status.planId;
+
+      // Auto-migrate if not 270 or 180
+      if (!ownerPlanPre.includes("Parent_7") && !ownerPlanPre.includes("Parent_6")) {
+        engine.log(`[!] النظام الحالي (${engine.getPlanName(ownerPlanPre)}) غير متوافق. جاري تحويله لـ 270...`, "warn");
+        await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
+        engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
+        for (let attempt = 0; attempt < 8; attempt++) {
+          await sleep(3000);
+          const recheck = await engine.getStatusAndChild(true);
+          if (recheck.planId && recheck.planId.includes("Parent_7")) {
+            status = recheck;
+            ownerPlanPre = recheck.planId;
+            engine.log(`[+] تم تأكيد تغيير النظام بنجاح إلى: ${engine.getPlanName(ownerPlanPre)}`, "success");
+            break;
+          }
+        }
+      }
+
+      const childNum = status.childNumber || session.individual_account_identifier;
+      if (!childNum) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "لا يوجد فرد مربوط بالعائلة! يرجى إضافة الفرد وتأكيده أولاً قبل بدء الدورة.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
+      const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+      const renewCost = isSeven ? "270" : "180";
+
+      // 3. Send activation motion to owner
+      await engine.renewBundleAction(ownerPlanName, renewCost);
+      await sleep(3000);
+
+      // 4. Check mix balance & transfer to child
+      const statusAfterRenew = await engine.getStatusAndChild(true);
+      const newMix = statusAfterRenew.remainingMix;
+
+      if (newMix > 0) {
+        const transferred = await engine.transferMix(childNum, newMix, ownerPlanName);
+        if (!transferred) {
+          engine.log(`[!] تنبيه: لم يتمكن من تحويل ميكسات الأونر للفرد. متابعة الترحيل...`, "warn");
+        }
+      } else {
+        engine.log(`[*] الأونر ليس لديه ميكسات حالياً. جاري فحص الفرد...`, "info");
+        if (childEmail && childPass) {
+          const childEngine = new EtisalatEngine();
+          if (await childEngine.login(childEmail, childPass, false, true)) {
+            const childStatus = await childEngine.getStatusAndChild(true);
+            if (childStatus.remainingMix > 0) {
+              engine.log(`[+] الفرد لديه (${childStatus.remainingMix.toLocaleString('ar-EG')}) ميكس. سيكمل السكريبت خطواته.`, "success");
+            }
+          }
+        }
+      }
+
+      await sleep(2000);
+
+      // 5. Switch Plan: if 7 -> switch to 6 (951), if 6 -> switch to 7 ("")
+      let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
+      let targetPlanDisplay = "حكاية ميكسات 180";
+      let ratePlanId = "951";
+
+      if (!isSeven) {
+        targetPlanId = "Hekaya_XRP_MIX_Parent_7";
+        targetPlanDisplay = "حكاية ميكسات 270";
+        ratePlanId = "";
+      }
+
+      await engine.changePlan(targetPlanId, ratePlanId);
+      engine.log(`[*] في انتظار تحديث السيرفر (ممكن ياخد وقت)...`, "info");
+
+      for (let attempt = 0; attempt < 12; attempt++) {
+        await sleep(2500);
+        const currentCheck = await engine.getStatusAndChild(true);
+        if (currentCheck.planId && currentCheck.planId.includes(targetPlanId) && currentCheck.remainingMix > 0) {
+          engine.log(`[+] السيرفر استجاب! (النظام: ${targetPlanDisplay} | الميكسات: ${currentCheck.remainingMix.toLocaleString('ar-EG')})`, "success");
+          break;
+        }
+      }
+
+      // 6. Login to Child and retrieve mix back to Owner
+      if (childEmail && childPass) {
+        engine.log(`[*] تسجيل الدخول للفرد واسترجاع الميكسات للأونر...`, "info");
+        const childTransferEngine = new EtisalatEngine();
+        if (await childTransferEngine.login(childEmail, childPass, false, true)) {
+          const childSt = await childTransferEngine.getStatusAndChild(true);
+          engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('ar-EG')}`, "info");
+
+          if (childSt.remainingMix > 0 && engine.ownerDial) {
+            await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
+          }
+          engine.logs.push(...childTransferEngine.logs);
+        }
+      }
+
+      // 7. Login back to Owner and read final mix
+      const finalOwnerEngine = new EtisalatEngine();
+      if (await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
+        const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
+        engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('ar-EG')} ميكس`, "success");
+        engine.logs.push(...finalOwnerEngine.logs);
+
+        const newCycleCount = (session.current_cycle || 0) + 1;
+        const targetMix = session.target_mix_balance || 50000;
+        const targetReached = finalStatus.remainingMix >= targetMix;
+
+        // Update database
+        await supabase
+          .from("vip_sessions")
+          .update({
+            owner_mix_balance: finalStatus.remainingMix,
+            owner_current_plan: engine.getPlanName(finalStatus.planId),
+            current_cycle: newCycleCount,
+            last_successful_op_at: new Date().toISOString(),
+            last_actual_operation: "single_cycle_completed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", session_id);
+
+        return new Response(JSON.stringify({
+          success: true,
+          cycle_number: newCycleCount,
+          final_mix: finalStatus.remainingMix,
+          target_reached: targetReached,
+          logs: engine.logs,
+        }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: "اكتملت خطوات الدورة",
+        logs: engine.logs,
+      }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 4: change_plan
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "change_plan") {
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const targetPlan = body.target_plan === "6" ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7";
+      const ratePlanId = body.target_plan === "6" ? "951" : "";
+      const ok = await engine.changePlan(targetPlan, ratePlanId);
+
+      if (ok) {
+        engine.log(`[+] تم إرسال أمر الترحيل إلى: ${engine.getPlanName(targetPlan)} بنجاح!`, "success");
+        await sleep(3000);
+        const st = await engine.getStatusAndChild(true);
+        await supabase
+          .from("vip_sessions")
+          .update({
+            owner_current_plan: engine.getPlanName(st.planId),
+            owner_mix_balance: st.remainingMix,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", session_id);
+      }
+
+      return new Response(JSON.stringify({
+        success: ok,
+        message: ok ? `تم ترحيل النظام بنجاح إلى: ${engine.getPlanName(targetPlan)}` : "فشل ترحيل النظام",
+        logs: engine.logs,
+      }), { status: ok ? 200 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ success: false, error: `Invalid action: ${action}` }), {
       status: 400,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err?.message || String(err) }), {
+    console.error("[etisalat-vip-executor] Unhandled error:", err);
+    return new Response(JSON.stringify({
+      success: false,
+      error: err?.message || "خطأ غير متوقع في محرك اتصالات",
+    }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });

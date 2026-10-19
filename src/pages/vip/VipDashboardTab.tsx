@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { toast } from 'sonner';
 
 import type { VipDashboardData, VipSession } from '@/types/vip';
@@ -34,7 +34,7 @@ export function VipDashboardTab({
     {
       time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
       level: 'info',
-      message: `[+] تم تحميل جلسة «${session.session_name}». جاهز لبدء العمليات مع EtisalatBot.`,
+      message: `[+] تم تحميل جلسة «${session?.session_name || 'VIP'}». جاهز لبدء العمليات مع Etisalat VIP Bot.`,
     },
   ]);
 
@@ -45,7 +45,7 @@ export function VipDashboardTab({
 
   // Auto Loop States
   const [loopRunning, setLoopRunning] = useState(false);
-  const [loopCycle, setLoopCycle] = useState(session.current_cycle || 0);
+  const [loopCycle, setLoopCycle] = useState(session?.current_cycle || 0);
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const [stepMessage, setStepMessage] = useState<string | null>(null);
 
@@ -65,15 +65,9 @@ export function VipDashboardTab({
     setTerminalLogs((prev) => [...prev, { time, level, message }]);
   };
 
-  // 1. Initial automatic check if session has never been checked
-  useEffect(() => {
-    if (!session.owner_account_identifier || session.owner_account_identifier === '') {
-      handleCheckStatus(true);
-    }
-  }, [session.id]);
-
-  // 2. Comprehensive check status
+  // 1. Comprehensive check status
   const handleCheckStatus = async (silent = false) => {
+    if (!session) return;
     setCheckingStatus(true);
     if (!silent) {
       addSingleLog(`[*] بدء فحص شامل وتسجيل دخول للجلسة «${session.session_name}»...`, 'info');
@@ -95,18 +89,19 @@ export function VipDashboardTab({
     }
   };
 
-  // 3. Add Child and Confirm
+  // 2. Add Child and Confirm
   const handleAddChild = async (childNumber: string) => {
+    if (!session) return;
     setAddingChild(true);
-    addSingleLog(`[*] بدء إرسال دعوة الفرد (${childNumber}) وتأكيدها آلياً...`, 'info');
+    addSingleLog(`[*] بدء إجراءات إضافة وتأكيد الفرد ${childNumber} في عائلة الأونر...`, 'info');
     try {
       const res = await executeVipAddChild(session.id, childNumber);
       appendLogs(res.logs);
       if (res.success) {
-        toast.success(res.message || 'تمت إضافة وتأكيد الفرد بالعائلة بنجاح!');
+        toast.success(res.message || 'تمت إضافة وتأكيد الفرد بنجاح!');
         onRefresh();
       } else {
-        toast.error(res.error || 'فشل إضافة الفرد');
+        toast.error(res.error || 'فشل تأكيد الفرد');
       }
     } catch (err: any) {
       addSingleLog(`[-] خطأ أثناء إضافة الفرد: ${err?.message || err}`, 'error');
@@ -116,10 +111,11 @@ export function VipDashboardTab({
     }
   };
 
-  // 4. Migrate Plan (e.g. from 240 or switch 6 <-> 7)
+  // 3. Migrate Plan (e.g. from 240 or switch 6 <-> 7)
   const handleChangePlan = async (targetPlan?: '6' | '7') => {
+    if (!session) return;
     setChangingPlan(true);
-    addSingleLog(`[*] إرسال أمر ترحيل النظام إلى Parent ${targetPlan || '7'}...`, 'info');
+    addSingleLog(`[*] إرسال أمر ترحيل النظام إلى ${targetPlan === '6' ? 'حكاية ميكسات 180' : 'حكاية ميكسات 270'}...`, 'info');
     try {
       const res = await executeVipChangePlan(session.id, targetPlan);
       appendLogs(res.logs);
@@ -137,8 +133,9 @@ export function VipDashboardTab({
     }
   };
 
-  // 5. Auto Loop Controller: Executes full cycles sequentially with auto-plan migration
+  // 4. Auto Loop Controller: Executes full cycles sequentially with auto-plan migration
   const handleStartAutoLoop = async (targetMix: number, delaySeconds: number) => {
+    if (!session) return;
     stopRequestedRef.current = false;
     setLoopRunning(true);
     addSingleLog(`==================================================`, 'info');
@@ -209,9 +206,11 @@ export function VipDashboardTab({
     toast.info('جاري إيقاف الدورة التلقائية...');
   };
 
+  if (!session) return null;
+
   return (
     <div className="space-y-3.5 max-w-5xl mx-auto" dir="rtl">
-      {/* ── 1. Unified Master Card: Owner, Child, Family linkage, & Balances ── */}
+      {/* ── 1. Unified Master Card: «نظام أتمتة اتصالات» (Screenshot 2 Match) ── */}
       <VipUnifiedMasterCard
         session={session}
         onRefreshAll={() => handleCheckStatus(false)}

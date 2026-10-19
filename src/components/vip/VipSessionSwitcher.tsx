@@ -9,6 +9,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -31,11 +41,13 @@ import {
   Users,
   Sparkles,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import {
   createVipSession,
   deleteVipSession,
+  deleteAllVipSessions,
   getVipDefaultChildCredentials,
   executeVipCheckStatus,
 } from '@/lib/vipApi';
@@ -58,6 +70,7 @@ export function VipSessionSwitcher({
 }: Props) {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [openDefaultChildModal, setOpenDefaultChildModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -98,19 +111,19 @@ export function VipSessionSwitcher({
     e.preventDefault();
 
     if (!ownerEmail.trim()) {
-      toast.error('يرجى إدخال البريد الإلكتروني لحساب الأونر (Owner).');
+      toast.error('يرجى إدخال البريد الإلكتروني لحساب الأونر');
       return;
     }
     if (!ownerPassword.trim()) {
-      toast.error('يرجى إدخال كلمة مرور حساب الأونر (Owner).');
+      toast.error('يرجى إدخال كلمة مرور حساب الأونر');
       return;
     }
     if (!individualEmail.trim()) {
-      toast.error('يرجى إدخال البريد الإلكتروني لحساب الفرد (Child).');
+      toast.error('يرجى إدخال البريد الإلكتروني لحساب الفرد');
       return;
     }
     if (!individualPassword.trim()) {
-      toast.error('يرجى إدخال كلمة مرور حساب الفرد (Child).');
+      toast.error('يرجى إدخال كلمة مرور حساب الفرد');
       return;
     }
 
@@ -118,15 +131,15 @@ export function VipSessionSwitcher({
     if (targetPreset === 'custom') {
       const parsed = parseInt(customTarget, 10);
       if (isNaN(parsed) || parsed <= 0) {
-        toast.error('يرجى إدخال قيمة عددية موجبة للرصيد المستهدف.');
+        toast.error('يرجى إدخال رقم صحيح وموجب لهدف الميكسات');
         return;
       }
       finalTarget = parsed;
     } else {
-      finalTarget = parseInt(targetPreset, 10) || 50000;
+      finalTarget = parseInt(targetPreset, 10);
     }
 
-    const delay = Math.max(0, Number(cycleDelaySeconds) || 20);
+    const delay = cycleDelaySeconds < 0 ? 20 : cycleDelaySeconds;
 
     setSubmitting(true);
     try {
@@ -156,8 +169,13 @@ export function VipSessionSwitcher({
         onSessionsChanged();
         onSelectSession(res.session.id);
 
-        // Immediate background verification & status fetch for the new session
-        executeVipCheckStatus(res.session.id)
+        // Immediate background verification & status fetch for the new session with explicit credentials
+        executeVipCheckStatus(res.session.id, {
+          owner_email: ownerEmail.trim(),
+          owner_password: ownerPassword.trim(),
+          individual_email: individualEmail.trim(),
+          individual_password: individualPassword.trim(),
+        })
           .then(() => {
             onSessionsChanged();
           })
@@ -173,25 +191,40 @@ export function VipSessionSwitcher({
 
   const handleDeleteActiveSession = async () => {
     if (!activeSession) return;
-    if (sessions.length <= 1) {
-      toast.error('لا يمكن حذف الجلسة الوحيدة المتبقية في النظام.');
-      return;
-    }
 
     setSubmitting(true);
     try {
       const res = await deleteVipSession(activeSession.id);
       if (res.success) {
-        toast.success('تمت أرشفة الجلسة بنجاح.');
+        toast.success('تم حذف وأرشفة الجلسة بنجاح.');
         setOpenDeleteModal(false);
         const remaining = sessions.filter((s) => s.id !== activeSession.id);
         if (remaining.length > 0) {
           onSelectSession(remaining[0].id);
+        } else {
+          onSelectSession('');
         }
         onSessionsChanged();
       }
     } catch (err: any) {
       toast.error('فشل حذف الجلسة: ' + (err?.message || 'خطأ غير معروف'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteAllSessions = async () => {
+    setSubmitting(true);
+    try {
+      const res = await deleteAllVipSessions();
+      if (res.success) {
+        toast.success('تم حذف وأرشفة جميع جلسات اتصالات بنجاح.');
+        setOpenDeleteAllModal(false);
+        onSelectSession('');
+        onSessionsChanged();
+      }
+    } catch (err: any) {
+      toast.error('فشل حذف كافة الجلسات: ' + (err?.message || 'خطأ غير معروف'));
     } finally {
       setSubmitting(false);
     }
@@ -210,30 +243,36 @@ export function VipSessionSwitcher({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-muted-foreground font-medium">جلسة اتصالات VIP:</span>
-                <Select
-                  value={activeSessionId}
-                  onValueChange={onSelectSession}
-                  disabled={disabled}
-                >
-                  <SelectTrigger className="h-8 text-xs font-bold border-amber-500/40 bg-background/80 w-auto min-w-[190px] max-w-[270px] gap-2">
-                    <SelectValue placeholder="اختر الجلسة" />
-                  </SelectTrigger>
-                  <SelectContent align="start" className="max-h-72">
-                    {sessions.map((sess) => (
-                      <SelectItem key={sess.id} value={sess.id} className="text-xs">
-                        <div className="flex items-center justify-between gap-3 w-full">
-                          <span className="font-semibold truncate">{sess.session_name}</span>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1 py-0 shrink-0 font-mono"
-                          >
-                            {sess.owner_account_identifier || sess.owner_email || 'جلسة جديدة'}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {sessions.length > 0 ? (
+                  <Select
+                    value={activeSessionId || sessions[0]?.id}
+                    onValueChange={onSelectSession}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="h-8 text-xs font-bold border-amber-500/40 bg-background/80 w-auto min-w-[190px] max-w-[270px] gap-2">
+                      <SelectValue placeholder="اختر الجلسة" />
+                    </SelectTrigger>
+                    <SelectContent align="start" className="max-h-72">
+                      {sessions.map((sess) => (
+                        <SelectItem key={sess.id} value={sess.id} className="text-xs">
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <span className="font-semibold truncate">{sess.session_name}</span>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1 py-0 shrink-0 font-mono"
+                            >
+                              {sess.owner_account_identifier || sess.owner_email || 'جلسة جديدة'}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-500 bg-amber-500/5 px-2.5 py-1">
+                    لا توجد جلسات مسجلة حالياً
+                  </Badge>
+                )}
 
                 <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0.5">
                   {sessions.length} جلسة مسجلة
@@ -261,7 +300,7 @@ export function VipSessionSwitcher({
             </div>
           </div>
 
-          {/* Action Buttons: Add Session, Default Child, & Archive Session */}
+          {/* Action Buttons: Add Session, Default Child, & Delete Sessions */}
           <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto flex-wrap">
             {/* 1. Default Child Credentials Button */}
             <Button
@@ -276,22 +315,36 @@ export function VipSessionSwitcher({
               <span>بيانات الفرد الافتراضية</span>
             </Button>
 
-            {/* 2. Archive Session Button (if more than 1 session) */}
-            {sessions.length > 1 && (
+            {/* 2. Delete Active Session Button (Available for ANY session) */}
+            {activeSession && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setOpenDeleteModal(true)}
                 disabled={disabled}
                 className="h-8 text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 px-2.5"
-                title="أرشفة هذه الجلسة"
+                title="حذف هذه الجلسة"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">أرشفة الجلسة</span>
+                <span>حذف الجلسة</span>
               </Button>
             )}
 
-            {/* 3. Add New Session Button */}
+            {/* 3. Delete All Sessions Button (if at least 1 session exists) */}
+            {sessions.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenDeleteAllModal(true)}
+                disabled={disabled}
+                className="h-8 text-xs gap-1 border-destructive/40 text-destructive/90 hover:bg-destructive/15 px-2.5"
+                title="حذف وتصفير كافة الجلسات المسجلة"
+              >
+                <span>حذف الكل</span>
+              </Button>
+            )}
+
+            {/* 4. Add New Session Button */}
             <Button
               size="sm"
               onClick={() => setOpenAddModal(true)}
@@ -318,29 +371,24 @@ export function VipSessionSwitcher({
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateSession} className="space-y-3 py-1 text-xs">
+          <form onSubmit={handleCreateSession} className="space-y-3.5 py-1">
             {/* Session Name */}
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">
-                اسم الجلسة <span className="text-muted-foreground text-[10px] font-normal">(اختياري)</span>
-              </Label>
+              <Label className="text-xs font-semibold">اسم الجلسة (اختياري)</Label>
               <Input
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                placeholder="مثال: جلسة حكاية ميكس الرئيسية"
+                placeholder="مثال: جلسة حكاية ميكسات #1"
                 className="text-xs h-8"
               />
             </div>
 
             {/* Owner Credentials */}
             <div className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" />
-                  بيانات حساب الأونر الرئيسي (Owner Account)
-                </span>
-                <span className="text-[10px] text-muted-foreground">المستلم للميكسات</span>
-              </div>
+              <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" />
+                بيانات حساب الأونر (Owner Account)
+              </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -453,17 +501,14 @@ export function VipSessionSwitcher({
 
               {targetPreset === 'custom' ? (
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold">القيمة المخصصة</Label>
+                  <Label className="text-xs font-semibold">الهدف المخصص (ميكس)</Label>
                   <Input
                     type="number"
-                    min="1000"
-                    step="1000"
                     value={customTarget}
                     onChange={(e) => setCustomTarget(e.target.value)}
                     placeholder="مثال: 75000"
                     className="text-xs h-8 font-mono"
                     dir="ltr"
-                    required
                   />
                 </div>
               ) : (
@@ -532,10 +577,10 @@ export function VipSessionSwitcher({
           <DialogHeader>
             <DialogTitle className="text-sm font-bold text-destructive flex items-center gap-2">
               <Trash2 className="w-4 h-4" />
-              تأكيد أرشفة الجلسة «{activeSession?.session_name}»
+              تأكيد حذف الجلسة «{activeSession?.session_name}»
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              هل أنت متأكد من رغبتك في أرشفة هذه الجلسة؟ لن يتم حذف سجل العمليات السابقة ولكن سيتم إخفاء الجلسة من القائمة النشطة.
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              هل أنت متأكد من حذف وأرشفة هذه الجلسة؟ سيتم إيقاف أي عمليات مرتبطة بها فوراً وإزالتها من النظام حتى لا تبدأ أي عملية تلقائياً.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
@@ -553,13 +598,50 @@ export function VipSessionSwitcher({
               size="sm"
               onClick={handleDeleteActiveSession}
               disabled={submitting}
-              className="text-xs font-bold"
+              className="text-xs font-bold gap-1.5"
             >
-              {submitting ? 'جاري الأرشفة...' : 'أرشفة الجلسة الآن'}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>جاري الحذف...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>تأكيد الحذف النهائي</span>
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Modal: Delete ALL Sessions ── */}
+      <AlertDialog open={openDeleteAllModal} onOpenChange={setOpenDeleteAllModal}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] md:max-w-md" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-bold text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              تأكيد حذف وأرشفة كافة الجلسات ({sessions.length})
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              تحذير: سيتم حذف وأرشفة جميع جلسات اتصالات VIP المسجلة في النظام وإيقاف كافة الأتمتة المفتوحة، وستصبح اللوحة فارغة تماماً لمنع أي بدء تلقائي حتى تقوم بإضافة جلسة جديدة بنفسك.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={submitting} className="text-xs">
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAllSessions}
+              disabled={submitting}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-bold"
+            >
+              {submitting ? 'جاري حذف كافة الجلسات...' : 'نعم، حذف كافة الجلسات الآن'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
