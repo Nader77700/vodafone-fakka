@@ -104,9 +104,19 @@ class EtisalatEngine {
     }
   }
 
+  public onLog?: (log: { time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }) => void;
+
   public log(message: string, level: 'info' | 'success' | 'warn' | 'error' = 'info') {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
-    this.logs.push({ time, level, message });
+    const logItem: { time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string } = { time, level, message };
+    this.logs.push(logItem);
+    if (this.onLog) {
+      try {
+        this.onLog(logItem);
+      } catch (_) {
+        // stream closed
+      }
+    }
     console.log(`[${time}] ${message}`);
   }
 
@@ -514,6 +524,339 @@ class EtisalatEngine {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════
+// CORE VIP AUTOMATION HANDLERS
+// ══════════════════════════════════════════════════════════════════
+
+async function handleCheckStatusInternal(
+  engine: EtisalatEngine,
+  supabase: any,
+  session_id: string,
+  session: any,
+  bridgeConfig: BridgeConfig,
+  ownerEmail: string,
+  ownerPass: string,
+  childEmail: string,
+  childPass: string,
+  sendEvent?: (type: string, data: any) => Promise<void>
+) {
+  const loginOk = await engine.login(ownerEmail, ownerPass, true);
+  if (!loginOk) {
+    return {
+      success: false,
+      error: "فشل تسجيل الدخول لحساب الأونر. تأكد من صحة البريد وكلمة المرور.",
+      logs: engine.logs,
+    };
+  }
+
+  let status = await engine.getStatusAndChild();
+  let ownerPlanId = status.planId;
+  const displayPlan = engine.getPlanName(ownerPlanId);
+
+  engine.log(`[+] فحص الأونر: النظام (${displayPlan}) | الميكسات: ${status.remainingMix.toLocaleString('en-US')}`, "success");
+
+  // Auto-migrate if plan is not 270 or 180 (e.g. 240 or other plans)
+  const isSeven = ownerPlanId.includes("Parent_7");
+  const isSix = ownerPlanId.includes("Parent_6");
+  if (!isSeven && !isSix && ownerPlanId !== "غير معروف") {
+    engine.log(`[!] النظام الحالي هو (${displayPlan}). جاري تحويله لـ 270 لدعم العيلة...`, "warn");
+    const migOk = await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
+    if (migOk) {
+      engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await sleep(2000);
+        const recheck = await engine.getStatusAndChild(true);
+        if (recheck.planId && recheck.planId.includes("Parent_7")) {
+          status = recheck;
+          ownerPlanId = recheck.planId;
+          engine.log(`[+] تم تأكيد تغيير النظام بنجاح إلى: ${engine.getPlanName(ownerPlanId)}`, "success");
+          break;
+        }
+      }
+    }
+  }
+
+  const detectedChild = status.childNumber || (session.individual_account_identifier || null);
+  const hasChild = !!status.childNumber || !!detectedChild;
+  if (hasChild) {
+    engine.log(`[+] تم تأكيد وجود فرد مضاف في العيلة: ${status.childNumber || detectedChild}`, "success");
+  } else {
+    engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة (يلزم إضافة الفرد بالعائلة أولاً).`, "warn");
+  }
+
+  // Check Child account with distinct device profile & IP
+  let childBalance: number | null = null;
+  let childDial: string | null = null;
+  let childPlan: string | null = null;
+  let childName: string | null = null;
+
+  if (childEmail && childPass) {
+    const childEngine = new EtisalatEngine("child", bridgeConfig);
+    childEngine.onLog = (l) => engine.log(l.message, l.level);
+    if (await childEngine.login(childEmail, childPass, false, true)) {
+      childDial = childEngine.childDial;
+      childName = childEngine.customerName;
+      const childStatus = await childEngine.getStatusAndChild(true);
+      childBalance = childStatus.remainingMix > 0 ? childStatus.remainingMix : 0;
+      childPlan = childStatus.planId && childStatus.planId !== "غير معروف" ? engine.getPlanName(childStatus.planId) : "حكاية ميكسات فرد 1";
+      const childNameStr = childEngine.customerName ? ` | الاسم: ${childEngine.customerName}` : "";
+      engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial}${childNameStr} | الميكسات: ${(childBalance ?? 0).toLocaleString('en-US')})`, "info");
+    }
+  }
+
+  const finalOwnerPlanName = engine.getPlanName(ownerPlanId);
+
+  // Update Supabase Database session
+  await supabase
+    .from("vip_sessions")
+    .update({
+      owner_account_identifier: engine.ownerDial || session.owner_account_identifier,
+      owner_account_status: "verified",
+      owner_current_plan: finalOwnerPlanName,
+      owner_mix_balance: status.remainingMix,
+      last_owner_refresh_at: new Date().toISOString(),
+      individual_account_identifier: status.childNumber || childDial || session.individual_account_identifier,
+      individual_account_status: childDial ? "verified" : session.individual_account_status,
+      individual_current_plan: childPlan || session.individual_current_plan || "حكاية ميكسات فرد 1",
+      individual_mix_balance: childBalance !== null ? childBalance : session.individual_mix_balance,
+      last_individual_refresh_at: childBalance !== null ? new Date().toISOString() : session.last_individual_refresh_at,
+      relationship_verified: hasChild,
+      relationship_status: hasChild ? "linked_and_verified" : "no_child_linked",
+      relationship_details: {
+        owner_name: engine.customerName || null,
+        child_name: childName || null,
+        child_number: status.childNumber || detectedChild,
+        verified_at: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", session_id);
+
+  return {
+    success: true,
+    owner: {
+      dial: engine.ownerDial,
+      name: engine.customerName,
+      plan: finalOwnerPlanName,
+      mix_balance: status.remainingMix,
+      has_child_in_family: hasChild,
+      child_number_found: status.childNumber || detectedChild,
+      device: engine.device,
+    },
+    child: {
+      dial: childDial,
+      name: childName,
+      plan: childPlan,
+      mix_balance: childBalance,
+    },
+    logs: engine.logs,
+  };
+}
+
+async function handleSingleCycleInternal(
+  engine: EtisalatEngine,
+  supabase: any,
+  session_id: string,
+  session: any,
+  bridgeConfig: BridgeConfig,
+  ownerEmail: string,
+  ownerPass: string,
+  childEmail: string,
+  childPass: string,
+  sendEvent?: (type: string, data: any) => Promise<void>
+) {
+  const sendStep = async (step: string, stepNumber: number, title: string, detail?: string) => {
+    if (sendEvent) {
+      await sendEvent("step", { step, stepNumber, title, detail });
+    }
+    try {
+      await supabase.from("vip_sessions").update({
+        current_step: step,
+        current_cycle_details: { step, stepNumber, title, detail, updated_at: new Date().toISOString() },
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+    } catch (_) {}
+  };
+
+  // 1. Login to Owner
+  await sendStep("auth", 0, "تسجيل الدخول", "جاري الدخول لحساب الأونر...");
+  if (!await engine.login(ownerEmail, ownerPass, true)) {
+    return {
+      success: false,
+      error: "فشل تسجيل الدخول لحساب الأونر.",
+      logs: engine.logs,
+    };
+  }
+
+  // 2. Check Plan & Child existence
+  let status = await engine.getStatusAndChild(true);
+  let ownerPlanPre = status.planId;
+
+  // Auto-migrate if not 270 or 180
+  if (!ownerPlanPre.includes("Parent_7") && !ownerPlanPre.includes("Parent_6") && ownerPlanPre !== "غير معروف") {
+    engine.log(`[!] النظام الحالي (${engine.getPlanName(ownerPlanPre)}) غير متوافق. جاري تحويله لـ 270...`, "warn");
+    await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
+    engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await sleep(2000);
+      const recheck = await engine.getStatusAndChild(true);
+      if (recheck.planId && recheck.planId.includes("Parent_7")) {
+        status = recheck;
+        ownerPlanPre = recheck.planId;
+        engine.log(`[+] تم تأكيد تغيير النظام بنجاح إلى: ${engine.getPlanName(ownerPlanPre)}`, "success");
+        break;
+      }
+    }
+  }
+
+  const childNum = status.childNumber || session.individual_account_identifier;
+  if (!childNum) {
+    engine.log(`[-] تنبيه حاسم: لا يوجد فرد مضاف في عائلة الأونر على السيرفر.`, "error");
+    return {
+      success: false,
+      error: "لا يوجد فرد مضاف داخل عائلة الأونر حالياً. يرجى الضغط على زر «إضافة وتأكيد الفرد الآن» أولاً.",
+      logs: engine.logs,
+    };
+  }
+
+  const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
+  const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+
+  // 3. STEP 1: Parking Mixes to Child (ركن الميكسات عند الفرد لحمايتها)
+  await sendStep("parking", 1, "ركن الميكسات عند الفرد", "نقل ميكسات الأونر فوراً للفرد لحمايتها قبل ترحيل النظام");
+  if (status.remainingMix > 0) {
+    engine.log(`[*] جاري تحويل (${status.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${childNum} ...`, "info");
+    const transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
+    if (transferred) {
+      engine.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
+    } else {
+      engine.log(`[!] تنبيه: لم يتمكن من تحويل ميكسات الأونر للفرد. متابعة الترحيل...`, "warn");
+    }
+  } else {
+    engine.log(`[*] الأونر رصيده الحالي 0 ميكس. فحص وتأكيد رصيد الفرد...`, "info");
+    if (childEmail && childPass) {
+      const childEngine = new EtisalatEngine("child", bridgeConfig);
+      childEngine.onLog = (l) => engine.log(l.message, l.level);
+      if (await childEngine.login(childEmail, childPass, false, true)) {
+        const childStatus = await childEngine.getStatusAndChild(true);
+        if (childStatus.remainingMix > 0) {
+          engine.log(`[+] الفرد جاهز ولديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس مركونة بأمان.`, "success");
+        }
+      }
+    }
+  }
+
+  await sleep(1000);
+
+  // 4. STEP 2: Switch Plan (ترحيل النظام)
+  let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
+  let targetPlanDisplay = "حكاية ميكسات 180";
+  let ratePlanId = "951";
+
+  if (!isSeven) {
+    targetPlanId = "Hekaya_XRP_MIX_Parent_7";
+    targetPlanDisplay = "حكاية ميكسات 270";
+    ratePlanId = "";
+  }
+
+  await sendStep("migrating", 2, "ترحيل النظام", `جاري تغيير النظام إلى: ${targetPlanDisplay}`);
+  engine.log(`[*] جاري تغيير النظام إلى: ${targetPlanDisplay} ...`, "info");
+  await engine.changePlan(targetPlanId, ratePlanId);
+
+  // 5. STEP 3: Wait Server Confirmation & New Mixes (انتظار رد السيرفر ونزول الميكسات)
+  await sendStep("waiting_server", 3, "انتظار تحديث السيرفر", "فحص دوري كل ثانيتين لتأكيد نزول الميكسات الجديدة");
+  engine.log(`[*] في انتظار تحديث السيرفر ...`, "info");
+
+  let confirmedNewMix = 0;
+  for (let attempt = 1; attempt <= 15; attempt++) {
+    await sleep(2000);
+    const currentCheck = await engine.getStatusAndChild(true);
+    const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
+                        (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
+    if (planMatches && currentCheck.remainingMix > 0) {
+      confirmedNewMix = currentCheck.remainingMix;
+      engine.log(`[+] السيرفر استجاب وتأكد النظام! (${targetPlanDisplay} | الميكسات: ${confirmedNewMix.toLocaleString('en-US')})`, "success");
+      break;
+    }
+    if (sendEvent) {
+      await sendEvent("step", {
+        step: "waiting_server",
+        stepNumber: 3,
+        title: "انتظار تحديث السيرفر",
+        detail: `جاري الاستعلام عن استجابة السيرفر (محاولة ${attempt}/15)...`,
+      });
+    }
+  }
+
+  // 6. STEP 4: Instant Recovery from Child to Owner (استرجاع فوري للميكسات بأقصى سرعة)
+  await sendStep("recovering", 4, "استرجاع فوري للميكسات", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً لحمايتها");
+  if (childEmail && childPass) {
+    engine.log(`[*] تسجيل الدخول للفرد واسترجاع الميكسات للأونر ...`, "info");
+    const childTransferEngine = new EtisalatEngine("child", bridgeConfig);
+    childTransferEngine.onLog = (l) => engine.log(l.message, l.level);
+    if (await childTransferEngine.login(childEmail, childPass, false, true)) {
+      const childSt = await childTransferEngine.getStatusAndChild(true);
+      engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
+
+      if (childSt.remainingMix > 0 && engine.ownerDial) {
+        engine.log(`[*] جاري تحويل (${childSt.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${engine.ownerDial} ...`, "info");
+        const retOk = await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
+        if (retOk) {
+          engine.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
+        } else {
+          engine.log(`[!] تنبيه: فشل أمر استرجاع الميكسات من الفرد.`, "warn");
+        }
+      }
+    }
+  }
+
+  // 7. STEP 5: Read Final Mixes & Cooldown (اكتمال الدورة واستراحة)
+  await sendStep("cooldown", 5, "اكتمال الدورة واستراحة", "تحديث البيانات وفترة الاستراحة");
+  const finalOwnerEngine = new EtisalatEngine("owner", bridgeConfig);
+  finalOwnerEngine.onLog = (l) => engine.log(l.message, l.level);
+  let finalMix = 0;
+  let finalPlan = targetPlanDisplay;
+  if (await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
+    const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
+    finalMix = finalStatus.remainingMix;
+    finalPlan = engine.getPlanName(finalStatus.planId);
+    engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس`, "success");
+  }
+
+  const newCycleCount = (session.current_cycle || 0) + 1;
+  const targetMix = session.target_mix_balance || 50000;
+  const targetReached = finalMix >= targetMix;
+  const cooldownSec = session.cycle_delay_seconds !== undefined ? session.cycle_delay_seconds : 20;
+
+  if (cooldownSec > 0 && !targetReached) {
+    engine.log(`[*] استراحة ${cooldownSec} ثانية قبل الدورة القادمة ...`, "info");
+  }
+
+  // Update database
+  await supabase
+    .from("vip_sessions")
+    .update({
+      owner_mix_balance: finalMix,
+      owner_current_plan: finalPlan,
+      current_cycle: newCycleCount,
+      current_step: targetReached ? "completed" : "idle",
+      last_successful_op_at: new Date().toISOString(),
+      last_actual_operation: "single_cycle_completed",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", session_id);
+
+  return {
+    success: true,
+    cycle_number: newCycleCount,
+    final_mix: finalMix,
+    target_reached: targetReached,
+    target_mix: targetMix,
+    owner_plan: finalPlan,
+    logs: engine.logs,
+  };
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { status: 200, headers: CORS_HEADERS });
@@ -763,124 +1106,92 @@ serve(async (req: Request) => {
     const engine = new EtisalatEngine("owner", bridgeConfig);
 
     // ══════════════════════════════════════════════════════════════════
-    // ACTION 1: check_status
+    // REALTIME SSE STREAMING DISPATCHER (Live Console & Stepper)
+    // ══════════════════════════════════════════════════════════════════
+    if (body.stream === true && (action === "single_cycle" || action === "run_single_cycle" || action === "check_status")) {
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const encoder = new TextEncoder();
+
+      const sendEvent = async (type: string, data: any) => {
+        try {
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ type, ...data })}\n\n`));
+        } catch (_) {
+          // Client disconnected
+        }
+      };
+
+      engine.onLog = (logObj) => {
+        sendEvent("log", { log: logObj });
+      };
+
+      (async () => {
+        try {
+          if (action === "check_status") {
+            const result = await handleCheckStatusInternal(
+              engine,
+              supabase,
+              session_id,
+              session,
+              bridgeConfig,
+              ownerEmail,
+              ownerPass,
+              childEmail,
+              childPass,
+              sendEvent
+            );
+            await sendEvent("complete", result);
+          } else {
+            const result = await handleSingleCycleInternal(
+              engine,
+              supabase,
+              session_id,
+              session,
+              bridgeConfig,
+              ownerEmail,
+              ownerPass,
+              childEmail,
+              childPass,
+              sendEvent
+            );
+            await sendEvent("complete", result);
+          }
+        } catch (err: any) {
+          await sendEvent("error", { error: err?.message || String(err) });
+        } finally {
+          try {
+            await writer.close();
+          } catch (_) {}
+        }
+      })();
+
+      return new Response(readable, {
+        headers: {
+          ...CORS_HEADERS,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 1: check_status (Standard JSON mode)
     // ══════════════════════════════════════════════════════════════════
     if (action === "check_status") {
-      const loginOk = await engine.login(ownerEmail, ownerPass, true);
-      if (!loginOk) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "فشل تسجيل الدخول لحساب الأونر. تأكد من صحة البريد وكلمة المرور.",
-          logs: engine.logs,
-        }), {
-          status: 400,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
-
-      let status = await engine.getStatusAndChild();
-      let ownerPlanId = status.planId;
-      const displayPlan = engine.getPlanName(ownerPlanId);
-
-      engine.log(`[+] فحص الأونر: النظام (${displayPlan}) | الميكسات: ${status.remainingMix.toLocaleString('en-US')}`, "success");
-
-      // Auto-migrate if plan is not 270 or 180 (e.g. 240 or other plans)
-      const isSeven = ownerPlanId.includes("Parent_7");
-      const isSix = ownerPlanId.includes("Parent_6");
-      if (!isSeven && !isSix && ownerPlanId !== "غير معروف") {
-        engine.log(`[!] النظام الحالي هو (${displayPlan}). جاري تحويله لـ 270 لدعم العيلة...`, "warn");
-        const migOk = await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
-        if (migOk) {
-          engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
-          for (let attempt = 0; attempt < 3; attempt++) {
-            await sleep(2000);
-            const recheck = await engine.getStatusAndChild(true);
-            if (recheck.planId && recheck.planId.includes("Parent_7")) {
-              status = recheck;
-              ownerPlanId = recheck.planId;
-              engine.log(`[+] تم تأكيد تغيير النظام بنجاح إلى: ${engine.getPlanName(ownerPlanId)}`, "success");
-              break;
-            }
-          }
-        }
-      }
-
-      const detectedChild = status.childNumber || (childDial === "1140427996" ? "1140427996" : null);
-      const hasChild = !!status.childNumber || !!detectedChild;
-      if (hasChild) {
-        engine.log(`[+] تم تأكيد وجود فرد مضاف في العيلة: ${status.childNumber || detectedChild}`, "success");
-      } else {
-        engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة (يلزم إضافة الفرد بالعائلة أولاً).`, "warn");
-      }
-
-      // Check Child account with distinct device profile & IP
-      let childBalance: number | null = null;
-      let childDial: string | null = null;
-      let childPlan: string | null = null;
-      let childName: string | null = null;
-
-      if (childEmail && childPass) {
-        const childEngine = new EtisalatEngine("child", bridgeConfig);
-        if (await childEngine.login(childEmail, childPass, false, true)) {
-          childDial = childEngine.childDial;
-          childName = childEngine.customerName;
-          const childStatus = await childEngine.getStatusAndChild(true);
-          childBalance = childStatus.remainingMix > 0 ? childStatus.remainingMix : 15400;
-          childPlan = childStatus.planId && childStatus.planId !== "غير معروف" ? engine.getPlanName(childStatus.planId) : "حكاية ميكسات فرد 1";
-          const childNameStr = childEngine.customerName ? ` | الاسم: ${childEngine.customerName}` : "";
-          engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial}${childNameStr} | الميكسات: ${(childBalance ?? 0).toLocaleString('en-US')} | جهاز: ${childEngine.device.modelType})`, "info");
-        }
-      }
-
-      // Final plan name guarantee: ensure valid rate plan
-      const finalOwnerPlanName = engine.getPlanName(ownerPlanId);
-
-      // Update Supabase Database session
-      await supabase
-        .from("vip_sessions")
-        .update({
-          owner_account_identifier: engine.ownerDial || session.owner_account_identifier,
-          owner_account_status: "verified",
-          owner_current_plan: finalOwnerPlanName,
-          owner_mix_balance: status.remainingMix,
-          last_owner_refresh_at: new Date().toISOString(),
-          individual_account_identifier: status.childNumber || childDial || session.individual_account_identifier,
-          individual_account_status: childDial ? "verified" : session.individual_account_status,
-          individual_current_plan: childPlan || session.individual_current_plan || "حكاية ميكسات فرد 1",
-          individual_mix_balance: childBalance !== null ? childBalance : session.individual_mix_balance,
-          last_individual_refresh_at: childBalance !== null ? new Date().toISOString() : session.last_individual_refresh_at,
-          relationship_verified: hasChild,
-          relationship_status: hasChild ? "linked_and_verified" : "no_child_linked",
-          relationship_details: {
-            owner_name: engine.customerName || null,
-            child_name: childName || null,
-            child_number: status.childNumber || detectedChild,
-            verified_at: new Date().toISOString(),
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        owner: {
-          dial: engine.ownerDial,
-          name: engine.customerName,
-          plan: finalOwnerPlanName,
-          mix_balance: status.remainingMix,
-          has_child_in_family: hasChild,
-          child_number_found: status.childNumber || detectedChild,
-          device: engine.device,
-        },
-        child: {
-          dial: childDial,
-          name: childName,
-          plan: childPlan,
-          mix_balance: childBalance,
-        },
-        logs: engine.logs,
-      }), {
-        status: 200,
+      const result = await handleCheckStatusInternal(
+        engine,
+        supabase,
+        session_id,
+        session,
+        bridgeConfig,
+        ownerEmail,
+        ownerPass,
+        childEmail,
+        childPass
+      );
+      return new Response(JSON.stringify(result), {
+        status: result.success ? 200 : 400,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
@@ -1000,159 +1311,24 @@ serve(async (req: Request) => {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // ACTION 3: single_cycle / run_single_cycle
+    // ACTION 3: single_cycle / run_single_cycle (Standard JSON mode)
     // ══════════════════════════════════════════════════════════════════
     if (action === "single_cycle" || action === "run_single_cycle") {
-      // 1. Login to Owner
-      if (!await engine.login(ownerEmail, ownerPass, true)) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "فشل تسجيل الدخول لحساب الأونر.",
-          logs: engine.logs,
-        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
-      }
-
-      // 2. Check Plan & Child existence
-      let status = await engine.getStatusAndChild(true);
-      let ownerPlanPre = status.planId;
-
-      // Auto-migrate if not 270 or 180
-      if (!ownerPlanPre.includes("Parent_7") && !ownerPlanPre.includes("Parent_6") && ownerPlanPre !== "غير معروف") {
-        engine.log(`[!] النظام الحالي (${engine.getPlanName(ownerPlanPre)}) غير متوافق. جاري تحويله لـ 270...`, "warn");
-        await engine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
-        engine.log(`[*] في انتظار السيرفر لتأكيد تغيير النظام...`, "info");
-        for (let attempt = 0; attempt < 4; attempt++) {
-          await sleep(2000);
-          const recheck = await engine.getStatusAndChild(true);
-          if (recheck.planId && recheck.planId.includes("Parent_7")) {
-            status = recheck;
-            ownerPlanPre = recheck.planId;
-            engine.log(`[+] تم تأكيد تغيير النظام بنجاح إلى: ${engine.getPlanName(ownerPlanPre)}`, "success");
-            break;
-          }
-        }
-      }
-
-      const childNum = status.childNumber;
-      if (!childNum) {
-        engine.log(`[-] تنبيه حاسم: لا يوجد فرد مضاف في عائلة الأونر على السيرفر.`, "error");
-        return new Response(JSON.stringify({
-          success: false,
-          error: "لا يوجد فرد مضاف داخل عائلة الأونر حالياً. يرجى الضغط على زر «إضافة وتأكيد الفرد الآن» لإضافة خط الفرد إلى العائلة وتأكيده أولاً قبل بدء الدورة.",
-          logs: engine.logs,
-        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
-      }
-
-      const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
-      const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
-      const renewCost = isSeven ? "270" : "180";
-
-      // 3. Send activation motion to owner
-      await engine.renewBundleAction(ownerPlanName, renewCost);
-      await sleep(2000);
-
-      // 4. Check mix balance & transfer to child
-      const statusAfterRenew = await engine.getStatusAndChild(true);
-      const newMix = statusAfterRenew.remainingMix;
-
-      if (newMix > 0) {
-        const transferred = await engine.transferMix(childNum, newMix, ownerPlanName);
-        if (!transferred) {
-          engine.log(`[!] تنبيه: لم يتمكن من تحويل ميكسات الأونر للفرد. متابعة الترحيل...`, "warn");
-        }
-      } else {
-        engine.log(`[*] الأونر ليس لديه ميكسات حالياً. جاري فحص الفرد...`, "info");
-        if (childEmail && childPass) {
-          const childEngine = new EtisalatEngine("child", bridgeConfig);
-          if (await childEngine.login(childEmail, childPass, false, true)) {
-            const childStatus = await childEngine.getStatusAndChild(true);
-            if (childStatus.remainingMix > 0) {
-              engine.log(`[+] الفرد لديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس. سيكمل السكريبت خطواته.`, "success");
-            }
-          }
-        }
-      }
-
-      await sleep(1500);
-
-      // 5. Switch Plan: if 7 -> switch to 6 (951), if 6 -> switch to 7 ("")
-      let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
-      let targetPlanDisplay = "حكاية ميكسات 180";
-      let ratePlanId = "951";
-
-      if (!isSeven) {
-        targetPlanId = "Hekaya_XRP_MIX_Parent_7";
-        targetPlanDisplay = "حكاية ميكسات 270";
-        ratePlanId = "";
-      }
-
-      await engine.changePlan(targetPlanId, ratePlanId);
-      engine.log(`[*] في انتظار تحديث السيرفر...`, "info");
-
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await sleep(2000);
-        const currentCheck = await engine.getStatusAndChild(true);
-        if (currentCheck.planId && currentCheck.planId.includes(targetPlanId) && currentCheck.remainingMix > 0) {
-          engine.log(`[+] السيرفر استجاب! (النظام: ${targetPlanDisplay} | الميكسات: ${currentCheck.remainingMix.toLocaleString('en-US')})`, "success");
-          break;
-        }
-      }
-
-      // 6. Login to Child with distinct child fingerprint & retrieve mix back to Owner
-      if (childEmail && childPass) {
-        engine.log(`[*] تسجيل الدخول للفرد واسترجاع الميكسات للأونر...`, "info");
-        const childTransferEngine = new EtisalatEngine("child", bridgeConfig);
-        if (await childTransferEngine.login(childEmail, childPass, false, true)) {
-          const childSt = await childTransferEngine.getStatusAndChild(true);
-          engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
-
-          if (childSt.remainingMix > 0 && engine.ownerDial) {
-            await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
-          }
-          engine.logs.push(...childTransferEngine.logs);
-        }
-      }
-
-      // 7. Login back to Owner and read final mix
-      const finalOwnerEngine = new EtisalatEngine("owner", bridgeConfig);
-      if (!await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "فشل العودة لحساب الأونر.",
-          logs: engine.logs,
-        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
-      }
-
-      const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
-      engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس`, "success");
-      engine.logs.push(...finalOwnerEngine.logs);
-
-      const newCycleCount = (session.current_cycle || 0) + 1;
-      const targetMix = session.target_mix_balance || 50000;
-      const targetReached = finalStatus.remainingMix >= targetMix;
-
-      // Update database
-      await supabase
-        .from("vip_sessions")
-        .update({
-          owner_mix_balance: finalStatus.remainingMix,
-          owner_current_plan: engine.getPlanName(finalStatus.planId),
-          current_cycle: newCycleCount,
-          last_successful_op_at: new Date().toISOString(),
-          last_actual_operation: "single_cycle_completed",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", session_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        cycle_number: newCycleCount,
-        final_mix: finalStatus.remainingMix,
-        target_reached: targetReached,
-        target_mix: targetMix,
-        owner_plan: engine.getPlanName(finalStatus.planId),
-        logs: engine.logs,
-      }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      const result = await handleSingleCycleInternal(
+        engine,
+        supabase,
+        session_id,
+        session,
+        bridgeConfig,
+        ownerEmail,
+        ownerPass,
+        childEmail,
+        childPass
+      );
+      return new Response(JSON.stringify(result), {
+        status: result.success ? 200 : 400,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
     }
 
     // ══════════════════════════════════════════════════════════════════

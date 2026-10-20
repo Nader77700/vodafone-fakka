@@ -574,3 +574,139 @@ export async function executeVipReturnChildMixes(sessionId: string): Promise<Vip
 export async function executeVipRunSingleCycle(sessionId: string): Promise<VipExecutionResponse> {
   return invokeVipExecutor('run_single_cycle', { session_id: sessionId });
 }
+
+export interface VipStreamCallbacks {
+  onLog?: (log: VipExecutionLog) => void;
+  onStep?: (step: { step: string; stepNumber: number; title: string; detail?: string }) => void;
+  onComplete?: (result: VipExecutionResponse) => void;
+  onError?: (error: string) => void;
+}
+
+/**
+ * Invoke the EtisalatBot Edge Function with Server-Sent Events (SSE) streaming
+ * so each log, step, and status update arrives in real time!
+ */
+export async function invokeVipExecutorStream(
+  action: string,
+  payload: Record<string, any>,
+  callbacks?: VipStreamCallbacks
+): Promise<VipExecutionResponse> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vchmsnavyhripakyvzom.supabase.co';
+  const anonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaG1zbmF2eWhyaXBha3l2em9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyODc4NTUsImV4cCI6MjA5Nzg2Mzg1NX0.pnqdmg5BApYx3HAPWR2UFhuV5ewyayvKR_dZk8of4s8';
+
+  let token = anonKey;
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      token = data.session.access_token;
+    }
+  } catch {}
+
+  const collectedLogs: VipExecutionLog[] = [];
+  let finalResult: VipExecutionResponse = { success: false, logs: collectedLogs };
+
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+        Accept: 'text/event-stream, application/json',
+      },
+      body: JSON.stringify({ action, stream: true, ...payload }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || errJson.message || `خطأ استجابة الخادم (${res.status})`);
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream') && res.body) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.type === 'log' && parsed.log) {
+              collectedLogs.push(parsed.log);
+              callbacks?.onLog?.(parsed.log);
+            } else if (parsed.type === 'step') {
+              callbacks?.onStep?.({
+                step: parsed.step,
+                stepNumber: parsed.stepNumber,
+                title: parsed.title,
+                detail: parsed.detail,
+              });
+            } else if (parsed.type === 'complete') {
+              finalResult = {
+                ...parsed,
+                logs: parsed.logs || collectedLogs,
+              };
+              callbacks?.onComplete?.(finalResult);
+            } else if (parsed.type === 'error') {
+              callbacks?.onError?.(parsed.error);
+              finalResult = {
+                success: false,
+                error: parsed.error,
+                logs: collectedLogs,
+              };
+            }
+          } catch {}
+        }
+      }
+      return finalResult;
+    } else {
+      const json = await res.json();
+      return json as VipExecutionResponse;
+    }
+  } catch (err: any) {
+    console.error('[vipApi] invokeVipExecutorStream error:', err);
+    callbacks?.onError?.(err?.message || 'خطأ اتصال');
+    throw err;
+  }
+}
+
+/**
+ * Streamed single cycle execution with live log and step updates
+ */
+export async function executeVipRunSingleCycleStream(
+  sessionId: string,
+  callbacks?: VipStreamCallbacks
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutorStream('run_single_cycle', { session_id: sessionId }, callbacks);
+}
+
+/**
+ * Streamed check status execution with live logs
+ */
+export async function executeVipCheckStatusStream(
+  sessionId: string,
+  credentials?: {
+    owner_email?: string;
+    owner_password?: string;
+    individual_email?: string;
+    individual_password?: string;
+  },
+  callbacks?: VipStreamCallbacks
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutorStream('check_status', { session_id: sessionId, ...credentials }, callbacks);
+}

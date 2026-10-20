@@ -96,21 +96,21 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
         </div>
       </CardHeader>
 
-      <CardContent className="p-3">
-        <div className="font-mono text-[11px] sm:text-xs leading-relaxed max-h-[320px] min-h-[160px] overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-zinc-700">
+      <CardContent className="p-2 sm:p-3">
+        <div className="font-mono text-xs sm:text-[13px] leading-relaxed max-h-[270px] sm:max-h-[320px] min-h-[140px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-700 bg-zinc-950/80 p-2 rounded-lg border border-zinc-900">
           {logs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-zinc-500 space-y-2">
-              <Terminal className="w-8 h-8 opacity-40" />
+            <div className="flex flex-col items-center justify-center py-8 text-zinc-500 space-y-2">
+              <Terminal className="w-7 h-7 opacity-40" />
               <p className="text-xs">في انتظار تنفيذ أوامر السكريبت أو بدء الدورة...</p>
               <p className="text-[10px] text-zinc-600">ستظهر هنا تفاصيل الاتصال، تسجيل الدخول، وفحص الاستهلاك خطوة بخطوة</p>
             </div>
           ) : (
             logs.map((log, index) => (
-              <div key={index} className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/60 px-1 rounded">
-                <span className="text-zinc-500 text-[10px] shrink-0 select-none pt-0.5 font-mono">
+              <div key={index} className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/60 px-1 rounded transition-colors">
+                <span className="text-zinc-500 text-[11px] shrink-0 select-none pt-0.5 font-mono">
                   {log.time}
                 </span>
-                <div className="flex-1 min-w-0 break-words">
+                <div className="flex-1 min-w-0 break-words font-mono">
                   {renderColoredMessage(log.message)}
                 </div>
               </div>
