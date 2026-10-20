@@ -879,6 +879,23 @@ async function handleSingleCycleInternal(
     }
   }
 
+  // Double check owner balance if it reports 0 while session had a large balance (> 5,000 mixes)
+  const prevOwnerMix = parseInt(session.owner_mix_balance || "0", 10) || 0;
+  if (status.remainingMix === 0 && prevOwnerMix > 5000) {
+    engine.log(`[!] تنبيه رصد الرصيد: رصيد الأونر يظهر 0 ميكس بينما كان مسجلاً سابقاً (${prevOwnerMix.toLocaleString('en-US')}) ميكس! جاري إعادة التحقق (3 محاولات)...`, "warn");
+    for (let rAttempt = 1; rAttempt <= 3; rAttempt++) {
+      await sleep(3000);
+      try {
+        const recheckOwner = await engine.getStatusAndChild(true);
+        if (recheckOwner.remainingMix > 0) {
+          status = recheckOwner;
+          engine.log(`[+] تم استرجاع قراءة الرصيد الفعلي للأونر بنجاح: ${status.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
+          break;
+        }
+      } catch (_rErr) {}
+    }
+  }
+
   if (status.remainingMix > 0) {
     engine.log(`[*] جاري تحويل (${status.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${childNum} ...`, "info");
     const transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
@@ -927,12 +944,29 @@ async function handleSingleCycleInternal(
     }
   } else {
     engine.log(`[*] الأونر رصيده الحالي 0 ميكس. فحص وتأكيد رصيد الفرد...`, "info");
+    let childStatusMix = 0;
     if (prewarmedChildEngine) {
       const childStatus = await prewarmedChildEngine.getStatusAndChild(true);
-      if (childStatus.remainingMix > 0) {
-        parkedMixAmount = childStatus.remainingMix;
-        engine.log(`[+] الفرد جاهز ولديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس مركونة بأمان.`, "success");
+      childStatusMix = childStatus.remainingMix || 0;
+      if (childStatusMix > 0) {
+        parkedMixAmount = childStatusMix;
+        engine.log(`[+] الفرد جاهز ولديه (${childStatusMix.toLocaleString('en-US')}) ميكس مركونة بأمان.`, "success");
       }
+    }
+
+    // STRICT ZERO-LOSS SAFETY GATE:
+    // If the owner previously had a large balance (> 5,000 mixes) and now owner is 0
+    // BUT the child DOES NOT hold that balance (child has only small default quota < 70% of previous):
+    // THIS IS AN EMERGENCY! DO NOT MIGRATE! STOP IMMEDIATELY TO PROTECT THE LINE!
+    if (prevOwnerMix > 5000 && childStatusMix < (prevOwnerMix * 0.7)) {
+      engine.log(`[-] تنبيه طوارئ فائق: رصيد الأونر يظهر 0 ميكس بينما كان (${prevOwnerMix.toLocaleString('en-US')}) ميكس، والفرد لا يحمل هذا الرصيد (لديه فقط ${childStatusMix.toLocaleString('en-US')} ميكس)! تم إيقاف الدورة فوراً ومنع الترحيل لحماية ميكسات الأونر من التصفير.`, "error");
+      await sendStep("safety_stop", 1, "توقف طوارئ لمنع التصفير", "تم حظر الترحيل: الميكسات غير مركونة عند الفرد");
+      return {
+        success: false,
+        safety_stop: true,
+        error: `تم إيقاف الدورة لحماية ميكساتك: رصيد الأونر السابق (${prevOwnerMix.toLocaleString('en-US')} ميكس) لم يظهر عند الفرد (${childStatusMix.toLocaleString('en-US')}). تم منع الترحيل تلقائياً لحفظ رصيدك.`,
+        logs: engine.logs,
+      };
     }
   }
 
