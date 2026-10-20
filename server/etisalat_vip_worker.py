@@ -209,17 +209,65 @@ class EtisalatVipBot:
             response = self.http_session.get(BASE_URL + url_path, headers=headers, timeout=20)
             if response.status_code == 200:
                 root = ET.fromstring(response.text)
-                p_id = root.find('.//ratePlanConsumption/productId')
-                r_mix = root.find('.//newMeterConsumption/consumptionList/consumption/remainingValue')
+                p_id = root.findtext('.//ratePlanConsumption/productId') or root.findtext('.//productId') or "غير معروف"
 
-                p_id = p_id.text if p_id is not None else "غير معروف"
-                r_mix = int(r_mix.text) if r_mix is not None else 0
+                main_mix = 0
+                carried_mix = 0
+                all_mix_candidates = []
+
+                for c in root.iter('consumption'):
+                    label = (c.findtext('consumedLabel') or c.findtext('remainingLabel') or '').strip()
+                    oms = (c.findtext('remainingOmsName') or c.findtext('consumedOmsName') or '').strip()
+                    unit = (c.findtext('remainingUnit') or c.findtext('totalUnit') or c.findtext('consumedUnit') or '').strip()
+                    meter_type = (c.findtext('consumptionMeterType') or '').strip()
+
+                    rem_str = c.findtext('remainingValue') or '0'
+                    try:
+                        rem_val = int(float(rem_str))
+                    except Exception:
+                        rem_val = 0
+
+                    is_social = ('whatsapp' in oms.lower() or 'facebook' in oms.lower() or
+                                 'فيسبوك' in label or 'واتساب' in label or 'انترنت' in label or 'vdsl' in oms.lower())
+                    if is_social and 'ميكسات الباقة' not in label:
+                        continue
+
+                    is_mix = (
+                        'ميكس' in unit or
+                        'unit' in unit.lower() or
+                        'xrp_units' in meter_type.lower() or
+                        'GENERAL_UNIT' in oms or
+                        'CARRIED_OVER' in oms or
+                        'ميكسات' in label or
+                        'ميكس' in label
+                    )
+
+                    if is_mix:
+                        if 'GENERAL_UNIT' in oms or 'ميكسات الباقة الأساسية' in label or meter_type == 'xrp_units':
+                            main_mix = max(main_mix, rem_val)
+                        elif 'CARRIED_OVER' in oms or 'الميكسات المرحلة' in label:
+                            carried_mix = max(carried_mix, rem_val)
+                        all_mix_candidates.append(rem_val)
+
+                if not all_mix_candidates:
+                    for rm in root.findall('.//remainingValue'):
+                        try:
+                            v = int(float(rm.text or '0'))
+                            if v > 0:
+                                all_mix_candidates.append(v)
+                        except Exception:
+                            pass
+
+                r_mix = main_mix if main_mix > 0 else (carried_mix if carried_mix > 0 else (max(all_mix_candidates) if all_mix_candidates else 0))
 
                 child_number = None
                 faf_list = root.findall('.//fafNumberList/fafNumber/value')
                 for f in faf_list:
-                    if f.text != self.current_dial:
-                        child_number = f.text
+                    val = (f.text or '').strip()
+                    clean_val = val.lstrip('20') if val.startswith('20') else val
+                    clean_dial = self.current_dial.lstrip('20') if self.current_dial.startswith('20') else self.current_dial
+                    if clean_val and clean_val != clean_dial:
+                        child_number = clean_val
                 return p_id, r_mix, child_number
         except Exception:
             pass

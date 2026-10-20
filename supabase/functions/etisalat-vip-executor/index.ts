@@ -312,6 +312,7 @@ class EtisalatEngine {
 
       if (res.status === 200) {
         const text = await res.text();
+        console.log(`[getStatusAndChild] Raw XML (${this.currentDial}):`, text);
 
         // 1. Plan productId (ratePlanConsumption/productId)
         const planMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i) ||
@@ -324,11 +325,62 @@ class EtisalatEngine {
           else if (this.shortCode.includes("C1")) planId = "Hekaya_XRP_MIX_Child_1";
         }
 
-        // 2. Mixes (newMeterConsumption/consumptionList/consumption/remainingValue)
-        const mixMatch = text.match(/<newMeterConsumption>[\s\S]*?<remainingValue>([0-9]+)<\/remainingValue>/i) ||
-                         text.match(/<consumptionList>[\s\S]*?<remainingValue>([0-9]+)<\/remainingValue>/i) ||
-                         text.match(/<remainingValue>([0-9]+)<\/remainingValue>/i);
-        const remainingMix = mixMatch ? parseInt(mixMatch[1], 10) : 0;
+        // 2. Comprehensive Mixes Detection across all consumption meters & buckets
+        // Never stop at the first bucket (e.g. Facebook/WhatsApp = 0 or expired meters)
+        const consumptionBlocks = text.match(/<consumption[\s>][\s\S]*?<\/consumption>/gi) || [];
+        let mainMix = 0;
+        let carriedMix = 0;
+        const allMixCandidates: number[] = [];
+
+        for (const block of consumptionBlocks) {
+          const remMatch = block.match(/<remainingValue>([0-9]+(?:\.[0-9]+)?)<\/remainingValue>/i);
+          if (!remMatch) continue;
+          const remVal = parseInt(remMatch[1], 10);
+
+          const labelMatch = block.match(/<(?:consumedLabel|remainingLabel)>([^<]+)<\/(?:consumedLabel|remainingLabel)>/i);
+          const label = labelMatch ? labelMatch[1].trim() : "";
+
+          const omsMatch = block.match(/<(?:remainingOmsName|consumedOmsName)>([^<]+)<\/(?:remainingOmsName|consumedOmsName)>/i);
+          const oms = omsMatch ? omsMatch[1].trim() : "";
+
+          const unitMatch = block.match(/<(?:remainingUnit|totalUnit|consumedUnit)>([^<]+)<\/(?:remainingUnit|totalUnit|consumedUnit)>/i);
+          const unit = unitMatch ? unitMatch[1].trim() : "";
+
+          const meterTypeMatch = block.match(/<consumptionMeterType>([^<]+)<\/consumptionMeterType>/i);
+          const meterType = meterTypeMatch ? meterTypeMatch[1].trim() : "";
+
+          // Exclude pure social / whatsapp / home vdsl if they have separate quotas
+          const isSocialOrVdsl = /whatsapp|facebook|vdsl|انترنت\s*المنزلي/i.test(oms) || /فيسبوك|واتساب|انترنت\s*حكاية/i.test(label);
+          if (isSocialOrVdsl && !/ميكسات\s*الباقة/i.test(label)) {
+            continue;
+          }
+
+          const isMixBucket = /ميكس|unit/i.test(unit) ||
+                              /xrp_units/i.test(meterType) ||
+                              /GENERAL_UNIT/i.test(oms) ||
+                              /CARRIED_OVER/i.test(oms) ||
+                              /ميكسات|ميكس/i.test(label);
+
+          if (isMixBucket) {
+            if (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || meterType === "xrp_units") {
+              if (remVal > mainMix) mainMix = remVal;
+            } else if (/CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة/i.test(label)) {
+              if (remVal > carriedMix) carriedMix = remVal;
+            }
+            allMixCandidates.push(remVal);
+          }
+        }
+
+        // Fallback: If no structured mix bucket matched, scan any remainingValue in the entire document
+        if (allMixCandidates.length === 0) {
+          const rawMatches = [...text.matchAll(/<remainingValue>([0-9]+)<\/remainingValue>/gi)];
+          for (const rm of rawMatches) {
+            const v = parseInt(rm[1], 10);
+            if (v > 0) allMixCandidates.push(v);
+          }
+        }
+
+        const remainingMix = mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : (allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0));
 
         // 3. Child in family (fafNumberList/fafNumber/value)
         let childNumber: string | null = null;
