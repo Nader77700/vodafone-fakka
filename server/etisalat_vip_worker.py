@@ -147,6 +147,17 @@ class EtisalatVipBot:
                 print(f"[-] خطأ تحديث معرفات الخطوط: {e}")
 
     def login(self, email, password, is_owner=False, silent=False):
+        # 0. Reuse existing token if active to avoid temporary lockout ban from Etisalat
+        if self.auth_token and getattr(self, "current_email", None) == email and getattr(self, "current_dial", None):
+            try:
+                plan_id, _, _ = self.get_status_and_child(silent=True)
+                if plan_id and plan_id != "غير معروف":
+                    if not silent:
+                        print(f"[⚡] استخدام جلسة التوكن المحفوظة بنجاح (الرقم: {self.current_dial}) وتخطي الدخول.")
+                    return True
+            except Exception:
+                pass
+
         if not silent:
             masked_email = email[:3] + "***@" + email.split("@")[-1] if "@" in email else email[:4] + "***"
             print(f"[*] جاري تسجيل الدخول للحساب: {masked_email} ...")
@@ -236,6 +247,7 @@ class EtisalatVipBot:
                         'ميكس' in unit or
                         'unit' in unit.lower() or
                         'xrp_units' in meter_type.lower() or
+                        'hekaya_units' in meter_type.lower() or
                         'GENERAL_UNIT' in oms or
                         'CARRIED_OVER' in oms or
                         'ميكسات' in label or
@@ -243,7 +255,7 @@ class EtisalatVipBot:
                     )
 
                     if is_mix:
-                        if 'GENERAL_UNIT' in oms or 'ميكسات الباقة الأساسية' in label or meter_type == 'xrp_units':
+                        if 'GENERAL_UNIT' in oms or 'ميكسات الباقة الأساسية' in label or meter_type == 'xrp_units' or meter_type == 'hekaya_units':
                             main_mix = max(main_mix, rem_val)
                         elif 'CARRIED_OVER' in oms or 'الميكسات المرحلة' in label:
                             carried_mix = max(carried_mix, rem_val)
@@ -258,7 +270,9 @@ class EtisalatVipBot:
                         except Exception:
                             pass
 
-                r_mix = main_mix if main_mix > 0 else (carried_mix if carried_mix > 0 else (max(all_mix_candidates) if all_mix_candidates else 0))
+                # Sum basic quota and carried/transferred quota if both are present
+                combined_mix = (main_mix + carried_mix) if (main_mix > 0 and carried_mix > 0) else (main_mix if main_mix > 0 else (carried_mix if carried_mix > 0 else 0))
+                r_mix = combined_mix if combined_mix > 0 else (max(all_mix_candidates) if all_mix_candidates else 0)
 
                 child_number = None
                 faf_list = root.findall('.//fafNumberList/fafNumber/value')
@@ -465,6 +479,21 @@ class EtisalatVipBot:
             return False, "child_login_failed"
 
         _, child_mix, _ = self.get_status_and_child(silent=True)
+
+        # Safety wait loop: If child mix is lower than what was transferred to child,
+        # poll Etisalat network up to 12 attempts (every 2.5s) to ensure full arrival
+        if transferred_to_child > 0 and child_mix < transferred_to_child * 0.9:
+            print(f"[!] تنبيه فحص الرصيد: رصيد الفرد المسجل ({child_mix:,}) أقل من المحول له ({transferred_to_child:,}). في انتظار نزول الميكسات من شبكة اتصالات...")
+            for p_att in range(1, 13):
+                time.sleep(2.5)
+                _, recheck_child_mix, _ = self.get_status_and_child(silent=True)
+                if recheck_child_mix >= transferred_to_child * 0.9 or recheck_child_mix > child_mix:
+                    child_mix = recheck_child_mix
+                    print(f"[+] تم تأكيد وصول الميكسات بنجاح لحساب الفرد: {child_mix:,} ميكس!")
+                    break
+                if p_att % 3 == 0:
+                    print(f"[*] في انتظار معالجة شبكة اتصالات لنزول الميكسات المركونة للفرد (محاولة {p_att}/12)...")
+
         print(f"[+] حالة الفرد | الميكسات: {child_mix:,}")
         transferred_to_owner = 0
         if child_mix > 0 and self.owner_dial:

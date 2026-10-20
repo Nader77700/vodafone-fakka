@@ -105,6 +105,36 @@ class EtisalatEngine {
   }
 
   public onLog?: (log: { time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }) => void;
+  public onNewAuthToken?: (token: string, cookie: string | null, isOwner: boolean) => void;
+
+  public setAuthSession(token: string | null, cookie: string | null) {
+    if (token) {
+      this.authToken = token;
+      try {
+        const tokenPayload = token.split(".")[1];
+        const base64 = tokenPayload.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        const jsonStr = new TextDecoder().decode(bytes);
+        const decoded = JSON.parse(jsonStr);
+        this.currentDial = decoded.selectedDial || null;
+        this.customerName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+        this.shortCode = decoded.selectedDialShortCode || "";
+        if (this.role === "owner") {
+          this.ownerDial = this.currentDial;
+        } else {
+          this.childDial = this.currentDial;
+        }
+      } catch {}
+    }
+    if (cookie) {
+      this.cookieHeader = cookie;
+    }
+  }
 
   public log(message: string, level: 'info' | 'success' | 'warn' | 'error' = 'info') {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
@@ -178,6 +208,23 @@ class EtisalatEngine {
   }
 
   async login(email: string, rawPassword: string, isOwner = false, silent = false): Promise<boolean> {
+    // 0. Token reuse optimization: Check if existing cached token is still valid
+    // Avoids redundant logins and prevents Etisalat rate-limit / temporary lockout bans!
+    if (this.authToken && this.currentDial) {
+      try {
+        const testStatus = await this.getStatusAndChild(true);
+        if (testStatus && testStatus.planId && testStatus.planId !== "غير معروف") {
+          if (!silent) {
+            const nameInfo = this.customerName ? ` | الاسم: ${this.customerName}` : "";
+            this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح (الرقم: ${this.currentDial}${nameInfo}) وتخطي الدخول لمنع حظر الحساب.`, "success");
+          }
+          return true;
+        }
+      } catch (_) {
+        // Expired, proceed to fresh login
+      }
+    }
+
     const cleanPw = decodeStoredPassword(rawPassword);
     const masked = email.includes("@") ? `${email.substring(0, 3)}***@${email.split("@")[1]}` : email;
     if (!silent) {
@@ -258,6 +305,11 @@ class EtisalatEngine {
               this.ownerDial = this.currentDial;
             } else {
               this.childDial = this.currentDial;
+            }
+            if (this.onNewAuthToken) {
+              try {
+                this.onNewAuthToken(this.authToken, this.cookieHeader, isOwner);
+              } catch (_) {}
             }
             if (!silent) {
               const nameInfo = this.customerName ? ` | الاسم: ${this.customerName}` : "";
@@ -356,13 +408,13 @@ class EtisalatEngine {
           }
 
           const isMixBucket = /ميكس|unit/i.test(unit) ||
-                              /xrp_units/i.test(meterType) ||
+                              /xrp_units|hekaya_units/i.test(meterType) ||
                               /GENERAL_UNIT/i.test(oms) ||
                               /CARRIED_OVER/i.test(oms) ||
                               /ميكسات|ميكس/i.test(label);
 
           if (isMixBucket) {
-            if (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || meterType === "xrp_units") {
+            if (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || meterType === "xrp_units" || meterType === "hekaya_units") {
               if (remVal > mainMix) mainMix = remVal;
             } else if (/CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة/i.test(label)) {
               if (remVal > carriedMix) carriedMix = remVal;
@@ -380,7 +432,9 @@ class EtisalatEngine {
           }
         }
 
-        const remainingMix = mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : (allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0));
+        // Sum basic quota and carried/transferred quota if both are present
+        const combinedMix = (mainMix > 0 && carriedMix > 0) ? (mainMix + carriedMix) : (mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : 0));
+        const remainingMix = combinedMix > 0 ? combinedMix : (allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0);
 
         // 3. Child in family (fafNumberList/fafNumber/value)
         let childNumber: string | null = null;
@@ -656,6 +710,13 @@ async function handleCheckStatusInternal(
 
   if (childEmail && childPass) {
     const childEngine = new EtisalatEngine("child", bridgeConfig);
+    childEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
+    childEngine.onNewAuthToken = (token, cookie) => {
+      supabase.from("vip_sessions").update({
+        cached_child_token: token,
+        cached_child_cookie: cookie,
+      }).eq("id", session_id).catch(() => {});
+    };
     childEngine.onLog = (l) => engine.log(l.message, l.level);
     if (await childEngine.login(childEmail, childPass, false, true)) {
       childDial = childEngine.childDial;
@@ -664,7 +725,8 @@ async function handleCheckStatusInternal(
       childBalance = childStatus.remainingMix > 0 ? childStatus.remainingMix : 0;
       childPlan = childStatus.planId && childStatus.planId !== "غير معروف" ? engine.getPlanName(childStatus.planId) : "حكاية ميكسات فرد 1";
       const childNameStr = childEngine.customerName ? ` | الاسم: ${childEngine.customerName}` : "";
-      engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial}${childNameStr} | الميكسات: ${(childBalance ?? 0).toLocaleString('en-US')})`, "info");
+      const expectedChildQuota = (ownerPlanId.includes("7") || ownerPlanId.includes("Parent_7")) ? 1300 : 800;
+      engine.log(`[+] حساب الفرد جاهز (الرقم: ${childDial}${childNameStr} | الميكسات الحالية: ${(childBalance ?? 0).toLocaleString('en-US')} | حصة النظام: ${expectedChildQuota} ميكس)`, "info");
     }
   }
 
@@ -800,6 +862,13 @@ async function handleSingleCycleInternal(
   if (childEmail && childPass) {
     try {
       prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig);
+      prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
+      prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
+        supabase.from("vip_sessions").update({
+          cached_child_token: token,
+          cached_child_cookie: cookie,
+        }).eq("id", session_id).catch(() => {});
+      };
       prewarmedChildEngine.onLog = (l) => engine.log(l.message, l.level);
       const childLoggedIn = await prewarmedChildEngine.login(childEmail, childPass, false, true);
       if (childLoggedIn) {
@@ -942,24 +1011,10 @@ async function handleSingleCycleInternal(
       break;
     }
 
-    // Safe Keep-Alive every 10 attempts (~25 seconds) without disruptive telecom orders:
-    // Only refresh the authentication tokens so sessions don't expire during prolonged wait.
-    // NEVER send duplicate changePlan or renewBundleAction while migration is pending,
-    // as duplicate telecom orders cause Etisalat's billing engine to cancel orders or reset family quotas!
+    // Safe Keep-Alive every 10 attempts (~25 seconds):
+    // Note: We avoid re-logging in repeatedly to prevent Etisalat temporary account lockouts.
     if (attempt % 10 === 0 && attempt < 60) {
-      engine.log(`[*] الحفاظ على نشاط الجلسات بأمان (محاولة ${attempt}/60): تحديث توكن الأونر والفرد لمنع انتهاء الجلسة...`, "info");
-
-      // 1. Refresh owner login session safely
-      try {
-        await engine.login(ownerEmail, ownerPass, true, true);
-      } catch (_e) {}
-
-      // 2. Keep child session warm too
-      if (prewarmedChildEngine && childEmail && childPass) {
-        try {
-          await prewarmedChildEngine.login(childEmail, childPass, false, true);
-        } catch (_e) {}
-      }
+      engine.log(`[*] فحص نشاط السيرفر (محاولة ${attempt}/60): الجلسات نشطة وننتظر تحديث عداد النظام...`, "info");
     } else {
       if (attempt % 5 === 0 || attempt === 1) {
         engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/60)`, "info");
@@ -995,19 +1050,25 @@ async function handleSingleCycleInternal(
 
     let childSt = await activeChildEngine.getStatusAndChild(true);
 
-    // Safety check: If child remainingMix is surprisingly lower than parkedMixAmount,
-    // re-login once and re-fetch consumption to ensure it's not a temporary cache discrepancy
-    if (parkedMixAmount > 0 && childSt.remainingMix < parkedMixAmount * 0.7) {
-      engine.log(`[!] تنبيه فحص الرصيد: رصيد الفرد المسجل (${childSt.remainingMix.toLocaleString('en-US')}) يختلف عن المركون (${parkedMixAmount.toLocaleString('en-US')}). إعادة استعلام مؤكد عبر جلسة حديثة...`, "warn");
-      try {
-        await activeChildEngine.login(childEmail, childPass, false, true);
-        await sleep(1500);
-        const recheckChild = await activeChildEngine.getStatusAndChild(true);
-        if (recheckChild.remainingMix > childSt.remainingMix) {
-          childSt = recheckChild;
-          engine.log(`[+] تم تحديث رصيد الفرد بنجاح بعد إعادة الاستعلام: ${childSt.remainingMix.toLocaleString('en-US')} ميكس.`, "success");
-        }
-      } catch (_recheckErr) {}
+    // Safety check: If child remainingMix is lower than parkedMixAmount,
+    // wait with an intelligent polling loop up to 12 attempts (every 2.5s)
+    // for Etisalat network to finish posting the transferred balance to the child line
+    if (parkedMixAmount > 0 && childSt.remainingMix < parkedMixAmount * 0.9) {
+      engine.log(`[!] تنبيه فحص الرصيد: رصيد الفرد المسجل (${childSt.remainingMix.toLocaleString('en-US')}) أقل من الميكسات المحولة له (${parkedMixAmount.toLocaleString('en-US')}). في انتظار اكتمال نزول الميكسات من شبكة اتصالات...`, "warn");
+      for (let pAttempt = 1; pAttempt <= 12; pAttempt++) {
+        await sleep(2500);
+        try {
+          const recheckChild = await activeChildEngine.getStatusAndChild(true);
+          if (recheckChild.remainingMix >= parkedMixAmount * 0.9 || recheckChild.remainingMix > childSt.remainingMix) {
+            childSt = recheckChild;
+            engine.log(`[+] تم تأكيد وصول الميكسات بنجاح لحساب الفرد: ${childSt.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
+            break;
+          }
+          if (pAttempt % 3 === 0) {
+            engine.log(`[*] في انتظار معالجة شبكة اتصالات لنزول الميكسات المركونة للفرد (محاولة ${pAttempt}/12)...`, "info");
+          }
+        } catch (_recheckErr) {}
+      }
     }
 
     engine.log(`[+] حالة الفرد | الميكسات المتاحة للاسترجاع: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
@@ -1039,43 +1100,40 @@ async function handleSingleCycleInternal(
 
   // 7. STEP 5: Read Final Mixes & Cooldown (اكتمال الدورة واستراحة)
   await sendStep("cooldown", 5, "اكتمال الدورة واستراحة", "تحديث البيانات وفترة الاستراحة");
-  const finalOwnerEngine = new EtisalatEngine("owner", bridgeConfig);
-  finalOwnerEngine.onLog = (l) => engine.log(l.message, l.level);
-  let finalMix = confirmedNewMix;
-  let finalPlan = targetPlanDisplay;
-  if (await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
-    let finalStatus = await finalOwnerEngine.getStatusAndChild(true);
+  
+  // Reuse existing owner engine directly (no redundant login!)
+  let finalStatus = await engine.getStatusAndChild(true);
 
-    // If we recovered mixes, ensure telecom counter has propagated the transferred amount
-    if (recoveredMixAmount > 0 && finalStatus.remainingMix < (confirmedNewMix + recoveredMixAmount * 0.7)) {
-      engine.log(`[*] في انتظار مزامنة عداد ميكسات الأونر مع الرصيد المسترجع...`, "info");
-      await sleep(3000);
-      try {
-        const recheckStatus = await finalOwnerEngine.getStatusAndChild(true);
-        if (recheckStatus.remainingMix > finalStatus.remainingMix) {
-          finalStatus = recheckStatus;
-        }
-      } catch (_recheck) {}
-    }
-
-    finalMix = finalStatus.remainingMix;
-    finalPlan = engine.getPlanName(finalStatus.planId);
-    engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
-
-    // STEP 5.5: Auto-Renew Bundle to seed child quota (1,300 mixes) during cooldown:
+  // If we recovered mixes, ensure telecom counter has propagated the transferred amount
+  if (recoveredMixAmount > 0 && finalStatus.remainingMix < (confirmedNewMix + recoveredMixAmount * 0.7)) {
+    engine.log(`[*] في انتظار مزامنة عداد ميكسات الأونر مع الرصيد المسترجع...`, "info");
+    await sleep(2500);
     try {
-      const renewPlan = finalStatus.planId.includes("7")
-        ? "Hekaya_XRP_MIX_Parent_7"
-        : "Hekaya_XRP_MIX_Parent_6";
-      const renewCost = renewPlan.includes("7") ? "270" : "180";
-      engine.log(`[*] تجديد باقة الأونر تلقائياً (${engine.getPlanName(renewPlan)}) لضخ حصة الفرد وتنشيط الخطين قبل الاستراحة...`, "info");
-      const renewOk = await finalOwnerEngine.renewBundleAction(renewPlan, renewCost);
-      if (renewOk) {
-        engine.log(`[+] تم اعتماد تجديد الباقة بنجاح! ستصل حصة الفرد (1,300 ميكس) ويستقر السيرفر خلال الـ 60 ثانية.`, "success");
+      const recheckStatus = await engine.getStatusAndChild(true);
+      if (recheckStatus.remainingMix > finalStatus.remainingMix) {
+        finalStatus = recheckStatus;
       }
-    } catch (_renE) {
-      engine.log(`[!] تنبيه: تم تخطي تجديد الأونر التلقائي.`, "warn");
-    }
+    } catch (_recheck) {}
+  }
+
+  const finalMix = finalStatus.remainingMix;
+  const finalPlan = engine.getPlanName(finalStatus.planId);
+  engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
+
+  // Dynamic quota verification based on system: 270 gives 1,300 to child, 180 gives 800 to child
+  const isSevenFinal = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");
+  const expectedChildMix = isSevenFinal ? 1300 : 800;
+  engine.log(`[+] حالة النظام المعتمد: ${finalPlan} (حصة الفرد المخصصة تلقائياً: ${expectedChildMix.toLocaleString('en-US')} ميكس).`, "info");
+
+  // Active check on actual child balance from server
+  if (prewarmedChildEngine) {
+    try {
+      await sleep(1500);
+      const childCheck = await prewarmedChildEngine.getStatusAndChild(true);
+      if (childCheck && childCheck.planId !== "غير معروف") {
+        engine.log(`[+] فحص رصيد الفرد الفعلي بالسيرفر: ${childCheck.remainingMix.toLocaleString('en-US')} ميكس متبقية (النظام: ${isSevenFinal ? "270 - حصة 1300" : "180 - حصة 800"}).`, "success");
+      }
+    } catch (_) {}
   }
 
   if (!serverConfirmed) {
@@ -1457,6 +1515,16 @@ serve(async (req: Request) => {
     }
 
     const engine = new EtisalatEngine("owner", bridgeConfig);
+    engine.setAuthSession(session.cached_owner_token, session.cached_owner_cookie);
+    engine.onNewAuthToken = (token, cookie, isOwner) => {
+      supabase.from("vip_sessions").update(isOwner ? {
+        cached_owner_token: token,
+        cached_owner_cookie: cookie,
+      } : {
+        cached_child_token: token,
+        cached_child_cookie: cookie,
+      }).eq("id", session_id).catch(() => {});
+    };
 
     // ══════════════════════════════════════════════════════════════════
     // REALTIME SSE STREAMING DISPATCHER (Live Console & Stepper)

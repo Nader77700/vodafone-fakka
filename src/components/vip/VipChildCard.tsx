@@ -137,6 +137,16 @@ export function VipChildCard({ session, onAddChild, addingChild }: Props) {
               </Button>
             )}
           </div>
+
+          {/* Quota system info badge according to plan */}
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1 pt-0.5 border-t border-border/40">
+            <span>حصة الفرد المخصصة:</span>
+            <span className="font-semibold text-primary">
+              {session.owner_current_plan?.includes('180')
+                ? '800 ميكس (نظام حكاية 180)'
+                : '1,300 ميكس (نظام حكاية 270)'}
+            </span>
+          </div>
         </CardContent>
       </Card>
 
