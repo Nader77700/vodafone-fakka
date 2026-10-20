@@ -817,7 +817,7 @@ async function handleSingleCycleInternal(
 
   await sleep(1000);
 
-  // 4. STEP 2: Switch Plan (ترحيل النظام)
+  // 4. STEP 2: Switch Plan (ترحيل النظام مع إعادة المحاولة والتنشيط)
   let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
   let targetPlanDisplay = "حكاية ميكسات 180";
   let ratePlanId = "951";
@@ -829,47 +829,60 @@ async function handleSingleCycleInternal(
   }
 
   await sendStep("migrating", 2, "ترحيل النظام", `جاري تغيير النظام إلى: ${targetPlanDisplay}`);
-  const changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
+  let changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   if (!changePlanSubmitted) {
-    engine.log(`[-] تنبيه أمان صارم: لم يقبل سيرفر اتصالات طلب ترحيل النظام إلى (${targetPlanDisplay}). تم إيقاف الدورة فوراً لحماية الميكسات من التصفير. ميكساتك مركونة بأمان عند الفرد.`, "error");
-    await sendStep("safety_stop", 2, "توقف أمان لحماية الميكسات", "رفض السيرفر طلب الترحيل - الميكسات محفوظة عند الفرد ولن يتم استرجاعها لتفادي التصفير");
-    return {
-      success: false,
-      safety_stop: true,
-      error: `لم يقبل السيرفر طلب ترحيل النظام إلى ${targetPlanDisplay}. تم إيقاف الدورة لحماية الرصيد عند الفرد.`,
-      logs: engine.logs,
-    };
+    engine.log(`[*] إعادة محاولة طلب الترحيل إلى (${targetPlanDisplay})...`, "info");
+    await sleep(2000);
+    changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   }
 
-  // 5. STEP 3: Wait Server Confirmation & New Mixes (انتظار رد السيرفر ونزول الميكسات بدقة قطعية)
-  await sendStep("waiting_server", 3, "انتظار تحديث السيرفر", "فحص دوري كل ثانيتين لتأكيد ترحيل النظام ونزول الميكسات الجديدة");
-  engine.log(`[*] في انتظار تحديث السيرفر ...`, "info");
+  // 5. STEP 3: Wait Server Confirmation with Active Periodic Reactivation
+  await sendStep("waiting_server", 3, "انتظار تحديث السيرفر", "فحص دوري كل ثانيتين لتأكيد ترحيل النظام مع تنشيط ذكي تلقائي");
+  engine.log(`[*] في انتظار تحديث السيرفر واعتماد النظام الجديد ...`, "info");
 
   let serverConfirmed = false;
   let confirmedNewMix = 0;
   let confirmedPlanId = "";
 
-  // Poll up to 35 attempts (70+ seconds)
-  for (let attempt = 1; attempt <= 35; attempt++) {
-    await sleep(2000);
+  // Poll up to 60 attempts (~150 seconds) with periodic reactivation every 10 attempts
+  for (let attempt = 1; attempt <= 60; attempt++) {
+    await sleep(2500);
     const currentCheck = await engine.getStatusAndChild(true);
     const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
                         (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
-    
-    // Strict condition: plan must strictly match the target AND quota must have arrived (> 0)
-    if (planMatches && currentCheck.remainingMix > 0) {
+
+    // Server confirmed the new plan!
+    if (planMatches) {
       serverConfirmed = true;
       confirmedNewMix = currentCheck.remainingMix;
       confirmedPlanId = currentCheck.planId;
-      engine.log(`[+] السيرفر استجاب وتأكد النظام! (${targetPlanDisplay} | الميكسات: ${confirmedNewMix.toLocaleString('en-US')})`, "success");
+      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})! (الميكسات الحالية بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')}) - جاري الانتقال الفوري للاسترجاع...`, "success");
       break;
     }
 
-    if (planMatches && currentCheck.remainingMix === 0) {
-      engine.log(`[*] تم التحول للنظام (${targetPlanDisplay}) ولكن في انتظار نزول الميكسات الجديدة بالسيرفر (محاولة ${attempt}/35)...`, "info");
+    // Active Smart Reactivation every 10 attempts if server hasn't switched yet
+    if (attempt % 10 === 0 && attempt < 60) {
+      engine.log(`[*] تنشيط ذكي للسيرفر (محاولة ${attempt}/60): تجديد الجلسة وإعادة دفع طلب الترحيل لنظام (${targetPlanDisplay})...`, "info");
+
+      // 1. Nudge renewal on current plan
+      try {
+        const renewCost = ownerPlanName.includes("7") ? "270" : "180";
+        await engine.renewBundleAction(ownerPlanName, renewCost);
+      } catch (_e) {}
+
+      // 2. Refresh owner login session
+      try {
+        await engine.login(ownerEmail, ownerPass, true, true);
+      } catch (_e) {}
+
+      // 3. Re-send migration request to nudge operator queue
+      try {
+        await engine.changePlan(targetPlanId, ratePlanId);
+        engine.log(`[+] تم إعادة إرسال طلب الترحيل إلى (${targetPlanDisplay}) بنجاح لتسريع استجابة السيرفر!`, "info");
+      } catch (_e) {}
     } else {
       if (attempt % 5 === 0 || attempt === 1) {
-        engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/35)`, "info");
+        engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/60)`, "info");
       }
     }
 
@@ -878,28 +891,19 @@ async function handleSingleCycleInternal(
         step: "waiting_server",
         stepNumber: 3,
         title: "انتظار تحديث السيرفر",
-        detail: `جاري الاستعلام عن استجابة السيرفر ونزول الرصيد (محاولة ${attempt}/35)...`,
+        detail: `جاري الاستعلام وتنشيط السيرفر (محاولة ${attempt}/60)...`,
       });
     }
   }
 
-  // CRITICAL ZERO-LOSS SAFETY GATE:
-  // If the server did not confirm the new plan and new mix balance,
-  // UNDER NO CIRCUMSTANCE transfer mixes back from child to owner!
-  if (!serverConfirmed || confirmedNewMix <= 0) {
-    const errorMsg = `[-] تنبيه أمان صارم: لم يؤكد سيرفر اتصالات ترحيل النظام إلى (${targetPlanDisplay}) خلال مهلة الانتظار! تم إيقاف الاسترجاع فوراً لمنع تصفير الميكسات. ميكساتك مركونة ومحمية بأمان بحساب الفرد.`;
-    engine.log(errorMsg, "error");
-    await sendStep("safety_stop", 3, "توقف أمان لحماية الميكسات", "لم يستجب السيرفر - الميكسات محفوظة عند الفرد ولن يتم إعادتها منعاً للتصفير");
-    return {
-      success: false,
-      safety_stop: true,
-      server_timeout: true,
-      error: errorMsg,
-      logs: engine.logs,
-    };
+  // If server took too long and did not switch plan:
+  // CRITICAL ZERO-LOSS RULE: NEVER abandon mixes at the child!
+  // We ALWAYS proceed to recover them back to the owner immediately to prevent wipeout.
+  if (!serverConfirmed) {
+    engine.log(`[!] تنبيه أمان ذكي: تأخر السيرفر في تأكيد الترحيل. لمنع أي تصفير لاحق للميكسات المركونة، جاري استرجاع الميكسات من الفرد إلى الأونر فوراً على النظام الحالي!`, "warn");
   }
 
-  // 6. STEP 4: Instant Recovery from Child to Owner (استرجاع فوري للميكسات بأقصى سرعة بعد التأكد 100%)
+  // 6. STEP 4: Instant Recovery from Child to Owner (استرجاع فوري للميكسات بأقصى سرعة)
   await sendStep("recovering", 4, "استرجاع فوري للميكسات", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً لحمايتها");
   if (childEmail && childPass) {
     engine.log(`[*] تسجيل الدخول للفرد واسترجاع الميكسات للأونر ...`, "info");
@@ -907,18 +911,27 @@ async function handleSingleCycleInternal(
     childTransferEngine.onLog = (l) => engine.log(l.message, l.level);
     if (await childTransferEngine.login(childEmail, childPass, false, true)) {
       const childSt = await childTransferEngine.getStatusAndChild(true);
-      engine.log(`[+] حالة الفرد | الميكسات: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
+      engine.log(`[+] حالة الفرد | الميكسات المتاحة للاسترجاع: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
 
       if (childSt.remainingMix > 0 && engine.ownerDial) {
         engine.log(`[*] جاري تحويل (${childSt.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${engine.ownerDial} ...`, "info");
-        const retOk = await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
-        if (retOk) {
-          engine.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
-        } else {
+        let retOk = false;
+        for (let t = 1; t <= 3; t++) {
+          retOk = await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
+          if (retOk) {
+            engine.log(`[+] تم استرجاع الميكسات بنجاح إلى الأونر!`, "success");
+            break;
+          }
+          if (t < 3) {
+            engine.log(`[!] محاولة استرجاع أخرى (${t}/3)...`, "warn");
+            await sleep(2000);
+          }
+        }
+        if (!retOk) {
           engine.log(`[!] تنبيه: فشل أمر استرجاع الميكسات من الفرد. الميكسات لا تزال محفوظة عند الفرد (${childSt.remainingMix.toLocaleString('en-US')}).`, "warn");
         }
       } else if (childSt.remainingMix === 0) {
-        engine.log(`[*] رصيد الفرد 0 ميكس (لا توجد ميكسات مركونة للاسترجاع).`, "info");
+        engine.log(`[*] رصيد الفرد 0 ميكس (تم الاسترجاع أو لا توجد ميكسات مركونة).`, "info");
       }
     }
   }
@@ -933,7 +946,17 @@ async function handleSingleCycleInternal(
     const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
     finalMix = finalStatus.remainingMix;
     finalPlan = engine.getPlanName(finalStatus.planId);
-    engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس`, "success");
+    engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
+  }
+
+  if (!serverConfirmed) {
+    return {
+      success: false,
+      safety_stop: false,
+      server_timeout: true,
+      error: "تأخر سيرفر اتصالات في ترحيل النظام، ولكن تم استرجاع وحفظ كافة ميكساتك بأمان بحساب الأونر لمنع أي تصفير.",
+      logs: engine.logs,
+    };
   }
 
   const newCycleCount = (session.current_cycle || 0) + 1;

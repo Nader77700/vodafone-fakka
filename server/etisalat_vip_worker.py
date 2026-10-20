@@ -411,19 +411,34 @@ class EtisalatVipBot:
             target_plan_id = "Hekaya_XRP_MIX_Parent_7"
             self.change_plan(target_plan_id, "")
 
-        # 6. Polling loop: STRICT 2 seconds delay
-        print("[*] في انتظار نزول الميكسات على السيرفر... (ممكن ياخد وقت)")
-        self.report_step(cycle_count, "المراقبة كل ثانيتين حتى اعتماد النظام والميكسات", "running")
+        # 6. Polling loop: with Smart Periodic Reactivation
+        print("[*] في انتظار استجابة السيرفر وتغيير النظام... (فحص كل ثانيتين مع تنشيط ذكي)")
+        self.report_step(cycle_count, "المراقبة الذكية حتى اعتماد النظام", "running")
         poll_count = 0
-        while True:
-            time.sleep(2) # بنسأل كل ثانيتين
+        server_migrated = False
+        while poll_count < 60:
+            time.sleep(2.5)
             poll_count += 1
             current_p_id, current_mix, _ = self.get_status_and_child(silent=True)
-            if current_p_id and target_plan_id in current_p_id and current_mix > 0:
-                print(f"[+] السيرفر استجاب! (النظام: {current_p_id} | الميكسات: {current_mix:,})")
+            if current_p_id and target_plan_id in current_p_id:
+                print(f"[+] السيرفر استجاب وتأكد تغيير النظام! (النظام: {current_p_id} | الميكسات: {current_mix:,})")
+                server_migrated = True
                 break
-            if poll_count % 15 == 0:
-                print(f"[*] ما زال الاستعلام جارياً كل ثانيتين... (محاولات: {poll_count})")
+
+            # Active Smart Reactivation every 10 attempts
+            if poll_count % 10 == 0:
+                print(f"[*] تنشيط ذكي للسيرفر (محاولة {poll_count}/60): إعادة تسجيل الدخول ودفع طلب الترحيل...")
+                try:
+                    self.login(self.owner_email, self.owner_password, silent=True)
+                    rate_id = "951" if "6" in target_plan_id else ""
+                    self.change_plan(target_plan_id, rate_id)
+                except Exception:
+                    pass
+            elif poll_count % 5 == 0:
+                print(f"[*] ما زال الاستعلام جارياً كل ثانيتين... (محاولات: {poll_count}/60)")
+
+        if not server_migrated:
+            print("[!] تنبيه أمان ذكي: تأخر السيرفر في الترحيل - جاري استرجاع الميكسات من الفرد للأونر فوراً لحمايتها من التصفير!")
 
         owner_plan_post = target_plan_id
 
