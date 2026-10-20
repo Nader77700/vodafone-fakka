@@ -64,6 +64,12 @@ export function VipUnifiedMasterCard({
     session.owner_current_plan?.includes('951');
   const isSupported = isSeven || isSix;
 
+  const relDetails = (session.relationship_details || {}) as Record<string, any>;
+  const ownerName = relDetails.owner_name;
+  const childName = relDetails.child_name;
+  const totalFamilyMixes =
+    (Number(session.owner_mix_balance) || 0) + (Number(session.individual_mix_balance) || 0);
+
   // Strict check: Only true if verified and linked inside owner's family
   const hasChild =
     session.relationship_verified === true &&
@@ -149,10 +155,17 @@ export function VipUnifiedMasterCard({
 
               {/* Owner Phone */}
               <div className="flex flex-col justify-center p-2 rounded-lg bg-card/60 border border-border/40">
-                <span className="text-[11px] text-muted-foreground font-sans flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-primary" />
-                  || رقم الأونر:
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground font-sans flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-primary" />
+                    || رقم الأونر:
+                  </span>
+                  {ownerName && (
+                    <span className="text-[10px] text-emerald-400 font-sans font-medium truncate max-w-[140px]" title={ownerName}>
+                      {ownerName}
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs sm:text-sm font-bold text-foreground mt-1" dir="ltr">
                   {session.owner_account_identifier || 'يُستخرج بعد الفحص'}
                 </span>
@@ -226,9 +239,16 @@ export function VipUnifiedMasterCard({
 
               {/* Current Mix Balance */}
               <div className="flex flex-col justify-center p-2 rounded-lg bg-card/60 border border-border/40">
-                <span className="text-[11px] text-muted-foreground font-sans flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-emerald-400" />
-                  || الرصيد الحالي:
+                <span className="text-[11px] text-muted-foreground font-sans flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    || رصيد الأونر:
+                  </span>
+                  {totalFamilyMixes > 0 && (
+                    <span className="text-[10px] text-sky-400 font-sans">
+                      العائلة: {totalFamilyMixes.toLocaleString('en-US')}
+                    </span>
+                  )}
                 </span>
                 <span className="text-sm sm:text-base font-extrabold text-emerald-400 mt-1">
                   {session.owner_mix_balance !== null && session.owner_mix_balance !== undefined
@@ -296,10 +316,17 @@ export function VipUnifiedMasterCard({
 
               {/* Child Phone */}
               <div className="p-2.5 rounded-xl bg-background/80 border border-border/60">
-                <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-blue-500" />
-                  رقم خط الفرد
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-blue-500" />
+                    رقم خط الفرد
+                  </span>
+                  {childName && (
+                    <span className="text-[10px] text-blue-400 font-sans font-medium truncate max-w-[130px]" title={childName}>
+                      {childName}
+                    </span>
+                  )}
+                </div>
                 <span className="font-mono text-xs font-bold text-foreground mt-0.5 block truncate" dir="ltr">
                   {session.individual_account_identifier || 'غير محدد'}
                 </span>
