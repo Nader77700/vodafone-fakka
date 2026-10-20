@@ -904,29 +904,39 @@ async function handleSingleCycleInternal(
     // Server confirmed the new plan!
     if (planMatches) {
       serverConfirmed = true;
-      confirmedNewMix = currentCheck.remainingMix;
       confirmedPlanId = currentCheck.planId;
-      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})! (الميكسات الحالية بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')})`, "success");
+      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})!`, "success");
 
-      // CRITICAL ZERO-LOSS STABILIZATION:
+      // MANDATORY TELECOM ZERO-LOSS PROTECTION:
       // When Etisalat switches a plan (e.g. 270 -> 180 or 180 -> 270), the plan profile changes immediately,
-      // but the backend telecom billing engine takes 3 to 5 seconds to finish provisioning the new bundle units.
-      // Transferring parked mixes immediately (when remainingMix == 0) causes Etisalat's subsequent bundle provisioning
-      // to overwrite and reset the newly transferred quota!
-      // Waiting 3.5 seconds ensures the new plan quota is fully active before receiving recovered units.
-      engine.log(`[*] فترة استقرار باقة النظام الجديد (${targetPlanDisplay}) في سيستم اتصالات قبل الاسترجاع لضمان عدم ضياع الميكسات...`, "info");
-      await sleep(3500);
-
-      // Re-query owner status after stabilization to capture the fresh bundle units
-      try {
-        const postStabilizeCheck = await engine.getStatusAndChild(true);
-        if (postStabilizeCheck.remainingMix > confirmedNewMix) {
-          confirmedNewMix = postStabilizeCheck.remainingMix;
-          engine.log(`[+] تم تأكيد نزول ميكسات الباقة الجديدة للأونر بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')} ميكس.`, "success");
+      // but the backend telecom billing engine takes 4 to 12 seconds to allocate the new bundle units.
+      // CRITICAL: We MUST NOT transfer parked mixes while the owner balance is 0!
+      // If we transfer while remainingMix is 0, Etisalat's subsequent bundle allocation
+      // will OVERWRITE the balance and wipe out all transferred mixes!
+      confirmedNewMix = currentCheck.remainingMix;
+      if (confirmedNewMix === 0) {
+        engine.log(`[*] في انتظار اعتماد ونزول باقة النظام الجديد (${targetPlanDisplay}) في سيستم اتصالات...`, "info");
+        for (let bAttempt = 1; bAttempt <= 15; bAttempt++) {
+          await sleep(2000);
+          try {
+            const bundleCheck = await engine.getStatusAndChild(true);
+            if (bundleCheck.remainingMix > 0) {
+              confirmedNewMix = bundleCheck.remainingMix;
+              engine.log(`[+] تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: ${confirmedNewMix.toLocaleString('en-US')} ميكس!`, "success");
+              break;
+            }
+          } catch (_bErr) {}
+          if (bAttempt % 3 === 0) {
+            engine.log(`[*] في انتظار وصول ميكسات الباقة الجديدة من سيرفر اتصالات (${bAttempt * 2} ثانية)...`, "info");
+          }
         }
-      } catch (_stabErr) {}
+      } else {
+        engine.log(`[+] باقة النظام الجديد نشطة بالفعل بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')} ميكس.`, "success");
+      }
 
-      engine.log(`[⚡] جاري الانتقال اللحظي الفوري للاسترجاع من الفرد...`, "info");
+      // Safe 2.5-second stabilization period after bundle drop to ensure telecom billing lock is released
+      await sleep(2500);
+      engine.log(`[⚡] جاري الانتقال اللحظي الفوري للاسترجاع من الفرد بأمان تام...`, "info");
       break;
     }
 
@@ -1032,7 +1042,20 @@ async function handleSingleCycleInternal(
   let finalMix = confirmedNewMix;
   let finalPlan = targetPlanDisplay;
   if (await finalOwnerEngine.login(ownerEmail, ownerPass, true, true)) {
-    const finalStatus = await finalOwnerEngine.getStatusAndChild(true);
+    let finalStatus = await finalOwnerEngine.getStatusAndChild(true);
+
+    // If we recovered mixes, ensure telecom counter has propagated the transferred amount
+    if (recoveredMixAmount > 0 && finalStatus.remainingMix < (confirmedNewMix + recoveredMixAmount * 0.7)) {
+      engine.log(`[*] في انتظار مزامنة عداد ميكسات الأونر مع الرصيد المسترجع...`, "info");
+      await sleep(3000);
+      try {
+        const recheckStatus = await finalOwnerEngine.getStatusAndChild(true);
+        if (recheckStatus.remainingMix > finalStatus.remainingMix) {
+          finalStatus = recheckStatus;
+        }
+      } catch (_recheck) {}
+    }
+
     finalMix = finalStatus.remainingMix;
     finalPlan = engine.getPlanName(finalStatus.planId);
     engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
