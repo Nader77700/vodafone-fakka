@@ -298,7 +298,12 @@ class VipRunnerService {
 
       // Success in cycle
       st.consecutiveErrors = 0;
-      const ownerBal = cycleResult.data?.owner_mix_balance ?? 0;
+      const ownerBal =
+        cycleResult.final_mix ??
+        cycleResult.owner_final_mix ??
+        cycleResult.data?.owner_mix_balance ??
+        cycleResult.data?.final_mix ??
+        0;
       const childBal = cycleResult.data?.child_mix_balance ?? 0;
       const totalMix = ownerBal + childBal;
 

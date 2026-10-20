@@ -906,7 +906,27 @@ async function handleSingleCycleInternal(
       serverConfirmed = true;
       confirmedNewMix = currentCheck.remainingMix;
       confirmedPlanId = currentCheck.planId;
-      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})! (الميكسات الحالية بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')}) - جاري الانتقال اللحظي الفوري للاسترجاع...`, "success");
+      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})! (الميكسات الحالية بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')})`, "success");
+
+      // CRITICAL ZERO-LOSS STABILIZATION:
+      // When Etisalat switches a plan (e.g. 270 -> 180 or 180 -> 270), the plan profile changes immediately,
+      // but the backend telecom billing engine takes 3 to 5 seconds to finish provisioning the new bundle units.
+      // Transferring parked mixes immediately (when remainingMix == 0) causes Etisalat's subsequent bundle provisioning
+      // to overwrite and reset the newly transferred quota!
+      // Waiting 3.5 seconds ensures the new plan quota is fully active before receiving recovered units.
+      engine.log(`[*] فترة استقرار باقة النظام الجديد (${targetPlanDisplay}) في سيستم اتصالات قبل الاسترجاع لضمان عدم ضياع الميكسات...`, "info");
+      await sleep(3500);
+
+      // Re-query owner status after stabilization to capture the fresh bundle units
+      try {
+        const postStabilizeCheck = await engine.getStatusAndChild(true);
+        if (postStabilizeCheck.remainingMix > confirmedNewMix) {
+          confirmedNewMix = postStabilizeCheck.remainingMix;
+          engine.log(`[+] تم تأكيد نزول ميكسات الباقة الجديدة للأونر بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')} ميكس.`, "success");
+        }
+      } catch (_stabErr) {}
+
+      engine.log(`[⚡] جاري الانتقال اللحظي الفوري للاسترجاع من الفرد...`, "info");
       break;
     }
 
@@ -1141,6 +1161,8 @@ async function handleSingleCycleInternal(
     success: true,
     cycle_number: newCycleCount,
     final_mix: finalMix,
+    owner_mix_balance: finalMix,
+    child_mix_balance: 0,
     target_reached: targetReached,
     target_mix: targetMix,
     owner_plan: finalPlan,
