@@ -417,7 +417,7 @@ class EtisalatEngine {
 
   async renewBundleAction(planName: string, amount: string): Promise<boolean> {
     const displayName = this.getPlanName(planName);
-    this.log(`[*] جاري إرسال حركة تنشيطية لنظام ${displayName}...`, "info");
+    this.log(`[*] جاري تجديد باقة الأونر (${displayName}) لتنشيط الخط وضخ حصة الفرد (1,300 ميكس)...`, "info");
 
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>FULL_RENEW</operation><parameters /><paymentOptions><paymentOption><amount>${amount}</amount><optionID>BALANCE</optionID></paymentOption></paymentOptions><productName>${planName}</productName><requestId>ALFA_PAYMENT_OPTIONS</requestId></generalSubmitOrderRequest>`;
     const urlPath = "/Saytar/rest/General/submitOrder";
@@ -440,8 +440,10 @@ class EtisalatEngine {
       });
       const text = await res.text();
       const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (!ok) {
-        this.log(`[-] فشل إرسال الحركة التنشيطية.`, "warn");
+      if (ok) {
+        this.log(`[+] تم تجديد باقة الأونر بنجاح! ستصل حصة الفرد (1,300 ميكس) خلال فترة الاستراحة.`, "success");
+      } else {
+        this.log(`[-] فشل إرسال أمر التجديد.`, "warn");
       }
       return ok;
     } catch {
@@ -1059,6 +1061,21 @@ async function handleSingleCycleInternal(
     finalMix = finalStatus.remainingMix;
     finalPlan = engine.getPlanName(finalStatus.planId);
     engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
+
+    // STEP 5.5: Auto-Renew Bundle to seed child quota (1,300 mixes) during cooldown:
+    try {
+      const renewPlan = finalStatus.planId.includes("7")
+        ? "Hekaya_XRP_MIX_Parent_7"
+        : "Hekaya_XRP_MIX_Parent_6";
+      const renewCost = renewPlan.includes("7") ? "270" : "180";
+      engine.log(`[*] تجديد باقة الأونر تلقائياً (${engine.getPlanName(renewPlan)}) لضخ حصة الفرد وتنشيط الخطين قبل الاستراحة...`, "info");
+      const renewOk = await finalOwnerEngine.renewBundleAction(renewPlan, renewCost);
+      if (renewOk) {
+        engine.log(`[+] تم اعتماد تجديد الباقة بنجاح! ستصل حصة الفرد (1,300 ميكس) ويستقر السيرفر خلال الـ 60 ثانية.`, "success");
+      }
+    } catch (_renE) {
+      engine.log(`[!] تنبيه: تم تخطي تجديد الأونر التلقائي.`, "warn");
+    }
   }
 
   if (!serverConfirmed) {
