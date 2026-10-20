@@ -311,6 +311,8 @@ export interface VipExecutionResponse {
   success: boolean;
   error?: string;
   message?: string;
+  safety_stop?: boolean;
+  server_timeout?: boolean;
   data?: any;
   config?: any;
   scripts?: any[];

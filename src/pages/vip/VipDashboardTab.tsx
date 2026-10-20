@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import type { VipDashboardData, VipSession } from '@/types/vip';
@@ -9,6 +9,12 @@ import {
   executeVipRunSingleCycleStream,
   type VipExecutionLog,
 } from '@/lib/vipApi';
+import {
+  enableVipBackgroundExecution,
+  disableVipBackgroundExecution,
+  showVipNotification,
+  requestVipNotificationPermission,
+} from '@/lib/vipBackgroundManager';
 
 import { VipUnifiedMasterCard } from '@/components/vip/VipUnifiedMasterCard';
 import { VipAutoLoopCard } from '@/components/vip/VipAutoLoopCard';
@@ -144,11 +150,17 @@ export function VipDashboardTab({
     if (!session) return;
     stopRequestedRef.current = false;
     setLoopRunning(true);
+
+    // Request notification permission if not yet decided, and enable background execution
+    requestVipNotificationPermission().catch(() => {});
+    await enableVipBackgroundExecution();
+
     addSingleLog(`==================================================`, 'info');
     addSingleLog(
       `=== بدء تشغيل الدورة التلقائية (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث) ===`,
       'success'
     );
+    addSingleLog(`[🛡️] تم تفعيل حماية التنفيذ بالخلفية (Keep-Alive & WakeLock) وتجهيز إشعارات النظام.`, 'info');
 
     let cycleCount = loopCycle;
 
@@ -171,11 +183,26 @@ export function VipDashboardTab({
 
         if (!res.success) {
           addSingleLog(`[-] توقفت الدورة: ${res.error || 'حدث خطأ'}`, 'error');
-          toast.error(res.error || 'توقفت الدورة التلقائية');
+          if (res.safety_stop) {
+            toast.warning('⚠️ توقف أمان لحماية الميكسات: لم يؤكد السيرفر الترحيل فتم إيقاف الاسترجاع وحفظ رصيدك عند الفرد.');
+            showVipNotification(
+              '⚠️ توقف أمان - حماية الميكسات',
+              'لم يؤكد السيرفر نزول الرصيد. تم إيقاف الدورة وميكساتك مركونة بأمان عند الفرد.'
+            );
+          } else {
+            toast.error(res.error || 'توقفت الدورة التلقائية');
+            showVipNotification('❌ توقفت الدورة التلقائية', res.error || 'حدث خطأ أثناء تنفيذ الدورة');
+          }
           break;
         }
 
         onRefresh();
+
+        // Send system notification on cycle success
+        showVipNotification(
+          `🎉 اكتملت الدورة #${cycleCount} بنجاح`,
+          `الرصيد الحالي للأونر: ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس`
+        );
 
         if (res.target_reached) {
           setCurrentStep('completed');
@@ -184,6 +211,10 @@ export function VipDashboardTab({
             'success'
           );
           toast.success('تم الوصول لرصيد الميكسات المستهدف بنجاح!');
+          showVipNotification(
+            '🏆 تم الوصول للهدف بنجاح!',
+            `مبروك! وصل رصيد الأونر إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس.`
+          );
           break;
         }
 
@@ -202,10 +233,12 @@ export function VipDashboardTab({
       } catch (err: any) {
         addSingleLog(`[-] خطأ في الدورة: ${err?.message || err}`, 'error');
         toast.error('حدث خطأ في الدورة التلقائية');
+        showVipNotification('❌ خطأ في الدورة التلقائية', err?.message || 'تعذر استكمال الدورة');
         break;
       }
     }
 
+    await disableVipBackgroundExecution();
     setLoopRunning(false);
     setCountdownSeconds(null);
     setCurrentStep('idle');
@@ -214,8 +247,9 @@ export function VipDashboardTab({
     onRefresh();
   };
 
-  const handleStopAutoLoop = () => {
+  const handleStopAutoLoop = async () => {
     stopRequestedRef.current = true;
+    await disableVipBackgroundExecution();
     setLoopRunning(false);
     setCountdownSeconds(null);
     setCurrentStep('idle');
@@ -223,6 +257,13 @@ export function VipDashboardTab({
     addSingleLog(`[!] تم طلب إيقاف الدورة التلقائية من قبل المستخدم.`, 'warn');
     toast.info('جاري إيقاف الدورة التلقائية...');
   };
+
+  // Clean up background lock on unmount
+  useEffect(() => {
+    return () => {
+      disableVipBackgroundExecution().catch(() => {});
+    };
+  }, []);
 
   if (!session) return null;
 

@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export type VipStepKey = 'idle' | 'auth' | 'parking' | 'migrating' | 'waiting_server' | 'recovering' | 'cooldown' | 'completed';
+export type VipStepKey = 'idle' | 'auth' | 'parking' | 'migrating' | 'waiting_server' | 'recovering' | 'cooldown' | 'completed' | 'safety_stop';
 
 interface Props {
   currentStep: string;

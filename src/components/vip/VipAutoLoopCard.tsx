@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,15 @@ import {
   Flame,
   CheckCircle2,
   Loader2,
+  Bell,
+  BellRing,
+  ShieldCheck,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
+import {
+  requestVipNotificationPermission,
+  isVipNotificationGranted,
+} from '@/lib/vipBackgroundManager';
 
 interface Props {
   session: VipSession;
@@ -49,6 +56,16 @@ export function VipAutoLoopCard({
     String(session.target_mix_balance || 50000)
   );
   const [cycleDelay, setCycleDelay] = useState<number>(session.cycle_delay_seconds || 20);
+  const [hasNotifPerm, setHasNotifPerm] = useState(false);
+
+  useEffect(() => {
+    setHasNotifPerm(isVipNotificationGranted());
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    const granted = await requestVipNotificationPermission();
+    setHasNotifPerm(granted);
+  };
 
   const selectedTarget =
     targetPreset === 'custom' ? parseInt(customTarget, 10) || 50000 : parseInt(targetPreset, 10);
@@ -65,14 +82,14 @@ export function VipAutoLoopCard({
     <Card className="border border-border/80 bg-card/90 shadow-md relative overflow-hidden" dir="rtl">
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-      <CardHeader className="p-3 pb-2 border-b border-border/50 flex flex-row items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+      <CardHeader className="p-2.5 sm:p-3 pb-2 border-b border-border/50 flex flex-row items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shrink-0">
             <Zap className="w-4 h-4" />
           </div>
-          <div>
-            <CardTitle className="text-xs font-bold text-foreground flex items-center gap-2">
-              لوحة التحكم بالدورة التلقائية (Auto Loop Controller)
+          <div className="min-w-0">
+            <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5 flex-wrap">
+              <span>أتمتة الدورات الحية</span>
               {isRunning ? (
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 animate-pulse">
                   الدورة نشطة (#{currentCycle})
@@ -87,13 +104,28 @@ export function VipAutoLoopCard({
                 </Badge>
               )}
             </CardTitle>
-            <p className="text-[10px] text-muted-foreground">
-              تكرار دورات التجديد والتحويل والترحيل والاسترجاع آلياً حتى الوصول للميكسات المحددة
+            <p className="text-[10px] text-muted-foreground truncate">
+              نظام أمان صارم: ركن فوري عند الفرد، ترحيل، فحص نزول الرصيد، ثم استرجاع
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleNotifications}
+            className={`h-7 text-[11px] px-2 gap-1 border ${
+              hasNotifPerm
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:text-white'
+            }`}
+            title={hasNotifPerm ? 'إشعارات النظام والخلفية مفعلة' : 'طلب تفعيل إشعارات النظام'}
+          >
+            {hasNotifPerm ? <BellRing className="w-3.5 h-3.5 text-emerald-400" /> : <Bell className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{hasNotifPerm ? 'الإشعارات نشطة' : 'تفعيل الإشعارات'}</span>
+          </Button>
+
           {isRunning ? (
             <Button
               variant="destructive"
@@ -117,7 +149,7 @@ export function VipAutoLoopCard({
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 space-y-3">
+      <CardContent className="p-2.5 sm:p-3 space-y-2.5">
         {/* Progress Bar & Target Display */}
         <div className="p-2.5 rounded-lg bg-muted/40 border border-border/70 space-y-2">
           <div className="flex items-center justify-between text-xs">
