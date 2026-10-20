@@ -740,6 +740,11 @@ async function handleSingleCycleInternal(
     } catch (_) {}
   };
 
+  const cycleStartTime = new Date().toISOString();
+  const cycleStartMs = Date.now();
+  let parkedMixAmount = 0;
+  let recoveredMixAmount = 0;
+
   // 1. Login to Owner
   await sendStep("auth", 0, "تسجيل الدخول", "جاري الدخول لحساب الأونر...");
   if (!await engine.login(ownerEmail, ownerPass, true)) {
@@ -753,6 +758,7 @@ async function handleSingleCycleInternal(
   // 2. Check Plan & Child existence
   let status = await engine.getStatusAndChild(true);
   let ownerPlanPre = status.planId;
+  const ownerStartMix = status.remainingMix || 0;
 
   // Auto-migrate if not 270 or 180
   if (!ownerPlanPre.includes("Parent_7") && !ownerPlanPre.includes("Parent_6") && ownerPlanPre !== "غير معروف") {
@@ -806,10 +812,41 @@ async function handleSingleCycleInternal(
     engine.log(`[*] جاري تحويل (${status.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${childNum} ...`, "info");
     const transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
     if (transferred) {
+      parkedMixAmount = status.remainingMix;
       engine.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
     } else {
       engine.log(`[-] تنبيه أمان صارم: فشل تحويل ميكسات الأونر للفرد! تم إيقاف الدورة فوراً لمنع تصفير الرصيد.`, "error");
       await sendStep("safety_stop", 1, "توقف أمان لحماية الميكسات", "فشل نقل الميكسات للفرد - تم إلغاء الترحيل لحماية ميكسات الأونر");
+      
+      // Save failure in cycle history and operations
+      try {
+        await supabase.from("vip_cycle_history").insert({
+          session_id: session_id,
+          cycle_number: (session.current_cycle || 0) + 1,
+          started_at: cycleStartTime,
+          ended_at: new Date().toISOString(),
+          duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
+          owner_balance_start: ownerStartMix,
+          system_pre_migration: ownerPlanPre,
+          cycle_status: "failed",
+          failure_step: "parking",
+          safe_error_summary: "فشل تحويل ميكسات الأونر للفرد - تم إيقاف الدورة لحماية الرصيد",
+          increased_owner_balance: false,
+        });
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "auto_cycle",
+          owner_account_ref: session.owner_account_identifier,
+          individual_account_ref: session.individual_account_identifier,
+          requested_action: `دورة أتمتة #${(session.current_cycle || 0) + 1}`,
+          status: "failed",
+          failure_reason: "فشل تحويل ميكسات الأونر للفرد",
+          started_at: cycleStartTime,
+          completed_at: new Date().toISOString(),
+          is_automatic: true,
+        });
+      } catch (_dbE) {}
+
       return {
         success: false,
         safety_stop: true,
@@ -822,6 +859,7 @@ async function handleSingleCycleInternal(
     if (prewarmedChildEngine) {
       const childStatus = await prewarmedChildEngine.getStatusAndChild(true);
       if (childStatus.remainingMix > 0) {
+        parkedMixAmount = childStatus.remainingMix;
         engine.log(`[+] الفرد جاهز ولديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس مركونة بأمان.`, "success");
       }
     }
@@ -941,6 +979,7 @@ async function handleSingleCycleInternal(
       for (let t = 1; t <= 3; t++) {
         retOk = await activeChildEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
         if (retOk) {
+          recoveredMixAmount = childSt.remainingMix;
           engine.log(`[+] تم استرجاع الميكسات بنجاح إلى الأونر في زمن قياسي!`, "success");
           break;
         }
@@ -973,6 +1012,42 @@ async function handleSingleCycleInternal(
   }
 
   if (!serverConfirmed) {
+    // Record timeout/incomplete cycle in DB
+    try {
+      await supabase.from("vip_cycle_history").insert({
+        session_id: session_id,
+        cycle_number: (session.current_cycle || 0) + 1,
+        started_at: cycleStartTime,
+        ended_at: new Date().toISOString(),
+        duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
+        owner_balance_start: ownerStartMix,
+        system_pre_migration: ownerPlanPre,
+        system_post_migration: finalPlan,
+        migration_result: "server_timeout",
+        amount_transferred_owner_to_indiv: parkedMixAmount,
+        amount_transferred_indiv_to_owner: recoveredMixAmount,
+        final_verified_owner_balance: finalMix,
+        difference_to_target: Math.max(0, (session.target_mix_balance || 50000) - finalMix),
+        cycle_status: "failed",
+        safe_error_summary: "تأخر سيرفر اتصالات في ترحيل النظام - تم استرجاع الميكسات للأونر",
+        increased_owner_balance: finalMix > ownerStartMix,
+      });
+
+      await supabase.from("vip_operation_history").insert({
+        session_id: session_id,
+        operation_type: "auto_cycle",
+        owner_account_ref: session.owner_account_identifier,
+        individual_account_ref: session.individual_account_identifier,
+        requested_action: `دورة أتمتة #${(session.current_cycle || 0) + 1} (تأخر السيرفر)`,
+        status: "failed",
+        failure_reason: "تأخر سيرفر اتصالات في ترحيل النظام",
+        started_at: cycleStartTime,
+        completed_at: new Date().toISOString(),
+        result: { final_mix: finalMix },
+        is_automatic: true,
+      });
+    } catch (_dbE) {}
+
     return {
       success: false,
       safety_stop: false,
@@ -991,7 +1066,7 @@ async function handleSingleCycleInternal(
     engine.log(`[*] استراحة ${cooldownSec} ثانية قبل الدورة القادمة ...`, "info");
   }
 
-  // Update database
+  // Update session in database
   await supabase
     .from("vip_sessions")
     .update({
@@ -1004,6 +1079,56 @@ async function handleSingleCycleInternal(
       updated_at: new Date().toISOString(),
     })
     .eq("id", session_id);
+
+  // Insert successful cycle into vip_cycle_history
+  try {
+    await supabase.from("vip_cycle_history").insert({
+      session_id: session_id,
+      cycle_number: newCycleCount,
+      started_at: cycleStartTime,
+      ended_at: new Date().toISOString(),
+      duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
+      owner_balance_start: ownerStartMix,
+      owner_balance_post_renewal: ownerStartMix,
+      amount_transferred_owner_to_indiv: parkedMixAmount,
+      individual_balance_pre_transfer: 0,
+      individual_balance_post_transfer: parkedMixAmount,
+      system_pre_migration: ownerPlanPre,
+      system_post_migration: finalPlan,
+      migration_result: "confirmed",
+      amount_transferred_indiv_to_owner: recoveredMixAmount,
+      final_verified_owner_balance: finalMix,
+      difference_to_target: Math.max(0, targetMix - finalMix),
+      cycle_status: targetReached ? "stopped_at_target" : "completed",
+      increased_owner_balance: finalMix > ownerStartMix,
+      safe_error_summary: null,
+    });
+  } catch (dbE) {
+    console.warn("Failed to insert into vip_cycle_history:", dbE);
+  }
+
+  // Insert into vip_operation_history
+  try {
+    await supabase.from("vip_operation_history").insert({
+      session_id: session_id,
+      operation_type: "auto_cycle",
+      owner_account_ref: session.owner_account_identifier,
+      individual_account_ref: session.individual_account_identifier,
+      requested_action: `دورة أتمتة #${newCycleCount} (ترحيل إلى ${targetPlanDisplay})`,
+      status: "succeeded",
+      started_at: cycleStartTime,
+      completed_at: new Date().toISOString(),
+      result: {
+        cycle_number: newCycleCount,
+        final_mix: finalMix,
+        target_reached: targetReached,
+        owner_plan: finalPlan,
+      },
+      is_automatic: true,
+    });
+  } catch (dbE) {
+    console.warn("Failed to insert into vip_operation_history:", dbE);
+  }
 
   return {
     success: true,
@@ -1455,12 +1580,42 @@ serve(async (req: Request) => {
           })
           .eq("id", session_id);
 
+        try {
+          await supabase.from("vip_operation_history").insert({
+            session_id: session_id,
+            operation_type: "add_child",
+            owner_account_ref: session.owner_account_identifier,
+            individual_account_ref: finalChildNumber,
+            requested_action: `إضافة وتأكيد الفرد ${finalChildNumber} في عائلة الأونر`,
+            status: "succeeded",
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            result: { child_number: finalChildNumber },
+            is_automatic: false,
+          });
+        } catch (_dbE) {}
+
         return new Response(JSON.stringify({
           success: true,
           message: `تم ربط وتأكيد الفرد ${finalChildNumber} في عائلة الأونر بنجاح!`,
           logs: allLogs,
         }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
+
+      try {
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "add_child",
+          owner_account_ref: session.owner_account_identifier,
+          individual_account_ref: finalChildNumber || session.individual_account_identifier,
+          requested_action: "إضافة وتأكيد الفرد في عائلة الأونر",
+          status: "failed",
+          failure_reason: "فشلت محاولات إضافة الفرد تلقائياً",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          is_automatic: false,
+        });
+      } catch (_dbE) {}
 
       return new Response(JSON.stringify({
         success: false,
@@ -1506,24 +1661,256 @@ serve(async (req: Request) => {
       const ratePlanId = body.target_plan === "6" ? "951" : "";
       const ok = await engine.changePlan(targetPlan, ratePlanId);
 
+      let finalMix = session.owner_mix_balance || 0;
+      let finalPlanName = engine.getPlanName(targetPlan);
+
       if (ok) {
-        engine.log(`[+] تم إرسال أمر الترحيل إلى: ${engine.getPlanName(targetPlan)} بنجاح!`, "success");
+        engine.log(`[+] تم إرسال أمر الترحيل إلى: ${finalPlanName} بنجاح!`, "success");
         await sleep(2500);
         const st = await engine.getStatusAndChild(true);
+        finalMix = st.remainingMix;
+        finalPlanName = engine.getPlanName(st.planId);
         await supabase
           .from("vip_sessions")
           .update({
-            owner_current_plan: engine.getPlanName(st.planId),
-            owner_mix_balance: st.remainingMix,
+            owner_current_plan: finalPlanName,
+            owner_mix_balance: finalMix,
+            last_actual_operation: "change_plan",
+            last_successful_op_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
           .eq("id", session_id);
       }
 
+      try {
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "change_system",
+          owner_account_ref: session.owner_account_identifier,
+          individual_account_ref: session.individual_account_identifier,
+          requested_action: `تغيير النظام يدوياً إلى ${finalPlanName}`,
+          relevant_plan_id: targetPlan,
+          status: ok ? "succeeded" : "failed",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          result: { plan: finalPlanName, mix_balance: finalMix },
+          failure_reason: ok ? null : "فشل ترحيل النظام عبر الخادم",
+          is_automatic: false,
+        });
+      } catch (_dbE) {}
+
       return new Response(JSON.stringify({
         success: ok,
-        message: ok ? `تم ترحيل النظام بنجاح إلى: ${engine.getPlanName(targetPlan)}` : "فشل ترحيل النظام",
+        message: ok ? `تم ترحيل النظام بنجاح إلى: ${finalPlanName}` : "فشل ترحيل النظام",
         logs: engine.logs,
+      }), { status: ok ? 200 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 5: renew_bundle
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "renew_bundle") {
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const st = await engine.getStatusAndChild(true);
+      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const planName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+      const cost = isSeven ? "270" : "180";
+
+      engine.log(`[*] جاري طلب تجديد باقة (${engine.getPlanName(st.planId)}) بتكلفة ${cost}ج...`, "info");
+      const ok = await engine.renewBundleAction(planName, cost);
+
+      await sleep(2500);
+      const afterSt = await engine.getStatusAndChild(true);
+
+      await supabase
+        .from("vip_sessions")
+        .update({
+          owner_mix_balance: afterSt.remainingMix,
+          last_actual_operation: "renew_bundle",
+          last_successful_op_at: ok ? new Date().toISOString() : undefined,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
+
+      try {
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "renew_bundle",
+          owner_account_ref: session.owner_account_identifier,
+          individual_account_ref: session.individual_account_identifier,
+          requested_action: `تجديد باقة ${engine.getPlanName(st.planId)} (${cost}ج)`,
+          relevant_plan_id: planName,
+          status: ok ? "succeeded" : "failed",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          result: {
+            previous_balance: st.remainingMix,
+            new_balance: afterSt.remainingMix,
+          },
+          failure_reason: ok ? null : "فشل تجديد الباقة عبر الخادم",
+          is_automatic: false,
+        });
+      } catch (_dbE) {}
+
+      return new Response(JSON.stringify({
+        success: ok,
+        message: ok ? `تم تجديد الباقة بنجاح! الرصيد الحالي: ${afterSt.remainingMix.toLocaleString('en-US')} ميكس` : "فشل تجديد الباقة",
+        logs: engine.logs,
+        new_balance: afterSt.remainingMix,
+      }), { status: ok ? 200 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 6: transfer_to_child
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "transfer_to_child") {
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const st = await engine.getStatusAndChild(true);
+      const targetChild = st.childNumber || session.individual_account_identifier;
+      if (!targetChild) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "لا يوجد فرد مضاف بحساب الأونر للتحويل إليه.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+      const amountToTransfer = Number(body.amount) || st.remainingMix;
+
+      engine.log(`[*] جاري تحويل (${amountToTransfer.toLocaleString('en-US')}) ميكس إلى الفرد: ${targetChild}...`, "info");
+      const ok = await engine.transferMix(targetChild, amountToTransfer, ownerPlanName);
+
+      await sleep(2000);
+      const afterSt = await engine.getStatusAndChild(true);
+
+      await supabase
+        .from("vip_sessions")
+        .update({
+          owner_mix_balance: afterSt.remainingMix,
+          last_actual_operation: "transfer_to_child",
+          last_successful_op_at: ok ? new Date().toISOString() : undefined,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
+
+      try {
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "transfer_to_individual",
+          owner_account_ref: session.owner_account_identifier,
+          individual_account_ref: targetChild,
+          requested_action: `تحويل ${amountToTransfer.toLocaleString('en-US')} ميكس إلى الفرد`,
+          requested_amount: amountToTransfer,
+          status: ok ? "succeeded" : "failed",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          result: {
+            transferred_amount: amountToTransfer,
+            remaining_balance: afterSt.remainingMix,
+          },
+          failure_reason: ok ? null : "فشل تحويل الميكسات إلى الفرد",
+          is_automatic: false,
+        });
+      } catch (_dbE) {}
+
+      return new Response(JSON.stringify({
+        success: ok,
+        message: ok ? `تم تحويل ${amountToTransfer.toLocaleString('en-US')} ميكس بنجاح إلى الفرد!` : "فشل تحويل الميكسات للفرد",
+        logs: engine.logs,
+        owner_remaining: afterSt.remainingMix,
+      }), { status: ok ? 200 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 7: return_child_mixes
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "return_child_mixes") {
+      if (!childEmail || !childPass) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "بيانات اعتماد حساب الفرد (الإيميل/كلمة المرور) غير مسجلة بالجلسة.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const childEngine = new EtisalatEngine("child", bridgeConfig);
+      childEngine.onLog = (l) => engine.log(l.message, l.level);
+      if (!await childEngine.login(childEmail, childPass, false, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الفرد.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const childSt = await childEngine.getStatusAndChild(true);
+      const ownerDial = session.owner_account_identifier;
+      if (!ownerDial) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "رقم هاتف الأونر غير محدد بالجلسة.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const returnAmount = childSt.remainingMix;
+      engine.log(`[*] رصيد الفرد المتاح للاسترجاع: (${returnAmount.toLocaleString('en-US')}) ميكس. جاري التحويل إلى الأونر: ${ownerDial}...`, "info");
+      const ok = await childEngine.transferMix(ownerDial, returnAmount, "Hekaya_XRP_MIX_Child_1");
+
+      await sleep(2000);
+      const afterChildSt = await childEngine.getStatusAndChild(true);
+
+      await supabase
+        .from("vip_sessions")
+        .update({
+          individual_mix_balance: afterChildSt.remainingMix,
+          last_actual_operation: "return_child_mixes",
+          last_successful_op_at: ok ? new Date().toISOString() : undefined,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
+
+      try {
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "transfer_to_owner",
+          owner_account_ref: ownerDial,
+          individual_account_ref: session.individual_account_identifier,
+          requested_action: `استرجاع ${returnAmount.toLocaleString('en-US')} ميكس من الفرد إلى الأونر`,
+          requested_amount: returnAmount,
+          status: ok ? "succeeded" : "failed",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          result: {
+            returned_amount: returnAmount,
+            child_remaining: afterChildSt.remainingMix,
+          },
+          failure_reason: ok ? null : "فشل استرجاع الميكسات من الفرد إلى الأونر",
+          is_automatic: false,
+        });
+      } catch (_dbE) {}
+
+      return new Response(JSON.stringify({
+        success: ok,
+        message: ok ? `تم استرجاع ${returnAmount.toLocaleString('en-US')} ميكس بنجاح إلى الأونر!` : "فشل استرجاع الميكسات من الفرد",
+        logs: engine.logs,
+        child_remaining: afterChildSt.remainingMix,
       }), { status: ok ? 200 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 

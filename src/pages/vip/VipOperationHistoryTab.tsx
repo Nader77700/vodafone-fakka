@@ -43,12 +43,12 @@ export function VipOperationHistoryTab({ initialRecords, activeSession, onRefres
   };
 
   useEffect(() => {
-    if (initialRecords) {
+    if (initialRecords && initialRecords.length > 0) {
       setRecords(initialRecords);
-    } else {
-      loadHistory();
     }
-  }, [activeSession.id, initialRecords]);
+    // Always fetch latest records from database for the active session
+    loadHistory();
+  }, [activeSession.id]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

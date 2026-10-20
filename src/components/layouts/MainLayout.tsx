@@ -211,7 +211,7 @@ export default function MainLayout() {
             {/* زر تبديل الوضع الفاتح/الداكن */}
             <Button
               variant="ghost" size="icon"
-              className="w-9 h-9 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
               onClick={toggleTheme}
               title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
             >
@@ -219,44 +219,24 @@ export default function MainLayout() {
                 ? <Sun className="w-4 h-4" />
                 : <Moon className="w-4 h-4" />}
             </Button>
-            {/* زر مشاركة رابط APK — يجلب الرابط الحالي دائماً من DB */}
-            <Button
-              variant="ghost" size="icon"
-              className="w-9 h-9 text-muted-foreground hover:text-primary hover:bg-primary/10"
-              onClick={handleShareApk}
-              title="مشاركة رابط التحميل"
-            >
-              {shareCopied
-                ? <Check className="w-4 h-4 text-success" />
-                : <Share2 className="w-4 h-4" />}
-            </Button>
             {isAdmin && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
-                  onClick={() => navigate('/vip')}
-                  title="إدارة باقات VIP"
-                >
-                  <Crown className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary"
-                  onClick={() => navigate('/admin')}
-                >
-                  <Shield className="w-4 h-4" />
-                </Button>
-              </>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 text-primary hover:bg-primary/10"
+                onClick={() => navigate('/admin')}
+                title="لوحة الإدارة"
+              >
+                <Shield className="w-4 h-4" />
+              </Button>
             )}
             {isMerchant && (
               <Button
                 variant="ghost"
-                size="sm"
-                className="text-primary"
+                size="icon"
+                className="w-8 h-8 text-primary hover:bg-primary/10"
                 onClick={() => navigate('/merchant')}
+                title="لوحة التاجر"
               >
                 <Building2 className="w-4 h-4" />
               </Button>

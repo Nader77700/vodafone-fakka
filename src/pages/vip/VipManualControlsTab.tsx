@@ -136,8 +136,9 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
           </div>
         </div>
 
-        <Badge className="bg-sky-500/15 text-sky-500 border-sky-500/30 text-xs shrink-0 self-end sm:self-auto">
-          وضع التسجيل: بانتظار ربط المشغل
+        <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 text-xs shrink-0 self-end sm:self-auto flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          محرك اتصالات المباشر: جاهز للتشغيل
         </Badge>
       </div>
 

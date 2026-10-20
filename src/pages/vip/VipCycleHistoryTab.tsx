@@ -43,10 +43,10 @@ export function VipCycleHistoryTab({ session, initialCycles = [], onRefresh }: P
   useEffect(() => {
     if (initialCycles && initialCycles.length > 0) {
       setCycles(initialCycles);
-    } else {
-      loadCycles();
     }
-  }, [session.id, initialCycles]);
+    // Always fetch latest cycles from database for the active session
+    loadCycles();
+  }, [session.id]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -175,8 +175,8 @@ export function VipCycleHistoryTab({ session, initialCycles = [], onRefresh }: P
                 </p>
               </div>
               <div className="pt-2">
-                <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30">
-                  حالة المرحلة: بانتظار اكتمال ربط محرك التشغيل الخلفي
+                <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
+                  محرك التشغيل الخلفي: متصل وجاهز للتوثيق الفوري
                 </Badge>
               </div>
             </div>
