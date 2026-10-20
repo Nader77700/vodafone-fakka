@@ -16,6 +16,7 @@ import {
   sendVipRemotePushNotification,
   requestVipNotificationPermission,
 } from '@/lib/vipBackgroundManager';
+import { vipRunnerService, VipRunnerState } from '@/lib/vipRunnerService';
 
 import { VipUnifiedMasterCard } from '@/components/vip/VipUnifiedMasterCard';
 import { VipAutoLoopCard } from '@/components/vip/VipAutoLoopCard';
@@ -60,6 +61,25 @@ export function VipDashboardTab({
 
   // Keep ref for auto loop cancel
   const stopRequestedRef = useRef(false);
+
+  // Subscribe to Persistent VIP Runner Service
+  useEffect(() => {
+    if (!session?.id) return;
+
+    const unsubscribe = vipRunnerService.subscribe(session.id, (state) => {
+      setLoopRunning(state.isRunning);
+      setLoopCycle(state.cycleCount);
+      setCurrentStep(state.currentStep);
+      setStepMessage(state.stepMessage);
+      if (state.logs && state.logs.length > 0) {
+        setTerminalLogs(state.logs);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [session?.id]);
 
   const appendLogs = (newLogs?: VipExecutionLog[]) => {
     if (!newLogs || newLogs.length === 0) return;
@@ -163,176 +183,26 @@ export function VipDashboardTab({
     );
   };
 
-  // 4. Auto Loop Controller: Executes full cycles sequentially with live SSE stream, Stepper & Network Resilience
+  // 4. Auto Loop Controller: Executes via Persistent Background Runner Service
   const handleStartAutoLoop = async (targetMix: number, delaySeconds: number) => {
     if (!session) return;
-    stopRequestedRef.current = false;
-    setLoopRunning(true);
-
-    // Request notification permission if not yet decided, and enable background execution
-    requestVipNotificationPermission().catch(() => {});
-    await enableVipBackgroundExecution();
-
-    addSingleLog(`==================================================`, 'info');
-    addSingleLog(
-      `=== بدء تشغيل الدورة التلقائية (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث) ===`,
-      'success'
-    );
-    addSingleLog(`[🛡️] تم تفعيل نظام الصمود أمام انقطاع الإنترنت اللحظي والتشغيل بالخلفية.`, 'info');
-
-    sendVipRemotePushNotification(
-      '🚀 بدأت دورة اتصالات VIP التلقائية',
-      `الهدف المستهدف: ${targetMix.toLocaleString('ar-EG')} ميكس. النظام يعمل بالخلفية.`
-    ).catch(() => {});
-
-    let cycleCount = loopCycle;
-    let consecutiveNetworkErrors = 0;
-    const MAX_NETWORK_RETRIES = 5;
-
-    while (!stopRequestedRef.current) {
-      cycleCount += 1;
-      setLoopCycle(cycleCount);
-      setCurrentStep('parking');
-      setStepMessage(`جاري تنفيذ الدورة #${cycleCount}...`);
-
-      try {
-        const res = await executeVipRunSingleCycleStream(session.id, {
-          onLog: (liveLog) => {
-            setTerminalLogs((prev) => [...prev, liveLog]);
-          },
-          onStep: (stepInfo) => {
-            setCurrentStep(stepInfo.step);
-            setStepMessage(stepInfo.detail || stepInfo.title);
-          },
-        });
-
-        if (!res.success) {
-          // Check if this failure is caused by transient network/stream disconnect
-          if (isNetworkGlitch(res.error) && consecutiveNetworkErrors < MAX_NETWORK_RETRIES) {
-            consecutiveNetworkErrors++;
-            addSingleLog(
-              `[🌐] انقطاع لحظي في الاتصال أثناء الدورة #${cycleCount}. جاري الصمود وإعادة الاتصال التلقائي (محاولة ${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES}) خلال 4 ثوانٍ...`,
-              'warn'
-            );
-            setStepMessage(`إعادة الاتصال التلقائي (${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES})...`);
-            await new Promise((r) => setTimeout(r, 4000));
-            // Check status silently to see if server finished the cycle on its own
-            try {
-              await handleCheckStatus(true);
-            } catch (_) {}
-            cycleCount -= 1; // Retry current cycle
-            continue;
-          }
-
-          addSingleLog(`[-] توقفت الدورة: ${res.error || 'حدث خطأ'}`, 'error');
-          if (res.safety_stop) {
-            toast.warning('⚠️ توقف أمان لحماية الميكسات: تم حفظ رصيدك عند الفرد.');
-            showVipNotification(
-              '⚠️ توقف أمان - حماية الميكسات',
-              'لم يؤكد السيرفر نزول الرصيد. تم إيقاف الدورة وميكساتك مركونة بأمان عند الفرد.'
-            );
-            sendVipRemotePushNotification(
-              '⚠️ توقف أمان - اتصالات VIP',
-              'تم إيقاف الدورة وميكساتك محفوظة بأمان عند الفرد.'
-            ).catch(() => {});
-          } else {
-            toast.error(res.error || 'توقفت الدورة التلقائية');
-            showVipNotification('❌ توقفت الدورة التلقائية', res.error || 'حدث خطأ أثناء تنفيذ الدورة');
-          }
-          break;
-        }
-
-        // Reset consecutive network errors on successful cycle
-        consecutiveNetworkErrors = 0;
-        onRefresh();
-
-        // Send local and remote push notifications on cycle success
-        showVipNotification(
-          `🎉 اكتملت الدورة #${cycleCount} بنجاح`,
-          `الرصيد الحالي للأونر: ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس`
-        );
-        sendVipRemotePushNotification(
-          `🎉 دورة #${cycleCount} اتصالات VIP مكتملة`,
-          `الرصيد وصل إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس`
-        ).catch(() => {});
-
-        if (res.target_reached) {
-          setCurrentStep('completed');
-          addSingleLog(
-            `[🎉] مبروك! تم الوصول للهدف بنجاح (${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس).`,
-            'success'
-          );
-          toast.success('تم الوصول لرصيد الميكسات المستهدف بنجاح!');
-          showVipNotification(
-            '🏆 تم الوصول للهدف بنجاح!',
-            `مبروك! وصل رصيد الأونر إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس.`
-          );
-          sendVipRemotePushNotification(
-            '🏆 تم تحقيق الهدف بنجاح!',
-            `مبروك! وصل رصيد الأونر إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس.`
-          ).catch(() => {});
-          break;
-        }
-
-        // Delay countdown between cycles
-        if (delaySeconds > 0 && !stopRequestedRef.current) {
-          setCurrentStep('cooldown');
-          addSingleLog(`[*] استراحة ${delaySeconds} ثانية قبل الدورة القادمة...`, 'info');
-          for (let sec = delaySeconds; sec > 0; sec--) {
-            if (stopRequestedRef.current) break;
-            setCountdownSeconds(sec);
-            setStepMessage(`استراحة الدورة القادمة (${sec}ث متبقية)...`);
-            await new Promise((r) => setTimeout(r, 1000));
-          }
-          setCountdownSeconds(null);
-        }
-      } catch (err: any) {
-        const errMsg = err?.message || String(err);
-        if (isNetworkGlitch(errMsg) && consecutiveNetworkErrors < MAX_NETWORK_RETRIES) {
-          consecutiveNetworkErrors++;
-          addSingleLog(
-            `[🌐] انقطاع بالإنترنت/الشبكة أثناء الدورة #${cycleCount}. جاري المحافظة على الدورة وإعادة المحاولة (${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES})...`,
-            'warn'
-          );
-          setStepMessage(`إعادة الاتصال بالإنترنت (${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES})...`);
-          await new Promise((r) => setTimeout(r, 4000));
-          cycleCount -= 1;
-          continue;
-        }
-
-        addSingleLog(`[-] خطأ في الدورة: ${errMsg}`, 'error');
-        toast.error('حدث خطأ في الدورة التلقائية');
-        showVipNotification('❌ خطأ في الدورة التلقائية', errMsg || 'تعذر استكمال الدورة');
-        break;
-      }
+    try {
+      await vipRunnerService.startLoop(session.id, targetMix, delaySeconds);
+      toast.success('تم تشغيل دورة اتصالات VIP التلقائية في الخلفية!');
+    } catch (err: any) {
+      toast.error('تعذر تشغيل الدورة: ' + (err?.message || ''));
     }
-
-    await disableVipBackgroundExecution();
-    setLoopRunning(false);
-    setCountdownSeconds(null);
-    setCurrentStep('idle');
-    setStepMessage(null);
-    addSingleLog(`[*] تم إيقاف الدورة التلقائية.`, 'info');
-    onRefresh();
   };
 
   const handleStopAutoLoop = async () => {
-    stopRequestedRef.current = true;
-    await disableVipBackgroundExecution();
-    setLoopRunning(false);
-    setCountdownSeconds(null);
-    setCurrentStep('idle');
-    setStepMessage('جاري الإيقاف...');
-    addSingleLog(`[!] تم طلب إيقاف الدورة التلقائية من قبل المستخدم.`, 'warn');
-    toast.info('جاري إيقاف الدورة التلقائية...');
+    if (!session) return;
+    try {
+      await vipRunnerService.stopLoop(session.id, 'طلب المستخدم');
+      toast.info('جاري إيقاف الدورة التلقائية...');
+    } catch (err: any) {
+      toast.error('تعذر إيقاف الدورة: ' + (err?.message || ''));
+    }
   };
-
-  // Clean up background lock on unmount
-  useEffect(() => {
-    return () => {
-      disableVipBackgroundExecution().catch(() => {});
-    };
-  }, []);
 
   if (!session) return null;
 

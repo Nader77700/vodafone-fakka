@@ -20,6 +20,7 @@ import {
   Lock,
   ChevronLeft,
   Code2,
+  Activity,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -45,6 +46,7 @@ import { VipCycleHistoryTab } from './VipCycleHistoryTab';
 import { VipSystemEligibilityTab } from './VipSystemEligibilityTab';
 import { VipOperationHistoryTab } from './VipOperationHistoryTab';
 import { VipBotScriptTab } from './VipBotScriptTab';
+import { VipDiagnosticsTab } from './VipDiagnosticsTab';
 
 export default function VipPage() {
   const navigate = useNavigate();
@@ -315,6 +317,11 @@ export default function VipPage() {
                   <span>سجل العمليات</span>
                 </TabsTrigger>
 
+                <TabsTrigger value="diagnostics" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
+                  <Activity className="w-3.5 h-3.5 text-primary" />
+                  <span>مراقبة وتشخيص السكريبت</span>
+                </TabsTrigger>
+
                 <TabsTrigger value="script" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
                   <Code2 className="w-3.5 h-3.5 text-primary" />
                   <span>الاسكريبت والجسر والأجهزة</span>
@@ -360,7 +367,16 @@ export default function VipPage() {
               />
             </TabsContent>
 
-            {/* Tab 5: Dynamic Script, Egypt Bridge & Device Fingerprints */}
+            {/* Tab 5: Script Diagnostics & Error Monitor */}
+            <TabsContent value="diagnostics" className="space-y-4 focus-visible:outline-none">
+              <VipDiagnosticsTab
+                activeSession={activeSession}
+                allSessions={sessions}
+                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
+              />
+            </TabsContent>
+
+            {/* Tab 6: Dynamic Script, Egypt Bridge & Device Fingerprints */}
             <TabsContent value="script" className="space-y-4 focus-visible:outline-none">
               <VipBotScriptTab />
             </TabsContent>
