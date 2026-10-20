@@ -13,6 +13,7 @@ import {
   enableVipBackgroundExecution,
   disableVipBackgroundExecution,
   showVipNotification,
+  sendVipRemotePushNotification,
   requestVipNotificationPermission,
 } from '@/lib/vipBackgroundManager';
 
@@ -145,7 +146,24 @@ export function VipDashboardTab({
     }
   };
 
-  // 4. Auto Loop Controller: Executes full cycles sequentially with live SSE stream & Stepper
+  // Helper to determine if an error is network/stream drop
+  const isNetworkGlitch = (errorText?: string | null) => {
+    if (!errorText) return false;
+    const txt = errorText.toLowerCase();
+    return (
+      txt.includes('fetch') ||
+      txt.includes('network') ||
+      txt.includes('abort') ||
+      txt.includes('timeout') ||
+      txt.includes('failed to fetch') ||
+      txt.includes('connection') ||
+      txt.includes('load failed') ||
+      txt.includes('stream') ||
+      txt.includes('offline')
+    );
+  };
+
+  // 4. Auto Loop Controller: Executes full cycles sequentially with live SSE stream, Stepper & Network Resilience
   const handleStartAutoLoop = async (targetMix: number, delaySeconds: number) => {
     if (!session) return;
     stopRequestedRef.current = false;
@@ -160,9 +178,16 @@ export function VipDashboardTab({
       `=== بدء تشغيل الدورة التلقائية (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث) ===`,
       'success'
     );
-    addSingleLog(`[🛡️] تم تفعيل حماية التنفيذ بالخلفية (Keep-Alive & WakeLock) وتجهيز إشعارات النظام.`, 'info');
+    addSingleLog(`[🛡️] تم تفعيل نظام الصمود أمام انقطاع الإنترنت اللحظي والتشغيل بالخلفية.`, 'info');
+
+    sendVipRemotePushNotification(
+      '🚀 بدأت دورة اتصالات VIP التلقائية',
+      `الهدف المستهدف: ${targetMix.toLocaleString('ar-EG')} ميكس. النظام يعمل بالخلفية.`
+    ).catch(() => {});
 
     let cycleCount = loopCycle;
+    let consecutiveNetworkErrors = 0;
+    const MAX_NETWORK_RETRIES = 5;
 
     while (!stopRequestedRef.current) {
       cycleCount += 1;
@@ -182,13 +207,34 @@ export function VipDashboardTab({
         });
 
         if (!res.success) {
+          // Check if this failure is caused by transient network/stream disconnect
+          if (isNetworkGlitch(res.error) && consecutiveNetworkErrors < MAX_NETWORK_RETRIES) {
+            consecutiveNetworkErrors++;
+            addSingleLog(
+              `[🌐] انقطاع لحظي في الاتصال أثناء الدورة #${cycleCount}. جاري الصمود وإعادة الاتصال التلقائي (محاولة ${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES}) خلال 4 ثوانٍ...`,
+              'warn'
+            );
+            setStepMessage(`إعادة الاتصال التلقائي (${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES})...`);
+            await new Promise((r) => setTimeout(r, 4000));
+            // Check status silently to see if server finished the cycle on its own
+            try {
+              await handleCheckStatus(true);
+            } catch (_) {}
+            cycleCount -= 1; // Retry current cycle
+            continue;
+          }
+
           addSingleLog(`[-] توقفت الدورة: ${res.error || 'حدث خطأ'}`, 'error');
           if (res.safety_stop) {
-            toast.warning('⚠️ توقف أمان لحماية الميكسات: لم يؤكد السيرفر الترحيل فتم إيقاف الاسترجاع وحفظ رصيدك عند الفرد.');
+            toast.warning('⚠️ توقف أمان لحماية الميكسات: تم حفظ رصيدك عند الفرد.');
             showVipNotification(
               '⚠️ توقف أمان - حماية الميكسات',
               'لم يؤكد السيرفر نزول الرصيد. تم إيقاف الدورة وميكساتك مركونة بأمان عند الفرد.'
             );
+            sendVipRemotePushNotification(
+              '⚠️ توقف أمان - اتصالات VIP',
+              'تم إيقاف الدورة وميكساتك محفوظة بأمان عند الفرد.'
+            ).catch(() => {});
           } else {
             toast.error(res.error || 'توقفت الدورة التلقائية');
             showVipNotification('❌ توقفت الدورة التلقائية', res.error || 'حدث خطأ أثناء تنفيذ الدورة');
@@ -196,13 +242,19 @@ export function VipDashboardTab({
           break;
         }
 
+        // Reset consecutive network errors on successful cycle
+        consecutiveNetworkErrors = 0;
         onRefresh();
 
-        // Send system notification on cycle success
+        // Send local and remote push notifications on cycle success
         showVipNotification(
           `🎉 اكتملت الدورة #${cycleCount} بنجاح`,
           `الرصيد الحالي للأونر: ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس`
         );
+        sendVipRemotePushNotification(
+          `🎉 دورة #${cycleCount} اتصالات VIP مكتملة`,
+          `الرصيد وصل إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس`
+        ).catch(() => {});
 
         if (res.target_reached) {
           setCurrentStep('completed');
@@ -215,6 +267,10 @@ export function VipDashboardTab({
             '🏆 تم الوصول للهدف بنجاح!',
             `مبروك! وصل رصيد الأونر إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس.`
           );
+          sendVipRemotePushNotification(
+            '🏆 تم تحقيق الهدف بنجاح!',
+            `مبروك! وصل رصيد الأونر إلى ${(res.final_mix || 0).toLocaleString('ar-EG')} ميكس.`
+          ).catch(() => {});
           break;
         }
 
@@ -231,9 +287,22 @@ export function VipDashboardTab({
           setCountdownSeconds(null);
         }
       } catch (err: any) {
-        addSingleLog(`[-] خطأ في الدورة: ${err?.message || err}`, 'error');
+        const errMsg = err?.message || String(err);
+        if (isNetworkGlitch(errMsg) && consecutiveNetworkErrors < MAX_NETWORK_RETRIES) {
+          consecutiveNetworkErrors++;
+          addSingleLog(
+            `[🌐] انقطاع بالإنترنت/الشبكة أثناء الدورة #${cycleCount}. جاري المحافظة على الدورة وإعادة المحاولة (${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES})...`,
+            'warn'
+          );
+          setStepMessage(`إعادة الاتصال بالإنترنت (${consecutiveNetworkErrors}/${MAX_NETWORK_RETRIES})...`);
+          await new Promise((r) => setTimeout(r, 4000));
+          cycleCount -= 1;
+          continue;
+        }
+
+        addSingleLog(`[-] خطأ في الدورة: ${errMsg}`, 'error');
         toast.error('حدث خطأ في الدورة التلقائية');
-        showVipNotification('❌ خطأ في الدورة التلقائية', err?.message || 'تعذر استكمال الدورة');
+        showVipNotification('❌ خطأ في الدورة التلقائية', errMsg || 'تعذر استكمال الدورة');
         break;
       }
     }
@@ -268,43 +337,51 @@ export function VipDashboardTab({
   if (!session) return null;
 
   return (
-    <div className="space-y-2.5 max-w-5xl mx-auto" dir="rtl">
-      {/* ── 1. Unified Master Card: «نظام أتمتة اتصالات» (Compact) ── */}
-      <VipUnifiedMasterCard
-        session={session}
-        onRefreshAll={() => handleCheckStatus(false)}
-        refreshing={checkingStatus || refreshing}
-        onAddChild={handleAddChild}
-        addingChild={addingChild}
-        onChangePlan={handleChangePlan}
-        changingPlan={changingPlan}
-      />
-
-      {/* ── 2. Simplified Auto Loop Controller (Compact) ── */}
-      <VipAutoLoopCard
-        session={session}
-        onStartLoop={handleStartAutoLoop}
-        onStopLoop={handleStopAutoLoop}
-        isRunning={loopRunning}
-        isPaused={false}
-        currentCycle={loopCycle}
-        countdownSeconds={countdownSeconds}
-        stepMessage={stepMessage}
-      />
-
-      {/* ── 3. Live 5-Step Visual Stepper (Matches Script Rules) ── */}
+    <div className="space-y-2 max-w-7xl mx-auto" dir="rtl">
+      {/* ── 1. Live 5-Step Compact Horizontal Pipeline Strip (Slim & Visible) ── */}
       <VipCycleStepper
         currentStep={currentStep}
         stepMessage={stepMessage}
         isRunning={loopRunning}
       />
 
-      {/* ── 4. Live EtisalatBot Terminal Logs (Streamed) ── */}
-      <VipTerminalLogs
-        logs={terminalLogs}
-        onClear={() => setTerminalLogs([])}
-        isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
-      />
+      {/* ── 2. Responsive Side-by-Side Horizontal Layout for Mobile & Desktop ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+        {/* Left Column (lg: 5 cols): Controls & Sessions Overview */}
+        <div className="lg:col-span-5 space-y-2">
+          {/* Master Info Card */}
+          <VipUnifiedMasterCard
+            session={session}
+            onRefreshAll={() => handleCheckStatus(false)}
+            refreshing={checkingStatus || refreshing}
+            onAddChild={handleAddChild}
+            addingChild={addingChild}
+            onChangePlan={handleChangePlan}
+            changingPlan={changingPlan}
+          />
+
+          {/* Auto Loop Controller */}
+          <VipAutoLoopCard
+            session={session}
+            onStartLoop={handleStartAutoLoop}
+            onStopLoop={handleStopAutoLoop}
+            isRunning={loopRunning}
+            isPaused={false}
+            currentCycle={loopCycle}
+            countdownSeconds={countdownSeconds}
+            stepMessage={stepMessage}
+          />
+        </div>
+
+        {/* Right Column (lg: 7 cols): Live EtisalatBot Terminal Console */}
+        <div className="lg:col-span-7">
+          <VipTerminalLogs
+            logs={terminalLogs}
+            onClear={() => setTerminalLogs([])}
+            isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
+          />
+        </div>
+      </div>
     </div>
   );
 }

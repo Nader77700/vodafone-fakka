@@ -442,11 +442,19 @@ class EtisalatVipBot:
 
         owner_plan_post = target_plan_id
 
-        # 7. Transfer Child to Owner
+        # 7. Transfer Child to Owner (Instant with pre-initialized session)
         print("-" * 40)
-        self.report_step(cycle_count, "تسجيل دخول الفرد واسترجاع الميكسات للأونر", "running")
-        self.http_session = requests.Session()
-        if not self.login(child_email, child_pass, silent=True):
+        self.report_step(cycle_count, "استرجاع لحظي فوري للميكسات من الفرد للأونر", "running")
+        child_session = requests.Session()
+        child_logged_in = False
+        for l_attempt in range(3):
+            self.http_session = child_session
+            if self.login(child_email, child_pass, silent=True):
+                child_logged_in = True
+                break
+            time.sleep(1)
+
+        if not child_logged_in:
             print("[-] فشل الدخول للفرد.")
             self.record_cycle(
                 cycle_count, started_at, datetime.now(timezone.utc),
@@ -459,10 +467,14 @@ class EtisalatVipBot:
         _, child_mix, _ = self.get_status_and_child(silent=True)
         print(f"[+] حالة الفرد | الميكسات: {child_mix:,}")
         transferred_to_owner = 0
-        if child_mix > 0:
-            if self.transfer_mix(self.owner_dial, child_mix, "Hekaya_XRP_MIX_Child_1"):
-                transferred_to_owner = child_mix
-                print(f"[+] تم استرجاع {child_mix:,} ميكس للأونر.")
+        if child_mix > 0 and self.owner_dial:
+            print(f"[⚡] جاري استرجاع فوري لـ ({child_mix:,}) ميكس للأونر ({self.owner_dial})...")
+            for t_attempt in range(3):
+                if self.transfer_mix(self.owner_dial, child_mix, "Hekaya_XRP_MIX_Child_1"):
+                    transferred_to_owner = child_mix
+                    print(f"[+] تم الاسترجاع اللحظي بنجاح! ({child_mix:,} ميكس)")
+                    break
+                time.sleep(1)
             else:
                 print("[-] فشل تحويل ميكسات الفرد! هيتم المحاولة في الدورة القادمة.")
 

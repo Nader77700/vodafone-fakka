@@ -1,9 +1,11 @@
 // ── VIP Background Execution & Notification Manager ──
-// Supports Screen WakeLock, Web Audio Keep-Alive for background execution, and System Notifications
+// Supports Screen WakeLock, Web Audio Keep-Alive for background execution, System Notifications, and Remote FCM Push
+import { supabase } from '@/db/supabase';
 
 let wakeLockSentinel: any = null;
 let audioContext: AudioContext | null = null;
 let audioInterval: any = null;
+let backgroundWorker: Worker | null = null;
 
 /**
  * Request notification permissions (Browser Notification API)
@@ -67,6 +69,42 @@ export function showVipNotification(
     }
   } catch (err) {
     console.warn('[VipBackground] showNotification failed:', err);
+  }
+}
+
+/**
+ * Send real FCM remote push notification to phone status bar via Edge Function
+ * Works even if browser / app is completely closed or screen is off (same as Vodafone Red)
+ */
+export async function sendVipRemotePushNotification(
+  title: string,
+  body: string,
+  priority: 'normal' | 'important' | 'urgent' = 'important'
+): Promise<boolean> {
+  try {
+    const { data: userAuth } = await supabase.auth.getUser();
+    const userId = userAuth?.user?.id;
+
+    const { error } = await supabase.functions.invoke('send-push-notification', {
+      body: {
+        title,
+        body,
+        priority,
+        action_url: '/vip?tab=dashboard',
+        user_id: userId || undefined,
+        is_global: !userId, // If no user auth, send to admin devices
+        send_push: true,
+      },
+    });
+
+    if (error) {
+      console.warn('[VipBackground] send-push-notification error:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[VipBackground] sendVipRemotePushNotification exception:', err);
+    return false;
   }
 }
 

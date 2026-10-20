@@ -80,11 +80,11 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
   const activeIndex = getStepIndex(currentStep);
 
   return (
-    <Card className="border border-border/70 bg-card/95 shadow-sm overflow-hidden" dir="rtl">
-      <CardContent className="p-2.5 sm:p-3">
-        {/* Header indicator */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
+    <Card className="border border-border/80 bg-card/95 shadow-xs overflow-hidden" dir="rtl">
+      <CardContent className="p-2 sm:p-2.5">
+        {/* Header indicator - Compact row */}
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="relative flex h-2 w-2">
               {isRunning && (
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -95,27 +95,27 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
                 }`}
               />
             </span>
-            <span className="text-xs font-bold text-foreground">
-              مسار الدورة اللحظي (Live Step Pipeline)
+            <span className="text-[11px] font-black text-foreground">
+              مسار الدورة (Live Pipeline)
             </span>
           </div>
 
           {stepMessage ? (
             <Badge
               variant="outline"
-              className="text-[10px] font-mono px-2 py-0 border-primary/30 text-primary bg-primary/5 max-w-[240px] truncate"
+              className="text-[9.5px] font-mono px-1.5 py-0 border-primary/30 text-primary bg-primary/5 max-w-[200px] sm:max-w-xs truncate"
             >
               {stepMessage}
             </Badge>
           ) : (
-            <span className="text-[10px] text-muted-foreground">
-              فحص نزول الميكسات مطبق تلقائياً كل ثانيتين
+            <span className="text-[9.5px] text-muted-foreground truncate">
+              فحص لحظي مستمر
             </span>
           )}
         </div>
 
-        {/* 5-Step Compact Pipeline */}
-        <div className="grid grid-cols-5 gap-1 sm:gap-2">
+        {/* 5-Step Compact Horizontal Strip */}
+        <div className="grid grid-cols-5 gap-1">
           {STEPS.map((step, idx) => {
             const isCompleted = activeIndex > idx;
             const isCurrent = activeIndex === idx && isRunning;
@@ -124,16 +124,16 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
             return (
               <div
                 key={step.key}
-                className={`relative flex flex-col items-center text-center p-1.5 sm:p-2 rounded-lg border transition-all ${
+                className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 p-1 sm:p-1.5 rounded-md border text-center transition-all ${
                   isCurrent
-                    ? 'border-emerald-500/60 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500/30'
+                    ? 'border-emerald-500 bg-emerald-500/15 shadow-xs ring-1 ring-emerald-500/40 text-emerald-400'
                     : isCompleted
-                    ? 'border-border/60 bg-muted/40 text-muted-foreground'
-                    : 'border-border/40 bg-muted/20 opacity-70'
+                    ? 'border-border/50 bg-muted/40 text-muted-foreground'
+                    : 'border-border/30 bg-muted/15 text-muted-foreground/60'
                 }`}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mb-1 transition-colors ${
+                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
                     isCurrent
                       ? 'bg-emerald-500 text-white animate-pulse'
                       : isCompleted
@@ -142,25 +142,19 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
                   }`}
                 >
                   {isCurrent ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
                   ) : isCompleted ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
                   ) : (
                     <span>{step.num}</span>
                   )}
                 </div>
 
-                <span
-                  className={`text-[10px] sm:text-xs font-bold leading-tight line-clamp-1 ${
-                    isCurrent ? 'text-emerald-400' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  {step.title}
-                </span>
-
-                <span className="hidden sm:block text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-1">
-                  {step.desc}
-                </span>
+                <div className="min-w-0 flex flex-col text-right">
+                  <span className={`text-[10px] leading-tight font-bold truncate ${isCurrent ? 'text-emerald-400' : 'text-foreground'}`}>
+                    {step.title}
+                  </span>
+                </div>
               </div>
             );
           })}

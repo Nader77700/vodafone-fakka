@@ -784,8 +784,24 @@ async function handleSingleCycleInternal(
   const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
   const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
 
-  // 3. STEP 1: Parking Mixes to Child (ركن الميكسات عند الفرد لحمايتها)
-  await sendStep("parking", 1, "ركن الميكسات عند الفرد", "نقل ميكسات الأونر فوراً للفرد لحمايتها قبل ترحيل النظام");
+  // 3. STEP 1: Parking Mixes to Child (ركن الميكسات عند الفرد وتدفئة جلسة الفرد مسبقاً)
+  await sendStep("parking", 1, "ركن الميكسات وتدفئة الفرد", "نقل ميكسات الأونر للفرد فوراً وتجهيز جلسة الفرد الساخنة");
+
+  // Pre-warm child session in memory so recovery happens in <200ms without login lag
+  let prewarmedChildEngine: EtisalatEngine | null = null;
+  if (childEmail && childPass) {
+    try {
+      prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig);
+      prewarmedChildEngine.onLog = (l) => engine.log(l.message, l.level);
+      const childLoggedIn = await prewarmedChildEngine.login(childEmail, childPass, false, true);
+      if (childLoggedIn) {
+        engine.log(`[⚡] تم تجهيز جلسة الفرد الساخنة مسبقاً بنجاح (جاهزة للاسترجاع اللحظي السريع).`, "info");
+      }
+    } catch (_e) {
+      engine.log(`[!] تنبيه: تعذر التدفئة المسبقة لجلسة الفرد، سيتم الدخول عند الحاجة.`, "warn");
+    }
+  }
+
   if (status.remainingMix > 0) {
     engine.log(`[*] جاري تحويل (${status.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${childNum} ...`, "info");
     const transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
@@ -803,14 +819,10 @@ async function handleSingleCycleInternal(
     }
   } else {
     engine.log(`[*] الأونر رصيده الحالي 0 ميكس. فحص وتأكيد رصيد الفرد...`, "info");
-    if (childEmail && childPass) {
-      const childEngine = new EtisalatEngine("child", bridgeConfig);
-      childEngine.onLog = (l) => engine.log(l.message, l.level);
-      if (await childEngine.login(childEmail, childPass, false, true)) {
-        const childStatus = await childEngine.getStatusAndChild(true);
-        if (childStatus.remainingMix > 0) {
-          engine.log(`[+] الفرد جاهز ولديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس مركونة بأمان.`, "success");
-        }
+    if (prewarmedChildEngine) {
+      const childStatus = await prewarmedChildEngine.getStatusAndChild(true);
+      if (childStatus.remainingMix > 0) {
+        engine.log(`[+] الفرد جاهز ولديه (${childStatus.remainingMix.toLocaleString('en-US')}) ميكس مركونة بأمان.`, "success");
       }
     }
   }
@@ -836,7 +848,7 @@ async function handleSingleCycleInternal(
     changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   }
 
-  // 5. STEP 3: Wait Server Confirmation with Active Periodic Reactivation
+  // 5. STEP 3: Wait Server Confirmation with Active Periodic Reactivation & Warm Child Token
   await sendStep("waiting_server", 3, "انتظار تحديث السيرفر", "فحص دوري كل ثانيتين لتأكيد ترحيل النظام مع تنشيط ذكي تلقائي");
   engine.log(`[*] في انتظار تحديث السيرفر واعتماد النظام الجديد ...`, "info");
 
@@ -856,7 +868,7 @@ async function handleSingleCycleInternal(
       serverConfirmed = true;
       confirmedNewMix = currentCheck.remainingMix;
       confirmedPlanId = currentCheck.planId;
-      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})! (الميكسات الحالية بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')}) - جاري الانتقال الفوري للاسترجاع...`, "success");
+      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})! (الميكسات الحالية بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')}) - جاري الانتقال اللحظي الفوري للاسترجاع...`, "success");
       break;
     }
 
@@ -875,7 +887,14 @@ async function handleSingleCycleInternal(
         await engine.login(ownerEmail, ownerPass, true, true);
       } catch (_e) {}
 
-      // 3. Re-send migration request to nudge operator queue
+      // 3. Keep child session warm too
+      if (prewarmedChildEngine && childEmail && childPass) {
+        try {
+          await prewarmedChildEngine.login(childEmail, childPass, false, true);
+        } catch (_e) {}
+      }
+
+      // 4. Re-send migration request to nudge operator queue
       try {
         await engine.changePlan(targetPlanId, ratePlanId);
         engine.log(`[+] تم إعادة إرسال طلب الترحيل إلى (${targetPlanDisplay}) بنجاح لتسريع استجابة السيرفر!`, "info");
@@ -898,41 +917,45 @@ async function handleSingleCycleInternal(
 
   // If server took too long and did not switch plan:
   // CRITICAL ZERO-LOSS RULE: NEVER abandon mixes at the child!
-  // We ALWAYS proceed to recover them back to the owner immediately to prevent wipeout.
   if (!serverConfirmed) {
     engine.log(`[!] تنبيه أمان ذكي: تأخر السيرفر في تأكيد الترحيل. لمنع أي تصفير لاحق للميكسات المركونة، جاري استرجاع الميكسات من الفرد إلى الأونر فوراً على النظام الحالي!`, "warn");
   }
 
-  // 6. STEP 4: Instant Recovery from Child to Owner (استرجاع فوري للميكسات بأقصى سرعة)
-  await sendStep("recovering", 4, "استرجاع فوري للميكسات", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً لحمايتها");
+  // 6. STEP 4: Instant Recovery from Child to Owner (استرجاع لحظي فوري بالجلسة الساخنة بدون أي تأخير)
+  await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً عبر الجلسة الساخنة");
   if (childEmail && childPass) {
-    engine.log(`[*] تسجيل الدخول للفرد واسترجاع الميكسات للأونر ...`, "info");
-    const childTransferEngine = new EtisalatEngine("child", bridgeConfig);
-    childTransferEngine.onLog = (l) => engine.log(l.message, l.level);
-    if (await childTransferEngine.login(childEmail, childPass, false, true)) {
-      const childSt = await childTransferEngine.getStatusAndChild(true);
-      engine.log(`[+] حالة الفرد | الميكسات المتاحة للاسترجاع: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
+    engine.log(`[⚡] بدء الاسترجاع اللحظي الفوري للميكسات من الفرد للأونر ...`, "info");
+    let activeChildEngine = prewarmedChildEngine;
+    if (!activeChildEngine || !activeChildEngine.authToken) {
+      activeChildEngine = new EtisalatEngine("child", bridgeConfig);
+      activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
+      await activeChildEngine.login(childEmail, childPass, false, true);
+    }
 
-      if (childSt.remainingMix > 0 && engine.ownerDial) {
-        engine.log(`[*] جاري تحويل (${childSt.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${engine.ownerDial} ...`, "info");
-        let retOk = false;
-        for (let t = 1; t <= 3; t++) {
-          retOk = await childTransferEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
-          if (retOk) {
-            engine.log(`[+] تم استرجاع الميكسات بنجاح إلى الأونر!`, "success");
-            break;
-          }
-          if (t < 3) {
-            engine.log(`[!] محاولة استرجاع أخرى (${t}/3)...`, "warn");
-            await sleep(2000);
-          }
+    const childSt = await activeChildEngine.getStatusAndChild(true);
+    engine.log(`[+] حالة الفرد | الميكسات المتاحة للاسترجاع: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
+
+    if (childSt.remainingMix > 0 && engine.ownerDial) {
+      engine.log(`[⚡] تحويل فوري (${childSt.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${engine.ownerDial} ...`, "info");
+      let retOk = false;
+      for (let t = 1; t <= 3; t++) {
+        retOk = await activeChildEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
+        if (retOk) {
+          engine.log(`[+] تم استرجاع الميكسات بنجاح إلى الأونر في زمن قياسي!`, "success");
+          break;
         }
-        if (!retOk) {
-          engine.log(`[!] تنبيه: فشل أمر استرجاع الميكسات من الفرد. الميكسات لا تزال محفوظة عند الفرد (${childSt.remainingMix.toLocaleString('en-US')}).`, "warn");
+        if (t < 3) {
+          engine.log(`[!] محاولة استرجاع أخرى (${t}/3)...`, "warn");
+          // Re-login on failure before retry
+          await activeChildEngine.login(childEmail, childPass, false, true);
+          await sleep(1000);
         }
-      } else if (childSt.remainingMix === 0) {
-        engine.log(`[*] رصيد الفرد 0 ميكس (تم الاسترجاع أو لا توجد ميكسات مركونة).`, "info");
       }
+      if (!retOk) {
+        engine.log(`[!] تنبيه: فشل أمر استرجاع الميكسات من الفرد. الميكسات لا تزال محفوظة عند الفرد (${childSt.remainingMix.toLocaleString('en-US')}).`, "warn");
+      }
+    } else if (childSt.remainingMix === 0) {
+      engine.log(`[*] رصيد الفرد 0 ميكس (تم الاسترجاع أو لا توجد ميكسات مركونة).`, "info");
     }
   }
 
