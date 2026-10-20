@@ -32,6 +32,9 @@ export interface VipRunnerState {
   consecutiveErrors: number;
   stopRequested: boolean;
   startedAt: string | null;
+  latestOwnerMix?: number;
+  latestChildMix?: number;
+  latestOwnerPlan?: string;
 }
 
 type RunnerListener = (state: VipRunnerState) => void;
@@ -300,12 +303,23 @@ class VipRunnerService {
       st.consecutiveErrors = 0;
       const ownerBal =
         cycleResult.final_mix ??
+        cycleResult.owner_mix_balance ??
         cycleResult.owner_final_mix ??
         cycleResult.data?.owner_mix_balance ??
         cycleResult.data?.final_mix ??
         0;
-      const childBal = cycleResult.data?.child_mix_balance ?? 0;
+      const childBal =
+        cycleResult.child_mix_balance ??
+        cycleResult.data?.child_mix_balance ??
+        0;
       const totalMix = ownerBal + childBal;
+
+      st.latestOwnerMix = ownerBal;
+      st.latestChildMix = childBal;
+      if (cycleResult.owner_plan || cycleResult.data?.owner_plan) {
+        st.latestOwnerPlan = cycleResult.owner_plan || cycleResult.data?.owner_plan;
+      }
+      this.notify(sessionId);
 
       this.addLog(
         sessionId,

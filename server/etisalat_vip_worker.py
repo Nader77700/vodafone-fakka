@@ -408,30 +408,77 @@ class EtisalatVipBot:
         print("-" * 40)
         self.report_step(cycle_count, "تحويل ميكسات الأونر للفرد", "running")
         transferred_to_child = 0
-        if post_renew_mix > 0:
-            if self.transfer_mix(child_num, post_renew_mix, owner_plan_name):
-                transferred_to_child = post_renew_mix
-                print(f"[+] تم تحويل {post_renew_mix:,} ميكس للفرد بنجاح.")
-            else:
-                print("[-] تنبيه أمان حاسم: فشل تحويل ميكسات الأونر للفرد! تم إلغاء تغيير النظام لحماية الرصيد.")
-                self.record_cycle(
-                    cycle_count, started_at, datetime.now(timezone.utc),
-                    owner_start_balance, owner_post_renewal, 0, 0, 0, owner_plan_name, None, 0,
-                    owner_start_balance, target_mix, "failed", "تحويل ميكسات الأونر للفرد", "فشل نقل الميكسات للفرد - تم إيقاف الدورة بأمان"
-                )
-                return False, "transfer_to_child_failed"
-        else:
-            # If owner is 0, check child to ensure mixes aren't stranded or lost
-            print("[*] رصيد الأونر 0 ميكس. جاري التحقق من رصيد الفرد قبل الترحيل...")
+
+        # Intelligent Zero-Loss Continuity Gate
+        is_suspiciously_low = owner_start_balance > 5000 and (post_renew_mix < owner_start_balance * 0.65)
+        child_holds_missing = False
+        child_current_mix = 0
+
+        if is_suspiciously_low:
+            print(f"[!] تنبيه رصد الرصيد الذكي: رصيد الأونر ({post_renew_mix:,}) أقل بكثير من المعتمد السابق ({owner_start_balance:,})!")
+            print("[*] بدء البحث الشامل عن الميكسات المتبقية عند الفرد ومزامنة السيرفر...")
             _, child_current_mix, _ = self.get_child_status(silent=True)
-            if owner_start_balance > 5000 and child_current_mix < (owner_start_balance * 0.7):
-                print(f"[-] تنبيه طوارئ: رصيد الأونر 0 بينما الرصيد السابق كان {owner_start_balance:,} ميكس والفرد لا يحمله ({child_current_mix:,})! تم إلغاء الترحيل لحماية الخط.")
+            if child_current_mix >= owner_start_balance * 0.65:
+                child_holds_missing = True
+                transferred_to_child = child_current_mix
+                print(f"[+] تم العثور على الميكسات ({child_current_mix:,}) محفوظة بأمان عند الفرد!")
+
+            if not child_holds_missing:
+                for r_att in range(1, 6):
+                    print(f"[*] إعادة فحص رصيد الأونر بالسيرفر (محاولة {r_att}/5)...")
+                    time.sleep(3.5)
+                    _, recheck_owner, _ = self.get_status_and_child(silent=True)
+                    if recheck_owner >= owner_start_balance * 0.65:
+                        post_renew_mix = recheck_owner
+                        print(f"[+] تم تأكيد رصيد الأونر بالسيرفر: {post_renew_mix:,} ميكس!")
+                        break
+                    _, recheck_child, _ = self.get_child_status(silent=True)
+                    if recheck_child >= owner_start_balance * 0.65:
+                        child_holds_missing = True
+                        child_current_mix = recheck_child
+                        transferred_to_child = child_current_mix
+                        print(f"[+] تم تأكيد وجود الميكسات بحساب الفرد: {child_current_mix:,} ميكس!")
+                        break
+
+            if child_holds_missing:
+                if post_renew_mix > 0:
+                    print(f"[*] ضم باقي رصيد الأونر ({post_renew_mix:,}) إلى الفرد...")
+                    if self.transfer_mix(child_num, post_renew_mix, owner_plan_name):
+                        transferred_to_child += post_renew_mix
+                        print(f"[+] تم ضم الرصيد للفرد بنجاح. الإجمالي المركون: {transferred_to_child:,} ميكس.")
+            elif post_renew_mix < owner_start_balance * 0.65:
+                print(f"[-] تنبيه طوارئ صارم: رصيد الأونر ({post_renew_mix:,}) أقل من السابق ({owner_start_balance:,}) والفرد لا يحمله ({child_current_mix:,})! تم إيقاف الترحيل لحماية الخط.")
                 self.record_cycle(
                     cycle_count, started_at, datetime.now(timezone.utc),
                     owner_start_balance, owner_post_renewal, 0, 0, child_current_mix, owner_plan_name, None, 0,
-                    owner_start_balance, target_mix, "failed", "فحص رصيد الأمان", "تم حظر الترحيل لمنع تصفير الرصيد"
+                    owner_start_balance, target_mix, "failed", "توقف أمان ذكي", "تم حظر الترحيل لمنع تصفير الرصيد"
                 )
-                return False, "safety_stop_unparked_mixes"
+                return False, "safety_stop_anomaly_detected"
+
+        if not child_holds_missing:
+            if post_renew_mix > 0:
+                if self.transfer_mix(child_num, post_renew_mix, owner_plan_name):
+                    transferred_to_child = post_renew_mix
+                    print(f"[+] تم تحويل {post_renew_mix:,} ميكس للفرد بنجاح.")
+                else:
+                    print("[-] تنبيه أمان حاسم: فشل تحويل ميكسات الأونر للفرد! تم إلغاء تغيير النظام لحماية الرصيد.")
+                    self.record_cycle(
+                        cycle_count, started_at, datetime.now(timezone.utc),
+                        owner_start_balance, owner_post_renewal, 0, 0, 0, owner_plan_name, None, 0,
+                        owner_start_balance, target_mix, "failed", "تحويل ميكسات الأونر للفرد", "فشل نقل الميكسات للفرد - تم إيقاف الدورة بأمان"
+                    )
+                    return False, "transfer_to_child_failed"
+            else:
+                print("[*] رصيد الأونر 0 ميكس. جاري التحقق من رصيد الفرد قبل الترحيل...")
+                _, child_current_mix, _ = self.get_child_status(silent=True)
+                if owner_start_balance > 5000 and child_current_mix < (owner_start_balance * 0.7):
+                    print(f"[-] تنبيه طوارئ: رصيد الأونر 0 بينما الرصيد السابق كان {owner_start_balance:,} ميكس والفرد لا يحمله ({child_current_mix:,})! تم إلغاء الترحيل لحماية الخط.")
+                    self.record_cycle(
+                        cycle_count, started_at, datetime.now(timezone.utc),
+                        owner_start_balance, owner_post_renewal, 0, 0, child_current_mix, owner_plan_name, None, 0,
+                        owner_start_balance, target_mix, "failed", "فحص رصيد الأمان", "تم حظر الترحيل لمنع تصفير الرصيد"
+                    )
+                    return False, "safety_stop_unparked_mixes"
 
         # 5. Change Plan
         print("-" * 40)

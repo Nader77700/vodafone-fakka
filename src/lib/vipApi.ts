@@ -320,6 +320,9 @@ export interface VipExecutionResponse {
   logs?: VipExecutionLog[];
   cycle_number?: number;
   final_mix?: number;
+  owner_mix_balance?: number;
+  child_mix_balance?: number;
+  owner_plan?: string;
   target_reached?: boolean;
   child_number?: string;
   current_plan?: string;
@@ -659,8 +662,19 @@ export async function invokeVipExecutorStream(
                 detail: parsed.detail,
               });
             } else if (parsed.type === 'complete') {
+              const safeFinalMix = parsed.final_mix ?? parsed.owner_mix_balance ?? parsed.owner_final_mix ?? 0;
               finalResult = {
+                success: true,
                 ...parsed,
+                final_mix: safeFinalMix,
+                owner_mix_balance: safeFinalMix,
+                child_mix_balance: parsed.child_mix_balance ?? 0,
+                data: {
+                  ...parsed,
+                  final_mix: safeFinalMix,
+                  owner_mix_balance: safeFinalMix,
+                  child_mix_balance: parsed.child_mix_balance ?? 0,
+                },
                 logs: parsed.logs || collectedLogs,
               };
               callbacks?.onComplete?.(finalResult);

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { VipDashboardData, VipSession } from '@/types/vip';
@@ -59,6 +59,12 @@ export function VipDashboardTab({
   const [currentStep, setCurrentStep] = useState<string>('idle');
   const [stepMessage, setStepMessage] = useState<string | null>(null);
 
+  // Live Real-Time Card Synchronizer
+  const [liveOwnerMix, setLiveOwnerMix] = useState<number | null>(null);
+  const [liveChildMix, setLiveChildMix] = useState<number | null>(null);
+  const [livePlan, setLivePlan] = useState<string | null>(null);
+  const lastCycleRef = useRef<number>(session?.current_cycle || 0);
+
   // Keep ref for auto loop cancel
   const stopRequestedRef = useRef(false);
 
@@ -74,12 +80,39 @@ export function VipDashboardTab({
       if (state.logs && state.logs.length > 0) {
         setTerminalLogs(state.logs);
       }
+      if (state.latestOwnerMix !== undefined) {
+        setLiveOwnerMix(state.latestOwnerMix);
+      }
+      if (state.latestChildMix !== undefined) {
+        setLiveChildMix(state.latestChildMix);
+      }
+      if (state.latestOwnerPlan) {
+        setLivePlan(state.latestOwnerPlan);
+      }
+
+      // Auto-refresh full session data when a cycle completes
+      if (state.cycleCount > lastCycleRef.current) {
+        lastCycleRef.current = state.cycleCount;
+        onRefresh();
+      }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [session?.id]);
+  }, [session?.id, onRefresh]);
+
+  // Unified Session with Live Real-time Statistics
+  const displaySession = useMemo(() => {
+    if (!session) return session;
+    return {
+      ...session,
+      owner_mix_balance: liveOwnerMix !== null ? liveOwnerMix : session.owner_mix_balance,
+      individual_mix_balance: liveChildMix !== null ? liveChildMix : session.individual_mix_balance,
+      owner_current_plan: livePlan || session.owner_current_plan,
+      current_cycle: Math.max(loopCycle, session.current_cycle || 0),
+    };
+  }, [session, liveOwnerMix, liveChildMix, livePlan, loopCycle]);
 
   const appendLogs = (newLogs?: VipExecutionLog[]) => {
     if (!newLogs || newLogs.length === 0) return;
@@ -221,7 +254,7 @@ export function VipDashboardTab({
         <div className="lg:col-span-5 space-y-2">
           {/* Master Info Card */}
           <VipUnifiedMasterCard
-            session={session}
+            session={displaySession}
             onRefreshAll={() => handleCheckStatus(false)}
             refreshing={checkingStatus || refreshing}
             onAddChild={handleAddChild}
@@ -232,7 +265,7 @@ export function VipDashboardTab({
 
           {/* Auto Loop Controller */}
           <VipAutoLoopCard
-            session={session}
+            session={displaySession}
             onStartLoop={handleStartAutoLoop}
             onStopLoop={handleStopAutoLoop}
             isRunning={loopRunning}
