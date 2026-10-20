@@ -910,33 +910,24 @@ async function handleSingleCycleInternal(
       break;
     }
 
-    // Active Smart Reactivation every 10 attempts if server hasn't switched yet
+    // Safe Keep-Alive every 10 attempts (~25 seconds) without disruptive telecom orders:
+    // Only refresh the authentication tokens so sessions don't expire during prolonged wait.
+    // NEVER send duplicate changePlan or renewBundleAction while migration is pending,
+    // as duplicate telecom orders cause Etisalat's billing engine to cancel orders or reset family quotas!
     if (attempt % 10 === 0 && attempt < 60) {
-      engine.log(`[*] تنشيط ذكي للسيرفر (محاولة ${attempt}/60): تجديد الجلسة وإعادة دفع طلب الترحيل لنظام (${targetPlanDisplay})...`, "info");
+      engine.log(`[*] الحفاظ على نشاط الجلسات بأمان (محاولة ${attempt}/60): تحديث توكن الأونر والفرد لمنع انتهاء الجلسة...`, "info");
 
-      // 1. Nudge renewal on current plan
-      try {
-        const renewCost = ownerPlanName.includes("7") ? "270" : "180";
-        await engine.renewBundleAction(ownerPlanName, renewCost);
-      } catch (_e) {}
-
-      // 2. Refresh owner login session
+      // 1. Refresh owner login session safely
       try {
         await engine.login(ownerEmail, ownerPass, true, true);
       } catch (_e) {}
 
-      // 3. Keep child session warm too
+      // 2. Keep child session warm too
       if (prewarmedChildEngine && childEmail && childPass) {
         try {
           await prewarmedChildEngine.login(childEmail, childPass, false, true);
         } catch (_e) {}
       }
-
-      // 4. Re-send migration request to nudge operator queue
-      try {
-        await engine.changePlan(targetPlanId, ratePlanId);
-        engine.log(`[+] تم إعادة إرسال طلب الترحيل إلى (${targetPlanDisplay}) بنجاح لتسريع استجابة السيرفر!`, "info");
-      } catch (_e) {}
     } else {
       if (attempt % 5 === 0 || attempt === 1) {
         engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/60)`, "info");
@@ -970,7 +961,23 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    const childSt = await activeChildEngine.getStatusAndChild(true);
+    let childSt = await activeChildEngine.getStatusAndChild(true);
+
+    // Safety check: If child remainingMix is surprisingly lower than parkedMixAmount,
+    // re-login once and re-fetch consumption to ensure it's not a temporary cache discrepancy
+    if (parkedMixAmount > 0 && childSt.remainingMix < parkedMixAmount * 0.7) {
+      engine.log(`[!] تنبيه فحص الرصيد: رصيد الفرد المسجل (${childSt.remainingMix.toLocaleString('en-US')}) يختلف عن المركون (${parkedMixAmount.toLocaleString('en-US')}). إعادة استعلام مؤكد عبر جلسة حديثة...`, "warn");
+      try {
+        await activeChildEngine.login(childEmail, childPass, false, true);
+        await sleep(1500);
+        const recheckChild = await activeChildEngine.getStatusAndChild(true);
+        if (recheckChild.remainingMix > childSt.remainingMix) {
+          childSt = recheckChild;
+          engine.log(`[+] تم تحديث رصيد الفرد بنجاح بعد إعادة الاستعلام: ${childSt.remainingMix.toLocaleString('en-US')} ميكس.`, "success");
+        }
+      } catch (_recheckErr) {}
+    }
+
     engine.log(`[+] حالة الفرد | الميكسات المتاحة للاسترجاع: ${childSt.remainingMix.toLocaleString('en-US')}`, "info");
 
     if (childSt.remainingMix > 0 && engine.ownerDial) {

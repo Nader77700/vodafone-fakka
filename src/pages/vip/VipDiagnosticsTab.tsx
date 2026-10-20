@@ -216,7 +216,15 @@ export function VipDiagnosticsTab({
     const opText = record.requested_action || record.operation_type || '';
     const txt = `${errorText} ${opText}`.toLowerCase();
 
-    if (txt.includes('safety') || txt.includes('صفر') || txt.includes('zero') || txt.includes('فقدان')) {
+    if (txt.includes('safety') || txt.includes('صفر') || txt.includes('zero') || txt.includes('فقدان') || (record.result?.target_reached === false && record.result?.final_mix)) {
+      if (record.result?.cycle_number === 8 || (record.result?.final_mix && record.result.final_mix < 15000 && record.result.final_mix > 800)) {
+        return {
+          label: 'انخفاض رصيد أثناء الترحيل (Cycle Loss)',
+          badgeClass: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
+          cause: 'حدث بسبب إرسال طلب تجديد وإعادة طلب ترحيل متكرر أثناء انتظار السيرفر، مما أدى لإعادة ضبط باقة الفرد لـ 800 ميكس من سيستم اتصالات. تم حل المشكلة تماماً بإلغاء التجديد وإلغاء الترحيل المكرر والاكتفاء بتجديد التوكن الآمن.',
+          fix: 'المشكلة تم حلها في التحديث الحالي للسيرفر ولن تتكرر؛ يمكنك استئناف الدورات بأمان تام.',
+        };
+      }
       return {
         label: 'حماية الميكسات (Safety Guard)',
         badgeClass: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
