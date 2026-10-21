@@ -86,7 +86,7 @@ export default function VipPage() {
   // 2. Load Sessions & Dashboard Data
   const loadSessionsAndData = async (preferredSessionId?: string, isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
-    else setLoadingData(true);
+    else if (!dashboardData) setLoadingData(true);
 
     try {
       // Step A: Load Sessions
@@ -120,10 +120,10 @@ export default function VipPage() {
     checkOwnerAuth();
   }, [checkOwnerAuth]);
 
-  // Switch Active Session with Full Data & State Isolation
+  // Switch Active Session with Full Data & State Isolation smoothly without page freeze
   const handleSelectSession = (newSessionId: string) => {
+    if (newSessionId === activeSessionId) return;
     setActiveSessionId(newSessionId);
-    setDashboardData(null); // Completely flush previous session's dashboard data
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('session', newSessionId);

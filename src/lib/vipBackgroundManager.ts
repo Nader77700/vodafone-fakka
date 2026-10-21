@@ -12,6 +12,24 @@ let silentAudioEl: HTMLAudioElement | null = null;
 const SILENT_WAV_BASE64 =
   'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
+// Active background session registry for strict multi-session isolation
+const activeBackgroundSessions = new Set<string>();
+
+// Auto re-acquire wake lock and resume audio when app becomes visible or screen turns on
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && activeBackgroundSessions.size > 0) {
+      acquireScreenWakeLock().catch(() => {});
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+      }
+      if (silentAudioEl && silentAudioEl.paused) {
+        silentAudioEl.play().catch(() => {});
+      }
+    }
+  });
+}
+
 /**
  * Start dedicated Web Worker ticker to bypass background tab throttling
  */
@@ -162,21 +180,39 @@ export function stopAudioKeepAlive() {
 }
 
 /**
- * Start full background execution protection
+ * Start full background execution protection for a specific session
  */
-export async function enableVipBackgroundExecution(): Promise<void> {
+export async function enableVipBackgroundExecution(sessionId?: string): Promise<void> {
+  if (sessionId) {
+    activeBackgroundSessions.add(sessionId);
+  }
   await acquireScreenWakeLock();
   startAudioKeepAlive();
   startWorkerKeepAlive();
 }
 
 /**
- * Disable background execution protection
+ * Disable background execution protection for a specific session.
+ * Protects other running sessions: will only release resources when NO sessions are running!
  */
-export async function disableVipBackgroundExecution(): Promise<void> {
+export async function disableVipBackgroundExecution(sessionId?: string): Promise<void> {
+  if (sessionId) {
+    activeBackgroundSessions.delete(sessionId);
+  }
+  // If other sessions are still running in the background, keep protection alive!
+  if (activeBackgroundSessions.size > 0) {
+    return;
+  }
   await releaseScreenWakeLock();
   stopAudioKeepAlive();
   stopWorkerKeepAlive();
+}
+
+/**
+ * Get count of active background sessions
+ */
+export function getActiveBackgroundSessionsCount(): number {
+  return activeBackgroundSessions.size;
 }
 export async function requestVipNotificationPermission(): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
