@@ -699,6 +699,87 @@ class EtisalatEngine {
       return false;
     }
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // MAB RELEASE & MINION (أهلا أقوى كارت) PROTOCOLS
+  // ══════════════════════════════════════════════════════════════════
+
+  async removeChildOrder(
+    childDial: string,
+    parentDial: string,
+    productName = "Hekaya_XRP_MIX_Parent_7"
+  ): Promise<{ success: boolean; orderId?: string; raw?: string }> {
+    const cleanChild = childDial.replace(/^(\+?20|0)/, "");
+    const cleanParent = parentDial.replace(/^(\+?20|0)/, "");
+    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>\n<removeChildSubmitOrder>\n  <childMsisdn>${cleanChild}</childMsisdn>\n  <parentMsisdn>${cleanParent}</parentMsisdn>\n  <productName>${productName}</productName>\n</removeChildSubmitOrder>`;
+    const urlPath = "/Saytar/rest/ee_new/removeChild";
+
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, xmlBody);
+    const headers = {
+      ...this.getBaseHeaders(),
+      "auth": `Bearer ${this.authToken}`,
+      "headerSignature": headerSig,
+      "urlSignature": urlSig,
+      "bodySignature": bodySig,
+    };
+
+    try {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
+        method: "POST",
+        headers,
+        body: xmlBody,
+      });
+      const text = await res.text();
+      const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+      const orderId = orderIdMatch ? orderIdMatch[1] : undefined;
+      const isSuccess = res.status === 200 && (
+        text.includes("<status>true</status>") ||
+        text.includes("<isSuccess>true</isSuccess>") ||
+        text.includes("<statusCode>0</statusCode>")
+      );
+      return { success: isSuccess, orderId, raw: text.slice(0, 200) };
+    } catch (err: any) {
+      return { success: false, raw: err?.message || String(err) };
+    }
+  }
+
+  async migrateToMinionOrder(
+    subscriberDial: string
+  ): Promise<{ success: boolean; orderId?: string; raw?: string }> {
+    const cleanSub = subscriberDial.replace(/^(\+?20|0)/, "");
+    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>\n<migrateRequest>\n  <addonName></addonName>\n  <oMSRatePlan>true</oMSRatePlan>\n  <productName>MINION</productName>\n  <ratePlanID></ratePlanID>\n  <subscriberNumber>${cleanSub}</subscriberNumber>\n</migrateRequest>`;
+    const urlPath = "/Saytar/rest/HekayaPartial/migrate";
+
+    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, xmlBody);
+    const headers = {
+      ...this.getBaseHeaders(),
+      "auth": `Bearer ${this.authToken}`,
+      "headerSignature": headerSig,
+      "urlSignature": urlSig,
+      "bodySignature": bodySig,
+    };
+
+    try {
+      const targetUrl = this.getRequestUrl(urlPath);
+      const res = await fetch(targetUrl, {
+        method: "POST",
+        headers,
+        body: xmlBody,
+      });
+      const text = await res.text();
+      const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+      const orderId = orderIdMatch ? orderIdMatch[1] : undefined;
+      const isSuccess = res.status === 200 && (
+        text.includes("<status>true</status>") ||
+        text.includes("<isSuccess>true</isSuccess>") ||
+        text.includes("<statusCode>0</statusCode>")
+      );
+      return { success: isSuccess, orderId, raw: text.slice(0, 200) };
+    } catch (err: any) {
+      return { success: false, raw: err?.message || String(err) };
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2431,6 +2512,300 @@ serve(async (req: Request) => {
         logs: engine.logs,
       }), {
         status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 10: execute_full_release_and_minion (إخراج الفرد المتكرر + تجديد الأونر + تحويل لأهلا أقوى كارت)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "execute_full_release_and_minion") {
+      engine.log(`[🚀] بدء تنفيذ سكريبت: إخراج الفرد المتكرر وفك الارتباط والتحويل لأهلا أقوى كارت (MINION)...`, "info");
+
+      // 1. Login to Owner
+      engine.log(`[*] الخطوة 1/5: تسجيل الدخول لحساب الأونر وقراءة بيانات الفرد والعائلة...`, "info");
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const st = await engine.getStatusAndChild(true);
+      const targetChild = body.child_number || st.childNumber || session.individual_account_identifier;
+      const parentDial = engine.ownerDial || session.owner_account_identifier;
+
+      if (!targetChild) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "لم يتم العثور على رقم الفرد المراد إخراجه من عائلة الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+      const cost = isSeven ? "270" : "180";
+
+      engine.log(`[+] بيانات الخطوط: الأونر (${parentDial}) | الفرد (${targetChild}) | باقة الأونر (${ownerPlanName})`, "info");
+
+      // 2. Initial 15 RemoveChild Iterations
+      const removeCountPhase1 = Number(body.phase1_count) || 15;
+      engine.log(`[*] الخطوة 2/5: إرسال أمر إخراج الفرد (${removeCountPhase1} مرة متتالية بفاصل زمني لفك التعليق بالسيرفر)...`, "info");
+      
+      const phase1Orders: string[] = [];
+      let phase1SuccessCount = 0;
+
+      for (let i = 1; i <= removeCountPhase1; i++) {
+        const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
+        if (res.success) {
+          phase1SuccessCount++;
+          if (res.orderId) phase1Orders.push(res.orderId);
+          engine.log(`[✓] أمر إخراج (${i}/${removeCountPhase1}): تم القبول بنجاح (orderId: ${res.orderId || "مكتمل"})`, "success");
+        } else {
+          engine.log(`[!] أمر إخراج (${i}/${removeCountPhase1}): رد الخادم (${res.raw || "فشل"})`, "warn");
+        }
+        await sleep(600);
+      }
+
+      // 3. 10 Seconds Wait
+      const waitCooldownSec = Number(body.cooldown_seconds) || 10;
+      engine.log(`[⏳] الخطوة 3/5: فترة التهدئة (${waitCooldownSec} ثوانٍ) لإتاحة الوقت لسيرفر اتصالات لتحديث قيود العقد...`, "info");
+      for (let sec = waitCooldownSec; sec > 0; sec--) {
+        await sleep(1000);
+      }
+
+      // 4. Renew Owner Bundle
+      engine.log(`[*] الخطوة 4/5: تجديد باقة الأونر (${engine.getPlanName(st.planId)}) لتحديث حالة العقد بالسيرفر...`, "info");
+      const renewOk = await engine.renewBundleAction(ownerPlanName, cost);
+      if (renewOk) {
+        engine.log(`[+] تم إرسال أمر تجديد باقة الأونر بنجاح!`, "success");
+      } else {
+        engine.log(`[!] رد تجديد الباقة (قد تكون مجددة بالفعل أو تم قبول الأمر جزئياً)`, "warn");
+      }
+      await sleep(2500);
+
+      // 5. Secondary 3 RemoveChild Iterations
+      const removeCountPhase2 = Number(body.phase2_count) || 3;
+      engine.log(`[*] تأكيد نهائي: إرسال أمر إخراج الفرد (${removeCountPhase2} مرات إضافية للتأكيد القاطع)...`, "info");
+      for (let i = 1; i <= removeCountPhase2; i++) {
+        const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
+        if (res.success) {
+          if (res.orderId) phase1Orders.push(res.orderId);
+          engine.log(`[✓] تأكيد إخراج (${i}/${removeCountPhase2}): تم بنجاح (orderId: ${res.orderId || "مكتمل"})`, "success");
+        }
+        await sleep(600);
+      }
+
+      // 6. Login to Child & Migrate to MINION (أهلا أقوى كارت)
+      engine.log(`[*] الخطوة 5/5: الدخول لحساب الفرد وتحويله لنظام أهلا أقوى كارت (MINION)...`, "info");
+      let minionSuccess = false;
+      const minionOrders: string[] = [];
+
+      if (childEmail && childPass) {
+        const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+        childEngine.onLog = (l) => engine.log(l.message, l.level);
+
+        if (await childEngine.login(childEmail, childPass, false, true)) {
+          const migrateTries = Number(body.migrate_count) || 4;
+          for (let m = 1; m <= migrateTries; m++) {
+            engine.log(`[*] إرسال طلب ترحيل لنظام MINION (محاولة ${m}/${migrateTries})...`, "info");
+            const mRes = await childEngine.migrateToMinionOrder(targetChild);
+            if (mRes.success) {
+              minionSuccess = true;
+              if (mRes.orderId) minionOrders.push(mRes.orderId);
+              engine.log(`[✓] تم قبول طلب الترحيل لنظام أهلا أقوى كارت (${m}/${migrateTries}) بنجاح! (orderId: ${mRes.orderId || "مقبول"})`, "success");
+            } else {
+              engine.log(`[!] طلب الترحيل (${m}/${migrateTries}): رد الخادم (${mRes.raw || "فشل"})`, "warn");
+            }
+            await sleep(1000);
+          }
+        } else {
+          engine.log(`[!] تعذر تسجيل الدخول المباشر لحساب الفرد. جاري إرسال طلب ترحيل MINION عبر توكن الأونر...`, "warn");
+          const mRes = await engine.migrateToMinionOrder(targetChild);
+          if (mRes.success) {
+            minionSuccess = true;
+            if (mRes.orderId) minionOrders.push(mRes.orderId);
+            engine.log(`[✓] تم إرسال طلب الترحيل لـ MINION: (orderId: ${mRes.orderId})`, "success");
+          }
+        }
+      } else {
+        // Fallback: send migrate from current session
+        const mRes = await engine.migrateToMinionOrder(targetChild);
+        if (mRes.success) {
+          minionSuccess = true;
+          if (mRes.orderId) minionOrders.push(mRes.orderId);
+          engine.log(`[✓] تم إرسال طلب الترحيل لـ MINION: (orderId: ${mRes.orderId})`, "success");
+        }
+      }
+
+      // 7. Verify status & record in Supabase
+      await sleep(2000);
+      const afterOwnerSt = await engine.getStatusAndChild(true);
+      const childStillExists = !!afterOwnerSt.childNumber && afterOwnerSt.childNumber.includes(targetChild.slice(-8));
+
+      if (!childStillExists) {
+        engine.log(`[🎉] تأكيد نهائي بالسيرفر: تم فك ارتباط الفرد (${targetChild}) وخروجه من عائلة الأونر بنجاح تام!`, "success");
+      } else {
+        engine.log(`[!] ملاحظة: تم إرسال جميع طلبات الإخراج (${phase1SuccessCount} أوامر مقبولة)، وفي انتظار معالجة السيرفر النهائية.`, "info");
+      }
+
+      try {
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "manual_action",
+          owner_account_ref: parentDial,
+          individual_account_ref: targetChild,
+          requested_action: `إخراج الفرد المتكرر (${phase1SuccessCount} أمر) + تجديد الأونر + تحويل لـ MINION`,
+          status: "succeeded",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          result: {
+            phase1_orders: phase1Orders,
+            minion_orders: minionOrders,
+            child_removed: !childStillExists,
+            minion_success: minionSuccess,
+          },
+          is_automatic: false,
+        });
+
+        await supabase.from("vip_sessions").update({
+          last_actual_operation: "full_release_and_minion",
+          individual_current_plan: minionSuccess ? "أهلا أقوى كارت (MINION)" : session.individual_current_plan,
+          relationship_status: !childStillExists ? "no_child_linked" : session.relationship_status,
+          updated_at: new Date().toISOString(),
+        }).eq("id", session_id);
+      } catch (_e) {}
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `اكتمل مسار إخراج الفرد وتحويله لأهلا أقوى كارت بنجاح!`,
+        child_removed: !childStillExists,
+        phase1_orders: phase1Orders,
+        minion_orders: minionOrders,
+        logs: engine.logs,
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 11: remove_child_multi (أمر إخراج الفرد المنفصل بتكرار محدد)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "remove_child_multi") {
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const st = await engine.getStatusAndChild(true);
+      const targetChild = body.child_number || st.childNumber || session.individual_account_identifier;
+      const parentDial = engine.ownerDial || session.owner_account_identifier;
+
+      if (!targetChild) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "لم يتم العثور على رقم الفرد المراد إخراجه.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const repeatCount = Math.min(Math.max(Number(body.count) || 15, 1), 30);
+      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+
+      engine.log(`[*] جاري تنفيذ أمر إخراج الفرد (${targetChild}) بتكرار ${repeatCount} مرة...`, "info");
+      const orders: string[] = [];
+      let successCount = 0;
+
+      for (let i = 1; i <= repeatCount; i++) {
+        const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
+        if (res.success) {
+          successCount++;
+          if (res.orderId) orders.push(res.orderId);
+          engine.log(`[✓] إخراج (${i}/${repeatCount}): تم القبول (orderId: ${res.orderId || "مكتمل"})`, "success");
+        } else {
+          engine.log(`[!] إخراج (${i}/${repeatCount}): رد السيرفر (${res.raw || "فشل"})`, "warn");
+        }
+        await sleep(500);
+      }
+
+      return new Response(JSON.stringify({
+        success: successCount > 0,
+        message: `تم تنفيذ ${successCount}/${repeatCount} أمر إخراج بنجاح!`,
+        orders,
+        logs: engine.logs,
+      }), {
+        status: successCount > 0 ? 200 : 400,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 12: migrate_child_to_minion (أمر تحويل الفرد لنظام MINION المنفصل)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "migrate_child_to_minion") {
+      const targetChild = body.child_number || session.individual_account_identifier;
+      if (!targetChild) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "رقم الفرد غير محدد لتحويله لأهلا أقوى كارت.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const repeatCount = Math.min(Math.max(Number(body.count) || 4, 1), 10);
+      engine.log(`[*] جاري تحويل رقم الفرد (${targetChild}) لنظام أهلا أقوى كارت (MINION) بتكرار ${repeatCount} مرات...`, "info");
+
+      let activeEngine: EtisalatEngine = engine;
+      if (childEmail && childPass) {
+        const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+        childEngine.onLog = (l) => engine.log(l.message, l.level);
+        if (await childEngine.login(childEmail, childPass, false, true)) {
+          activeEngine = childEngine;
+        } else {
+          await engine.login(ownerEmail, ownerPass, true);
+        }
+      } else {
+        await engine.login(ownerEmail, ownerPass, true);
+      }
+
+      const orders: string[] = [];
+      let successCount = 0;
+
+      for (let i = 1; i <= repeatCount; i++) {
+        const res = await activeEngine.migrateToMinionOrder(targetChild);
+        if (res.success) {
+          successCount++;
+          if (res.orderId) orders.push(res.orderId);
+          engine.log(`[✓] تحويل MINION (${i}/${repeatCount}): تم القبول (orderId: ${res.orderId || "مقبول"})`, "success");
+        } else {
+          engine.log(`[!] تحويل MINION (${i}/${repeatCount}): رد السيرفر (${res.raw || "فشل"})`, "warn");
+        }
+        await sleep(800);
+      }
+
+      if (successCount > 0) {
+        try {
+          await supabase.from("vip_sessions").update({
+            individual_current_plan: "أهلا أقوى كارت (MINION)",
+            updated_at: new Date().toISOString(),
+          }).eq("id", session_id);
+        } catch (_) {}
+      }
+
+      return new Response(JSON.stringify({
+        success: successCount > 0,
+        message: `تم إرسال ${successCount}/${repeatCount} طلب ترحيل لنظام أهلا أقوى كارت بنجاح!`,
+        orders,
+        logs: engine.logs,
+      }), {
+        status: successCount > 0 ? 200 : 400,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }

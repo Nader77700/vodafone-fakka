@@ -35,6 +35,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import type { VipDashboardData, VipSupportedSystem, VipSession } from '@/types/vip';
+import { VipReleaseAndMinionCard } from '@/components/vip/VipReleaseAndMinionCard';
 import {
   submitVipManualOperation,
   executeVipChangePlan,
@@ -141,6 +142,9 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
           محرك اتصالات المباشر: جاهز للتشغيل
         </Badge>
       </div>
+
+      {/* Release & MINION Script Suite */}
+      <VipReleaseAndMinionCard activeSession={session} onRefresh={onRefresh} />
 
       {/* Manual Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">

@@ -22,6 +22,8 @@ import {
   Download,
   AlertTriangle,
   RotateCcw,
+  UserMinus,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -35,7 +37,7 @@ import {
 } from '@/lib/vipApi';
 
 export function VipBotScriptTab() {
-  const [activeSubTab, setActiveSubTab] = useState<'script' | 'bridge' | 'devices'>('bridge');
+  const [activeSubTab, setActiveSubTab] = useState<'script' | 'bridge' | 'devices' | 'minion'>('bridge');
   
   // Bridge Config States
   const [bridgeConfig, setBridgeConfig] = useState<VipBridgeConfigData>({
@@ -248,18 +250,22 @@ export function VipBotScriptTab() {
 
       {/* Tabs Menu */}
       <Tabs value={activeSubTab} onValueChange={(val) => setActiveSubTab(val as any)} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-xl mx-auto h-9 bg-muted/60 p-1 rounded-xl">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl mx-auto h-auto sm:h-9 bg-muted/60 p-1 rounded-xl gap-1">
           <TabsTrigger value="bridge" className="text-xs gap-1.5 rounded-lg">
             <Globe2 className="w-3.5 h-3.5" />
-            <span>الجسر المحلي (Proxy Bridge)</span>
+            <span>الجسر المحلي (Proxy)</span>
           </TabsTrigger>
           <TabsTrigger value="devices" className="text-xs gap-1.5 rounded-lg">
             <Smartphone className="w-3.5 h-3.5" />
-            <span>بصمات الأجهزة المعزولة</span>
+            <span>بصمات الأجهزة</span>
           </TabsTrigger>
           <TabsTrigger value="script" className="text-xs gap-1.5 rounded-lg">
             <Code2 className="w-3.5 h-3.5" />
-            <span>محرر كود الاسكريبت</span>
+            <span>محرر الاسكريبت</span>
+          </TabsTrigger>
+          <TabsTrigger value="minion" className="text-xs gap-1.5 rounded-lg text-amber-500">
+            <UserMinus className="w-3.5 h-3.5" />
+            <span>إخراج الفرد و MINION</span>
           </TabsTrigger>
         </TabsList>
 
@@ -709,6 +715,120 @@ export function VipBotScriptTab() {
                   <Save className="w-3.5 h-3.5" />
                   {savingScript ? 'جاري الحفظ والتفعيل...' : 'حفظ وتفعيل هذا الاسكريبت على الخادم'}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ════════════════════════════════════════════════════════════════════ */}
+        {/* SUB-TAB 4: MAB REMOVE CHILD & MINION MIGRATION PROTOCOL */}
+        {/* ════════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="minion" className="space-y-4 pt-2">
+          <Card className="border border-amber-500/30 bg-card">
+            <CardHeader className="pb-3 border-b border-border/40 bg-amber-500/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <UserMinus className="w-4 h-4 text-amber-500" />
+                    توثيق وبروتوكول إخراج الفرد والتحويل لأهلا أقوى كارت (MINION Protocol)
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                    الترابط المعزول لطلبات MAB الرسمية لفك تعليق الخطوط وترحيلها لنظام أهلا أقوى كارت دون المساس بسكريبت التجميع الأساسي
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="border-amber-500/40 text-amber-500 text-xs">
+                  معزول ومستقل تماماً
+                </Badge>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 space-y-4 text-xs">
+              {/* Architecture Steps Notice */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5">
+                <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+                  <Badge className="bg-amber-500/20 text-amber-500 text-[10px] py-0 px-1.5">الخطوة 1</Badge>
+                  <div className="font-bold text-foreground text-[11px]">إخراج متكرر (15x)</div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    إرسال 15 طلب إخراج متتالي بفاصل زمني بسيط لفك تعليق الفرد في سيرفر اتصالات.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+                  <Badge className="bg-blue-500/20 text-blue-500 text-[10px] py-0 px-1.5">الخطوة 2</Badge>
+                  <div className="font-bold text-foreground text-[11px]">تهدئة (10 ثوانٍ)</div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    فترة انتظار كافية تتيح لأنظمة اتصالات وتحديث قيود العقد بالاستقرار.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+                  <Badge className="bg-primary/20 text-primary text-[10px] py-0 px-1.5">الخطوة 3</Badge>
+                  <div className="font-bold text-foreground text-[11px]">تجديد باقة الأونر</div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    تجديد فوري لباقة الأونر (حكاية ميكسات) لتثبيت دورة الخط الجديدة.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+                  <Badge className="bg-purple-500/20 text-purple-500 text-[10px] py-0 px-1.5">الخطوة 4</Badge>
+                  <div className="font-bold text-foreground text-[11px]">تأكيد إخراج (3x)</div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    3 طلبات إخراج إضافية لضمان إسقاط الخط نهائياً من عائلة الأونر.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+                  <Badge className="bg-emerald-500/20 text-emerald-500 text-[10px] py-0 px-1.5">الخطوة 5</Badge>
+                  <div className="font-bold text-foreground text-[11px]">ترحيل MINION (4x)</div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    تحويل الفرد إلى نظام أهلا أقوى كارت بتكرار 3 إلى 4 مرات متتالية.
+                  </p>
+                </div>
+              </div>
+
+              {/* Endpoints Details */}
+              <div className="space-y-3 pt-2">
+                <span className="font-bold text-foreground block">عناوين وحمولات الريكوستات (MAB Payloads):</span>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-[11px]">
+                  {/* removeChild */}
+                  <div className="p-3 rounded-xl border border-border bg-black/90 text-zinc-300 space-y-1.5 dir-ltr text-left">
+                    <div className="text-amber-400 font-bold">POST /Saytar/rest/ee_new/removeChild</div>
+                    <div className="text-zinc-500 text-[10px]">Content-Type: text/xml; charset=UTF-8</div>
+                    <pre className="text-zinc-300 text-[10px] whitespace-pre overflow-x-auto leading-relaxed">
+{`<?xml version="1.0" encoding="UTF-8"?>
+<removeChildSubmitOrder>
+  <childMsisdn>1140427996</childMsisdn>
+  <parentMsisdn>1222690535</parentMsisdn>
+  <productName>Hekaya_XRP_MIX_Parent_7</productName>
+</removeChildSubmitOrder>`}
+                    </pre>
+                  </div>
+
+                  {/* migrate to MINION */}
+                  <div className="p-3 rounded-xl border border-border bg-black/90 text-zinc-300 space-y-1.5 dir-ltr text-left">
+                    <div className="text-emerald-400 font-bold">POST /Saytar/rest/HekayaPartial/migrate</div>
+                    <div className="text-zinc-500 text-[10px]">Content-Type: text/xml; charset=UTF-8</div>
+                    <pre className="text-zinc-300 text-[10px] whitespace-pre overflow-x-auto leading-relaxed">
+{`<?xml version="1.0" encoding="UTF-8"?>
+<migrateRequest>
+  <addonName></addonName>
+  <oMSRatePlan>true</oMSRatePlan>
+  <productName>MINION</productName>
+  <ratePlanID></ratePlanID>
+  <subscriberNumber>1140427996</subscriberNumber>
+</migrateRequest>`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Information Note */}
+              <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 flex items-start gap-2 text-xs">
+                <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <p className="text-muted-foreground leading-relaxed">
+                  هذا الاسكريبت يعمل في كل جلسة من تبويب <strong className="text-foreground">«العمليات اليدوية»</strong> بشكل كامل بنقرة واحدة أو كخطوات مفردة، وهو معزول برمجياً بنسبة 100% عن سكريبت الدورات الأساسي للأونر، مما يحمي تجميع الميكسات والاستقرار التقني للروبوت.
+                </p>
               </div>
             </CardContent>
           </Card>

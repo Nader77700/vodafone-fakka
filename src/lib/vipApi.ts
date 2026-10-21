@@ -395,6 +395,9 @@ export interface VipExecutionResponse {
   bridge_url?: string;
   owner_ip?: string;
   child_ip?: string;
+  phase1_orders?: string[];
+  minion_orders?: string[];
+  child_removed?: boolean;
 }
 
 /**
@@ -792,3 +795,42 @@ export async function executeVipCheckStatusStream(
 ): Promise<VipExecutionResponse> {
   return invokeVipExecutorStream('check_status', { session_id: sessionId, ...credentials }, callbacks);
 }
+
+/**
+ * Action 10: Execute Full Sequence (15x removeChild -> wait 10s -> renewBundle -> 3x removeChild -> 4x migrateToMinion)
+ */
+export async function executeFullReleaseAndMinion(
+  sessionId: string,
+  options?: {
+    child_number?: string;
+    phase1_count?: number;
+    cooldown_seconds?: number;
+    phase2_count?: number;
+    migrate_count?: number;
+  }
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('execute_full_release_and_minion', { session_id: sessionId, ...options });
+}
+
+/**
+ * Action 11: Execute Multi-Remove Child from Owner Family (e.g. 15 times)
+ */
+export async function executeRemoveChildMulti(
+  sessionId: string,
+  count = 15,
+  childNumber?: string
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('remove_child_multi', { session_id: sessionId, count, child_number: childNumber });
+}
+
+/**
+ * Action 12: Execute Multi-Migrate to Ahlan Akwa Kart (MINION) (e.g. 4 times)
+ */
+export async function executeMigrateChildToMinion(
+  sessionId: string,
+  count = 4,
+  childNumber?: string
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('migrate_child_to_minion', { session_id: sessionId, count, child_number: childNumber });
+}
+
