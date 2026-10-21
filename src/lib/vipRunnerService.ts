@@ -265,9 +265,9 @@ class VipRunnerService {
     this.states.set(sessionId, state);
     this.notify(sessionId);
 
-    // Keep screen awake & background worker alive (isolated per session counter)
+    // Keep screen awake & background worker alive
     requestVipNotificationPermission().catch(() => {});
-    await enableVipBackgroundExecution(sessionId).catch(() => {});
+    await enableVipBackgroundExecution().catch(() => {});
 
     // Save active state to localStorage so it survives app minimize / restart
     try {
@@ -345,7 +345,7 @@ class VipRunnerService {
       `توقفت الأتمتة للجلسة: ${reason}`
     ).catch(() => {});
 
-    disableVipBackgroundExecution(sessionId);
+    disableVipBackgroundExecution();
   }
 
   /**
@@ -431,7 +431,7 @@ class VipRunnerService {
     return false;
   }
 
-  private isTransientError(errorText?: string | null): boolean {
+  private isNetworkGlitch(errorText?: string | null): boolean {
     if (!errorText) return false;
     const txt = errorText.toLowerCase();
     return (
@@ -443,18 +443,12 @@ class VipRunnerService {
       txt.includes('connection') ||
       txt.includes('load failed') ||
       txt.includes('stream') ||
-      txt.includes('offline') ||
-      txt.includes('تأخر سيرفر') ||
-      txt.includes('بطء سيرفر') ||
-      txt.includes('504') ||
-      txt.includes('502') ||
-      txt.includes('503') ||
-      txt.includes('gateway')
+      txt.includes('offline')
     );
   }
 
   private async executeLoop(sessionId: string) {
-    const MAX_NETWORK_RETRIES = 10;
+    const MAX_NETWORK_RETRIES = 5;
 
     while (true) {
       const state = this.states.get(sessionId);
@@ -516,18 +510,16 @@ class VipRunnerService {
       if (!st || st.stopRequested) break;
 
       if (!cycleResult.success) {
-        // If it's a transient server delay or network glitch AND NOT a hard safety stop, retry with progressive backoff!
-        if (!cycleResult.safety_stop && this.isTransientError(cycleResult.error) && st.consecutiveErrors < MAX_NETWORK_RETRIES) {
+        if (this.isNetworkGlitch(cycleResult.error) && st.consecutiveErrors < MAX_NETWORK_RETRIES) {
           st.consecutiveErrors++;
-          const retryDelaySec = Math.min(15, 3 + st.consecutiveErrors * 2);
           this.addLog(
             sessionId,
-            `[🌐] تأخر استجابة أو انقطاع مؤقت في الاتصال أثناء الدورة #${st.cycleCount}. جاري الصمود والمحاولة مجدداً تلقائياً (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES}) خلال ${retryDelaySec} ثوانٍ...`,
+            `[🌐] انقطاع مؤقت في الاتصال أثناء الدورة #${st.cycleCount}. جاري الصمود والمحاولة مجدداً (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES}) خلال 4 ثوانٍ...`,
             'warn'
           );
           st.stepMessage = `إعادة الاتصال التلقائي (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES})...`;
           this.notify(sessionId);
-          await new Promise((r) => setTimeout(r, retryDelaySec * 1000));
+          await new Promise((r) => setTimeout(r, 4000));
           try {
             await executeVipCheckStatus(sessionId);
           } catch (_) {}
@@ -630,7 +622,7 @@ class VipRunnerService {
           }).eq('id', sessionId);
         } catch (_) {}
 
-        disableVipBackgroundExecution(sessionId);
+        disableVipBackgroundExecution();
         break;
       }
 
@@ -665,7 +657,6 @@ class VipRunnerService {
       }
       this.notify(sessionId);
     }
-    disableVipBackgroundExecution(sessionId);
   }
 }
 

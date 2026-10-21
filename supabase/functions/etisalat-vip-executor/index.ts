@@ -572,17 +572,8 @@ class EtisalatEngine {
 
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
-    // Strictly format Egyptian MSISDN: 01xxxxxxxxx -> 201xxxxxxxxx, 1xxxxxxxxx -> 201xxxxxxxxx, 201xxxxxxxxx -> 201xxxxxxxxx
-    let cleanDial = toDial.replace(/\D/g, "");
-    if (cleanDial.startsWith("20")) {
-      // already full
-    } else if (cleanDial.startsWith("0")) {
-      cleanDial = "20" + cleanDial.substring(1);
-    } else {
-      cleanDial = "20" + cleanDial;
-    }
-    const target = cleanDial;
-    this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${toDial} (الوجهة: ${target}) ...`, "info");
+    const target = toDial.startsWith("0") ? "20" + toDial.substring(1) : toDial;
+    this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${toDial} ...`, "info");
 
     // Primary: Python bot endpoint (/Saytar/rest/services/newTransfer/v2)
     const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${this.currentDial}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target}</receiverMsisdn><senderMsisdn>${this.currentDial}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
@@ -1564,14 +1555,14 @@ async function handleSingleCycleInternal(
   // Reuse existing owner engine directly (no redundant login!)
   let finalStatus = await engine.getStatusAndChild(true);
 
-  // POST-RECOVERY VERIFICATION (التحقق الصارم من وصول الميكسات المسترجعة للأونر):
+  // POST-RECOVERY VERIFICATION:
   const minExpectedRecoveryBalance = recoveredMixAmount > 0 ? Math.round(recoveredMixAmount * 0.80) : 0;
 
   if (recoveredMixAmount > 0 && finalStatus.remainingMix < minExpectedRecoveryBalance) {
     engine.log(`[*] تم استرجاع (${recoveredMixAmount.toLocaleString('en-US')}) ميكس للأونر، وقراءة العداد الحالية (${finalStatus.remainingMix.toLocaleString('en-US')}) ميكس. فحص سريع لمزامنة العداد...`, "info");
     
-    for (let syncAttempt = 1; syncAttempt <= 4; syncAttempt++) {
-      await sleep(2000);
+    for (let syncAttempt = 1; syncAttempt <= 3; syncAttempt++) {
+      await sleep(1500);
       try {
         const recheckStatus = await engine.getStatusAndChild(true);
         if (recheckStatus.remainingMix >= minExpectedRecoveryBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
@@ -1581,77 +1572,31 @@ async function handleSingleCycleInternal(
         }
       } catch (_recheck) {}
     }
-  }
 
-  // Active check on actual child balance from server
-  let actualChildRemaining = 0;
-  if (prewarmedChildEngine) {
-    try {
-      await sleep(1500);
-      const childCheck = await prewarmedChildEngine.getStatusAndChild(true);
-      if (childCheck && childCheck.planId !== "غير معروف") {
-        actualChildRemaining = childCheck.remainingMix || 0;
-        engine.log(`[+] فحص رصيد الفرد الفعلي بالسيرفر: ${actualChildRemaining.toLocaleString('en-US')} ميكس متبقية (النظام: ${isSevenFinal ? "270 - حصة 1300" : "180 - حصة 800"}).`, "success");
-      }
-    } catch (_) {}
-  }
-
-  // ── STRICT ZERO-LOSS PROTECTION: الحظر القاطع لاعتماد رصيد أقل إذا كانت الميكسات لا تزال بحساب الفرد ──
-  const isSevenFinal = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");
-  const expectedChildQuota = isSevenFinal ? 1300 : 800;
-
-  if (actualChildRemaining > (expectedChildQuota + 1000) && activeChildEngine) {
-    engine.log(`[!] تنبيه الأمان الحاسم: الفرد لا يزال يحمل ميكسات مركونة لم تُسترجع (${actualChildRemaining.toLocaleString('en-US')} ميكس)! جاري إعادة محاولة الاسترجاع الفوري...`, "warn");
-    
-    for (let rescueAttempt = 1; rescueAttempt <= 3; rescueAttempt++) {
-      await sleep(2000);
-      const rescueOk = await activeChildEngine.transferMix(engine.ownerDial || session.owner_account_identifier, actualChildRemaining, "Hekaya_XRP_MIX_Child_1");
-      if (rescueOk) {
-        await sleep(2500);
-        const recheckFinal = await engine.getStatusAndChild(true);
-        if (recheckFinal.remainingMix > finalStatus.remainingMix) {
-          finalStatus = recheckFinal;
-          recoveredMixAmount = actualChildRemaining;
-          engine.log(`[+] نجحت إعادة الاسترجاع! ارتفع رصيد الأونر إلى: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
-          break;
-        }
-      }
-    }
-
-    // Re-inspect child
-    try {
-      const childRescueCheck = await prewarmedChildEngine!.getStatusAndChild(true);
-      actualChildRemaining = childRescueCheck.remainingMix || 0;
-    } catch (_) {}
-
-    // If child STILL holds the unrecovered balance, DO NOT adopt a lower balance!
-    if (actualChildRemaining > (expectedChildQuota + 1000)) {
-      engine.log(`[-] توقف أمان فوري: الميكسات (${actualChildRemaining.toLocaleString('en-US')} ميكس) محفوظة بأمان عند الفرد ولكن تعذر وصولها للأونر حالياً. تم حظر الدورة التالية وحفظ الرصيد لمنع أي تصفير أو انخفاض.`, "error");
-      
-      try {
-        await supabase.from("vip_sessions").update({
-          mixes_parked_at_child: true,
-          parked_amount: actualChildRemaining,
-          stop_reason: "الميكسات لا تزال محفوظة عند الفرد بأمان لمنع التصفير",
-          updated_at: new Date().toISOString(),
-        }).eq("id", session_id);
-      } catch (_) {}
-
-      return {
-        success: false,
-        safety_stop: true,
-        child_mix_balance: actualChildRemaining,
-        owner_mix_balance: finalStatus.remainingMix,
-        error: `تم إيقاف الأتمتة بأمان: الفرد لا يزال يحمل (${actualChildRemaining.toLocaleString('en-US')} ميكس). تم حظر اعتماد رصيد منخفض وحماية الميكسات بحساب الفرد.`,
-        logs: engine.logs,
-      };
+    if (finalStatus.remainingMix < minExpectedRecoveryBalance) {
+      engine.log(`[!] تنبيه الموازنة: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس). تم اعتماد هذا الرصيد الحقيقي كنقطة استمرار للدورات التالية لمنع تجميد الجلسة.`, "warn");
     }
   }
 
   const finalMix = finalStatus.remainingMix;
   const finalPlan = engine.getPlanName(finalStatus.planId);
   engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
-  engine.log(`[+] حالة النظام المعتمد: ${finalPlan} (حصة الفرد المخصصة تلقائياً: ${expectedChildQuota.toLocaleString('en-US')} ميكس).`, "info");
+
+  // Dynamic quota verification based on system: 270 gives 1,300 to child, 180 gives 800 to child
+  const isSevenFinal = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");
+  const expectedChildMix = isSevenFinal ? 1300 : 800;
+  engine.log(`[+] حالة النظام المعتمد: ${finalPlan} (حصة الفرد المخصصة تلقائياً: ${expectedChildMix.toLocaleString('en-US')} ميكس).`, "info");
+
+  // Active check on actual child balance from server
+  if (prewarmedChildEngine) {
+    try {
+      await sleep(1500);
+      const childCheck = await prewarmedChildEngine.getStatusAndChild(true);
+      if (childCheck && childCheck.planId !== "غير معروف") {
+        engine.log(`[+] فحص رصيد الفرد الفعلي بالسيرفر: ${childCheck.remainingMix.toLocaleString('en-US')} ميكس متبقية (النظام: ${isSevenFinal ? "270 - حصة 1300" : "180 - حصة 800"}).`, "success");
+      }
+    } catch (_) {}
+  }
 
   // Since serverConfirmed is guaranteed to be true here, proceed to cycle completion
   const newCycleCount = (session.current_cycle || 0) + 1;
