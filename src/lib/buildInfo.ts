@@ -4,14 +4,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '3.9.3',
-  versionCode:    539,
+  appVersion:      '3.9.4',
+  versionCode:    540,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v3_9_3_1792495067' + Date.now(),
-  bundleFile:     'VodafoneFakka-v3.9.3.apk',
-  bundleHash:     'apk_v3_9_3_code539',
-  apkHash:        'apk_v3_9_3_code539',
-  dbVersion:      'v3.9.3',
+  sourceHash:     'build_v3_9_4_1792565943' + Date.now(),
+  bundleFile:     'VodafoneFakka-v3.9.4.apk',
+  bundleHash:     'apk_v3_9_4_code540',
+  apkHash:        'apk_v3_9_4_code540',
+  dbVersion:      'v3.9.4',
   releaseNotes: [
     'v3.8.9: تبسيط فائق وشكل هادئ لمواعيد المحاسبة (7 و11 و25) بألوان نقية ومضغوطة لمنع اختفاء أو قص اسم التاجر',
     'v3.8.9: زر ترحيل موحد وبسيط (ترحيل) لترتيب المساحات وحذف التكرار، مع ترحيل فوري فردي لكل رقم في التجديدات',
