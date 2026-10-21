@@ -64,45 +64,75 @@ export function stopWorkerKeepAlive() {
 }
 
 /**
- * Start silent HTML5 Audio element + Web Audio keep-alive
- * Android foreground media playback prevents OS from freezing WebView when user switches to WhatsApp
+ * Start silent HTML5 Audio element + Web Audio keep-alive + MediaSession
+ * Android foreground media playback prevents OS from freezing WebView when user switches to WhatsApp or locks screen
  */
 export function startAudioKeepAlive() {
   try {
     if (typeof window === 'undefined') return;
 
-    // 1. HTML5 Audio Element Loop
+    // 1. Android MediaSession foreground registration
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: 'اتصالات VIP - الأتمتة المستمرة بالخلفية',
+          artist: 'Vodafone Fakka Premium',
+          album: 'خلفية نشطة بدون توقف',
+        });
+        navigator.mediaSession.playbackState = 'playing';
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (silentAudioEl) silentAudioEl.play().catch(() => {});
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          // Prevent external pause from halting automation
+          if (silentAudioEl) silentAudioEl.play().catch(() => {});
+        });
+      } catch (_) {}
+    }
+
+    // 2. HTML5 Audio Element Loop
     if (!silentAudioEl) {
       silentAudioEl = new Audio(SILENT_WAV_BASE64);
       silentAudioEl.loop = true;
-      silentAudioEl.volume = 0.01;
-      silentAudioEl.play().catch(() => {});
+      silentAudioEl.volume = 0.001;
+      (silentAudioEl as any).playsInline = true;
+      silentAudioEl.setAttribute('playsinline', 'true');
+      silentAudioEl.setAttribute('webkit-playsinline', 'true');
+      const playPromise = silentAudioEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Autoplay policy might block until first user click
+        });
+      }
     }
 
-    // 2. Web Audio Oscillator fallback
+    // 3. Web Audio Oscillator fallback for continuous audio stream
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioCtx) {
       if (!audioContext) {
         audioContext = new AudioCtx();
       }
       if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().catch(() => {});
       }
 
       if (!audioInterval) {
         audioInterval = setInterval(() => {
           try {
             if (!audioContext) return;
+            if (audioContext.state === 'suspended') {
+              audioContext.resume().catch(() => {});
+            }
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
-            gain.gain.value = 0.001;
+            gain.gain.value = 0.0001; // inaudible
             osc.connect(gain);
             gain.connect(audioContext.destination);
-            osc.frequency.setValueAtTime(200, audioContext.currentTime);
+            osc.frequency.setValueAtTime(100, audioContext.currentTime);
             osc.start();
             osc.stop(audioContext.currentTime + 0.1);
           } catch (_) {}
-        }, 10000);
+        }, 5000);
       }
     }
   } catch (err) {

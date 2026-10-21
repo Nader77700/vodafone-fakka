@@ -1059,18 +1059,60 @@ async function handleSingleCycleInternal(
       if (transferred) {
         parkedMixAmount = status.remainingMix;
         
-        // VERIFY CHILD HAS RECEIVED PARKED MIXES BEFORE PLAN CHANGE:
+        // ── MANDATORY TELECOM ZERO-LOSS VERIFICATION ──
+        // Transferred mixes take 5 to 15 seconds to propagate across Etisalat billing nodes.
+        // NEVER accept a tiny residual bucket (e.g. 1,300 leftover mixes) on an immediate 1-second check!
+        // We MUST wait and verify that the actual transferred amount (or at least 70% of it) has arrived.
         if (prewarmedChildEngine) {
-          engine.log(`[*] التحقق من استقرار الميكسات المركونة (${parkedMixAmount.toLocaleString('en-US')}) في حساب الفرد...`, "info");
-          for (let vAttempt = 1; vAttempt <= 5; vAttempt++) {
-            await sleep(1500);
+          const expectedMinChildMix = parkedMixAmount > 3000 ? Math.round(parkedMixAmount * 0.70) : 1;
+          engine.log(`[*] تم إرسال أمر النقل. جاري انتظار استقرار وصول الميكسات (${parkedMixAmount.toLocaleString('en-US')}) في حساب الفرد بسيرفر اتصالات...`, "info");
+          
+          // Initial grace period: Give Etisalat billing engine 5 full seconds before first query
+          await sleep(5000);
+
+          let childArrived = false;
+          let latestChildReadMix = 0;
+
+          for (let vAttempt = 1; vAttempt <= 8; vAttempt++) {
             try {
+              // On attempt 3 and 6, do a fresh login to clear cached tokens and query fresh telecom balance
+              if (vAttempt === 3 || vAttempt === 6) {
+                await prewarmedChildEngine.login(childEmail, childPass, false, true);
+              }
               const childVerify = await prewarmedChildEngine.getStatusAndChild(true);
-              if (childVerify.remainingMix && (childVerify.remainingMix >= parkedMixAmount * 0.7 || childVerify.remainingMix > 0)) {
-                engine.log(`[✓] تأكيد مؤكد: الميكسات (${childVerify.remainingMix.toLocaleString('en-US')}) استقرت بأمان تام في حساب الفرد.`, "success");
+              latestChildReadMix = childVerify.remainingMix || 0;
+
+              // Check if the transferred quota has verifiably arrived
+              if (latestChildReadMix >= expectedMinChildMix) {
+                engine.log(`[✓] تأكيد قطعي: الميكسات المحولة (${latestChildReadMix.toLocaleString('en-US')} ميكس) استقرت بأمان تام في حساب الفرد!`, "success");
+                childArrived = true;
                 break;
+              } else {
+                engine.log(`[*] فحص رصيد الفرد (${vAttempt}/8): الرصيد الحالي (${latestChildReadMix.toLocaleString('en-US')} ميكس) - في انتظار اكتمال ترحيل (${parkedMixAmount.toLocaleString('en-US')} ميكس)...`, "info");
               }
             } catch (_vErr) {}
+
+            await sleep(3000);
+          }
+
+          if (!childArrived) {
+            engine.log(`[-] تحذير أمان صارم: لم يؤكد سيرفر اتصالات استقرار الميكسات المحولة (${parkedMixAmount.toLocaleString('en-US')}) عند الفرد بعد 8 محاولات (الرصيد المقروء: ${latestChildReadMix.toLocaleString('en-US')} فقط).`, "error");
+            engine.log(`[-] تم حظر وإلغاء ترحيل باقة الأونر فوراً لحماية رصيدك من التصفير والضياع.`, "error");
+            await sendStep("safety_stop", 1, "حظر ترحيل الباقة - الميكسات لم تصل للفرد", "تم حظر تغيير الباقة لعدم تأكيد وصول الرصيد المنقول لحساب الفرد");
+
+            // Attempt safe rollback recovery
+            if (latestChildReadMix > 0) {
+              try {
+                await prewarmedChildEngine.transferMix(engine.ownerDial, latestChildReadMix, "Hekaya_XRP_MIX_Child_1");
+              } catch (_) {}
+            }
+
+            return {
+              success: false,
+              safety_stop: true,
+              error: `توقف أمان لحماية الميكسات: لم تصل الميكسات المحولة (${parkedMixAmount.toLocaleString('en-US')}) لحساب الفرد (الرصيد ${latestChildReadMix.toLocaleString('en-US')}). تم منع تغيير الباقة لحفظ رصيدك.`,
+              logs: engine.logs,
+            };
           }
         }
       } else {

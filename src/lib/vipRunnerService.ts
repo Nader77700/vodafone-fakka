@@ -626,16 +626,23 @@ class VipRunnerService {
         break;
       }
 
-      // Delay between cycles
+      // Delay between cycles - ABSOLUTE TIMESTAMP BASED (صمود كامل ضد تجميد الخلفية وقفل الشاشة)
       const waitSec = Math.max(st.delaySeconds || 20, 5);
       this.addLog(sessionId, `[⏳] فترة الانتظار بين الدورات: ${waitSec} ثانية...`, 'info');
       st.currentStep = 'waiting';
-      for (let sec = waitSec; sec > 0; sec--) {
+      const targetEndTime = Date.now() + waitSec * 1000;
+
+      while (Date.now() < targetEndTime) {
         const cur = this.states.get(sessionId);
         if (!cur || cur.stopRequested) break;
-        st.stepMessage = `الانتظار للدورة القادمة (${sec} ثانية متبقية)...`;
+
+        const remainingSec = Math.max(0, Math.ceil((targetEndTime - Date.now()) / 1000));
+        st.stepMessage = `الانتظار للدورة القادمة (${remainingSec} ثانية متبقية)...`;
         this.notify(sessionId);
-        await new Promise((r) => setTimeout(r, 1000));
+
+        // Sleep in small increments up to 1000ms
+        const sleepMs = Math.min(1000, Math.max(100, targetEndTime - Date.now()));
+        await new Promise((r) => setTimeout(r, sleepMs));
       }
     }
 

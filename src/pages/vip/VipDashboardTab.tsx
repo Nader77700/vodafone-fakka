@@ -164,6 +164,10 @@ export function VipDashboardTab({
     // Handle return from background (e.g., coming back from WhatsApp)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
+        // If runner is ALREADY executing continuously in background, do NOT interrupt or restart it!
+        if (vipRunnerService.isRunning(session.id)) {
+          return;
+        }
         if (!isCompleted && session.automation_enabled && session.operation_state === 'running') {
           vipRunnerService.resumeLoopIfActive(
             session.id,
