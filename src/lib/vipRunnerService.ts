@@ -359,6 +359,17 @@ class VipRunnerService {
     const existing = this.getState(sessionId);
     if (existing.isRunning) return true;
 
+    // Check if user has already completed target or marked stopped
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const completedMark = window.localStorage.getItem(`vip_target_completed_${sessionId}`);
+        if (completedMark) {
+          // Do not resume completed sessions
+          return false;
+        }
+      }
+    } catch (_) {}
+
     let savedLoop: any = null;
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -540,22 +551,49 @@ class VipRunnerService {
       if (st.targetMix > 0 && totalMix >= st.targetMix) {
         this.addLog(
           sessionId,
-          `🎯 مبروك! تم الوصول إلى رصيد الميكسات المستهدف (${totalMix.toLocaleString('ar-EG')} >= ${st.targetMix.toLocaleString('ar-EG')})!`,
+          `🎯 مبروك! تم اكتمال العملية والوصول إلى الحد الأقصى للميكسات المستهدفة (${totalMix.toLocaleString('ar-EG')} >= ${st.targetMix.toLocaleString('ar-EG')})!`,
           'success'
         );
+        this.addLog(
+          sessionId,
+          `🔒 تم إيقاف الدورة التلقائية نهائياً. لا يمكن إعادة تشغيلها إلا بتأكيد يدوي مباشر من المالك لمنع الاستهلاك غير المقصود.`,
+          'info'
+        );
         showVipNotification(
-          '🎯 تم الوصول للهدف المستهدف بنجاح!',
-          `رصيد الميكسات الآن: ${totalMix.toLocaleString('ar-EG')} ميكس.`,
+          '🎯 تم اكتمال الهدف بنجاح وإيقاف الأتمتة!',
+          `وصل رصيد الميكسات إلى ${totalMix.toLocaleString('ar-EG')} ميكس. العملية مكتملة تماماً.`,
           { priority: 'high' }
         );
         sendVipRemotePushNotification(
           '🎯 اكتمل الهدف بنجاح!',
-          `وصل رصيد الجلسة إلى ${totalMix.toLocaleString('ar-EG')} ميكس!`
+          `وصل رصيد الجلسة إلى ${totalMix.toLocaleString('ar-EG')} ميكس وتم إيقاف الأتمتة!`
         ).catch(() => {});
+
         st.isRunning = false;
         st.currentStep = 'completed';
-        st.stepMessage = `تم الوصول للهدف (${totalMix.toLocaleString('ar-EG')} ميكس)!`;
+        st.stepMessage = `تم الوصول للهدف (${totalMix.toLocaleString('ar-EG')} ميكس) واكتمال العملية!`;
         this.notify(sessionId);
+
+        // Strictly remove from localStorage and mark completed flag
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
+            window.localStorage.setItem(`vip_target_completed_${sessionId}`, String(Date.now()));
+          }
+        } catch (_) {}
+
+        // Persist strictly to Supabase so it NEVER auto-restarts on any tab focus or refresh
+        try {
+          await supabase.from('vip_sessions').update({
+            automation_enabled: false,
+            operation_state: 'completed',
+            pause_reason: `تم اكتمال العملية والوصول للحد المستهدف (${totalMix.toLocaleString('en-US')} ميكس)`,
+            current_step: 'completed',
+            updated_at: new Date().toISOString(),
+          }).eq('id', sessionId);
+        } catch (_) {}
+
+        disableVipBackgroundExecution();
         break;
       }
 

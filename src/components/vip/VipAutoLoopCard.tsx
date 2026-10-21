@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+import {
   Play,
   Pause,
   Square,
@@ -19,6 +29,7 @@ import {
   Bell,
   BellRing,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import {
@@ -89,8 +100,35 @@ export function VipAutoLoopCard({
   const progressPercent = selectedTarget > 0 ? Math.min(100, Math.round((currentMix / selectedTarget) * 100)) : 0;
   const isTargetReached = currentMix >= selectedTarget && currentMix > 0;
 
-  const handleStart = () => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const handleStartClick = () => {
+    // If target was already reached, strictly require explicit manual confirmation
+    if (
+      isTargetReached ||
+      session.operation_state === 'completed' ||
+      session.current_step === 'completed'
+    ) {
+      setShowConfirmModal(true);
+      return;
+    }
     onStartLoop(selectedTarget, cycleDelay);
+  };
+
+  const handleConfirmResume = (increaseTarget = false) => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(`vip_target_completed_${session.id}`);
+      }
+    } catch (_) {}
+
+    const targetToRun = increaseTarget ? selectedTarget + 50000 : selectedTarget;
+    if (increaseTarget) {
+      setCustomTarget(String(targetToRun));
+      setTargetPreset('custom');
+    }
+    setShowConfirmModal(false);
+    onStartLoop(targetToRun, cycleDelay);
   };
 
   return (
@@ -154,7 +192,7 @@ export function VipAutoLoopCard({
           ) : (
             <Button
               size="sm"
-              onClick={handleStart}
+              onClick={handleStartClick}
               className="h-7 text-xs px-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 font-bold shadow"
             >
               <Play className="w-3 h-3 fill-current" />
@@ -262,6 +300,55 @@ export function VipAutoLoopCard({
           </div>
         </div>
       </CardContent>
+
+      {/* Explicit Manual Confirmation Modal When Target is Already Reached */}
+      <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] md:max-w-lg" dir="rtl">
+          <AlertDialogHeader className="text-right">
+            <AlertDialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              تأكيد استئناف الأتمتة (تم الوصول للهدف سابقاً)
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed pt-2">
+              لقد وصل رصيد الجلسة بالفعل إلى الحد المستهدف الحالي ({selectedTarget.toLocaleString('ar-EG')} ميكس).
+              لحماية رصيدك وحصص الباقات ومنع أي استهلاك تلقائي غير مقصود، لن تبدأ الدورات إلا بتأكيدك اليدوي الصريح كمالك للنظام.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="p-3 my-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs space-y-1">
+            <div className="flex items-center justify-between font-bold text-foreground">
+              <span>الرصيد الفعلي الحالي:</span>
+              <span className="font-mono text-primary">{currentMix.toLocaleString('ar-EG')} ميكس</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>الهدف المضبوط:</span>
+              <span className="font-mono">{selectedTarget.toLocaleString('ar-EG')} ميكس</span>
+            </div>
+          </div>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+            <AlertDialogCancel
+              onClick={() => setShowConfirmModal(false)}
+              className="text-xs h-8"
+            >
+              إلغاء الأمر
+            </AlertDialogCancel>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleConfirmResume(false)}
+              className="text-xs h-8 font-medium border-border"
+            >
+              المتابعة بنفس الهدف
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleConfirmResume(true)}
+              className="text-xs h-8 font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              رفع الهدف (+50,000) وبدء العمل
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

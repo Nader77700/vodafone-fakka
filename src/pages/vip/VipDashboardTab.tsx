@@ -139,29 +139,31 @@ export function VipDashboardTab({
     });
 
     // Check if session was active before leaving (or if automation is enabled in DB) and resume seamlessly
-    if (session.automation_enabled && !vipRunnerService.isRunning(session.id)) {
+    // Strictly guard: never resume if session is already completed or stopped or target reached!
+    const isCompleted =
+      session.operation_state === 'completed' ||
+      session.current_step === 'completed' ||
+      ((session.owner_mix_balance || 0) >= (session.target_mix_balance || 50000) &&
+        (session.owner_mix_balance || 0) > 0);
+
+    if (session.automation_enabled && !isCompleted && !vipRunnerService.isRunning(session.id)) {
       vipRunnerService.resumeLoopIfActive(
         session.id,
         session.target_mix_balance || 100000,
         session.cycle_delay_seconds || 20
-      );
-    } else {
-      vipRunnerService.resumeLoopIfActive(
-        session.id,
-        session.target_mix_balance,
-        session.cycle_delay_seconds
       );
     }
 
     // Handle return from background (e.g., coming back from WhatsApp)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
-        // Re-sync state and check if runner needs resume
-        vipRunnerService.resumeLoopIfActive(
-          session.id,
-          session.target_mix_balance,
-          session.cycle_delay_seconds
-        );
+        if (!isCompleted && session.automation_enabled) {
+          vipRunnerService.resumeLoopIfActive(
+            session.id,
+            session.target_mix_balance,
+            session.cycle_delay_seconds
+          );
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);

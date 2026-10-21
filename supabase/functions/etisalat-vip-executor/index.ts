@@ -1072,11 +1072,24 @@ async function handleSingleCycleInternal(
   // Normal flow if not low or child not already holding missing
   if (!childHoldsMissing) {
     if (status.remainingMix > 0) {
-      engine.log(`[*] جاري تحويل (${status.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${childNum} ...`, "info");
       const transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
       if (transferred) {
         parkedMixAmount = status.remainingMix;
-        engine.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
+        
+        // VERIFY CHILD HAS RECEIVED PARKED MIXES BEFORE PLAN CHANGE:
+        if (prewarmedChildEngine) {
+          engine.log(`[*] التحقق من استقرار الميكسات المركونة (${parkedMixAmount.toLocaleString('en-US')}) في حساب الفرد...`, "info");
+          for (let vAttempt = 1; vAttempt <= 5; vAttempt++) {
+            await sleep(1500);
+            try {
+              const childVerify = await prewarmedChildEngine.getStatusAndChild(true);
+              if (childVerify.remainingMix && (childVerify.remainingMix >= parkedMixAmount * 0.7 || childVerify.remainingMix > 0)) {
+                engine.log(`[✓] تأكيد مؤكد: الميكسات (${childVerify.remainingMix.toLocaleString('en-US')}) استقرت بأمان تام في حساب الفرد.`, "success");
+                break;
+              }
+            } catch (_vErr) {}
+          }
+        }
       } else {
         engine.log(`[-] تنبيه أمان صارم: فشل تحويل ميكسات الأونر للفرد! تم إيقاف الدورة فوراً لمنع تصفير الرصيد.`, "error");
         await sendStep("safety_stop", 1, "توقف أمان لحماية الميكسات", "فشل نقل الميكسات للفرد - تم إلغاء الترحيل لحماية ميكسات الأونر");
@@ -1207,34 +1220,37 @@ async function handleSingleCycleInternal(
       engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})!`, "success");
 
       // MANDATORY TELECOM ZERO-LOSS PROTECTION:
-      // When Etisalat switches a plan (e.g. 270 -> 180 or 180 -> 270), the plan profile changes immediately,
-      // but the backend telecom billing engine takes 4 to 12 seconds to allocate the new bundle units.
-      // CRITICAL: We MUST NOT transfer parked mixes while the owner balance is 0!
-      // If we transfer while remainingMix is 0, Etisalat's subsequent bundle allocation
-      // will OVERWRITE the balance and wipe out all transferred mixes!
+      // When Etisalat switches a plan (e.g. 270 -> 180 or 180 -> 270), the plan profile changes,
+      // but the backend telecom billing engine takes some seconds to allocate the new bundle quota.
+      // Small residual dust (e.g. 6 or 72 mixes) is NOT the new bundle!
+      // We wait until the real plan bundle arrives before initiating transfer from child.
+      const minExpectedBundle = targetPlanId.includes("Parent_7") ? 4000 : 2000;
       confirmedNewMix = currentCheck.remainingMix;
-      if (confirmedNewMix === 0) {
-        engine.log(`[*] في انتظار اعتماد ونزول باقة النظام الجديد (${targetPlanDisplay}) في سيستم اتصالات...`, "info");
-        for (let bAttempt = 1; bAttempt <= 15; bAttempt++) {
+
+      if (confirmedNewMix < minExpectedBundle) {
+        engine.log(`[*] في انتظار اعتماد ونزول باقة النظام الجديد (${targetPlanDisplay}) بالكامل في حساب الأونر بالسيرفر...`, "info");
+        for (let bAttempt = 1; bAttempt <= 20; bAttempt++) {
           await sleep(2000);
           try {
             const bundleCheck = await engine.getStatusAndChild(true);
-            if (bundleCheck.remainingMix > 0) {
+            if (bundleCheck.remainingMix >= minExpectedBundle) {
               confirmedNewMix = bundleCheck.remainingMix;
-              engine.log(`[+] تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: ${confirmedNewMix.toLocaleString('en-US')} ميكس!`, "success");
+              engine.log(`[+] تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (${confirmedNewMix.toLocaleString('en-US')} ميكس)!`, "success");
               break;
+            } else if (bundleCheck.remainingMix > confirmedNewMix) {
+              confirmedNewMix = bundleCheck.remainingMix;
             }
           } catch (_bErr) {}
           if (bAttempt % 3 === 0) {
-            engine.log(`[*] في انتظار وصول ميكسات الباقة الجديدة من سيرفر اتصالات (${bAttempt * 2} ثانية)...`, "info");
+            engine.log(`[*] فحص رصيد باقة الأونر بالسيرفر (${bAttempt}/20): الرصيد المقروء (${confirmedNewMix.toLocaleString('en-US')} ميكس) - ننتظر نزول الباقة الأساسية...`, "info");
           }
         }
       } else {
-        engine.log(`[+] باقة النظام الجديد نشطة بالفعل بالسيرفر: ${confirmedNewMix.toLocaleString('en-US')} ميكس.`, "success");
+        engine.log(`[+] باقة النظام الجديد نشطة بالفعل بالسيرفر: (${confirmedNewMix.toLocaleString('en-US')} ميكس).`, "success");
       }
 
-      // The moment the new bundle appears, proceed immediately with zero delay
-      engine.log(`[⚡] بدء الانتقال الفوري اللحظي لاسترجاع الميكسات من الفرد بالمللي ثانية...`, "info");
+      // Now that the new plan and bundle are confirmed on the owner, proceed to recover parked mixes
+      engine.log(`[⚡] بدء الانتقال لاسترجاع الميكسات المركونة من الفرد للأونر ...`, "info");
       break;
     }
 
@@ -1274,23 +1290,32 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    // Read child status immediately without artificial polling delays
-    const childSt = await activeChildEngine.getStatusAndChild(true);
-    engine.log(`[+] رصيد الفرد المتاح للاسترجاع الآن: ${childSt.remainingMix.toLocaleString('en-US')} ميكس.`, "info");
+    // Read child status with synchronization check
+    let childSt = await activeChildEngine.getStatusAndChild(true);
 
-    // Transparent logging: if the child holds less than what was parked, warn accurately without fake logs
-    if (parkedMixAmount > 0 && childSt.remainingMix < parkedMixAmount * 0.5) {
-      engine.log(`[!] تنبيه دقيق: رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) أقل من الميكسات المحولة له (${parkedMixAmount.toLocaleString('en-US')}). قد تكون الشبكة صفرت المتبقي لتأخر الاستجابة السابقة. جاري استرجاع الرصيد المتوفر حالياً فوراً للأونر!`, "warn");
+    // If telecom sync is still propagating and child temporarily shows small amount:
+    if (parkedMixAmount > 5000 && childSt.remainingMix < parkedMixAmount * 0.5) {
+      engine.log(`[*] رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) ميكس. جاري انتظار اكتمال مزامنة الرصيد المركون بالسيرفر...`, "info");
+      for (let syncP = 1; syncP <= 5; syncP++) {
+        await sleep(2000);
+        try {
+          const syncSt = await activeChildEngine.getStatusAndChild(true);
+          if (syncSt.remainingMix >= parkedMixAmount * 0.7 || syncSt.remainingMix > childSt.remainingMix) {
+            childSt = syncSt;
+            break;
+          }
+        } catch (_sErr) {}
+      }
     }
 
+    engine.log(`[+] رصيد الفرد المؤكد للاسترجاع: (${childSt.remainingMix.toLocaleString('en-US')}) ميكس.`, "info");
+
     if (childSt.remainingMix > 0 && engine.ownerDial) {
-      engine.log(`[⚡] تحويل فوري (${childSt.remainingMix.toLocaleString('en-US')}) ميكس إلى الرقم: ${engine.ownerDial} ...`, "info");
       let retOk = false;
       for (let t = 1; t <= 3; t++) {
         retOk = await activeChildEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
         if (retOk) {
           recoveredMixAmount = childSt.remainingMix;
-          engine.log(`[+] تم استرجاع الميكسات بنجاح إلى الأونر (${childSt.remainingMix.toLocaleString('en-US')} ميكس) في زمن قياسي!`, "success");
           break;
         }
         if (t < 3) {

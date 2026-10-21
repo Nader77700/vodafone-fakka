@@ -25,7 +25,7 @@ export interface VipOwnerConfig {
 export interface VipAutomationSettings {
   id: string;
   automation_enabled: boolean;
-  operation_state: 'stopped' | 'running' | 'paused' | 'awaiting_integration' | 'error';
+  operation_state: 'stopped' | 'running' | 'paused' | 'awaiting_integration' | 'error' | 'completed';
   target_mix_balance: number;
   custom_target_balance: number | null;
   cycle_delay_seconds: number;
@@ -69,7 +69,7 @@ export interface VipSession {
 
   // Automation Settings per Session
   automation_enabled: boolean;
-  operation_state: 'stopped' | 'running' | 'paused' | 'awaiting_integration' | 'error';
+  operation_state: 'stopped' | 'running' | 'paused' | 'awaiting_integration' | 'error' | 'completed';
   target_mix_balance: number;
   custom_target_balance?: number | null;
   cycle_delay_seconds: number;
