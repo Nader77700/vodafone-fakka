@@ -401,14 +401,15 @@ class EtisalatEngine {
       headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
     }
 
-    try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
-        method: "GET",
-        headers,
-      });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const targetUrl = this.getRequestUrl(urlPath);
+        const res = await fetch(targetUrl, {
+          method: "GET",
+          headers,
+        });
 
-      if (res.status === 200) {
+        if (res.status === 200) {
         const text = await res.text();
         console.log(`[getStatusAndChild] Raw XML (${this.currentDial}):`, text);
 
@@ -513,11 +514,14 @@ class EtisalatEngine {
 
         return { planId, remainingMix, childNumber };
       } else {
-        console.warn(`[getStatusAndChild] Non-200 status: ${res.status}`);
+        console.warn(`[getStatusAndChild] Non-200 status (${attempt}/3): ${res.status}`);
+        if (attempt < 3) await sleep(1200);
       }
     } catch (err: any) {
-      console.error(`[getStatusAndChild] Error:`, err);
+      console.error(`[getStatusAndChild] Error (${attempt}/3):`, err?.message || err);
+      if (attempt < 3) await sleep(1200);
     }
+  }
 
     // Fallback if known from shortCode
     let fallbackPlan = "غير معروف";
@@ -573,7 +577,9 @@ class EtisalatEngine {
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
     const target = toDial.startsWith("0") ? "20" + toDial.substring(1) : toDial;
-    this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${toDial} ...`, "info");
+    const senderDisplay = this.currentDial ? (this.currentDial.startsWith("20") ? this.currentDial.substring(2) : this.currentDial) : "";
+    const receiverDisplay = toDial.startsWith("20") ? toDial.substring(2) : (toDial.startsWith("0") ? toDial.substring(1) : toDial);
+    this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${receiverDisplay} [المرسل: ${senderDisplay} | الباقة: ${productName}]...`, "info");
 
     // Primary: Python bot endpoint (/Saytar/rest/services/newTransfer/v2)
     const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${this.currentDial}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target}</receiverMsisdn><senderMsisdn>${this.currentDial}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
@@ -598,7 +604,9 @@ class EtisalatEngine {
       const text = await res.text();
       const ok = res.status === 200 && text.includes("<status>true</status>");
       if (ok) {
-        this.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
+        const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+        const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
+        this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
         return true;
       }
     } catch {
@@ -626,7 +634,9 @@ class EtisalatEngine {
       const text = await res.text();
       const ok = res.status === 200 && text.includes("<status>true</status>");
       if (ok) {
-        this.log(`[+] تم تحويل الميكسات بنجاح (عبر منفذ الطلبات)!`, "success");
+        const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+        const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
+        this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
       } else {
         this.log(`[-] فشل تحويل الميكسات.`, "warn");
       }
