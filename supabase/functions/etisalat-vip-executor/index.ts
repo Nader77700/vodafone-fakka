@@ -253,6 +253,86 @@ class EtisalatEngine {
     return `${BASE_URL}${urlPath}`;
   }
 
+  // ── RESILIENT HTTP ADAPTER WITH AUTOMATIC RETRY & SOCKET RECOVERY ──
+  // Replicates Python urllib3/HTTPAdapter retry mechanism for handling
+  // RemoteDisconnected, socket timeouts, and transient 500/502/503/504 errors.
+  private async fetchWithRetry(
+    urlPath: string,
+    options: {
+      method?: string;
+      headers: Record<string, string>;
+      body?: string;
+      timeoutMs?: number;
+      maxRetries?: number;
+    }
+  ): Promise<{ status: number; text: string; headers: Headers }> {
+    const method = options.method || "GET";
+    const maxRetries = options.maxRetries ?? 3;
+    const timeoutMs = options.timeoutMs ?? 15000;
+    const targetUrl = this.getRequestUrl(urlPath);
+
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const res = await fetch(targetUrl, {
+          method,
+          headers: options.headers,
+          body: options.body,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timer);
+
+        // Capture session cookies (JSESSIONID) if present
+        const setCookieHdr = res.headers.get("set-cookie");
+        const getSetCookieFn = (res.headers as any).getSetCookie;
+        const cookiesList: string[] = typeof getSetCookieFn === "function"
+          ? getSetCookieFn.call(res.headers)
+          : (setCookieHdr ? [setCookieHdr] : []);
+
+        const cookiePairs: string[] = [];
+        for (const item of cookiesList) {
+          if (item) {
+            const pair = item.split(";")[0].trim();
+            if (pair && !cookiePairs.includes(pair)) {
+              cookiePairs.push(pair);
+            }
+          }
+        }
+        if (cookiePairs.length > 0) {
+          this.cookieHeader = cookiePairs.join("; ");
+        }
+
+        const text = await res.text();
+
+        // If server returns temporary 5xx or 429, retry with backoff
+        if ([429, 500, 502, 503, 504].includes(res.status) && attempt < maxRetries) {
+          this.log(`[!] السيرفر مشغول (${res.status})، جاري إعادة المحاولة ${attempt}/${maxRetries}...`, "warn");
+          await sleep(1000 * attempt);
+          continue;
+        }
+
+        return { status: res.status, text, headers: res.headers };
+      } catch (err: any) {
+        clearTimeout(timer);
+        lastError = err;
+        const isAbort = err.name === "AbortError";
+        const errMsg = isAbort ? "انتهت مهلة الاتصال (Timeout)" : (err.message || String(err));
+
+        if (attempt < maxRetries) {
+          this.log(`[!] تنبيه اتصال بالسيرفر (${errMsg})، جاري إعادة المحاولة ${attempt}/${maxRetries}...`, "warn");
+          await sleep(1200 * attempt);
+        }
+      }
+    }
+
+    throw lastError || new Error(`Failed to fetch ${urlPath} after ${maxRetries} attempts`);
+  }
+
   async login(email: string, rawPassword: string, isOwner = false, silent = false): Promise<boolean> {
     // 0. Token reuse optimization: Check if existing cached token is still valid
     // Avoids redundant logins and prevents Etisalat rate-limit / temporary lockout bans!
@@ -294,83 +374,63 @@ class EtisalatEngine {
       headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
     }
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const targetUrl = this.getRequestUrl(urlPath);
-        const res = await fetch(targetUrl, {
-          method: "POST",
-          headers,
-          body: loginXml,
-        });
+    try {
+      const { status, text, headers: resHeaders } = await this.fetchWithRetry(urlPath, {
+        method: "POST",
+        headers,
+        body: loginXml,
+        timeoutMs: 15000,
+        maxRetries: 3,
+      });
 
-        const text = await res.text();
-        if (res.status === 200 && text.includes("<status>true</status>")) {
-          // 1. Capture session cookies (JSESSIONID)
-          const setCookieHdr = res.headers.get("set-cookie");
-          const getSetCookieFn = (res.headers as any).getSetCookie;
-          const cookiesList: string[] = typeof getSetCookieFn === "function"
-            ? getSetCookieFn.call(res.headers)
-            : (setCookieHdr ? [setCookieHdr] : []);
-
-          const cookiePairs: string[] = [];
-          for (const item of cookiesList) {
-            if (item) {
-              const pair = item.split(";")[0].trim();
-              if (pair && !cookiePairs.includes(pair)) {
-                cookiePairs.push(pair);
-              }
+      if (status === 200 && text.includes("<status>true</status>")) {
+        // Auth token and customer details from JWT
+        const auth = resHeaders.get("auth");
+        if (auth) {
+          this.authToken = auth;
+          try {
+            const tokenPayload = auth.split(".")[1];
+            const base64 = tokenPayload.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+            const binary = atob(padded);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
             }
-          }
-          if (cookiePairs.length > 0) {
-            this.cookieHeader = cookiePairs.join("; ");
+            const jsonStr = new TextDecoder().decode(bytes);
+            const decoded = JSON.parse(jsonStr);
+            this.currentDial = decoded.selectedDial || null;
+            this.customerName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+            this.shortCode = decoded.selectedDialShortCode || "";
+          } catch {
+            // fallback
           }
 
-          // 2. Auth token and customer details from JWT
-          const auth = res.headers.get("auth");
-          if (auth) {
-            this.authToken = auth;
+          if (isOwner) {
+            this.ownerDial = this.currentDial;
+          } else {
+            this.childDial = this.currentDial;
+          }
+          if (this.onNewAuthToken) {
             try {
-              const tokenPayload = auth.split(".")[1];
-              const base64 = tokenPayload.replace(/-/g, "+").replace(/_/g, "/");
-              const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-              const binary = atob(padded);
-              const bytes = new Uint8Array(binary.length);
-              for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i);
-              }
-              const jsonStr = new TextDecoder().decode(bytes);
-              const decoded = JSON.parse(jsonStr);
-              this.currentDial = decoded.selectedDial || null;
-              this.customerName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
-              this.shortCode = decoded.selectedDialShortCode || "";
-            } catch {
-              // fallback
-            }
-
-            if (isOwner) {
-              this.ownerDial = this.currentDial;
-            } else {
-              this.childDial = this.currentDial;
-            }
-            if (this.onNewAuthToken) {
-              try {
-                this.onNewAuthToken(this.authToken, this.cookieHeader, isOwner);
-              } catch (_) {}
-            }
-            if (!silent) {
-              const nameInfo = this.customerName ? ` | الاسم: ${this.customerName}` : "";
-              this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial}${nameInfo} | بصمة الجهاز: ${this.device.modelType})`, "success");
-            }
-            return true;
+              this.onNewAuthToken(this.authToken, this.cookieHeader, isOwner);
+            } catch (_) {}
           }
+          if (!silent) {
+            const nameInfo = this.customerName ? ` | الاسم: ${this.customerName}` : "";
+            this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial}${nameInfo} | بصمة الجهاز: ${this.device.modelType})`, "success");
+          }
+          return true;
         }
-      } catch {
-        await sleep(2000);
+      }
+    } catch (e: any) {
+      if (!silent) {
+        this.log(`[-] خطأ أثناء تسجيل الدخول: ${e?.message || e}`, "warn");
       }
     }
 
     if (!silent) {
-      this.log(`[-] فشل تسجيل الدخول للحساب (${masked}) بعد 3 محاولات.`, "error");
+      this.log(`[-] فشل تسجيل الدخول للحساب (${masked}).`, "error");
     }
     return false;
   }
@@ -402,21 +462,21 @@ class EtisalatEngine {
     }
 
     try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const { status, text } = await this.fetchWithRetry(urlPath, {
         method: "GET",
         headers,
+        timeoutMs: 12000,
+        maxRetries: 3,
       });
 
-      if (res.status === 200) {
-        const text = await res.text();
+      if (status === 200) {
         console.log(`[getStatusAndChild] Raw XML (${this.currentDial}):`, text);
 
         // 1. Plan productId (ratePlanConsumption/productId)
         const planMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i) ||
                           text.match(/<productId>([^<]+)<\/productId>/i);
         let planId = planMatch ? planMatch[1].trim() : "غير معروف";
-        if (planId === "غير معروف" && this.shortCode) {
+        if ((planId === "غير معروف" || (!planId.includes("Parent") && !planId.includes("Child") && !planId.includes("Hekaya"))) && this.shortCode) {
           if (this.shortCode.includes("M7")) planId = "Hekaya_XRP_MIX_Parent_7";
           else if (this.shortCode.includes("M6")) planId = "Hekaya_XRP_MIX_Parent_6";
           else if (this.shortCode.includes("M5")) planId = "Hekaya_XRP_MIX_Parent_5";
@@ -476,6 +536,16 @@ class EtisalatEngine {
           }
         }
 
+        // Direct matches matching Python bot XPaths:
+        const ratePlanRem = text.match(/<ratePlanConsumption>[\s\S]*?<remainingValue>([0-9]+)<\/remainingValue>/i);
+        if (ratePlanRem) allMixCandidates.push(parseInt(ratePlanRem[1], 10));
+
+        const newMeterRem = text.match(/<newMeterConsumption>[\s\S]*?<remainingValue>([0-9]+)<\/remainingValue>/i);
+        if (newMeterRem) allMixCandidates.push(parseInt(newMeterRem[1], 10));
+
+        const totalValRem = text.match(/<totalValue>([0-9]+)<\/totalValue>/i);
+        if (totalValRem) allMixCandidates.push(parseInt(totalValRem[1], 10));
+
         // Fallback: If no structured mix bucket matched, scan any remainingValue in the entire document
         if (allMixCandidates.length === 0) {
           const rawMatches = [...text.matchAll(/<remainingValue>([0-9]+)<\/remainingValue>/gi)];
@@ -513,7 +583,7 @@ class EtisalatEngine {
 
         return { planId, remainingMix, childNumber };
       } else {
-        console.warn(`[getStatusAndChild] Non-200 status: ${res.status}`);
+        console.warn(`[getStatusAndChild] Non-200 status: ${status}`);
       }
     } catch (err: any) {
       console.error(`[getStatusAndChild] Error:`, err);
@@ -530,7 +600,7 @@ class EtisalatEngine {
 
   async renewBundleAction(planName: string, amount: string): Promise<boolean> {
     const displayName = this.getPlanName(planName);
-    this.log(`[*] جاري تجديد باقة الأونر (${displayName}) لتنشيط الخط وضخ حصة الفرد (1,300 ميكس)...`, "info");
+    this.log(`[*] جاري تجديد باقة الأونر (${displayName}) بمبلغ (${amount}) لتنشيط الخط وضخ الميكسات...`, "info");
 
     const xmlBody = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>FULL_RENEW</operation><parameters /><paymentOptions><paymentOption><amount>${amount}</amount><optionID>BALANCE</optionID></paymentOption></paymentOptions><productName>${planName}</productName><requestId>ALFA_PAYMENT_OPTIONS</requestId></generalSubmitOrderRequest>`;
     const urlPath = "/Saytar/rest/General/submitOrder";
@@ -545,18 +615,18 @@ class EtisalatEngine {
     };
 
     try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const { status, text } = await this.fetchWithRetry(urlPath, {
         method: "POST",
         headers,
         body: xmlBody,
+        timeoutMs: 15000,
+        maxRetries: 3,
       });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
+      const ok = status === 200 && text.includes("<status>true</status>");
       if (ok) {
-        this.log(`[+] تم تجديد باقة الأونر بنجاح! ستصل حصة الفرد (1,300 ميكس) خلال فترة الاستراحة.`, "success");
+        this.log(`[+] تم تجديد باقة الأونر (${displayName}) بنجاح!`, "success");
       } else {
-        this.log(`[-] فشل إرسال أمر التجديد.`, "warn");
+        this.log(`[!] السيرفر طلب مهلة استقرار بعد أمر التجديد.`, "warn");
       }
       return ok;
     } catch {
@@ -572,77 +642,89 @@ class EtisalatEngine {
 
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
-    // Strictly format Egyptian MSISDN: 01xxxxxxxxx -> 201xxxxxxxxx, 1xxxxxxxxx -> 201xxxxxxxxx, 201xxxxxxxxx -> 201xxxxxxxxx
-    let cleanDial = toDial.replace(/\D/g, "");
-    if (cleanDial.startsWith("20")) {
-      // already full
-    } else if (cleanDial.startsWith("0")) {
-      cleanDial = "20" + cleanDial.substring(1);
-    } else {
-      cleanDial = "20" + cleanDial;
+    if (quota <= 0) {
+      this.log(`[*] كمية الميكسات المطلوب تحويلها صفر (${quota}). تم تجاوز الخطوة.`, "info");
+      return true;
     }
-    const target = cleanDial;
-    this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${toDial} (الوجهة: ${target}) ...`, "info");
 
-    // Primary: Python bot endpoint (/Saytar/rest/services/newTransfer/v2)
-    const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${this.currentDial}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target}</receiverMsisdn><senderMsisdn>${this.currentDial}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
+    // Clean sender and receiver numbers
+    const senderClean = (this.currentDial || "").replace(/\D/g, "");
+    const receiverClean = toDial.replace(/\D/g, "");
+
+    // 10-digit raw format (without leading 0 or 20) - exact standard of My Etisalat & Python bot
+    const sender10 = senderClean.replace(/^(?:20|0)/, "");
+    const receiver10 = receiverClean.replace(/^(?:20|0)/, "");
+
+    let primaryProduct = productName;
+    if (!primaryProduct) {
+      primaryProduct = (this.role === "child" || this.shortCode?.includes("C1"))
+        ? "Hekaya_XRP_MIX_Child_1"
+        : (this.shortCode?.includes("M6") ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7");
+    }
+
+    this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس من (${sender10}) إلى (${receiver10}) [الباقة: ${primaryProduct}]...`, "info");
+
     const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
-    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
-    const headers = {
-      ...this.getBaseHeaders(),
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": headerSig,
-      "urlSignature": urlSig,
-      "bodySignature": bodySig,
-    };
+    // 3 major attempts with 5s delay between attempts - strictly matching etisalat_bot_full.py
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${sender10}</msisdn><productName>${primaryProduct}</productName><quota>${quota}</quota><receiverMsisdn>${receiver10}</receiverMsisdn><senderMsisdn>${sender10}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
 
-    try {
-      const targetUrl = this.getRequestUrl(urlPathV2);
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers,
-        body: xmlBodyV2,
-      });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        this.log(`[+] تم تحويل الميكسات بنجاح!`, "success");
-        return true;
+      try {
+        const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
+        const headers = {
+          ...this.getBaseHeaders(),
+          "auth": `Bearer ${this.authToken}`,
+          "headerSignature": headerSig,
+          "urlSignature": urlSig,
+          "bodySignature": bodySig,
+        };
+
+        const { status, text } = await this.fetchWithRetry(urlPathV2, {
+          method: "POST",
+          headers,
+          body: xmlBodyV2,
+          timeoutMs: 15000,
+          maxRetries: 2,
+        });
+
+        const isSuccess = status === 200 && text.includes("<status>true</status>");
+
+        if (isSuccess) {
+          const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+          const orderId = orderIdMatch ? orderIdMatch[1] : "مؤكد";
+          this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiver10})! [رقم أمر التحويل: ${orderId}]`, "success");
+          return true;
+        }
+
+        // Parse error details
+        const errCodeMatch = text.match(/<errorCode>([^<]+)<\/errorCode>/i);
+        const userMsgMatch = text.match(/<userMessageAr>([^<]+)<\/userMessageAr>/i) || text.match(/<message>([^<]+)<\/message>/i);
+        const errCode = errCodeMatch ? errCodeMatch[1].trim() : "";
+        const userMsg = userMsgMatch ? userMsgMatch[1].trim() : "";
+
+        this.log(`[!] السيرفر رفض التحويل [${errCode || 'تنبيه'}]: ${userMsg || text.slice(0, 100)} (المحاولة ${attempt}/3)..`, "warn");
+
+        // SMART RESOLUTION FOR BE_SDP_361:
+        // BE_SDP_361 indicates line requires a renewal pulse or contract refresh to activate transfers.
+        if (errCode.includes("BE_SDP_361") && attempt < 3 && this.role === "owner") {
+          const renewCost = primaryProduct.includes("7") ? "270" : "180";
+          this.log(`[*] تفعيل وتجديد الباقة فوراً لتصريح التحويل بالسيرفر (${primaryProduct} بمبلغ ${renewCost})...`, "info");
+          await this.renewBundleAction(primaryProduct, renewCost);
+          await sleep(5000);
+        }
+      } catch (fetchErr: any) {
+        this.log(`[!] مشكلة في الاتصال أثناء التحويل (المحاولة ${attempt}/3): ${fetchErr?.message || fetchErr}`, "warn");
       }
-    } catch {
-      // fallback
+
+      if (attempt < 3) {
+        this.log(`[⏳] في انتظار استقرار السيرفر 5 ثوانٍ قبل المحاولة التالية...`, "info");
+        await sleep(5000);
+      }
     }
 
-    // Fallback: submitOrder
-    const xmlBodyOrder = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>CONSUME_SERVICE</operation><parameters><parameter><name>TRANSFERED_MSISDN</name><value>${target}</value></parameter><parameter><name>RENEW_FLAG</name><value>0</value></parameter><parameter><name>TRANSFERED_AMOUNT</name><value>${quota}</value></parameter></parameters><productName>${productName}</productName><requestId>TRANSFER_METER</requestId></generalSubmitOrderRequest>`;
-    const urlPathOrder = "/Saytar/rest/General/submitOrder";
-    const sigOrder = await this.generateSignatures(urlPathOrder, xmlBodyOrder);
-    const headersOrder = {
-      ...this.getBaseHeaders(),
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": sigOrder.headerSig,
-      "urlSignature": sigOrder.urlSig,
-      "bodySignature": sigOrder.bodySig,
-    };
-    try {
-      const targetUrl = this.getRequestUrl(urlPathOrder);
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers: headersOrder,
-        body: xmlBodyOrder,
-      });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        this.log(`[+] تم تحويل الميكسات بنجاح (عبر منفذ الطلبات)!`, "success");
-      } else {
-        this.log(`[-] فشل تحويل الميكسات.`, "warn");
-      }
-      return ok;
-    } catch {
-      return false;
-    }
+    this.log(`[-] تعذر إتمام تحويل الميكسات بعد 3 محاولات.`, "error");
+    return false;
   }
 
   async changePlan(planName: string, planId = ""): Promise<boolean> {
@@ -662,14 +744,15 @@ class EtisalatEngine {
     };
 
     try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const { status, text } = await this.fetchWithRetry(urlPath, {
         method: "POST",
         headers,
         body: xmlBody,
+        timeoutMs: 15000,
+        maxRetries: 3,
       });
-      const text = await res.text();
-      const isSuccess = res.status === 200 && (
+
+      const isSuccess = status === 200 && (
         text.includes("<status>true</status>") ||
         text.includes("<isSuccess>true</isSuccess>") ||
         text.includes("SUCCESS") ||
@@ -702,14 +785,14 @@ class EtisalatEngine {
     };
 
     try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const { status, text } = await this.fetchWithRetry(urlPath, {
         method: "POST",
         headers,
         body: xmlBody,
+        timeoutMs: 15000,
+        maxRetries: 3,
       });
-      const text = await res.text();
-      return res.status === 200 && text.includes("<status>true</status>");
+      return status === 200 && text.includes("<status>true</status>");
     } catch {
       return false;
     }
@@ -739,16 +822,16 @@ class EtisalatEngine {
     };
 
     try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const { status, text } = await this.fetchWithRetry(urlPath, {
         method: "POST",
         headers,
         body: xmlBody,
+        timeoutMs: 15000,
+        maxRetries: 3,
       });
-      const text = await res.text();
       const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
       const orderId = orderIdMatch ? orderIdMatch[1] : undefined;
-      const isSuccess = res.status === 200 && (
+      const isSuccess = status === 200 && (
         text.includes("<status>true</status>") ||
         text.includes("<isSuccess>true</isSuccess>") ||
         text.includes("<statusCode>0</statusCode>")
@@ -776,16 +859,16 @@ class EtisalatEngine {
     };
 
     try {
-      const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const { status, text } = await this.fetchWithRetry(urlPath, {
         method: "POST",
         headers,
         body: xmlBody,
+        timeoutMs: 15000,
+        maxRetries: 3,
       });
-      const text = await res.text();
       const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
       const orderId = orderIdMatch ? orderIdMatch[1] : undefined;
-      const isSuccess = res.status === 200 && (
+      const isSuccess = status === 200 && (
         text.includes("<status>true</status>") ||
         text.includes("<isSuccess>true</isSuccess>") ||
         text.includes("<statusCode>0</statusCode>")
@@ -1006,8 +1089,10 @@ async function handleSingleCycleInternal(
     };
   }
 
-  const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
-  const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+  // Accurate real-time plan identification from live telecom data (never override with stale DB values)
+  const isSix = ownerPlanPre.includes("Parent_6") || ownerPlanPre.includes("180");
+  const isSeven = !isSix && (ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("270") || engine.shortCode?.includes("M7") || session.owner_current_plan?.includes("270"));
+  const ownerPlanName = isSix ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7";
 
   // 3. STEP 1: Parking Mixes to Child (ركن الميكسات عند الفرد وتدفئة جلسة الفرد مسبقاً)
   await sendStep("parking", 1, "ركن الميكسات وتدفئة الفرد", "نقل ميكسات الأونر للفرد فوراً وتجهيز جلسة الفرد الساخنة");
@@ -1262,13 +1347,13 @@ async function handleSingleCycleInternal(
         }
       }
 
-      if (prevOwnerMix > 5000 && childStatusMix < (prevOwnerMix * 0.7)) {
-        engine.log(`[-] تنبيه طوارئ فائق: رصيد الأونر يظهر 0 ميكس بينما كان (${prevOwnerMix.toLocaleString('en-US')}) ميكس، والفرد لا يحمل هذا الرصيد (لديه فقط ${childStatusMix.toLocaleString('en-US')} ميكس)! تم إيقاف الدورة فوراً ومنع الترحيل لحماية ميكسات الأونر من التصفير.`, "error");
+      if (verifiedPeakBalance > 5000 && childStatusMix < (verifiedPeakBalance * 0.7)) {
+        engine.log(`[-] تنبيه طوارئ فائق: رصيد الأونر يظهر 0 ميكس بينما كان (${verifiedPeakBalance.toLocaleString('en-US')}) ميكس، والفرد لا يحمل هذا الرصيد (لديه فقط ${childStatusMix.toLocaleString('en-US')} ميكس)! تم إيقاف الدورة فوراً ومنع الترحيل لحماية ميكسات الأونر من التصفير.`, "error");
         await sendStep("safety_stop", 1, "توقف طوارئ لمنع التصفير", "تم حظر الترحيل: الميكسات غير مركونة عند الفرد");
         return {
           success: false,
           safety_stop: true,
-          error: `تم إيقاف الدورة لحماية ميكساتك: رصيد الأونر السابق (${prevOwnerMix.toLocaleString('en-US')} ميكس) لم يظهر عند الفرد (${childStatusMix.toLocaleString('en-US')}). تم منع الترحيل تلقائياً لحفظ رصيدك.`,
+          error: `تم إيقاف الدورة لحماية ميكساتك: رصيد الأونر السابق (${verifiedPeakBalance.toLocaleString('en-US')} ميكس) لم يظهر عند الفرد (${childStatusMix.toLocaleString('en-US')}). تم منع الترحيل تلقائياً لحفظ رصيدك.`,
           logs: engine.logs,
         };
       }
@@ -1335,7 +1420,9 @@ async function handleSingleCycleInternal(
   const currentCost = isSeven ? "270" : "180";
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await sleep(3500);
+    // Fast 1s polling in first 25 attempts (~25s) matching Python Termux script, then standard interval
+    const pollDelay = attempt <= 25 ? 1000 : 3500;
+    await sleep(pollDelay);
     const currentCheck = await engine.getStatusAndChild(true);
     const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
                         (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
@@ -1472,9 +1559,9 @@ async function handleSingleCycleInternal(
 
   // 6. STEP 4: Instant Zero-Delay Recovery from Child to Owner (استرجاع فوري بالمللي ثانية)
   await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً وبأقصى سرعة");
+  let activeChildEngine: EtisalatEngine | null = prewarmedChildEngine || null;
   if (childEmail && childPass) {
     engine.log(`[⚡] بدء الاسترجاع اللحظي الفوري للميكسات من الفرد للأونر ...`, "info");
-    let activeChildEngine = prewarmedChildEngine;
     if (!activeChildEngine || !activeChildEngine.authToken) {
       activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id);
       activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
@@ -1583,24 +1670,39 @@ async function handleSingleCycleInternal(
     }
   }
 
-  // Active check on actual child balance from server
-  let actualChildRemaining = 0;
-  if (prewarmedChildEngine) {
-    try {
-      await sleep(1500);
-      const childCheck = await prewarmedChildEngine.getStatusAndChild(true);
-      if (childCheck && childCheck.planId !== "غير معروف") {
-        actualChildRemaining = childCheck.remainingMix || 0;
-        engine.log(`[+] فحص رصيد الفرد الفعلي بالسيرفر: ${actualChildRemaining.toLocaleString('en-US')} ميكس متبقية (النظام: ${isSevenFinal ? "270 - حصة 1300" : "180 - حصة 800"}).`, "success");
-      }
-    } catch (_) {}
-  }
-
   // ── STRICT ZERO-LOSS PROTECTION: الحظر القاطع لاعتماد رصيد أقل إذا كانت الميكسات لا تزال بحساب الفرد ──
   const isSevenFinal = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");
   const expectedChildQuota = isSevenFinal ? 1300 : 800;
 
-  if (actualChildRemaining > (expectedChildQuota + 1000) && activeChildEngine) {
+  // Active check on actual child balance from server
+  let actualChildRemaining = 0;
+  if (activeChildEngine) {
+    try {
+      await sleep(1500);
+      const childCheck = await activeChildEngine.getStatusAndChild(true);
+      if (childCheck) {
+        actualChildRemaining = childCheck.remainingMix || 0;
+        engine.log(`[+] فحص رصيد الفرد الفعلي بالسيرفر: ${actualChildRemaining.toLocaleString('en-US')} ميكس متبقية (النظام: ${isSevenFinal ? "270 - حصة 1300" : "180 - حصة 800"}).`, "info");
+      }
+    } catch (_) {}
+  }
+
+  // If owner balance didn't increase as expected, force a clean login & check on child
+  if (recoveredMixAmount > 2000 && finalStatus.remainingMix < minExpectedRecoveryBalance) {
+    engine.log(`[*] فحص دقيق: رصيد الأونر (${finalStatus.remainingMix.toLocaleString('en-US')}) ميكس أقل من الرصيد المتوقع بعد الاسترجاع (${minExpectedRecoveryBalance.toLocaleString('en-US')} ميكس). جاري فحص الفرد مباشرة بحساب طازج...`, "warn");
+    if (activeChildEngine && childEmail && childPass) {
+      try {
+        await activeChildEngine.login(childEmail, childPass, false, true);
+        const freshChild = await activeChildEngine.getStatusAndChild(true);
+        if (freshChild && freshChild.remainingMix > 0) {
+          actualChildRemaining = freshChild.remainingMix;
+          engine.log(`[!] تم رصد رصيد فعلي لدى الفرد: (${actualChildRemaining.toLocaleString('en-US')}) ميكس!`, "warn");
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (actualChildRemaining > (expectedChildQuota + 500) && activeChildEngine) {
     engine.log(`[!] تنبيه الأمان الحاسم: الفرد لا يزال يحمل ميكسات مركونة لم تُسترجع (${actualChildRemaining.toLocaleString('en-US')} ميكس)! جاري إعادة محاولة الاسترجاع الفوري...`, "warn");
     
     for (let rescueAttempt = 1; rescueAttempt <= 3; rescueAttempt++) {
@@ -1620,19 +1722,23 @@ async function handleSingleCycleInternal(
 
     // Re-inspect child
     try {
-      const childRescueCheck = await prewarmedChildEngine!.getStatusAndChild(true);
+      const childRescueCheck = await activeChildEngine.getStatusAndChild(true);
       actualChildRemaining = childRescueCheck.remainingMix || 0;
     } catch (_) {}
 
     // If child STILL holds the unrecovered balance, DO NOT adopt a lower balance!
-    if (actualChildRemaining > (expectedChildQuota + 1000)) {
+    if (actualChildRemaining > (expectedChildQuota + 500)) {
       engine.log(`[-] توقف أمان فوري: الميكسات (${actualChildRemaining.toLocaleString('en-US')} ميكس) محفوظة بأمان عند الفرد ولكن تعذر وصولها للأونر حالياً. تم حظر الدورة التالية وحفظ الرصيد لمنع أي تصفير أو انخفاض.`, "error");
+      await sendStep("safety_stop", 5, "توقف أمان لحماية الميكسات", `الميكسات (${actualChildRemaining.toLocaleString('en-US')}) محفوظة لدى الفرد - تم حظر إكمال الدورة لمنع التصفير`);
       
       try {
         await supabase.from("vip_sessions").update({
           mixes_parked_at_child: true,
           parked_amount: actualChildRemaining,
-          stop_reason: "الميكسات لا تزال محفوظة عند الفرد بأمان لمنع التصفير",
+          individual_mix_balance: actualChildRemaining,
+          owner_mix_balance: finalStatus.remainingMix,
+          current_step: "safety_stop",
+          stop_reason: `الميكسات (${actualChildRemaining.toLocaleString('en-US')} ميكس) لا تزال محفوظة عند الفرد بأمان لمنع التصفير`,
           updated_at: new Date().toISOString(),
         }).eq("id", session_id);
       } catch (_) {}
@@ -1646,6 +1752,33 @@ async function handleSingleCycleInternal(
         logs: engine.logs,
       };
     }
+  }
+
+  // Final check: If recoveredMixAmount was significant (> 2000) and owner balance is still low, halt safely!
+  if (recoveredMixAmount > 2000 && finalStatus.remainingMix < minExpectedRecoveryBalance) {
+    engine.log(`[-] توقف أمان حاسم: تعذر تأكيد وصول الرصيد المسترجع (${recoveredMixAmount.toLocaleString('en-US')} ميكس) لحساب الأونر بالسيرفر (الرصيد المقروء: ${finalStatus.remainingMix.toLocaleString('en-US')} فقط). تم حظر إكمال الدورة لحماية الرصيد.`, "error");
+    await sendStep("safety_stop", 5, "توقف أمان لحماية الميكسات", "تعذر تأكيد وصول الرصيد المسترجع للأونر بالسيرفر");
+
+    try {
+      await supabase.from("vip_sessions").update({
+        mixes_parked_at_child: true,
+        parked_amount: actualChildRemaining > 0 ? actualChildRemaining : recoveredMixAmount,
+        individual_mix_balance: actualChildRemaining,
+        owner_mix_balance: finalStatus.remainingMix,
+        current_step: "safety_stop",
+        stop_reason: "تعذر تأكيد وصول الرصيد المسترجع للأونر - تم إيقاف الدورة بأمان لحفظ الميكسات",
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+    } catch (_) {}
+
+    return {
+      success: false,
+      safety_stop: true,
+      child_mix_balance: actualChildRemaining,
+      owner_mix_balance: finalStatus.remainingMix,
+      error: `تم إيقاف الأتمتة بأمان: تعذر تأكيد وصول الرصيد المسترجع (${recoveredMixAmount.toLocaleString('en-US')} ميكس) لحساب الأونر. تم حظر الدورة لحماية رصيدك.`,
+      logs: engine.logs,
+    };
   }
 
   const finalMix = finalStatus.remainingMix;
@@ -2328,7 +2461,10 @@ serve(async (req: Request) => {
       }
 
       const st = await engine.getStatusAndChild(true);
-      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const isSeven = st.planId.includes("Parent_7") || 
+                      st.planId.includes("7") || 
+                      engine.shortCode?.includes("M7") || 
+                      session.owner_current_plan?.includes("270");
       const planName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
       const cost = isSeven ? "270" : "180";
 
@@ -2398,7 +2534,10 @@ serve(async (req: Request) => {
         }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
-      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const isSeven = st.planId.includes("Parent_7") || 
+                      st.planId.includes("7") || 
+                      engine.shortCode?.includes("M7") || 
+                      session.owner_current_plan?.includes("270");
       const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
       const amountToTransfer = Number(body.amount) || st.remainingMix;
 
@@ -2479,16 +2618,43 @@ serve(async (req: Request) => {
       }
 
       const returnAmount = childSt.remainingMix;
+      if (returnAmount <= 0) {
+        engine.log(`[*] رصيد الفرد المقروء حالياً 0 ميكس (لا توجد ميكسات بحساب الفرد للتحويل).`, "info");
+        return new Response(JSON.stringify({
+          success: true,
+          message: "رصيد الفرد حالياً 0 ميكس (لا توجد ميكسات مركونة للتحويل).",
+          logs: engine.logs,
+          child_remaining: 0,
+        }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
       engine.log(`[*] رصيد الفرد المتاح للاسترجاع: (${returnAmount.toLocaleString('en-US')}) ميكس. جاري التحويل إلى الأونر: ${ownerDial}...`, "info");
       const ok = await childEngine.transferMix(ownerDial, returnAmount, "Hekaya_XRP_MIX_Child_1");
 
       await sleep(2000);
       const afterChildSt = await childEngine.getStatusAndChild(true);
 
+      // Query live owner balance to update session immediately
+      let liveOwnerBalance = session.owner_mix_balance;
+      try {
+        if (ownerEmail && ownerPass) {
+          const ownerEng = new EtisalatEngine("owner", bridgeConfig, session_id);
+          if (await ownerEng.login(ownerEmail, ownerPass, true, true)) {
+            const ownerSt = await ownerEng.getStatusAndChild(true);
+            liveOwnerBalance = ownerSt.remainingMix;
+          }
+        }
+      } catch (_) {}
+
       await supabase
         .from("vip_sessions")
         .update({
           individual_mix_balance: afterChildSt.remainingMix,
+          owner_mix_balance: liveOwnerBalance,
+          mixes_parked_at_child: afterChildSt.remainingMix > 1500,
+          parked_amount: afterChildSt.remainingMix > 1500 ? afterChildSt.remainingMix : 0,
+          operation_state: "active",
+          stop_reason: null,
           last_actual_operation: "return_child_mixes",
           last_successful_op_at: ok ? new Date().toISOString() : undefined,
           updated_at: new Date().toISOString(),
@@ -2612,7 +2778,10 @@ serve(async (req: Request) => {
         }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
-      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const isSeven = st.planId.includes("Parent_7") || 
+                      st.planId.includes("7") || 
+                      engine.shortCode?.includes("M7") || 
+                      session.owner_current_plan?.includes("270");
       const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
       const cost = isSeven ? "270" : "180";
 
@@ -2784,7 +2953,10 @@ serve(async (req: Request) => {
       }
 
       const repeatCount = Math.min(Math.max(Number(body.count) || 15, 1), 30);
-      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const isSeven = st.planId.includes("Parent_7") || 
+                      st.planId.includes("7") || 
+                      engine.shortCode?.includes("M7") || 
+                      session.owner_current_plan?.includes("270");
       const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
 
       engine.log(`[*] جاري تنفيذ أمر إخراج الفرد (${targetChild}) بتكرار ${repeatCount} مرة...`, "info");

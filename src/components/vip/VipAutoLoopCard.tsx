@@ -30,7 +30,10 @@ import {
   BellRing,
   ShieldCheck,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { executeVipReturnChildMixes } from '@/lib/vipApi';
 import type { VipSession } from '@/types/vip';
 import {
   requestVipNotificationPermission,
@@ -68,6 +71,7 @@ export function VipAutoLoopCard({
   );
   const [cycleDelay, setCycleDelay] = useState<number>(session.cycle_delay_seconds || 20);
   const [hasNotifPerm, setHasNotifPerm] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
 
   useEffect(() => {
     setHasNotifPerm(isVipNotificationGranted());
@@ -129,6 +133,22 @@ export function VipAutoLoopCard({
     }
     setShowConfirmModal(false);
     onStartLoop(targetToRun, cycleDelay);
+  };
+
+  const handleRescueChildMixes = async () => {
+    setIsReturning(true);
+    try {
+      const res = await executeVipReturnChildMixes(session.id);
+      if (res.success) {
+        toast.success(res.message || 'تم استرجاع الميكسات بنجاح إلى الأونر!');
+      } else {
+        toast.error(res.error || 'فشل استرجاع الميكسات من الفرد');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'حدث خطأ أثناء الاتصال بسيرفر اتصالات');
+    } finally {
+      setIsReturning(false);
+    }
   };
 
   return (
@@ -238,17 +258,29 @@ export function VipAutoLoopCard({
           </div>
 
           {/* Parked Mixes Golden Shield Safety Banner */}
-          {((session.individual_mix_balance || 0) > 0 || session.stop_reason?.includes('الفرد')) && (
-            <div className="mt-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2 text-[11px]">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-0.5 text-right">
-                <span className="font-bold text-emerald-400 block">
-                  درع الأمان الذهبي: الميكسات محجوزة ومحمية بالكامل في حساب الفرد!
-                </span>
-                <span className="text-muted-foreground block text-[10.5px] leading-relaxed">
-                  يمنع النظام استرجاع الميكسات للأونر طالما أمر الترحيل معلق بالسيرفر لتفادي تصفيرها. ويتم تنشيط العقد تلقائياً كل دقيقة حتى يتم الترحيل ثم تُسترجع الميكسات بأمان 100%.
-                </span>
+          {((session.individual_mix_balance || 0) > 0 || session.mixes_parked_at_child || session.stop_reason?.includes('الفرد')) && (
+            <div className="mt-2 p-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px]">
+              <div className="flex items-start gap-2 text-right">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold text-emerald-400 block">
+                    درع الأمان: الميكسات محجوزة ومحمية في حساب الفرد ({((session.parked_amount || session.individual_mix_balance || 0)).toLocaleString('en-US')} ميكس)
+                  </span>
+                  <span className="text-muted-foreground block text-[10.5px] leading-relaxed">
+                    تم إيقاف الأتمتة بأمان لمنع أي تصفير أو نقصان. يمكنك استرجاع الميكسات فوراً للأونر بضغطة زر.
+                  </span>
+                </div>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRescueChildMixes}
+                disabled={isReturning || isRunning}
+                className="shrink-0 h-8 text-xs font-bold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20"
+              >
+                {isReturning ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" /> : <Download className="w-3.5 h-3.5 ml-1" />}
+                استرجاع للأونر فوراً
+              </Button>
             </div>
           )}
         </div>
