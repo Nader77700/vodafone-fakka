@@ -71,6 +71,82 @@ function decodeStoredPassword(pw: string): string {
   return pw;
 }
 
+function generateSessionDeviceProfile(role: 'owner' | 'child', sessionId?: string, config?: BridgeConfig): DeviceProfile {
+  // If custom bridge config with non-default device ID is specified, respect it
+  if (config) {
+    if (role === 'owner' && config.owner_device_id && config.owner_device_id !== DEFAULT_BRIDGE_CONFIG.owner_device_id) {
+      return {
+        deviceId: config.owner_device_id,
+        modelType: config.owner_model_type || "CPH2737",
+        osVersion: config.owner_os_version || "14",
+        userAgent: config.owner_user_agent || "okhttp/5.0.0-alpha.11",
+        simulatedIp: config.owner_simulated_ip || "196.205.142.23",
+      };
+    }
+    if (role === 'child' && config.child_device_id && config.child_device_id !== DEFAULT_BRIDGE_CONFIG.child_device_id) {
+      return {
+        deviceId: config.child_device_id,
+        modelType: config.child_model_type || "CPH2737",
+        osVersion: config.child_os_version || "14",
+        userAgent: config.child_user_agent || "okhttp/5.0.0-alpha.11",
+        simulatedIp: config.child_simulated_ip || "196.205.142.23",
+      };
+    }
+  }
+
+  // Deterministically generate isolated, unique Egyptian Telecom identity per session & role
+  const seed = (sessionId || "vip_default_session") + "_" + role;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  const posHash = Math.abs(hash);
+
+  // Pool of authentic Egyptian mobile subnets (Telecom Egypt, Etisalat Misr AS36935, Orange EG, Vodafone EG)
+  const egSubnets = [
+    [196, 205],
+    [197, 34],
+    [197, 48],
+    [41, 38],
+    [41, 130],
+    [156, 201],
+    [156, 210],
+    [102, 185],
+  ];
+  const subnet = egSubnets[posHash % egSubnets.length];
+  const octet3 = (posHash % 200) + 12;
+  const octet4 = ((posHash >> 4) % 220) + 20;
+  const simulatedIp = `${subnet[0]}.${subnet[1]}.${octet3}.${octet4}`;
+
+  // Unique 16-hex character device ID derived from session and role
+  let hexId = "";
+  let cur = posHash;
+  for (let i = 0; i < 4; i++) {
+    cur = ((cur * 1664525 + 1013904223) | 0) >>> 0;
+    hexId += cur.toString(16).padStart(8, "0");
+  }
+  const deviceId = hexId.slice(0, 16);
+
+  // Diverse Android flagship models common in Egypt
+  const androidModels = [
+    { model: "CPH2737", os: "14", ua: "okhttp/5.0.0-alpha.11" },   // Oppo Reno 12 Pro
+    { model: "SM-S928B", os: "14", ua: "okhttp/4.12.0" },           // Samsung Galaxy S24 Ultra
+    { model: "23117RK66C", os: "14", ua: "okhttp/5.0.0-alpha.11" }, // Xiaomi 14 Pro
+    { model: "SM-A556B", os: "14", ua: "okhttp/4.11.0" },           // Samsung Galaxy A55
+    { model: "RMX3820", os: "14", ua: "okhttp/5.0.0-alpha.11" },    // Realme GT5
+    { model: "CPH2581", os: "14", ua: "okhttp/4.12.0" },           // OnePlus 12
+  ];
+  const selectedModel = androidModels[posHash % androidModels.length];
+
+  return {
+    deviceId,
+    modelType: selectedModel.model,
+    osVersion: selectedModel.os,
+    userAgent: selectedModel.ua,
+    simulatedIp,
+  };
+}
+
 class EtisalatEngine {
   public device: DeviceProfile;
   public bridgeConfig: BridgeConfig;
@@ -81,27 +157,15 @@ class EtisalatEngine {
   public currentDial: string | null = null;
   public ownerDial: string | null = null;
   public childDial: string | null = null;
+  public role: 'owner' | 'child';
+  public sessionId?: string;
   public logs: Array<{ time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }> = [];
 
-  constructor(role: 'owner' | 'child', config?: BridgeConfig) {
+  constructor(role: 'owner' | 'child', config?: BridgeConfig, sessionId?: string) {
+    this.role = role;
+    this.sessionId = sessionId;
     this.bridgeConfig = config || DEFAULT_BRIDGE_CONFIG;
-    if (role === 'owner') {
-      this.device = {
-        deviceId: this.bridgeConfig.owner_device_id || DEFAULT_BRIDGE_CONFIG.owner_device_id,
-        modelType: this.bridgeConfig.owner_model_type || DEFAULT_BRIDGE_CONFIG.owner_model_type,
-        osVersion: this.bridgeConfig.owner_os_version || DEFAULT_BRIDGE_CONFIG.owner_os_version,
-        userAgent: this.bridgeConfig.owner_user_agent || DEFAULT_BRIDGE_CONFIG.owner_user_agent,
-        simulatedIp: this.bridgeConfig.owner_simulated_ip || DEFAULT_BRIDGE_CONFIG.owner_simulated_ip,
-      };
-    } else {
-      this.device = {
-        deviceId: this.bridgeConfig.child_device_id || DEFAULT_BRIDGE_CONFIG.child_device_id,
-        modelType: this.bridgeConfig.child_model_type || DEFAULT_BRIDGE_CONFIG.child_model_type,
-        osVersion: this.bridgeConfig.child_os_version || DEFAULT_BRIDGE_CONFIG.child_os_version,
-        userAgent: this.bridgeConfig.child_user_agent || DEFAULT_BRIDGE_CONFIG.child_user_agent,
-        simulatedIp: this.bridgeConfig.child_simulated_ip || DEFAULT_BRIDGE_CONFIG.child_simulated_ip,
-      };
-    }
+    this.device = generateSessionDeviceProfile(role, sessionId, this.bridgeConfig);
   }
 
   public onLog?: (log: { time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }) => void;
@@ -228,7 +292,7 @@ class EtisalatEngine {
     const cleanPw = decodeStoredPassword(rawPassword);
     const masked = email.includes("@") ? `${email.substring(0, 3)}***@${email.split("@")[1]}` : email;
     if (!silent) {
-      this.log(`[*] جاري تسجيل الدخول للحساب: ${masked} [جهاز: ${this.device.modelType}] ...`, "info");
+      this.log(`[*] تسجيل الدخول [${masked}] | بصمة معزولة: هاتف (${this.device.modelType}) | IP مصري (${this.device.simulatedIp})`, "info");
     }
 
     const authB64 = btoa(`${email}:${cleanPw}`);
@@ -382,6 +446,7 @@ class EtisalatEngine {
         const consumptionBlocks = text.match(/<consumption[\s>][\s\S]*?<\/consumption>/gi) || [];
         let mainMix = 0;
         let carriedMix = 0;
+        let transferredMix = 0;
         const allMixCandidates: number[] = [];
 
         for (const block of consumptionBlocks) {
@@ -411,15 +476,21 @@ class EtisalatEngine {
                               /xrp_units|hekaya_units/i.test(meterType) ||
                               /GENERAL_UNIT/i.test(oms) ||
                               /CARRIED_OVER/i.test(oms) ||
-                              /ميكسات|ميكس/i.test(label);
+                              /TRANSFER/i.test(oms) ||
+                              /FAMILY/i.test(oms) ||
+                              /ميكسات|ميكس|وحدة/i.test(label);
 
           if (isMixBucket) {
             if (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || meterType === "xrp_units" || meterType === "hekaya_units") {
               if (remVal > mainMix) mainMix = remVal;
             } else if (/CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة/i.test(label)) {
               if (remVal > carriedMix) carriedMix = remVal;
+            } else if (/TRANSFER|FAMILY/i.test(oms) || /محول|تحويل|عيلة|مسترجع/i.test(label)) {
+              if (remVal > transferredMix) transferredMix = remVal;
             }
-            allMixCandidates.push(remVal);
+            if (remVal > 0) {
+              allMixCandidates.push(remVal);
+            }
           }
         }
 
@@ -432,9 +503,15 @@ class EtisalatEngine {
           }
         }
 
+        const candidateMax = allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0;
         // Sum basic quota and carried/transferred quota if both are present
         const combinedMix = (mainMix > 0 && carriedMix > 0) ? (mainMix + carriedMix) : (mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : 0));
-        const remainingMix = combinedMix > 0 ? combinedMix : (allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0);
+        const bucketSum = mainMix + carriedMix + transferredMix;
+        
+        // CRITICAL ZERO-LOSS FIX:
+        // Never allow a smaller combinedMix (e.g. 3,975) to hide a larger bucket (e.g. 80,025)
+        // that exists in allMixCandidates or transferredMix!
+        const remainingMix = Math.max(combinedMix, bucketSum, candidateMax);
 
         // 3. Child in family (fafNumberList/fafNumber/value)
         let childNumber: string | null = null;
@@ -709,7 +786,7 @@ async function handleCheckStatusInternal(
   let childName: string | null = null;
 
   if (childEmail && childPass) {
-    const childEngine = new EtisalatEngine("child", bridgeConfig);
+    const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
     childEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
     childEngine.onNewAuthToken = (token, cookie) => {
       supabase.from("vip_sessions").update({
@@ -861,7 +938,7 @@ async function handleSingleCycleInternal(
   let prewarmedChildEngine: EtisalatEngine | null = null;
   if (childEmail && childPass) {
     try {
-      prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig);
+      prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id);
       prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
       prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
         supabase.from("vip_sessions").update({
@@ -880,19 +957,40 @@ async function handleSingleCycleInternal(
   }
 
   // ── INTELLIGENT ZERO-LOSS BALANCE CONTINUITY GATE ──
-  // Compare current detected owner balance against the previously verified session balance.
-  // If the owner previously had a substantial balance (> 5,000 mixes) and now owner reports:
-  // (a) Exactly 0 mixes, OR
-  // (b) A suspiciously low fraction (< 65%) of previous balance (e.g. 6,050 when previous was 72,150 or 59,250):
-  // WE MUST NEVER BLINDLY ACCEPT A DROP OR MIGRATE! We hunt across Child line and retry inquiry.
-  const prevOwnerMix = parseInt(session.owner_mix_balance || "0", 10) || 0;
-  const isSuspiciouslyLow = prevOwnerMix > 5000 && (status.remainingMix < prevOwnerMix * 0.65);
+  // Calculate verified historical peak balance by querying recent cycles from vip_cycle_history
+  // as well as the session state. Never rely solely on a single potentially corrupted number.
+  let verifiedPeakBalance = Math.max(
+    parseInt(session.owner_mix_balance || "0", 10) || 0,
+    parseInt(session.peak_mix_balance || "0", 10) || 0
+  );
+
+  try {
+    const { data: recentCycles } = await supabase
+      .from("vip_cycle_history")
+      .select("final_verified_owner_balance, owner_balance_start, amount_transferred_indiv_to_owner")
+      .eq("session_id", session_id)
+      .order("cycle_number", { ascending: false })
+      .limit(8);
+
+    if (recentCycles && recentCycles.length > 0) {
+      for (const rc of recentCycles) {
+        const fMix = Number(rc.final_verified_owner_balance) || 0;
+        const sMix = Number(rc.owner_balance_start) || 0;
+        const rMix = Number(rc.amount_transferred_indiv_to_owner) || 0;
+        if (fMix > verifiedPeakBalance) verifiedPeakBalance = fMix;
+        if (sMix > verifiedPeakBalance) verifiedPeakBalance = sMix;
+        if (rMix > verifiedPeakBalance) verifiedPeakBalance = rMix;
+      }
+    }
+  } catch (_e) {}
+
+  const isSuspiciouslyLow = verifiedPeakBalance > 3000 && (status.remainingMix < verifiedPeakBalance * 0.70);
 
   let childHoldsMissing = false;
   let childDetectedMix = 0;
 
   if (isSuspiciouslyLow) {
-    engine.log(`[!] تنبيه رصد الرصيد الذكي: رصيد الأونر المقروء (${status.remainingMix.toLocaleString('en-US')} ميكس) أقل بكثير من الرصيد المعتمد السابق (${prevOwnerMix.toLocaleString('en-US')} ميكس)!`, "warn");
+    engine.log(`[!] تنبيه رصد الرصيد الذكي: رصيد الأونر المقروء (${status.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد التاريخي المعتمد (${verifiedPeakBalance.toLocaleString('en-US')} ميكس)!`, "warn");
     engine.log(`[*] بدء البحث الشامل عن الميكسات المتبقية والتحقق من حساب الفرد ومزامنة السيرفر...`, "info");
 
     // Phase 1: Check if the missing balance is already safely held at the Child line!
@@ -900,7 +998,7 @@ async function handleSingleCycleInternal(
       try {
         const childInspect = await prewarmedChildEngine.getStatusAndChild(true);
         childDetectedMix = childInspect.remainingMix || 0;
-        if (childDetectedMix >= prevOwnerMix * 0.65) {
+        if (childDetectedMix >= verifiedPeakBalance * 0.65) {
           childHoldsMissing = true;
           parkedMixAmount = childDetectedMix;
           engine.log(`[+] عظيم! تم العثور على الميكسات (${childDetectedMix.toLocaleString('en-US')} ميكس) محفوظة بأمان عند الفرد بالفعل!`, "success");
@@ -908,14 +1006,14 @@ async function handleSingleCycleInternal(
       } catch (_cErr) {}
     }
 
-    // Phase 2: If child doesn't hold it, perform smart sync inquiry loops on the Owner (up to 5 retries with fresh inquiry)
+    // Phase 2: If child doesn't hold it, perform smart sync inquiry loops on the Owner (up to 7 retries with fresh inquiry)
     if (!childHoldsMissing) {
-      for (let rAttempt = 1; rAttempt <= 5; rAttempt++) {
-        engine.log(`[*] إعادة فحص رصيد الأونر بالسيرفر بعد انتظار المزامنة (محاولة ${rAttempt}/5)...`, "info");
+      for (let rAttempt = 1; rAttempt <= 7; rAttempt++) {
+        engine.log(`[*] إعادة فحص رصيد الأونر بالسيرفر بعد انتظار المزامنة (محاولة ${rAttempt}/7)...`, "info");
         await sleep(3500);
         try {
           const recheckOwner = await engine.getStatusAndChild(true);
-          if (recheckOwner.remainingMix >= prevOwnerMix * 0.65) {
+          if (recheckOwner.remainingMix >= verifiedPeakBalance * 0.70) {
             status = recheckOwner;
             engine.log(`[+] تم استرجاع وتأكيد قراءة الرصيد الفعلي للأونر بنجاح: ${status.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
             break;
@@ -925,7 +1023,7 @@ async function handleSingleCycleInternal(
 
           if (prewarmedChildEngine) {
             const recheckChild = await prewarmedChildEngine.getStatusAndChild(true);
-            if (recheckChild.remainingMix >= prevOwnerMix * 0.65) {
+            if (recheckChild.remainingMix >= verifiedPeakBalance * 0.65) {
               childHoldsMissing = true;
               childDetectedMix = recheckChild.remainingMix;
               parkedMixAmount = childDetectedMix;
@@ -949,23 +1047,26 @@ async function handleSingleCycleInternal(
           engine.log(`[+] تم ضم رصيد الأونر للفرد بنجاح! إجمالي الميكسات المركونة عند الفرد الآن: ${parkedMixAmount.toLocaleString('en-US')} ميكس.`, "success");
         }
       }
-    } else if (status.remainingMix < prevOwnerMix * 0.65) {
+    } else if (status.remainingMix < verifiedPeakBalance * 0.70) {
       // STRICT ZERO-LOSS ABORT:
       // Missing balance was NOT found in owner AND was NOT found in child!
-      // PROCEEDING WOULD PERMANENTLY WIPE OUT MIXES!
+      // PROCEEDING TO CHANGE PLAN WOULD PERMANENTLY WIPE OUT MIXES!
       // STOP THE CYCLE IMMEDIATELY!
-      engine.log(`[-] تنبيه طوارئ صارم لحماية الرصيد: رصيد الأونر (${status.remainingMix.toLocaleString('en-US')}) أقل بكثير من المعتمد السابق (${prevOwnerMix.toLocaleString('en-US')})، ولم يتم رصد الميكسات عند الفرد (${childDetectedMix.toLocaleString('en-US')})!`, "error");
+      engine.log(`[-] تنبيه طوارئ صارم لحماية الرصيد: رصيد الأونر (${status.remainingMix.toLocaleString('en-US')}) أقل بكثير من المعتمد السابق (${verifiedPeakBalance.toLocaleString('en-US')})، ولم يتم رصد الميكسات عند الفرد (${childDetectedMix.toLocaleString('en-US')})!`, "error");
       engine.log(`[-] تم حظر وإلغاء ترحيل النظام فوراً لمنع تصفير أو فقدان الميكسات!`, "error");
       await sendStep("safety_stop", 1, "توقف طوارئ لمنع ضياع الميكسات", "تم إلغاء الترحيل: رصيد الأونر غير مطابق للمعتمد وغير متواجد عند الفرد");
 
       try {
         await supabase.from("vip_sessions").update({
+          automation_enabled: false,
+          operation_state: "paused",
+          pause_reason: `توقف أمان ذكي: الرصيد (${status.remainingMix}) أقل من المعتمد التاريخي (${verifiedPeakBalance})`,
           current_step: "safety_stop",
           current_cycle_details: {
             step: "safety_stop",
             stepNumber: 1,
             title: "توقف أمان لحماية الميكسات",
-            detail: `تم إيقاف الدورة لحماية الرصيد: القراءة (${status.remainingMix}) أقل من المعتمد (${prevOwnerMix})`,
+            detail: `تم إيقاف الدورة لحماية الرصيد: القراءة (${status.remainingMix}) أقل من المعتمد (${verifiedPeakBalance})`,
             updated_at: new Date().toISOString(),
           },
           last_actual_operation: "safety_stop_anomaly_detected",
@@ -982,7 +1083,7 @@ async function handleSingleCycleInternal(
           system_pre_migration: ownerPlanPre,
           cycle_status: "failed",
           failure_step: "parking_anomaly",
-          safe_error_summary: `توقف أمان صارم: رصيد الأونر (${status.remainingMix}) أقل بكثير من المعتمد (${prevOwnerMix}) - تم حظر الترحيل`,
+          safe_error_summary: `توقف أمان صارم: رصيد الأونر (${status.remainingMix}) أقل بكثير من المعتمد (${verifiedPeakBalance}) - تم حظر الترحيل لمنع التصفير`,
           increased_owner_balance: false,
         });
 
@@ -993,7 +1094,7 @@ async function handleSingleCycleInternal(
           individual_account_ref: session.individual_account_identifier,
           requested_action: `دورة أتمتة #${(session.current_cycle || 0) + 1}`,
           status: "failed",
-          failure_reason: `توقف أمان ذكي: الرصيد (${status.remainingMix}) يقل عن المعتمد السابق (${prevOwnerMix})`,
+          failure_reason: `توقف أمان ذكي: الرصيد (${status.remainingMix}) يقل عن المعتمد السابق (${verifiedPeakBalance})`,
           started_at: cycleStartTime,
           completed_at: new Date().toISOString(),
           is_automatic: true,
@@ -1003,7 +1104,7 @@ async function handleSingleCycleInternal(
       return {
         success: false,
         safety_stop: true,
-        error: `توقف أمان ذكي فائق: رصيد الأونر المقروء (${status.remainingMix.toLocaleString('en-US')}) أقل من الرصيد المعتمد السابق (${prevOwnerMix.toLocaleString('en-US')}) ميكس، ولم يتم رصد الميكسات عند الفرد. تم إيقاف الدورة فوراً لحماية ميكساتك من التصفير.`,
+        error: `توقف أمان ذكي فائق: رصيد الأونر المقروء (${status.remainingMix.toLocaleString('en-US')}) أقل من الرصيد المعتمد السابق (${verifiedPeakBalance.toLocaleString('en-US')}) ميكس، ولم يتم رصد الميكسات عند الفرد. تم إيقاف الدورة فوراً لحماية ميكساتك من التصفير.`,
         logs: engine.logs,
       };
     }
@@ -1188,7 +1289,7 @@ async function handleSingleCycleInternal(
     engine.log(`[⚡] بدء الاسترجاع اللحظي الفوري للميكسات من الفرد للأونر ...`, "info");
     let activeChildEngine = prewarmedChildEngine;
     if (!activeChildEngine || !activeChildEngine.authToken) {
-      activeChildEngine = new EtisalatEngine("child", bridgeConfig);
+      activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id);
       activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
@@ -1249,16 +1350,67 @@ async function handleSingleCycleInternal(
   // Reuse existing owner engine directly (no redundant login!)
   let finalStatus = await engine.getStatusAndChild(true);
 
-  // If we recovered mixes, ensure telecom counter has propagated the transferred amount
-  if (recoveredMixAmount > 0 && finalStatus.remainingMix < (confirmedNewMix + recoveredMixAmount * 0.7)) {
-    engine.log(`[*] في انتظار مزامنة عداد ميكسات الأونر مع الرصيد المسترجع...`, "info");
-    await sleep(2500);
-    try {
-      const recheckStatus = await engine.getStatusAndChild(true);
-      if (recheckStatus.remainingMix > finalStatus.remainingMix) {
-        finalStatus = recheckStatus;
+  // CRITICAL ZERO-LOSS POST-RECOVERY VERIFICATION:
+  // If we recovered mixes from the child (e.g. 80,025 mixes), the owner's balance MUST reflect this!
+  // It is mathematically and logically impossible for the owner's balance to be only 3,975
+  // right after receiving 80,025 mixes from the child.
+  const minExpectedRecoveryBalance = recoveredMixAmount > 0 ? Math.round(recoveredMixAmount * 0.85) : 0;
+
+  if (recoveredMixAmount > 0 && finalStatus.remainingMix < minExpectedRecoveryBalance) {
+    engine.log(`[*] تم استرجاع (${recoveredMixAmount.toLocaleString('en-US')}) ميكس للأونر، ولكن القراءة الأولية (${finalStatus.remainingMix.toLocaleString('en-US')}) ميكس. بدء مزامنة نشطة فائقة مع شبكة اتصالات...`, "warn");
+    
+    // Poll up to 14 attempts (every 2.5s = ~35s total) to wait for Etisalat billing counter to propagate
+    let synced = false;
+    for (let syncAttempt = 1; syncAttempt <= 14; syncAttempt++) {
+      await sleep(2500);
+      try {
+        const recheckStatus = await engine.getStatusAndChild(true);
+        if (recheckStatus.remainingMix >= minExpectedRecoveryBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
+          finalStatus = recheckStatus;
+        }
+        if (finalStatus.remainingMix >= minExpectedRecoveryBalance) {
+          synced = true;
+          engine.log(`[+] تم تأكيد مزامنة عداد ميكسات الأونر مع الرصيد المسترجع بنجاح: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
+          break;
+        }
+      } catch (_recheck) {}
+
+      if (syncAttempt % 3 === 0) {
+        engine.log(`[*] في انتظار معالجة سيرفر اتصالات لظهور الرصيد المسترجع (${syncAttempt * 2.5}s)...`, "info");
       }
-    } catch (_recheck) {}
+    }
+
+    // STRICT ZERO-LOSS SAFEGUARD:
+    // If after 35 seconds the owner balance STILL does not show the recovered amount:
+    // DO NOT allow the cycle to finish normally and DO NOT start another cycle!
+    // Starting another cycle while mixes are unparked or unacknowledged causes migration to erase them!
+    if (!synced && finalStatus.remainingMix < minExpectedRecoveryBalance) {
+      engine.log(`[-] تنبيه أمان طارئ حاسم: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')}) لا يعكس الرصيد المسترجع (${recoveredMixAmount.toLocaleString('en-US')})!`, "error");
+      engine.log(`[-] تم إيقاف التشغيل الآلي فوراً وتثبيت الرصيد المعتمد لمنع أي ترحيل قد يصفر ميكساتك!`, "error");
+
+      // Stop automation to protect user from subsequent wiping
+      await supabase.from("vip_sessions").update({
+        automation_enabled: false,
+        operation_state: "paused",
+        pause_reason: `توقف أمان ذكي: الرصيد المقروء (${finalStatus.remainingMix}) يقل عن المسترجع (${recoveredMixAmount})`,
+        current_step: "safety_stop",
+        current_cycle_details: {
+          step: "safety_stop",
+          stepNumber: 5,
+          title: "توقف أمان لمطابقة الرصيد",
+          detail: `توقف لحماية الرصيد: استرجعنا ${recoveredMixAmount} ولكن القراءة ${finalStatus.remainingMix}`,
+          updated_at: new Date().toISOString(),
+        },
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+
+      return {
+        success: false,
+        safety_stop: true,
+        error: `توقف أمان ذكي فائق: تم استرجاع (${recoveredMixAmount.toLocaleString('en-US')}) ميكس للأونر بنجاح، لكن سيستم اتصالات يقرأ (${finalStatus.remainingMix.toLocaleString('en-US')}) ميكس فقط. تم إيقاف التكرار الآلي فوراً لحماية ميكساتك من التصفير في الدورة القادمة.`,
+        logs: engine.logs,
+      };
+    }
   }
 
   const finalMix = finalStatus.remainingMix;
@@ -1659,7 +1811,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const engine = new EtisalatEngine("owner", bridgeConfig);
+    const engine = new EtisalatEngine("owner", bridgeConfig, session_id);
     engine.setAuthSession(session.cached_owner_token, session.cached_owner_cookie);
     engine.onNewAuthToken = (token, cookie, isOwner) => {
       supabase.from("vip_sessions").update(isOwner ? {
@@ -1791,7 +1943,7 @@ serve(async (req: Request) => {
       // Step 2: Login to Child and activate account
       if (childEmail && childPass) {
         engine.log(`[*] الخطوة 2/4: تسجيل الدخول للفرد لتفعيل حسابه قبل الدعوة...`, "info");
-        const childEngine = new EtisalatEngine("child", bridgeConfig);
+        const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
         if (await childEngine.login(childEmail, childPass, false)) {
           const childStatus = await childEngine.getStatusAndChild(true);
           if (childStatus.planId && childStatus.planId.includes("Parent_7")) {
@@ -1805,7 +1957,7 @@ serve(async (req: Request) => {
 
       // Step 3: Switch back to Owner to send addChild invitation
       engine.log(`[*] الخطوة 3/4: الرجوع للأونر لإرسال دعوة الإضافة بنسبة 10%...`, "info");
-      const ownerEngine = new EtisalatEngine("owner", bridgeConfig);
+      const ownerEngine = new EtisalatEngine("owner", bridgeConfig, session_id);
       if (!await ownerEngine.login(ownerEmail, ownerPass, true, true)) {
         return new Response(JSON.stringify({
           success: false,
@@ -1825,14 +1977,14 @@ serve(async (req: Request) => {
           ownerEngine.log(`[*] جاري الدخول للفرد وتحديث البيانات لقبول الدعوة...`, "info");
 
           if (childEmail && childPass) {
-            const childAcceptEngine = new EtisalatEngine("child", bridgeConfig);
+            const childAcceptEngine = new EtisalatEngine("child", bridgeConfig, session_id);
             if (await childAcceptEngine.login(childEmail, childPass, false, true)) {
               await childAcceptEngine.renewBundleAction("Hekaya_XRP_MIX_Parent_7", "270");
               await sleep(2500);
             }
           }
 
-          const verifyOwner = new EtisalatEngine("owner", bridgeConfig);
+          const verifyOwner = new EtisalatEngine("owner", bridgeConfig, session_id);
           await verifyOwner.login(ownerEmail, ownerPass, true, true);
           const st = await verifyOwner.getStatusAndChild(true);
           if (st.childNumber) {
@@ -2131,7 +2283,7 @@ serve(async (req: Request) => {
         }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
-      const childEngine = new EtisalatEngine("child", bridgeConfig);
+      const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
       childEngine.onLog = (l) => engine.log(l.message, l.level);
       if (!await childEngine.login(childEmail, childPass, false, true)) {
         return new Response(JSON.stringify({

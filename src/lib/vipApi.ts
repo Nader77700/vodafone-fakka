@@ -98,9 +98,9 @@ export async function updateVipSession(params: {
 }
 
 /**
- * Delete / Archive a VIP session.
+ * Archive a VIP session (soft delete).
  */
-export async function deleteVipSession(
+export async function archiveVipSession(
   sessionId: string
 ): Promise<{ success: boolean; session_id: string; message: string }> {
   try {
@@ -110,9 +110,68 @@ export async function deleteVipSession(
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error('[vipApi] deleteVipSession error:', err);
+    console.error('[vipApi] archiveVipSession error:', err);
     throw err;
   }
+}
+
+/**
+ * Unarchive / Restore a previously archived VIP session.
+ */
+export async function unarchiveVipSession(
+  sessionId: string
+): Promise<{ success: boolean; session_id: string; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('vip_unarchive_session', {
+      p_session_id: sessionId,
+    });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[vipApi] unarchiveVipSession error:', err);
+    throw err;
+  }
+}
+
+/**
+ * List all archived VIP sessions.
+ */
+export async function listArchivedVipSessions(): Promise<VipSession[]> {
+  try {
+    const { data, error } = await supabase.rpc('vip_list_archived_sessions');
+    if (error) throw error;
+    return (data?.sessions || []) as VipSession[];
+  } catch (err) {
+    console.error('[vipApi] listArchivedVipSessions error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Permanently hard-delete a VIP session and all its logs.
+ */
+export async function hardDeleteVipSession(
+  sessionId: string
+): Promise<{ success: boolean; session_id: string; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('vip_hard_delete_session', {
+      p_session_id: sessionId,
+    });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[vipApi] hardDeleteVipSession error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Delete / Archive a VIP session (backwards compatibility).
+ */
+export async function deleteVipSession(
+  sessionId: string
+): Promise<{ success: boolean; session_id: string; message: string }> {
+  return archiveVipSession(sessionId);
 }
 
 /**

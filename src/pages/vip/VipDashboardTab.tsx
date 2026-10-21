@@ -22,6 +22,8 @@ import { VipUnifiedMasterCard } from '@/components/vip/VipUnifiedMasterCard';
 import { VipAutoLoopCard } from '@/components/vip/VipAutoLoopCard';
 import { VipTerminalLogs } from '@/components/vip/VipTerminalLogs';
 import { VipCycleStepper } from '@/components/vip/VipCycleStepper';
+import { VipLiveBalanceStrip } from '@/components/vip/VipLiveBalanceStrip';
+import { parseBalancesFromLog } from '@/lib/vipRunnerService';
 
 interface Props {
   data: VipDashboardData;
@@ -39,13 +41,21 @@ export function VipDashboardTab({
   const session = activeSession;
 
   // Terminal Logs State
-  const [terminalLogs, setTerminalLogs] = useState<VipExecutionLog[]>([
-    {
-      time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
-      level: 'info',
-      message: `[+] تم تحميل جلسة «${session?.session_name || 'VIP'}». جاهز لبدء العمليات مع Etisalat VIP Bot.`,
-    },
-  ]);
+  const [terminalLogs, setTerminalLogs] = useState<VipExecutionLog[]>(() => {
+    if (session?.id) {
+      const runnerState = vipRunnerService.getState(session.id);
+      if (runnerState.logs && runnerState.logs.length > 0) {
+        return runnerState.logs;
+      }
+    }
+    return [
+      {
+        time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+        level: 'info',
+        message: `[+] تم تحميل جلسة «${session?.session_name || 'VIP'}». جاهز لبدء العمليات مع Etisalat VIP Bot.`,
+      },
+    ];
+  });
 
   // Action Loading States
   const [checkingStatus, setCheckingStatus] = useState(false);
@@ -60,9 +70,27 @@ export function VipDashboardTab({
   const [stepMessage, setStepMessage] = useState<string | null>(null);
 
   // Live Real-Time Card Synchronizer
-  const [liveOwnerMix, setLiveOwnerMix] = useState<number | null>(null);
-  const [liveChildMix, setLiveChildMix] = useState<number | null>(null);
-  const [livePlan, setLivePlan] = useState<string | null>(null);
+  const [liveOwnerMix, setLiveOwnerMix] = useState<number | null>(() => {
+    if (session?.id) {
+      const runnerState = vipRunnerService.getState(session.id);
+      if (runnerState.latestOwnerMix !== undefined) return runnerState.latestOwnerMix;
+    }
+    return session?.owner_mix_balance !== undefined ? session.owner_mix_balance : null;
+  });
+  const [liveChildMix, setLiveChildMix] = useState<number | null>(() => {
+    if (session?.id) {
+      const runnerState = vipRunnerService.getState(session.id);
+      if (runnerState.latestChildMix !== undefined) return runnerState.latestChildMix;
+    }
+    return session?.individual_mix_balance !== undefined ? session.individual_mix_balance : null;
+  });
+  const [livePlan, setLivePlan] = useState<string | null>(() => {
+    if (session?.id) {
+      const runnerState = vipRunnerService.getState(session.id);
+      if (runnerState.latestOwnerPlan) return runnerState.latestOwnerPlan;
+    }
+    return session?.owner_current_plan || null;
+  });
   const lastCycleRef = useRef<number>(session?.current_cycle || 0);
 
   // Keep ref for auto loop cancel
@@ -79,16 +107,28 @@ export function VipDashboardTab({
       setStepMessage(state.stepMessage);
       if (state.logs && state.logs.length > 0) {
         setTerminalLogs(state.logs);
+      } else {
+        setTerminalLogs([
+          {
+            time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+            level: 'info',
+            message: `[+] تم فتح جلسة «${session.session_name || 'VIP'}» المعزولة (${session.owner_account_identifier || session.owner_email || 'جلسة جديدة'}). سجلات وأرصدة مستقلة تماماً.`,
+          },
+        ]);
       }
-      if (state.latestOwnerMix !== undefined) {
-        setLiveOwnerMix(state.latestOwnerMix);
-      }
-      if (state.latestChildMix !== undefined) {
-        setLiveChildMix(state.latestChildMix);
-      }
-      if (state.latestOwnerPlan) {
-        setLivePlan(state.latestOwnerPlan);
-      }
+      setLiveOwnerMix(
+        state.latestOwnerMix !== undefined
+          ? state.latestOwnerMix
+          : (session.owner_mix_balance !== undefined ? session.owner_mix_balance : null)
+      );
+      setLiveChildMix(
+        state.latestChildMix !== undefined
+          ? state.latestChildMix
+          : (session.individual_mix_balance !== undefined ? session.individual_mix_balance : null)
+      );
+      setLivePlan(
+        state.latestOwnerPlan || session.owner_current_plan || null
+      );
 
       // Auto-refresh full session data when a cycle completes
       if (state.cycleCount > lastCycleRef.current) {
@@ -97,8 +137,37 @@ export function VipDashboardTab({
       }
     });
 
+    // Check if session was active before leaving (or if automation is enabled in DB) and resume seamlessly
+    if (session.automation_enabled && !vipRunnerService.isRunning(session.id)) {
+      vipRunnerService.resumeLoopIfActive(
+        session.id,
+        session.target_mix_balance || 100000,
+        session.cycle_delay_seconds || 20
+      );
+    } else {
+      vipRunnerService.resumeLoopIfActive(
+        session.id,
+        session.target_mix_balance,
+        session.cycle_delay_seconds
+      );
+    }
+
+    // Handle return from background (e.g., coming back from WhatsApp)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session?.id) {
+        // Re-sync state and check if runner needs resume
+        vipRunnerService.resumeLoopIfActive(
+          session.id,
+          session.target_mix_balance,
+          session.cycle_delay_seconds
+        );
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [session?.id, onRefresh]);
 
@@ -138,6 +207,10 @@ export function VipDashboardTab({
       const res = await executeVipCheckStatusStream(session.id, undefined, {
         onLog: (liveLog) => {
           setTerminalLogs((prev) => [...prev, liveLog]);
+          const parsed = parseBalancesFromLog(liveLog.message);
+          if (parsed.ownerMix !== undefined) setLiveOwnerMix(parsed.ownerMix);
+          if (parsed.childMix !== undefined) setLiveChildMix(parsed.childMix);
+          if (parsed.ownerPlan) setLivePlan(parsed.ownerPlan);
         },
       });
 
@@ -237,6 +310,13 @@ export function VipDashboardTab({
     }
   };
 
+  const handleClearLogs = () => {
+    if (session?.id) {
+      vipRunnerService.clearLogs(session.id);
+    }
+    setTerminalLogs([]);
+  };
+
   if (!session) return null;
 
   return (
@@ -276,11 +356,21 @@ export function VipDashboardTab({
           />
         </div>
 
-        {/* Right Column (lg: 7 cols): Live EtisalatBot Terminal Console */}
-        <div className="lg:col-span-7">
+        {/* Right Column (lg: 7 cols): Live Real-Time Balance Strip & Terminal Console */}
+        <div className="lg:col-span-7 space-y-2">
+          <VipLiveBalanceStrip
+            session={displaySession}
+            liveOwnerMix={liveOwnerMix}
+            liveChildMix={liveChildMix}
+            livePlan={livePlan}
+            currentStep={currentStep}
+            stepMessage={stepMessage}
+            isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
+          />
+
           <VipTerminalLogs
             logs={terminalLogs}
-            onClear={() => setTerminalLogs([])}
+            onClear={handleClearLogs}
             isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
           />
         </div>

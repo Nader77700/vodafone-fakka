@@ -62,6 +62,17 @@ export function VipAutoLoopCard({
     setHasNotifPerm(isVipNotificationGranted());
   }, []);
 
+  // Synchronize target and delay strictly when session changes
+  useEffect(() => {
+    setTargetPreset(
+      [50000, 100000, 150000, 200000].includes(session.target_mix_balance || 50000)
+        ? String(session.target_mix_balance || 50000)
+        : 'custom'
+    );
+    setCustomTarget(String(session.target_mix_balance || 50000));
+    setCycleDelay(session.cycle_delay_seconds || 20);
+  }, [session.id, session.target_mix_balance, session.cycle_delay_seconds]);
+
   const handleToggleNotifications = async () => {
     const granted = await requestVipNotificationPermission();
     setHasNotifPerm(granted);
@@ -70,7 +81,11 @@ export function VipAutoLoopCard({
   const selectedTarget =
     targetPreset === 'custom' ? parseInt(customTarget, 10) || 50000 : parseInt(targetPreset, 10);
 
-  const currentMix = session.owner_mix_balance || 0;
+  // Total current balance across owner & child to prevent progress bar flashing 0 during parking
+  const currentMix = Math.max(
+    session.owner_mix_balance || 0,
+    (session.owner_mix_balance || 0) + (session.individual_mix_balance || 0)
+  );
   const progressPercent = selectedTarget > 0 ? Math.min(100, Math.round((currentMix / selectedTarget) * 100)) : 0;
   const isTargetReached = currentMix >= selectedTarget && currentMix > 0;
 

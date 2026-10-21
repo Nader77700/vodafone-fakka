@@ -42,11 +42,24 @@ import {
   Sparkles,
   Loader2,
   AlertTriangle,
+  Archive,
+  ArchiveRestore,
+  RotateCcw,
+  Crown,
+  CheckCircle2,
+  ArrowRightLeft,
+  Radio,
+  Flame,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
+import { vipRunnerService } from '@/lib/vipRunnerService';
+import { Progress } from '@/components/ui/progress';
 import {
   createVipSession,
-  deleteVipSession,
+  archiveVipSession,
+  unarchiveVipSession,
+  listArchivedVipSessions,
+  hardDeleteVipSession,
   deleteAllVipSessions,
   getVipDefaultChildCredentials,
   executeVipCheckStatus,
@@ -69,7 +82,10 @@ export function VipSessionSwitcher({
   disabled = false,
 }: Props) {
   const [openAddModal, setOpenAddModal] = useState(false);
-  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openArchiveModal, setOpenArchiveModal] = useState(false);
+  const [openArchiveListModal, setOpenArchiveListModal] = useState(false);
+  const [archivedSessions, setArchivedSessions] = useState<VipSession[]>([]);
+  const [loadingArchived, setLoadingArchived] = useState(false);
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [openDefaultChildModal, setOpenDefaultChildModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -189,15 +205,27 @@ export function VipSessionSwitcher({
     }
   };
 
-  const handleDeleteActiveSession = async () => {
+  const loadArchivedSessions = async () => {
+    setLoadingArchived(true);
+    try {
+      const list = await listArchivedVipSessions();
+      setArchivedSessions(list);
+    } catch (err: any) {
+      toast.error('فشل تحميل قائمة الجلسات المؤرشفة: ' + (err?.message || 'خطأ'));
+    } finally {
+      setLoadingArchived(false);
+    }
+  };
+
+  const handleArchiveActiveSession = async () => {
     if (!activeSession) return;
 
     setSubmitting(true);
     try {
-      const res = await deleteVipSession(activeSession.id);
+      const res = await archiveVipSession(activeSession.id);
       if (res.success) {
-        toast.success('تم حذف وأرشفة الجلسة بنجاح.');
-        setOpenDeleteModal(false);
+        toast.success('تمت أرشفة الجلسة بنجاح. يمكنك استرجاعها في أي وقت من سجل الأرشيف.');
+        setOpenArchiveModal(false);
         const remaining = sessions.filter((s) => s.id !== activeSession.id);
         if (remaining.length > 0) {
           onSelectSession(remaining[0].id);
@@ -207,7 +235,43 @@ export function VipSessionSwitcher({
         onSessionsChanged();
       }
     } catch (err: any) {
-      toast.error('فشل حذف الجلسة: ' + (err?.message || 'خطأ غير معروف'));
+      toast.error('فشل أرشفة الجلسة: ' + (err?.message || 'خطأ غير معروف'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUnarchiveSession = async (sessionId: string) => {
+    setSubmitting(true);
+    try {
+      const res = await unarchiveVipSession(sessionId);
+      if (res.success) {
+        toast.success('تم استرجاع الجلسة من الأرشيف بنجاح وإعادتها للقائمة النشطة.');
+        await loadArchivedSessions();
+        onSessionsChanged();
+        onSelectSession(sessionId);
+      }
+    } catch (err: any) {
+      toast.error('فشل استرجاع الجلسة: ' + (err?.message || 'خطأ غير معروف'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleHardDeleteSession = async (sessionId: string) => {
+    if (!confirm('تحذير: هل أنت متأكد من الحذف النهائي؟ سيتم مسح بيانات الجلسة وسجل دوراتها نهائياً.')) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await hardDeleteVipSession(sessionId);
+      if (res.success) {
+        toast.success('تم الحذف النهائي للجلسة بنجاح.');
+        await loadArchivedSessions();
+        onSessionsChanged();
+      }
+    } catch (err: any) {
+      toast.error('فشل الحذف النهائي: ' + (err?.message || 'خطأ'));
     } finally {
       setSubmitting(false);
     }
@@ -218,89 +282,55 @@ export function VipSessionSwitcher({
     try {
       const res = await deleteAllVipSessions();
       if (res.success) {
-        toast.success('تم حذف وأرشفة جميع جلسات اتصالات بنجاح.');
+        toast.success('تم أرشفة جميع جلسات اتصالات بنجاح.');
         setOpenDeleteAllModal(false);
         onSelectSession('');
         onSessionsChanged();
       }
     } catch (err: any) {
-      toast.error('فشل حذف كافة الجلسات: ' + (err?.message || 'خطأ غير معروف'));
+      toast.error('فشل أرشفة كافة الجلسات: ' + (err?.message || 'خطأ غير معروف'));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const runningSessionsCount = sessions.filter((s) => vipRunnerService.isRunning(s.id)).length;
+
   return (
     <>
-      <div className="w-full bg-card/85 border border-border/80 rounded-2xl p-3 sm:p-3.5 shadow-sm backdrop-blur-sm" dir="rtl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          {/* Active Session Info & Dropdown */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
-              <Bot className="w-4 h-4" />
+      <div className="w-full bg-card/90 border border-border/90 rounded-2xl p-3 sm:p-4 shadow-lg backdrop-blur-md space-y-3.5" dir="rtl">
+        {/* ── Top Station Header Bar ── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 via-primary/20 to-transparent border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-sm shrink-0">
+              <Crown className="w-5 h-5 text-amber-400" />
             </div>
-
-            <div className="min-w-0">
+            <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-muted-foreground font-medium">جلسة اتصالات VIP:</span>
-                {sessions.length > 0 ? (
-                  <Select
-                    value={activeSessionId || sessions[0]?.id}
-                    onValueChange={onSelectSession}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger className="h-8 text-xs font-bold border-amber-500/40 bg-background/80 w-auto min-w-[190px] max-w-[270px] gap-2">
-                      <SelectValue placeholder="اختر الجلسة" />
-                    </SelectTrigger>
-                    <SelectContent align="start" className="max-h-72">
-                      {sessions.map((sess) => (
-                        <SelectItem key={sess.id} value={sess.id} className="text-xs">
-                          <div className="flex items-center justify-between gap-3 w-full">
-                            <span className="font-semibold truncate">{sess.session_name}</span>
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1 py-0 shrink-0 font-mono"
-                            >
-                              {sess.owner_account_identifier || sess.owner_email || 'جلسة جديدة'}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-500 bg-amber-500/5 px-2.5 py-1">
-                    لا توجد جلسات مسجلة حالياً
-                  </Badge>
-                )}
-
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0.5">
+                <h2 className="text-sm sm:text-base font-extrabold text-foreground tracking-tight flex items-center gap-1.5">
+                  <span>محطة إدارة الجلسات المتعددة</span>
+                  <span className="text-xs font-mono text-primary font-bold">(Multi-Session Terminal)</span>
+                </h2>
+                <Badge className="bg-primary/15 text-primary border-primary/25 text-[11px] px-2 py-0.5 font-bold">
                   {sessions.length} جلسة مسجلة
                 </Badge>
+                {runningSessionsCount > 0 && (
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[11px] px-2 py-0.5 font-bold flex items-center gap-1 animate-pulse">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>{runningSessionsCount} شغالة بالخلفية</span>
+                  </Badge>
+                )}
               </div>
-
-              {/* Subline detail */}
-              {activeSession && (
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1 truncate">
-                  <span>الأونر: <strong className="text-foreground font-mono" dir="ltr">{activeSession.owner_account_identifier || 'يُستخرج بعد الفحص'}</strong></span>
-                  <span>•</span>
-                  <span>الفرد: <strong className="text-foreground font-mono" dir="ltr">{activeSession.individual_account_identifier || 'غير مضاف'}</strong></span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-amber-500 shrink-0" />
-                    الهدف: <strong className="text-foreground">{activeSession.target_mix_balance?.toLocaleString('ar-EG')}</strong> ميكس
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Timer className="w-3 h-3 text-sky-500 shrink-0" />
-                    الفاصل: <strong className="text-foreground font-mono">{activeSession.cycle_delay_seconds ?? 20}ث</strong>
-                  </span>
-                </div>
-              )}
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                عزل كامل 100% بين الحسابات، الأرصدة، وسجلات السيرفر مع بصمة شبكية وأجهزة مصرية مستقلة لكل جلسة
+              </p>
             </div>
           </div>
 
-          {/* Action Buttons: Add Session, Default Child, & Delete Sessions */}
+          {/* Action Buttons Toolbar */}
           <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto flex-wrap">
             {/* 1. Default Child Credentials Button */}
             <Button
@@ -308,54 +338,235 @@ export function VipSessionSwitcher({
               size="sm"
               onClick={() => setOpenDefaultChildModal(true)}
               disabled={disabled}
-              className="h-8 text-xs gap-1 border-blue-500/30 text-blue-500 hover:bg-blue-500/10 font-medium px-2.5"
-              title="حفظ بيانات الفرد الافتراضية"
+              className="h-8 text-xs gap-1.5 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 font-semibold px-2.5"
+              title="بيانات الفرد الافتراضية"
             >
-              <Users className="w-3.5 h-3.5" />
-              <span>بيانات الفرد الافتراضية</span>
+              <Users className="w-3.5 h-3.5 text-blue-400" />
+              <span>بيانات الفرد</span>
             </Button>
 
-            {/* 2. Delete Active Session Button (Available for ANY session) */}
+            {/* 2. Archive Active Session Button */}
             {activeSession && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOpenDeleteModal(true)}
+                onClick={() => setOpenArchiveModal(true)}
                 disabled={disabled}
-                className="h-8 text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 px-2.5"
-                title="حذف هذه الجلسة"
+                className="h-8 text-xs gap-1.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 px-2.5 font-semibold"
+                title="أرشفة هذه الجلسة"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>حذف الجلسة</span>
+                <Archive className="w-3.5 h-3.5 text-amber-400" />
+                <span>أرشفة</span>
               </Button>
             )}
 
-            {/* 3. Delete All Sessions Button (if at least 1 session exists) */}
+            {/* 3. View Archived Sessions */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setOpenArchiveListModal(true);
+                loadArchivedSessions();
+              }}
+              disabled={disabled}
+              className="h-8 text-xs gap-1.5 border-zinc-700 text-zinc-300 hover:bg-zinc-800 px-2.5 font-medium"
+              title="عرض الأرشيف"
+            >
+              <ArchiveRestore className="w-3.5 h-3.5 text-zinc-400" />
+              <span>الأرشيف</span>
+            </Button>
+
+            {/* 4. Delete/Archive All */}
             {sessions.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setOpenDeleteAllModal(true)}
                 disabled={disabled}
-                className="h-8 text-xs gap-1 border-destructive/40 text-destructive/90 hover:bg-destructive/15 px-2.5"
-                title="حذف وتصفير كافة الجلسات المسجلة"
+                className="h-8 text-xs gap-1 border-destructive/40 text-destructive/90 hover:bg-destructive/15 px-2"
+                title="أرشفة كافة الجلسات"
               >
-                <span>حذف الكل</span>
+                <span>أرشفة الكل</span>
               </Button>
             )}
 
-            {/* 4. Add New Session Button */}
+            {/* 5. Add New Session Button */}
             <Button
               size="sm"
               onClick={() => setOpenAddModal(true)}
               disabled={disabled}
-              className="h-8 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-3 shadow-sm"
+              className="h-8 text-xs gap-1.5 bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-700 text-primary-foreground font-extrabold px-3.5 shadow-md"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               <span>إضافة جلسة جديدة</span>
             </Button>
           </div>
         </div>
+
+        {/* ── Interactive Session Cards Grid / Carousel ── */}
+        {sessions.length > 0 ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
+              <span className="font-semibold text-foreground/90 flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5 text-primary" />
+                <span>اختر الجلسة للتحكم بها (انقر على بطاقة الجلسة):</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground hidden sm:inline">أو عبر القائمة:</span>
+                <Select
+                  value={activeSessionId || sessions[0]?.id}
+                  onValueChange={onSelectSession}
+                  disabled={disabled}
+                >
+                  <SelectTrigger className="h-7 text-xs font-bold border-border/80 bg-background/80 w-auto min-w-[150px] max-w-[200px] gap-1.5 py-0 px-2">
+                    <SelectValue placeholder="اختر الجلسة" />
+                  </SelectTrigger>
+                  <SelectContent align="end" className="max-h-72">
+                    {sessions.map((sess) => (
+                      <SelectItem key={sess.id} value={sess.id} className="text-xs">
+                        <div className="flex items-center justify-between gap-3 w-full">
+                          <span className="font-semibold truncate">{sess.session_name}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {sess.owner_account_identifier || sess.owner_email || 'جديدة'}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+              {sessions.map((sess, idx) => {
+                const isSelected = sess.id === activeSessionId;
+                const isRunning = vipRunnerService.isRunning(sess.id);
+                const ownerId = sess.owner_account_identifier || sess.owner_email || 'يُستخرج بالفحص';
+                const childId = sess.individual_account_identifier || sess.individual_email || 'غير مضاف';
+                const ownerMix = sess.owner_mix_balance || 0;
+                const targetMix = sess.target_mix_balance || 50000;
+                const progressPct = Math.min(100, Math.round((ownerMix / targetMix) * 100));
+
+                return (
+                  <div
+                    key={sess.id}
+                    onClick={() => {
+                      if (!isSelected && !disabled) {
+                        onSelectSession(sess.id);
+                      }
+                    }}
+                    className={`relative rounded-xl p-3 border transition-all text-right select-none ${
+                      isSelected
+                        ? 'border-primary ring-2 ring-primary/40 bg-gradient-to-br from-primary/10 via-card to-card shadow-lg shadow-primary/10 cursor-default'
+                        : 'border-border/70 bg-card/50 hover:bg-card hover:border-primary/50 hover:shadow-md cursor-pointer'
+                    }`}
+                  >
+                    {/* Header: Session Name + Status Badges */}
+                    <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border/40">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                          isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <span className="text-[11px] font-bold font-mono">#{idx + 1}</span>
+                        </div>
+                        <span className="text-xs font-bold truncate text-foreground">
+                          {sess.session_name}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isRunning ? (
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 flex items-center gap-1 animate-pulse">
+                            <Flame className="w-3 h-3 text-emerald-400" />
+                            <span>شغال ⚡</span>
+                          </Badge>
+                        ) : isSelected ? (
+                          <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0 font-bold">
+                            نشطة الآن
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground px-1.5 py-0">
+                            جاهزة
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Body: Owner, Child, Balance */}
+                    <div className="space-y-1.5 text-xs">
+                      {/* Owner Row */}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-muted-foreground text-[11px] flex items-center gap-1">
+                          <Crown className="w-3 h-3 text-amber-500 shrink-0" />
+                          <span>الأونر:</span>
+                        </span>
+                        <span className="font-mono font-bold text-foreground truncate max-w-[140px]" dir="ltr">
+                          {ownerId}
+                        </span>
+                      </div>
+
+                      {/* Child Row */}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-muted-foreground text-[11px] flex items-center gap-1">
+                          <Users className="w-3 h-3 text-sky-400 shrink-0" />
+                          <span>الفرد:</span>
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground truncate max-w-[140px]" dir="ltr">
+                          {childId}
+                        </span>
+                      </div>
+
+                      {/* Mix Balance */}
+                      <div className="flex items-center justify-between gap-1 pt-0.5">
+                        <span className="text-muted-foreground text-[11px] flex items-center gap-1">
+                          <Zap className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span>رصيد الميكسات:</span>
+                        </span>
+                        <span className="font-extrabold text-foreground font-mono">
+                          {ownerMix.toLocaleString('ar-EG')} <span className="text-[10px] text-muted-foreground">ميكس</span>
+                        </span>
+                      </div>
+
+                      {/* Mini Target Progress */}
+                      <div className="pt-1 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>الهدف: {targetMix.toLocaleString('ar-EG')}</span>
+                          <span className="font-mono font-semibold text-primary">{progressPct}%</span>
+                        </div>
+                        <Progress value={progressPct} className="h-1 bg-muted" />
+                      </div>
+                    </div>
+
+                    {/* Footer Action */}
+                    <div className="mt-2.5 pt-1.5 border-t border-border/30 flex items-center justify-between text-[11px]">
+                      {isSelected ? (
+                        <span className="text-primary font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          <span>الجلسة المعروضة حالياً</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground group-hover:text-foreground flex items-center gap-1">
+                          <ArrowRightLeft className="w-3 h-3 text-primary" />
+                          <span className="text-primary/90 font-semibold">انقر للتبديل لهذه الجلسة</span>
+                        </span>
+                      )}
+
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        فاصل {sess.cycle_delay_seconds ?? 20}ث
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-xl border border-dashed border-border/80 text-center space-y-2">
+            <Bot className="w-8 h-8 text-muted-foreground mx-auto" />
+            <p className="text-xs text-muted-foreground">لا توجد جلسات مسجلة حالياً. اضغط على «إضافة جلسة جديدة» للبدء.</p>
+          </div>
+        )}
       </div>
 
       {/* ── Modal: Add New Session ── */}
@@ -571,46 +782,130 @@ export function VipSessionSwitcher({
         }}
       />
 
-      {/* ── Modal: Delete / Archive Session ── */}
-      <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
+      {/* ── Modal: Safe Archive Session ── */}
+      <Dialog open={openArchiveModal} onOpenChange={setOpenArchiveModal}>
         <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md p-5" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold text-destructive flex items-center gap-2">
-              <Trash2 className="w-4 h-4" />
-              تأكيد حذف الجلسة «{activeSession?.session_name}»
+            <DialogTitle className="text-sm font-bold text-amber-500 flex items-center gap-2">
+              <Archive className="w-4 h-4" />
+              أرشفة الجلسة «{activeSession?.session_name}»
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              هل أنت متأكد من حذف وأرشفة هذه الجلسة؟ سيتم إيقاف أي عمليات مرتبطة بها فوراً وإزالتها من النظام حتى لا تبدأ أي عملية تلقائياً.
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
+              سيتم إيقاف الأتمتة وإخفاء الجلسة من الواجهة النشطة ونقلها إلى سجل الأرشيف.
+              <br />
+              <strong className="text-zinc-200">لن تفقد أي بيانات:</strong> تبقى بيانات الأونر والفرد وسجل الدورات محفوظة بأمان، ويمكنك استرجاع الجلسة بضغطة واحدة من زر «الأرشيف» في أي وقت.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setOpenDeleteModal(false)}
+              onClick={() => setOpenArchiveModal(false)}
               disabled={submitting}
               className="text-xs"
             >
               إلغاء
             </Button>
             <Button
-              variant="destructive"
               size="sm"
-              onClick={handleDeleteActiveSession}
+              onClick={handleArchiveActiveSession}
               disabled={submitting}
-              className="text-xs font-bold gap-1.5"
+              className="text-xs font-bold gap-1.5 bg-amber-500 hover:bg-amber-600 text-zinc-950"
             >
               {submitting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>جاري الحذف...</span>
+                  <span>جاري الأرشفة...</span>
                 </>
               ) : (
                 <>
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>تأكيد الحذف النهائي</span>
+                  <Archive className="w-3.5 h-3.5" />
+                  <span>تأكيد أرشفة الجلسة</span>
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal: Archived Sessions List & Restore ── */}
+      <Dialog open={openArchiveListModal} onOpenChange={setOpenArchiveListModal}>
+        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-lg max-h-[85dvh] overflow-y-auto p-5" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-zinc-100">
+              <ArchiveRestore className="w-5 h-5 text-amber-400" />
+              سجل الجلسات المؤرشفة
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              يمكنك استرجاع أي جلسة سابقة إلى الواجهة النشطة دون الحاجة لإعادة كتابة بيانات الاعتماد.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-2">
+            {loadingArchived ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span className="text-xs">جاري تحميل الأرشيف...</span>
+              </div>
+            ) : archivedSessions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground space-y-1">
+                <Archive className="w-8 h-8 opacity-30 mx-auto text-zinc-400" />
+                <p className="text-xs font-medium">لا توجد جلسات مؤرشفة حالياً.</p>
+                <p className="text-[10px] text-zinc-500">الجلسات التي تقوم بأرشفتها ستظهر هنا للاسترجاع.</p>
+              </div>
+            ) : (
+              archivedSessions.map((arch) => (
+                <div
+                  key={arch.id}
+                  className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 flex items-center justify-between gap-2 flex-wrap"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-zinc-200 truncate">{arch.session_name}</span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-zinc-700 text-zinc-400">
+                        مؤرشفة
+                      </Badge>
+                    </div>
+                    <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">
+                      الأونر: {arch.owner_account_identifier || 'غير مسجل'} • الهدف: {arch.target_mix_balance?.toLocaleString('en-US')}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleUnarchiveSession(arch.id)}
+                      disabled={submitting}
+                      className="h-7 text-xs gap-1 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold px-2.5"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>استرجاع</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleHardDeleteSession(arch.id)}
+                      disabled={submitting}
+                      className="h-7 text-xs text-rose-400 hover:bg-rose-500/10 px-2"
+                      title="حذف نهائي من قاعدة البيانات"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOpenArchiveListModal(false)}
+              className="text-xs"
+            >
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>

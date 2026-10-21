@@ -19,6 +19,71 @@ import {
   requestVipNotificationPermission,
 } from '@/lib/vipBackgroundManager';
 
+// Helper to extract balances and plan in real-time from execution logs
+export function parseBalancesFromLog(message: string): {
+  ownerMix?: number;
+  childMix?: number;
+  ownerPlan?: string;
+} {
+  const res: { ownerMix?: number; childMix?: number; ownerPlan?: string } = {};
+  if (!message) return res;
+
+  // Remove commas for clean integer parsing: "66,100" -> "66100"
+  const clean = message.replace(/,/g, '');
+
+  // 1. "رجعنا للأونر | رصيده الآن: 66100 ميكس"
+  const returnMatch = clean.match(/رجعنا للأونر\s*\|\s*رصيده الآن:\s*(\d+)\s*ميكس/);
+  if (returnMatch) {
+    res.ownerMix = parseInt(returnMatch[1], 10);
+    res.childMix = 0; // After recovery, child is cleared
+  }
+
+  // 2. "رصيده الآن: 66100 ميكس"
+  const ownerNowMatch = clean.match(/رصيده الآن:\s*(\d+)\s*ميكس/);
+  if (ownerNowMatch) {
+    res.ownerMix = parseInt(ownerNowMatch[1], 10);
+  }
+
+  // 3. "الفرد جاهز ولديه (66100) ميكس مركونة بأمان"
+  const childParkedMatch = clean.match(/الفرد جاهز ولديه\s*\(?(\d+)\)?\s*ميكس/);
+  if (childParkedMatch) {
+    res.childMix = parseInt(childParkedMatch[1], 10);
+    res.ownerMix = 0; // While parked, owner temporarily holds 0 until drop
+  }
+
+  // 4. "جاري تحويل (66100) ميكس إلى الرقم"
+  const transferMatch = clean.match(/جاري تحويل\s*\(?(\d+)\)?\s*ميكس إلى الرقم/);
+  if (transferMatch) {
+    res.childMix = parseInt(transferMatch[1], 10);
+  }
+
+  // 5. "تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (6000)"
+  const dropMatch = clean.match(/تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح:\s*\(?(\d+)\)?/);
+  if (dropMatch) {
+    res.ownerMix = parseInt(dropMatch[1], 10);
+  }
+
+  // 6. "فحص رصيد الفرد الفعلي بالسيرفر: 0 ميكس متبقية"
+  const childServerMatch = clean.match(/فحص رصيد الفرد الفعلي بالسيرفر:\s*(\d+)\s*ميكس/);
+  if (childServerMatch) {
+    res.childMix = parseInt(childServerMatch[1], 10);
+  }
+
+  // 7. "نجح استرجاع (66100) ميكس من الفرد إلى الأونر"
+  const recoveredMatch = clean.match(/نجح استرجاع\s*\(?(\d+)\)?\s*ميكس من الفرد إلى الأونر/);
+  if (recoveredMatch) {
+    res.childMix = 0;
+  }
+
+  // 8. Plan extraction: "النظام: حكاية ميكسات 180" or "حالة النظام المعتمد: حكاية ميكسات 180"
+  const planMatch = message.match(/(?:النظام:\s*|حالة النظام المعتمد:\s*|ترحيل النظام إلى:\s*)(حكاية ميكسات\s*\d+)/);
+  if (planMatch) {
+    res.ownerPlan = planMatch[1].trim();
+  }
+
+  return res;
+}
+
 export interface VipRunnerState {
   sessionId: string;
   isRunning: boolean;
@@ -51,23 +116,55 @@ class VipRunnerService {
   public getState(sessionId: string): VipRunnerState {
     let state = this.states.get(sessionId);
     if (!state) {
+      // Attempt restoring logs and balances from localStorage
+      let initialLogs: VipExecutionLog[] = [];
+      let savedBalances: any = null;
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const rawLogs = window.localStorage.getItem(`vip_terminal_logs_${sessionId}`);
+          if (rawLogs) {
+            initialLogs = JSON.parse(rawLogs);
+          }
+          const rawBal = window.localStorage.getItem(`vip_live_balances_${sessionId}`);
+          if (rawBal) {
+            savedBalances = JSON.parse(rawBal);
+          }
+        }
+      } catch (_) {}
+
       state = {
         sessionId,
         isRunning: false,
         targetMix: 100000,
         delaySeconds: 60,
-        cycleCount: 0,
+        cycleCount: savedBalances?.cycleCount || 0,
         currentStep: 'idle',
         stepMessage: 'جاهز لبدء الدورة',
-        logs: [],
+        logs: initialLogs,
         lastError: null,
         consecutiveErrors: 0,
         stopRequested: false,
         startedAt: null,
+        latestOwnerMix: savedBalances?.ownerMix,
+        latestChildMix: savedBalances?.childMix,
+        latestOwnerPlan: savedBalances?.ownerPlan,
       };
       this.states.set(sessionId, state);
     }
     return { ...state };
+  }
+
+  public clearLogs(sessionId: string): void {
+    const state = this.states.get(sessionId);
+    if (state) {
+      state.logs = [];
+      this.notify(sessionId);
+    }
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(`vip_terminal_logs_${sessionId}`);
+      }
+    } catch (_) {}
   }
 
   public isRunning(sessionId: string): boolean {
@@ -102,6 +199,24 @@ class VipRunnerService {
     }
   }
 
+  private saveToLocalStorage(sessionId: string, state: VipRunnerState) {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(`vip_terminal_logs_${sessionId}`, JSON.stringify(state.logs.slice(-200)));
+        window.localStorage.setItem(
+          `vip_live_balances_${sessionId}`,
+          JSON.stringify({
+            ownerMix: state.latestOwnerMix,
+            childMix: state.latestChildMix,
+            ownerPlan: state.latestOwnerPlan,
+            cycleCount: state.cycleCount,
+            updatedAt: new Date().toISOString(),
+          })
+        );
+      }
+    } catch (_) {}
+  }
+
   private addLog(sessionId: string, message: string, level: 'info' | 'success' | 'warn' | 'error') {
     const state = this.states.get(sessionId);
     if (!state) return;
@@ -114,6 +229,13 @@ class VipRunnerService {
     });
 
     state.logs = [...state.logs.slice(-299), { time, level, message }];
+
+    const parsed = parseBalancesFromLog(message);
+    if (parsed.ownerMix !== undefined) state.latestOwnerMix = parsed.ownerMix;
+    if (parsed.childMix !== undefined) state.latestChildMix = parsed.childMix;
+    if (parsed.ownerPlan) state.latestOwnerPlan = parsed.ownerPlan;
+
+    this.saveToLocalStorage(sessionId, state);
     this.notify(sessionId);
   }
 
@@ -146,6 +268,21 @@ class VipRunnerService {
     // Keep screen awake & background worker alive
     requestVipNotificationPermission().catch(() => {});
     await enableVipBackgroundExecution().catch(() => {});
+
+    // Save active state to localStorage so it survives app minimize / restart
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(
+          `vip_active_loop_${sessionId}`,
+          JSON.stringify({
+            isRunning: true,
+            targetMix,
+            delaySeconds,
+            timestamp: Date.now(),
+          })
+        );
+      }
+    } catch (_) {}
 
     // Sync DB status
     try {
@@ -189,6 +326,13 @@ class VipRunnerService {
 
     this.addLog(sessionId, `[!] جاري إيقاف الدورة التلقائية: ${reason}...`, 'warn');
 
+    // Clear persistent active loop from localStorage
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
+      }
+    } catch (_) {}
+
     // Update DB
     try {
       await updateVipAutomationSettings(false, state.targetMix, null, 'stop', sessionId, state.delaySeconds);
@@ -202,6 +346,49 @@ class VipRunnerService {
     ).catch(() => {});
 
     disableVipBackgroundExecution();
+  }
+
+  /**
+   * Automatically resume background loop if it was interrupted by minimizing or closing app
+   */
+  public async resumeLoopIfActive(
+    sessionId: string,
+    fallbackTarget?: number,
+    fallbackDelay?: number
+  ): Promise<boolean> {
+    const existing = this.getState(sessionId);
+    if (existing.isRunning) return true;
+
+    let savedLoop: any = null;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(`vip_active_loop_${sessionId}`);
+        if (raw) savedLoop = JSON.parse(raw);
+      }
+    } catch (_) {}
+
+    if (savedLoop && savedLoop.isRunning) {
+      const age = Date.now() - (savedLoop.timestamp || 0);
+      // Valid if less than 12 hours old
+      if (age < 12 * 60 * 60 * 1000) {
+        this.addLog(
+          sessionId,
+          `[🔄] استئناف الأتمتة تلقائياً بعد العودة للتطبيق (استعادة من الخلفية)...`,
+          'info'
+        );
+        this.startLoop(
+          sessionId,
+          savedLoop.targetMix || fallbackTarget || 100000,
+          savedLoop.delaySeconds || fallbackDelay || 20
+        );
+        return true;
+      } else {
+        try {
+          window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
+        } catch (_) {}
+      }
+    }
+    return false;
   }
 
   private isNetworkGlitch(errorText?: string | null): boolean {
@@ -241,6 +428,20 @@ class VipRunnerService {
             const st = this.states.get(sessionId);
             if (st) {
               st.logs = [...st.logs.slice(-299), liveLog];
+
+              // Parse balances directly from the streaming log line
+              const parsed = parseBalancesFromLog(liveLog.message);
+              if (parsed.ownerMix !== undefined) {
+                st.latestOwnerMix = parsed.ownerMix;
+              }
+              if (parsed.childMix !== undefined) {
+                st.latestChildMix = parsed.childMix;
+              }
+              if (parsed.ownerPlan) {
+                st.latestOwnerPlan = parsed.ownerPlan;
+              }
+
+              this.saveToLocalStorage(sessionId, st);
               this.notify(sessionId);
             }
           },
@@ -249,6 +450,14 @@ class VipRunnerService {
             if (st) {
               st.currentStep = stepInfo.step;
               st.stepMessage = stepInfo.detail || stepInfo.title;
+
+              // Step-based balance adjustments
+              if (stepInfo.step === 'recovering' && st.latestChildMix && st.latestChildMix > 0) {
+                // When recovering, child will empty out
+                st.latestChildMix = 0;
+              }
+
+              this.saveToLocalStorage(sessionId, st);
               this.notify(sessionId);
             }
           },

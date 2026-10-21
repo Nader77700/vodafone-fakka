@@ -6,10 +6,148 @@ let wakeLockSentinel: any = null;
 let audioContext: AudioContext | null = null;
 let audioInterval: any = null;
 let backgroundWorker: Worker | null = null;
+let silentAudioEl: HTMLAudioElement | null = null;
+
+// Minimal base64 1-second silent WAV
+const SILENT_WAV_BASE64 =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 /**
- * Request notification permissions (Browser Notification API)
+ * Start dedicated Web Worker ticker to bypass background tab throttling
  */
+export function startWorkerKeepAlive(onTick?: () => void) {
+  try {
+    if (typeof window === 'undefined' || typeof Worker === 'undefined') return;
+    if (backgroundWorker) return;
+
+    const workerBlob = new Blob(
+      [
+        `
+        let timer = null;
+        self.onmessage = function(e) {
+          if (e.data === 'start') {
+            if (timer) clearInterval(timer);
+            timer = setInterval(function() {
+              self.postMessage('tick');
+            }, 1000);
+          } else if (e.data === 'stop') {
+            if (timer) clearInterval(timer);
+            timer = null;
+          }
+        };
+      `,
+      ],
+      { type: 'application/javascript' }
+    );
+
+    backgroundWorker = new Worker(URL.createObjectURL(workerBlob));
+    backgroundWorker.onmessage = () => {
+      if (onTick) onTick();
+    };
+    backgroundWorker.postMessage('start');
+  } catch (err) {
+    console.warn('[VipBackground] Web Worker error:', err);
+  }
+}
+
+/**
+ * Stop dedicated Web Worker ticker
+ */
+export function stopWorkerKeepAlive() {
+  try {
+    if (backgroundWorker) {
+      backgroundWorker.postMessage('stop');
+      backgroundWorker.terminate();
+      backgroundWorker = null;
+    }
+  } catch (_) {}
+}
+
+/**
+ * Start silent HTML5 Audio element + Web Audio keep-alive
+ * Android foreground media playback prevents OS from freezing WebView when user switches to WhatsApp
+ */
+export function startAudioKeepAlive() {
+  try {
+    if (typeof window === 'undefined') return;
+
+    // 1. HTML5 Audio Element Loop
+    if (!silentAudioEl) {
+      silentAudioEl = new Audio(SILENT_WAV_BASE64);
+      silentAudioEl.loop = true;
+      silentAudioEl.volume = 0.01;
+      silentAudioEl.play().catch(() => {});
+    }
+
+    // 2. Web Audio Oscillator fallback
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtx) {
+      if (!audioContext) {
+        audioContext = new AudioCtx();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      if (!audioInterval) {
+        audioInterval = setInterval(() => {
+          try {
+            if (!audioContext) return;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            gain.gain.value = 0.001;
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.setValueAtTime(200, audioContext.currentTime);
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.1);
+          } catch (_) {}
+        }, 10000);
+      }
+    }
+  } catch (err) {
+    console.warn('[VipBackground] Audio Keep-Alive error:', err);
+  }
+}
+
+/**
+ * Stop Audio Keep-Alive
+ */
+export function stopAudioKeepAlive() {
+  try {
+    if (silentAudioEl) {
+      silentAudioEl.pause();
+      silentAudioEl.src = '';
+      silentAudioEl = null;
+    }
+    if (audioInterval) {
+      clearInterval(audioInterval);
+      audioInterval = null;
+    }
+    if (audioContext && audioContext.state !== 'closed') {
+      audioContext.close().catch(() => {});
+      audioContext = null;
+    }
+  } catch (_) {}
+}
+
+/**
+ * Start full background execution protection
+ */
+export async function enableVipBackgroundExecution(): Promise<void> {
+  await acquireScreenWakeLock();
+  startAudioKeepAlive();
+  startWorkerKeepAlive();
+}
+
+/**
+ * Disable background execution protection
+ */
+export async function disableVipBackgroundExecution(): Promise<void> {
+  await releaseScreenWakeLock();
+  stopAudioKeepAlive();
+  stopWorkerKeepAlive();
+}
 export async function requestVipNotificationPermission(): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return false;
@@ -139,74 +277,4 @@ export async function releaseScreenWakeLock() {
       wakeLockSentinel = null;
     }
   } catch (_) {}
-}
-
-/**
- * Start silent Audio Keep-Alive to keep JavaScript thread active in mobile background
- */
-export function startAudioKeepAlive() {
-  try {
-    if (typeof window === 'undefined') return;
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-
-    if (!audioContext) {
-      audioContext = new AudioCtx();
-    }
-    if (audioContext.state === 'suspended') {
-      audioContext.resume();
-    }
-
-    // Ping low-frequency near-silent audio pulse every 15s to keep the browser process active
-    if (!audioInterval) {
-      audioInterval = setInterval(() => {
-        try {
-          if (!audioContext) return;
-          const osc = audioContext.createOscillator();
-          const gain = audioContext.createGain();
-          // Virtually silent (gain 0.001)
-          gain.gain.value = 0.001;
-          osc.connect(gain);
-          gain.connect(audioContext.destination);
-          osc.frequency.setValueAtTime(200, audioContext.currentTime);
-          osc.start();
-          osc.stop(audioContext.currentTime + 0.1);
-        } catch (_) {}
-      }, 15000);
-    }
-  } catch (err) {
-    console.warn('[VipBackground] Audio Keep-Alive error:', err);
-  }
-}
-
-/**
- * Stop Audio Keep-Alive
- */
-export function stopAudioKeepAlive() {
-  try {
-    if (audioInterval) {
-      clearInterval(audioInterval);
-      audioInterval = null;
-    }
-    if (audioContext && audioContext.state !== 'closed') {
-      audioContext.close().catch(() => {});
-      audioContext = null;
-    }
-  } catch (_) {}
-}
-
-/**
- * Start full background execution protection
- */
-export async function enableVipBackgroundExecution(): Promise<void> {
-  await acquireScreenWakeLock();
-  startAudioKeepAlive();
-}
-
-/**
- * Disable background execution protection
- */
-export async function disableVipBackgroundExecution(): Promise<void> {
-  await releaseScreenWakeLock();
-  stopAudioKeepAlive();
 }

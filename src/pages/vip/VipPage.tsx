@@ -120,9 +120,10 @@ export default function VipPage() {
     checkOwnerAuth();
   }, [checkOwnerAuth]);
 
-  // Switch Active Session
+  // Switch Active Session with Full Data & State Isolation
   const handleSelectSession = (newSessionId: string) => {
     setActiveSessionId(newSessionId);
+    setDashboardData(null); // Completely flush previous session's dashboard data
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('session', newSessionId);
@@ -139,12 +140,11 @@ export default function VipPage() {
     });
   };
 
-  // Find active session object
+  // Find active session object strictly matched to activeSessionId
   const activeSession: VipSession | null =
-    dashboardData?.session ||
-    sessions.find((s) => s.id === activeSessionId) ||
-    sessions[0] ||
-    null;
+    (dashboardData?.session && dashboardData.session.id === activeSessionId)
+      ? dashboardData.session
+      : (sessions.find((s) => s.id === activeSessionId) || sessions[0] || null);
 
   // ── Render Case 1: Checking Authentication ──
   if (verifying) {
@@ -332,6 +332,7 @@ export default function VipPage() {
             {/* Tab 1: Dashboard (Unified Master Card + Auto Loop + Live Terminal) */}
             <TabsContent value="dashboard" className="space-y-4 focus-visible:outline-none">
               <VipDashboardTab
+                key={activeSession?.id || 'empty-dashboard'}
                 data={dashboardData}
                 activeSession={activeSession}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
@@ -343,8 +344,9 @@ export default function VipPage() {
             {/* Tab 2: Cycle-by-Cycle History */}
             <TabsContent value="cycles" className="space-y-4 focus-visible:outline-none">
               <VipCycleHistoryTab
+                key={activeSession?.id || 'empty-cycles'}
                 session={activeSession}
-                initialCycles={dashboardData.recent_cycles}
+                initialCycles={dashboardData?.recent_cycles || []}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
               />
             </TabsContent>
@@ -352,6 +354,7 @@ export default function VipPage() {
             {/* Tab 3: Manual Direct Controls */}
             <TabsContent value="manual" className="space-y-4 focus-visible:outline-none">
               <VipManualControlsTab
+                key={activeSession?.id || 'empty-manual'}
                 data={dashboardData}
                 activeSession={activeSession}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
@@ -361,7 +364,8 @@ export default function VipPage() {
             {/* Tab 4: Operation History */}
             <TabsContent value="history" className="space-y-4 focus-visible:outline-none">
               <VipOperationHistoryTab
-                initialRecords={dashboardData.recent_operations}
+                key={activeSession?.id || 'empty-history'}
+                initialRecords={dashboardData?.recent_operations || []}
                 activeSession={activeSession}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
               />
@@ -370,6 +374,7 @@ export default function VipPage() {
             {/* Tab 5: Script Diagnostics & Error Monitor */}
             <TabsContent value="diagnostics" className="space-y-4 focus-visible:outline-none">
               <VipDiagnosticsTab
+                key={activeSession?.id || 'empty-diagnostics'}
                 activeSession={activeSession}
                 allSessions={sessions}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
