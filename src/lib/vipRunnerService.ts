@@ -359,12 +359,41 @@ class VipRunnerService {
     const existing = this.getState(sessionId);
     if (existing.isRunning) return true;
 
-    // Check if user has already completed target or marked stopped
+    // Check if session has a completion flag in localStorage
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const completedMark = window.localStorage.getItem(`vip_target_completed_${sessionId}`);
         if (completedMark) {
-          // Do not resume completed sessions
+          window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
+          return false;
+        }
+      }
+    } catch (_) {}
+
+    // Verify session in Supabase: never resume if completed, stopped, or paused!
+    try {
+      const { data: sess } = await supabase
+        .from('vip_sessions')
+        .select('automation_enabled, operation_state, owner_mix_balance, target_mix_balance, current_step')
+        .eq('id', sessionId)
+        .maybeSingle();
+
+      if (sess) {
+        const isTargetReached =
+          (sess.owner_mix_balance || 0) >= (sess.target_mix_balance || 50000) &&
+          (sess.owner_mix_balance || 0) > 0;
+
+        if (
+          !sess.automation_enabled ||
+          sess.operation_state === 'completed' ||
+          sess.operation_state === 'stopped' ||
+          sess.current_step === 'completed' ||
+          isTargetReached
+        ) {
+          // Strictly delete any stale loop state
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
+          }
           return false;
         }
       }

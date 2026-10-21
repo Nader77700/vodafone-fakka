@@ -957,29 +957,30 @@ async function handleSingleCycleInternal(
   }
 
   // ── INTELLIGENT ZERO-LOSS BALANCE CONTINUITY GATE ──
-  // Calculate verified historical peak balance by querying recent cycles from vip_cycle_history
-  // as well as the session state. Never rely solely on a single potentially corrupted number.
+  // Calculate verified historical peak balance from the immediate previous cycle only
+  // (NEVER deep-dive into old cycles that may hold outdated balances from before network resets).
   let verifiedPeakBalance = Math.max(
     parseInt(session.owner_mix_balance || "0", 10) || 0,
     parseInt(session.peak_mix_balance || "0", 10) || 0
   );
 
   try {
-    const { data: recentCycles } = await supabase
+    const { data: lastCycle } = await supabase
       .from("vip_cycle_history")
       .select("final_verified_owner_balance, owner_balance_start, amount_transferred_indiv_to_owner")
       .eq("session_id", session_id)
       .order("cycle_number", { ascending: false })
-      .limit(8);
+      .limit(1)
+      .maybeSingle();
 
-    if (recentCycles && recentCycles.length > 0) {
-      for (const rc of recentCycles) {
-        const fMix = Number(rc.final_verified_owner_balance) || 0;
-        const sMix = Number(rc.owner_balance_start) || 0;
-        const rMix = Number(rc.amount_transferred_indiv_to_owner) || 0;
-        if (fMix > verifiedPeakBalance) verifiedPeakBalance = fMix;
-        if (sMix > verifiedPeakBalance) verifiedPeakBalance = sMix;
-        if (rMix > verifiedPeakBalance) verifiedPeakBalance = rMix;
+    if (lastCycle) {
+      const fMix = Number(lastCycle.final_verified_owner_balance) || 0;
+      const sMix = Number(lastCycle.owner_balance_start) || 0;
+      const rMix = Number(lastCycle.amount_transferred_indiv_to_owner) || 0;
+      const recentValid = Math.max(fMix, sMix, rMix);
+      // Only consider if reasonably close to current session balance
+      if (recentValid > 0 && Math.abs(recentValid - verifiedPeakBalance) < 15000) {
+        verifiedPeakBalance = Math.max(verifiedPeakBalance, recentValid);
       }
     }
   } catch (_e) {}
@@ -1249,18 +1250,36 @@ async function handleSingleCycleInternal(
         engine.log(`[+] باقة النظام الجديد نشطة بالفعل بالسيرفر: (${confirmedNewMix.toLocaleString('en-US')} ميكس).`, "success");
       }
 
-      // Now that the new plan and bundle are confirmed on the owner, proceed to recover parked mixes
+      // The moment the new bundle appears, proceed immediately
       engine.log(`[⚡] بدء الانتقال لاسترجاع الميكسات المركونة من الفرد للأونر ...`, "info");
       break;
     }
 
+    // SMART SERVER WAKE-UP / NUDGE TRICK (تنشيط الخط وإنعاش استجابة السيرفر):
+    // If server takes too long (attempt 15 and 30, ~30s / 60s), telecom migration queue sometimes stalls.
+    // Nudge the line by renewing current bundle and re-requesting migration, forcing Etisalat switch to acknowledge!
+    if ((attempt === 15 || attempt === 30) && !serverConfirmed) {
+      engine.log(`[⚡] تنشيط ذكي للسيرفر (محاولة ${attempt}/60): إنعاش الخط وتحديث طلب الترحيل...`, "info");
+      try {
+        await engine.renewBundle();
+        await sleep(2500);
+        const nudgeCheck = await engine.getStatusAndChild(true);
+        const nudgeMatches = (targetPlanId.includes("Parent_6") && nudgeCheck.planId.includes("Parent_6")) ||
+                             (targetPlanId.includes("Parent_7") && nudgeCheck.planId.includes("Parent_7"));
+        if (nudgeMatches) {
+          // Acknowledged right after renewal!
+          continue;
+        }
+        // Re-send change plan command to nudge telecom queue
+        await engine.changePlan(targetPlanId, targetPlanCode);
+      } catch (_nudgeErr) {}
+    }
+
     // Safe Keep-Alive every 10 attempts (~20 seconds):
-    if (attempt % 10 === 0 && attempt < 60) {
+    if (attempt % 10 === 0 && attempt < 60 && attempt !== 15 && attempt !== 30) {
       engine.log(`[*] فحص نشاط السيرفر (محاولة ${attempt}/60): الجلسات نشطة وننتظر تحديث عداد النظام...`, "info");
-    } else {
-      if (attempt % 5 === 0 || attempt === 1) {
-        engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/60)`, "info");
-      }
+    } else if (attempt === 1 || attempt % 5 === 0) {
+      engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/60)`, "info");
     }
 
     if (sendEvent) {

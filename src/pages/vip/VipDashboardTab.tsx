@@ -138,15 +138,22 @@ export function VipDashboardTab({
       }
     });
 
-    // Check if session was active before leaving (or if automation is enabled in DB) and resume seamlessly
-    // Strictly guard: never resume if session is already completed or stopped or target reached!
+    // Check if session was active before leaving and resume seamlessly
+    // Strictly guard: NEVER resume if session is completed, stopped, paused, or target is reached!
     const isCompleted =
       session.operation_state === 'completed' ||
+      session.operation_state === 'stopped' ||
+      session.operation_state === 'paused' ||
       session.current_step === 'completed' ||
       ((session.owner_mix_balance || 0) >= (session.target_mix_balance || 50000) &&
         (session.owner_mix_balance || 0) > 0);
 
-    if (session.automation_enabled && !isCompleted && !vipRunnerService.isRunning(session.id)) {
+    if (
+      session.automation_enabled &&
+      session.operation_state === 'running' &&
+      !isCompleted &&
+      !vipRunnerService.isRunning(session.id)
+    ) {
       vipRunnerService.resumeLoopIfActive(
         session.id,
         session.target_mix_balance || 100000,
@@ -157,7 +164,7 @@ export function VipDashboardTab({
     // Handle return from background (e.g., coming back from WhatsApp)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
-        if (!isCompleted && session.automation_enabled) {
+        if (!isCompleted && session.automation_enabled && session.operation_state === 'running') {
           vipRunnerService.resumeLoopIfActive(
             session.id,
             session.target_mix_balance,
