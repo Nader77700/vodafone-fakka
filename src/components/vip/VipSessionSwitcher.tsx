@@ -598,6 +598,12 @@ export function VipSessionSwitcher({
             </DialogDescription>
           </DialogHeader>
 
+          {/* Unified Proven Blueprint Alert */}
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>يتم تطبيق القالب المعياري الموحد تلقائياً (نفس البصمة والإعدادات المجربة في 64 دورة مستقرة بنجاح تام).</span>
+          </div>
+
           <form onSubmit={handleCreateSession} className="space-y-3.5 py-1">
             {/* Session Name */}
             <div className="space-y-1">

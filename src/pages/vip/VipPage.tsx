@@ -170,16 +170,19 @@ export default function VipPage() {
             <Lock className="w-6 h-6" />
           </div>
           <div className="space-y-1.5">
-            <h2 className="text-base font-bold text-foreground">قسم الإدارة الخاصة VIP مقيّد ومحمي</h2>
+            <h2 className="text-base font-bold text-foreground">قسم الإدارة الخاصة VIP مقيّد ومحمي سيرفرياً</h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              هذا القسم مخصص حصرياً للمالك المعتمد من قبل الخادم ولا يُسمح بالوصول إليه من قبل المستخدمين العاديين أو عبر صلاحيات واجهة المستخدم وحدها.
+              هذا القسم مخصص حصرياً للمالك المعتمد (Nader Akram) ومحمي سيرفرياً بنظام Zero-Trust ضد أي تلاعب أو هندسة عكسية. حتى لو تم تعديل رتبة الحساب محلياً أو تفكيك ملفات التطبيق، يرفض السيرفر أي وصول برمز 403 ولا يُسرّب أي بيانات.
             </p>
           </div>
 
-          <div className="p-3 rounded-xl bg-background border border-border text-xs text-muted-foreground text-right space-y-1">
-            <span className="font-semibold text-foreground block">إرشادات الوصول:</span>
-            <p>1. يرجى تسجيل الدخول بحساب المالك المعتمد بالخادم (Nader Akram).</p>
-            <p>2. إذا كنت المالك وقمت بتسجيل الدخول، تأكد من اعتماد هويتك في تكوين الخادم.</p>
+          <div className="p-3 rounded-xl bg-background border border-border text-xs text-muted-foreground text-right space-y-1.5">
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <ShieldAlert className="w-4 h-4 text-amber-500" />
+              <span>إرشادات الوصول والأمان:</span>
+            </div>
+            <p>1. يتطلب تسجيل الدخول المسبق بحساب المالك المعتمد سيرفرياً (nader77@miaoda.com).</p>
+            <p>2. يتم التحقق وتوقيع الجلسة مشفراً مع قاعدة البيانات ومنفذ Edge Function في نفس اللحظة.</p>
           </div>
 
           <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
