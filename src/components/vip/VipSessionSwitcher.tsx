@@ -108,6 +108,19 @@ export function VipSessionSwitcher({
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
 
+  // Listen to runner service across all sessions so cards update their live balances and running badges in real time
+  const [, setRunnerTick] = useState(0);
+  useEffect(() => {
+    const unsubs = sessions.map((s) =>
+      vipRunnerService.subscribe(s.id, () => {
+        setRunnerTick((prev) => prev + 1);
+      })
+    );
+    return () => {
+      unsubs.forEach((unsub) => unsub());
+    };
+  }, [sessions]);
+
   // Auto-fill child credentials from saved defaults when opening add modal
   useEffect(() => {
     if (openAddModal) {
@@ -441,10 +454,13 @@ export function VipSessionSwitcher({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
               {sessions.map((sess, idx) => {
                 const isSelected = sess.id === activeSessionId;
-                const isRunning = vipRunnerService.isRunning(sess.id);
+                const runnerState = vipRunnerService.getState(sess.id);
+                const isRunning = runnerState.isRunning;
                 const ownerId = sess.owner_account_identifier || sess.owner_email || 'يُستخرج بالفحص';
                 const childId = sess.individual_account_identifier || sess.individual_email || 'غير مضاف';
-                const ownerMix = sess.owner_mix_balance || 0;
+                const ownerMix = (runnerState.latestOwnerMix !== undefined && runnerState.latestOwnerMix !== null)
+                  ? runnerState.latestOwnerMix
+                  : (sess.owner_mix_balance || 0);
                 const targetMix = sess.target_mix_balance || 50000;
                 const progressPct = Math.min(100, Math.round((ownerMix / targetMix) * 100));
 

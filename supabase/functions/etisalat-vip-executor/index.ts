@@ -72,30 +72,12 @@ function decodeStoredPassword(pw: string): string {
 }
 
 function generateSessionDeviceProfile(role: 'owner' | 'child', sessionId?: string, config?: BridgeConfig): DeviceProfile {
-  // If custom bridge config with non-default device ID is specified, respect it
-  if (config) {
-    if (role === 'owner' && config.owner_device_id && config.owner_device_id !== DEFAULT_BRIDGE_CONFIG.owner_device_id) {
-      return {
-        deviceId: config.owner_device_id,
-        modelType: config.owner_model_type || "CPH2737",
-        osVersion: config.owner_os_version || "14",
-        userAgent: config.owner_user_agent || "okhttp/5.0.0-alpha.11",
-        simulatedIp: config.owner_simulated_ip || "196.205.142.23",
-      };
-    }
-    if (role === 'child' && config.child_device_id && config.child_device_id !== DEFAULT_BRIDGE_CONFIG.child_device_id) {
-      return {
-        deviceId: config.child_device_id,
-        modelType: config.child_model_type || "CPH2737",
-        osVersion: config.child_os_version || "14",
-        userAgent: config.child_user_agent || "okhttp/5.0.0-alpha.11",
-        simulatedIp: config.child_simulated_ip || "196.205.142.23",
-      };
-    }
-  }
-
-  // Deterministically generate isolated, unique Egyptian Telecom identity per session & role
-  const seed = (sessionId || "vip_default_session") + "_" + role;
+  // ── STRICT MULTI-SESSION TELECOM ISOLATION ──
+  // Deterministically generate isolated, unique Egyptian Telecom identity per session & role.
+  // NEVER allow different sessions to share the same deviceId, simulated IP, or User-Agent,
+  // which causes Etisalat MAB gateway to mix up sessions, drop auth tokens, or collide concurrent transfers!
+  const cleanSessionId = sessionId && sessionId.trim() ? sessionId.trim() : "vip_default_session";
+  const seed = `${cleanSessionId}_${role}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
@@ -118,7 +100,7 @@ function generateSessionDeviceProfile(role: 'owner' | 'child', sessionId?: strin
   const octet4 = ((posHash >> 4) % 220) + 20;
   const simulatedIp = `${subnet[0]}.${subnet[1]}.${octet3}.${octet4}`;
 
-  // Unique 16-hex character device ID derived from session and role
+  // Unique 16-hex character device ID derived uniquely and strictly from session and role
   let hexId = "";
   let cur = posHash;
   for (let i = 0; i < 4; i++) {
@@ -1312,12 +1294,16 @@ async function handleSingleCycleInternal(
     // Read child status with synchronization check
     let childSt = await activeChildEngine.getStatusAndChild(true);
 
-    // If telecom sync is still propagating and child temporarily shows small amount:
-    if (parkedMixAmount > 5000 && childSt.remainingMix < parkedMixAmount * 0.5) {
-      engine.log(`[*] رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) ميكس. جاري انتظار اكتمال مزامنة الرصيد المركون بالسيرفر...`, "info");
-      for (let syncP = 1; syncP <= 5; syncP++) {
+    // If telecom sync is still propagating and child temporarily shows small amount (e.g. residual 20 units):
+    if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
+      engine.log(`[*] رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')}). جاري التحقق العميق وتحديث جلسة الفرد بالسيرفر...`, "info");
+      for (let syncP = 1; syncP <= 6; syncP++) {
         await sleep(2000);
         try {
+          // Force clean re-login on attempts 2 and 4 to refresh Etisalat token and cache
+          if (syncP === 2 || syncP === 4) {
+            await activeChildEngine.login(childEmail, childPass, false, true);
+          }
           const syncSt = await activeChildEngine.getStatusAndChild(true);
           if (syncSt.remainingMix >= parkedMixAmount * 0.7 || syncSt.remainingMix > childSt.remainingMix) {
             childSt = syncSt;
@@ -1327,26 +1313,57 @@ async function handleSingleCycleInternal(
       }
     }
 
-    engine.log(`[+] رصيد الفرد المؤكد للاسترجاع: (${childSt.remainingMix.toLocaleString('en-US')}) ميكس.`, "info");
+    // Determine the optimal transfer amount:
+    // If childSt reported a small dust value (like 20 mixes) but we parked 15,400 mixes,
+    // test transferring the full parkedMixAmount first!
+    let attemptAmount = childSt.remainingMix;
+    let tryParkedFirst = false;
+    if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
+      engine.log(`[!] تنبيه الحماية: قراءة العداد أظهرت (${childSt.remainingMix.toLocaleString('en-US')}) ميكس بينما المركون المؤكد (${parkedMixAmount.toLocaleString('en-US')}) ميكس. سيتم تجربة استرجاع كامل الرصيد المركون أولاً...`, "warn");
+      attemptAmount = parkedMixAmount;
+      tryParkedFirst = true;
+    }
 
-    if (childSt.remainingMix > 0 && engine.ownerDial) {
+    engine.log(`[+] رصيد الفرد المستهدف للاسترجاع: (${attemptAmount.toLocaleString('en-US')}) ميكس.`, "info");
+
+    if (attemptAmount > 0 && engine.ownerDial) {
       let retOk = false;
-      for (let t = 1; t <= 3; t++) {
+      // Attempt 1: Try with full attemptAmount
+      retOk = await activeChildEngine.transferMix(engine.ownerDial, attemptAmount, "Hekaya_XRP_MIX_Child_1");
+      if (retOk) {
+        recoveredMixAmount = attemptAmount;
+      } else if (tryParkedFirst && childSt.remainingMix > 0) {
+        // Fallback: If full parked amount failed, try the read amount
+        engine.log(`[*] محاولة بديلة برصيد العداد المقروء (${childSt.remainingMix.toLocaleString('en-US')} ميكس)...`, "info");
+        await activeChildEngine.login(childEmail, childPass, false, true);
         retOk = await activeChildEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
         if (retOk) {
           recoveredMixAmount = childSt.remainingMix;
-          break;
-        }
-        if (t < 3) {
-          engine.log(`[!] محاولة استرجاع أخرى (${t}/3)...`, "warn");
-          await activeChildEngine.login(childEmail, childPass, false, true);
-          await sleep(500);
         }
       }
+
       if (!retOk) {
-        engine.log(`[!] تنبيه: فشل أمر استرجاع الميكسات من الفرد. الميكسات لا تزال عند الفرد (${childSt.remainingMix.toLocaleString('en-US')}).`, "warn");
+        // Last-resort retry
+        for (let t = 1; t <= 2; t++) {
+          engine.log(`[!] محاولة استرجاع أخيرة (${t}/2)...`, "warn");
+          await activeChildEngine.login(childEmail, childPass, false, true);
+          await sleep(1000);
+          const lastSt = await activeChildEngine.getStatusAndChild(true);
+          const finalTry = lastSt.remainingMix > 0 ? lastSt.remainingMix : parkedMixAmount;
+          if (finalTry > 0) {
+            retOk = await activeChildEngine.transferMix(engine.ownerDial, finalTry, "Hekaya_XRP_MIX_Child_1");
+            if (retOk) {
+              recoveredMixAmount = finalTry;
+              break;
+            }
+          }
+        }
       }
-    } else if (childSt.remainingMix === 0) {
+
+      if (!retOk) {
+        engine.log(`[!] تنبيه: تعذر إتمام أمر استرجاع الميكسات من الفرد. الميكسات لا تزال محفوظة في حساب الفرد.`, "warn");
+      }
+    } else if (attemptAmount === 0) {
       engine.log(`[*] رصيد الفرد 0 ميكس (لا توجد ميكسات للتحويل). باقة الأونر الجديدة مؤمنة.`, "info");
     }
   }
