@@ -236,6 +236,21 @@ export function VipAutoLoopCard({
               </span>
             )}
           </div>
+
+          {/* Parked Mixes Golden Shield Safety Banner */}
+          {((session.individual_mix_balance || 0) > 0 || session.stop_reason?.includes('الفرد')) && (
+            <div className="mt-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2 text-[11px]">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 text-right">
+                <span className="font-bold text-emerald-400 block">
+                  درع الأمان الذهبي: الميكسات محجوزة ومحمية بالكامل في حساب الفرد!
+                </span>
+                <span className="text-muted-foreground block text-[10.5px] leading-relaxed">
+                  يمنع النظام استرجاع الميكسات للأونر طالما أمر الترحيل معلق بالسيرفر لتفادي تصفيرها. ويتم تنشيط العقد تلقائياً كل دقيقة حتى يتم الترحيل ثم تُسترجع الميكسات بأمان 100%.
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Configuration Row: Target Preset & Cycle Delay */}

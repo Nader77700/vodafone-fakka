@@ -564,6 +564,12 @@ class EtisalatEngine {
     }
   }
 
+  async renewBundle(planName?: string, amount?: string): Promise<boolean> {
+    const pName = planName || (this.shortCode.includes("M7") ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6");
+    const pCost = amount || (pName.includes("7") ? "270" : "180");
+    return this.renewBundleAction(pName, pCost);
+  }
+
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
     const target = toDial.startsWith("0") ? "20" + toDial.substring(1) : toDial;
@@ -1304,17 +1310,23 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 5. STEP 3: Wait Server Confirmation with Active Periodic Reactivation & Warm Child Token
-  await sendStep("waiting_server", 3, "انتظار تحديث السيرفر", "فحص دوري كل ثانيتين لتأكيد ترحيل النظام مع تنشيط ذكي تلقائي");
-  engine.log(`[*] في انتظار تحديث السيرفر واعتماد النظام الجديد ...`, "info");
+  // 5. STEP 3: Wait Server Confirmation with Extended Timeout (up to 15 mins) & Active Periodic Nudge Loop (تنشيط العقد الدوري)
+  await sendStep("waiting_server", 3, "انتظار ترحيل وتنشيط السيرفر", "فحص مستمر وتنشيط دوري كل دقيقة وحفظ الميكسات بأمان لدى الفرد");
+  engine.log(`[*] في انتظار تحديث السيرفر واعتماد النظام الجديد (${targetPlanDisplay})...`, "info");
+  engine.log(`[🛡️] درع الأمان الذهبي: كافة الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محجوزة ومحمية بالكامل في حساب الفرد، ويُحظر استرجاعها للأونر نهائياً حتى يتم التأكد القطعي 100% من نجاح الترحيل لتجنب التصفير!`, "info");
 
   let serverConfirmed = false;
   let confirmedNewMix = 0;
   let confirmedPlanId = "";
+  let nudgeCount = 0;
 
-  // Poll up to 60 attempts (~120 seconds) with periodic reactivation every 10 attempts
-  for (let attempt = 1; attempt <= 60; attempt++) {
-    await sleep(2000);
+  // Wait up to 15-20 minutes: 240 attempts * ~3.5s = ~840s (14 minutes).
+  const maxAttempts = 240;
+  const currentPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+  const currentCost = isSeven ? "270" : "180";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await sleep(3500);
     const currentCheck = await engine.getStatusAndChild(true);
     const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
                         (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
@@ -1323,20 +1335,18 @@ async function handleSingleCycleInternal(
     if (planMatches) {
       serverConfirmed = true;
       confirmedPlanId = currentCheck.planId;
-      engine.log(`[+] السيرفر استجاب وتأكد التحول للنظام (${targetPlanDisplay})!`, "success");
+      engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد (${targetPlanDisplay}) بنجاح!`, "success");
 
       // MANDATORY TELECOM ZERO-LOSS PROTECTION:
       // When Etisalat switches a plan (e.g. 270 -> 180 or 180 -> 270), the plan profile changes,
       // but the backend telecom billing engine takes some seconds to allocate the new bundle quota.
-      // Small residual dust (e.g. 6 or 72 mixes) is NOT the new bundle!
-      // We wait until the real plan bundle arrives before initiating transfer from child.
       const minExpectedBundle = targetPlanId.includes("Parent_7") ? 4000 : 2000;
       confirmedNewMix = currentCheck.remainingMix;
 
       if (confirmedNewMix < minExpectedBundle) {
         engine.log(`[*] في انتظار اعتماد ونزول باقة النظام الجديد (${targetPlanDisplay}) بالكامل في حساب الأونر بالسيرفر...`, "info");
-        for (let bAttempt = 1; bAttempt <= 20; bAttempt++) {
-          await sleep(2000);
+        for (let bAttempt = 1; bAttempt <= 30; bAttempt++) {
+          await sleep(2500);
           try {
             const bundleCheck = await engine.getStatusAndChild(true);
             if (bundleCheck.remainingMix >= minExpectedBundle) {
@@ -1347,60 +1357,108 @@ async function handleSingleCycleInternal(
               confirmedNewMix = bundleCheck.remainingMix;
             }
           } catch (_bErr) {}
-          if (bAttempt % 3 === 0) {
-            engine.log(`[*] فحص رصيد باقة الأونر بالسيرفر (${bAttempt}/20): الرصيد المقروء (${confirmedNewMix.toLocaleString('en-US')} ميكس) - ننتظر نزول الباقة الأساسية...`, "info");
+          if (bAttempt % 5 === 0) {
+            engine.log(`[*] فحص رصيد باقة الأونر بالسيرفر (${bAttempt}/30): الرصيد المقروء (${confirmedNewMix.toLocaleString('en-US')} ميكس) - ننتظر نزول الباقة الأساسية...`, "info");
           }
         }
       } else {
         engine.log(`[+] باقة النظام الجديد نشطة بالفعل بالسيرفر: (${confirmedNewMix.toLocaleString('en-US')} ميكس).`, "success");
       }
 
-      // The moment the new bundle appears, proceed immediately
-      engine.log(`[⚡] بدء الانتقال لاسترجاع الميكسات المركونة من الفرد للأونر ...`, "info");
+      // ONLY after the new bundle arrives, proceed to Step 4 (Recovery)
+      engine.log(`[⚡] تم التحقق القطعي من النظام الجديد ورصيده. جاري بدء استرجاع الميكسات المركونة من الفرد للأونر بأمان...`, "info");
       break;
     }
 
-    // SMART SERVER WAKE-UP / NUDGE TRICK (تنشيط الخط وإنعاش استجابة السيرفر):
-    // If server takes too long (attempt 15 and 30, ~30s / 60s), telecom migration queue sometimes stalls.
-    // Nudge the line by renewing current bundle and re-requesting migration, forcing Etisalat switch to acknowledge!
-    if ((attempt === 15 || attempt === 30) && !serverConfirmed) {
-      engine.log(`[⚡] تنشيط ذكي للسيرفر (محاولة ${attempt}/60): إنعاش الخط وتحديث طلب الترحيل...`, "info");
+    // PERIODIC NUDGE & ACTIVATION LOOP (تنشيط الخط والعقد كل دقيقة إلى دقيقة ونصف):
+    // If server has not switched after ~18 attempts (~60s), execute active nudge:
+    // 1) Renew current bundle to wake up the subscriber contract in billing OMS
+    // 2) Re-issue changePlan to ensure it is not stuck in queue
+    const shouldNudge = (attempt % 18 === 0) && !serverConfirmed;
+    if (shouldNudge) {
+      nudgeCount++;
+      const elapsedMins = ((attempt * 3.5) / 60).toFixed(1);
+      engine.log(`[⚡] بروتوكول التنشيط الدوري (Nudge #${nudgeCount} - مضى ${elapsedMins} دقيقة): إنعاش العقد عبر تجديد باقة الأونر الحالية (${engine.getPlanName(currentPlanName)})...`, "info");
       try {
-        await engine.renewBundle();
-        await sleep(2500);
+        await engine.renewBundleAction(currentPlanName, currentCost);
+        await sleep(3000);
         const nudgeCheck = await engine.getStatusAndChild(true);
         const nudgeMatches = (targetPlanId.includes("Parent_6") && nudgeCheck.planId.includes("Parent_6")) ||
                              (targetPlanId.includes("Parent_7") && nudgeCheck.planId.includes("Parent_7"));
         if (nudgeMatches) {
-          // Acknowledged right after renewal!
-          continue;
+          serverConfirmed = true;
+          confirmedPlanId = nudgeCheck.planId;
+          engine.log(`[🎉] تم تنشيط السيرفر بنجاح وتحول الخط للنظام الجديد فور التجديد!`, "success");
+          break;
         }
         // Re-send change plan command to nudge telecom queue
-        await engine.changePlan(targetPlanId, targetPlanCode);
+        engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة...`, "info");
+        await engine.changePlan(targetPlanId, ratePlanId);
       } catch (_nudgeErr) {}
     }
 
-    // Safe Keep-Alive every 10 attempts (~20 seconds):
-    if (attempt % 10 === 0 && attempt < 60 && attempt !== 15 && attempt !== 30) {
-      engine.log(`[*] فحص نشاط السيرفر (محاولة ${attempt}/60): الجلسات نشطة وننتظر تحديث عداد النظام...`, "info");
+    // Regular logging every 10 attempts (~35 seconds):
+    const currentElapsedMins = ((attempt * 3.5) / 60).toFixed(1);
+    if (attempt % 10 === 0 && attempt < maxAttempts && !shouldNudge) {
+      engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد...`, "info");
     } else if (attempt === 1 || attempt % 5 === 0) {
-      engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/60)`, "info");
+      engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/${maxAttempts})`, "info");
     }
 
     if (sendEvent) {
       await sendEvent("step", {
         step: "waiting_server",
         stepNumber: 3,
-        title: "انتظار تحديث السيرفر",
-        detail: `جاري الاستعلام وتنشيط السيرفر (محاولة ${attempt}/60)...`,
+        title: "انتظار ترحيل وتنشيط السيرفر",
+        detail: `فحص دوري (${attempt}/${maxAttempts}) - تنشيط دوري كل دقيقة - الميكسات بأمان لدى الفرد`,
       });
     }
   }
 
-  // If server took too long and did not switch plan:
-  // CRITICAL ZERO-LOSS RULE: NEVER abandon mixes at the child!
+  // CRITICAL GOLDEN RULE: If server did not confirm plan change within maxAttempts:
+  // NEVER RECOVER MIXES BACK TO OWNER!
+  // Leave all mixes safely parked in child line!
   if (!serverConfirmed) {
-    engine.log(`[!] تنبيه أمان ذكي: تأخر السيرفر في تأكيد الترحيل. لمنع أي تصفير للميكسات، جاري استرجاع الميكسات من الفرد إلى الأونر فوراً على النظام الحالي!`, "warn");
+    engine.log(`[🛡️] درع الأمان المطلق: انتهت مهلة انتظار استجابة السيرفر (~15 دقيقة) دون تأكيد الترحيل النهائي.`, "warn");
+    engine.log(`[🔒] قاعدة الحماية الصارمة: تم الاحتفاظ بكافة الميكسات (${parkedMixAmount.toLocaleString('en-US')} ميكس) محجوزة ومحمية بالكامل في حساب الفرد (${engine.childDial || session.individual_account_identifier}). يمنع منعاً باتاً إرجاعها للأونر طالما أمر الترحيل مرسل لتجنب مسحها وتصفيرها عند استجابة السيرفر لاحقاً!`, "warn");
+    engine.log(`[!] تم إيقاف الدورة بأمان مع تأمين الرصيد كاملاً لدى الفرد. يمكنك تجديد الباقة أو إعادة التنشيط يدوياً.`, "info");
+
+    try {
+      await supabase.from("vip_cycle_history").insert({
+        session_id: session_id,
+        cycle_number: (session.current_cycle || 0) + 1,
+        started_at: cycleStartTime,
+        ended_at: new Date().toISOString(),
+        duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
+        owner_balance_start: ownerStartMix,
+        system_pre_migration: ownerPlanPre,
+        system_post_migration: "قيد الانتظار (معلق بالسيرفر)",
+        migration_result: "server_delayed_nudge_pending",
+        amount_transferred_owner_to_indiv: parkedMixAmount,
+        amount_transferred_indiv_to_owner: 0, // ZERO! NEVER RECOVERED TO OWNER!
+        final_verified_owner_balance: 0,
+        difference_to_target: Math.max(0, (session.target_mix_balance || 50000) - 0),
+        cycle_status: "paused_safe",
+        safe_error_summary: `تأخر سيرفر اتصالات - تم حفظ كافة الميكسات (${parkedMixAmount.toLocaleString('en-US')} ميكس) بأمان بحساب الفرد لحمايتها من التصفير`,
+        increased_owner_balance: false,
+      });
+
+      await supabase.from("vip_sessions").update({
+        is_running: false,
+        stop_reason: `تأخر سيرفر اتصالات - الميكسات (${parkedMixAmount.toLocaleString('en-US')} ميكس) محفوظة بأمان لدى الفرد لمنع تصفيرها`,
+        status: "paused",
+        mixes_parked_at_child: true,
+        parked_amount: parkedMixAmount,
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+    } catch (_dbE) {}
+
+    return {
+      success: false,
+      safety_stop: true,
+      error: `تأخر سيرفر اتصالات في ترحيل النظام. تم حفظ كافة الميكسات (${parkedMixAmount.toLocaleString('en-US')}) بأمان في حساب الفرد لحمايتها تماماً من التصفير.`,
+      logs: engine.logs,
+    };
   }
 
   // 6. STEP 4: Instant Zero-Delay Recovery from Child to Owner (استرجاع فوري بالمللي ثانية)
@@ -1540,52 +1598,7 @@ async function handleSingleCycleInternal(
     } catch (_) {}
   }
 
-  if (!serverConfirmed) {
-    // Record timeout/incomplete cycle in DB
-    try {
-      await supabase.from("vip_cycle_history").insert({
-        session_id: session_id,
-        cycle_number: (session.current_cycle || 0) + 1,
-        started_at: cycleStartTime,
-        ended_at: new Date().toISOString(),
-        duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
-        owner_balance_start: ownerStartMix,
-        system_pre_migration: ownerPlanPre,
-        system_post_migration: finalPlan,
-        migration_result: "server_timeout",
-        amount_transferred_owner_to_indiv: parkedMixAmount,
-        amount_transferred_indiv_to_owner: recoveredMixAmount,
-        final_verified_owner_balance: finalMix,
-        difference_to_target: Math.max(0, (session.target_mix_balance || 50000) - finalMix),
-        cycle_status: "failed",
-        safe_error_summary: "تأخر سيرفر اتصالات في ترحيل النظام - تم استرجاع الميكسات للأونر",
-        increased_owner_balance: finalMix > ownerStartMix,
-      });
-
-      await supabase.from("vip_operation_history").insert({
-        session_id: session_id,
-        operation_type: "auto_cycle",
-        owner_account_ref: session.owner_account_identifier,
-        individual_account_ref: session.individual_account_identifier,
-        requested_action: `دورة أتمتة #${(session.current_cycle || 0) + 1} (تأخر السيرفر)`,
-        status: "failed",
-        failure_reason: "تأخر سيرفر اتصالات في ترحيل النظام",
-        started_at: cycleStartTime,
-        completed_at: new Date().toISOString(),
-        result: { final_mix: finalMix },
-        is_automatic: true,
-      });
-    } catch (_dbE) {}
-
-    return {
-      success: false,
-      safety_stop: false,
-      server_timeout: true,
-      error: "تأخر سيرفر اتصالات في ترحيل النظام، ولكن تم استرجاع وحفظ كافة ميكساتك بأمان بحساب الأونر لمنع أي تصفير.",
-      logs: engine.logs,
-    };
-  }
-
+  // Since serverConfirmed is guaranteed to be true here, proceed to cycle completion
   const newCycleCount = (session.current_cycle || 0) + 1;
   const targetMix = session.target_mix_balance || 50000;
   const targetReached = finalMix >= targetMix;

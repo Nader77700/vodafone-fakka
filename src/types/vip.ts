@@ -93,6 +93,9 @@ export interface VipSession {
   last_successful_op_at: string | null;
   last_error_summary: string | null;
   pause_reason?: string | null;
+  stop_reason?: string | null;
+  mixes_parked_at_child?: boolean;
+  parked_amount?: number | null;
 
   created_at: string;
   updated_at: string;
