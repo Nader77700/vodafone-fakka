@@ -6,6 +6,7 @@ import {
   executeVipCheckStatusStream,
   executeVipAddChild,
   executeVipChangePlan,
+  executeVipAdoptLiveBalance,
   executeVipRunSingleCycleStream,
   type VipExecutionLog,
 } from '@/lib/vipApi';
@@ -272,6 +273,33 @@ export function VipDashboardTab({
     }
   };
 
+  const [adoptingBalance, setAdoptingBalance] = useState(false);
+
+  // 3b. Adopt Live Balance & Unblock Session
+  const handleAdoptLiveBalance = async () => {
+    if (!session) return;
+    setAdoptingBalance(true);
+    addSingleLog(`[*] بدء اعتماد الرصيد الفعلي المباشر وفك حظر الجلسة «${session.session_name}»...`, 'info');
+    try {
+      const res = await executeVipAdoptLiveBalance(session.id);
+      appendLogs(res.logs);
+      if (res.success) {
+        toast.success(res.message || 'تم اعتماد الرصيد الفعلي وفك الحظر بنجاح!');
+        if (res.owner_mix_balance !== undefined) setLiveOwnerMix(res.owner_mix_balance);
+        if (res.child_mix_balance !== undefined) setLiveChildMix(res.child_mix_balance);
+        if (res.owner_plan) setLivePlan(res.owner_plan);
+        onRefresh();
+      } else {
+        toast.error(res.error || 'فشل اعتماد الرصيد');
+      }
+    } catch (err: any) {
+      addSingleLog(`[-] خطأ أثناء اعتماد الرصيد: ${err?.message || err}`, 'error');
+      toast.error(err?.message || 'تعذر اعتماد الرصيد');
+    } finally {
+      setAdoptingBalance(false);
+    }
+  };
+
   // Helper to determine if an error is network/stream drop
   const isNetworkGlitch = (errorText?: string | null) => {
     if (!errorText) return false;
@@ -341,6 +369,8 @@ export function VipDashboardTab({
             addingChild={addingChild}
             onChangePlan={handleChangePlan}
             changingPlan={changingPlan}
+            onAdoptLiveBalance={handleAdoptLiveBalance}
+            adoptingBalance={adoptingBalance}
           />
 
           {/* Auto Loop Controller */}

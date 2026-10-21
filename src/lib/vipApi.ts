@@ -633,6 +633,13 @@ export async function executeVipReturnChildMixes(sessionId: string): Promise<Vip
 }
 
 /**
+ * Action 6b: Adopt Live Balance & Unblock Session (اعتماد الرصيد الفعلي وفك الحظر)
+ */
+export async function executeVipAdoptLiveBalance(sessionId: string): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('adopt_live_balance', { session_id: sessionId });
+}
+
+/**
  * Action 7: Execute Full Single Cycle of Script
  */
 export async function executeVipRunSingleCycle(sessionId: string): Promise<VipExecutionResponse> {

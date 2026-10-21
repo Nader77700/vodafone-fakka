@@ -39,6 +39,8 @@ interface Props {
   addingChild: boolean;
   onChangePlan?: (targetPlan: '6' | '7') => Promise<void>;
   changingPlan?: boolean;
+  onAdoptLiveBalance?: () => Promise<void>;
+  adoptingBalance?: boolean;
 }
 
 export function VipUnifiedMasterCard({
@@ -49,6 +51,8 @@ export function VipUnifiedMasterCard({
   addingChild,
   onChangePlan,
   changingPlan,
+  onAdoptLiveBalance,
+  adoptingBalance,
 }: Props) {
   const [openAddChildModal, setOpenAddChildModal] = useState(false);
   const [childPhoneInput, setChildPhoneInput] = useState(
@@ -127,16 +131,32 @@ export function VipUnifiedMasterCard({
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefreshAll}
-              disabled={refreshing}
-              className="h-7 sm:h-8 text-[11px] sm:text-xs px-2.5 sm:px-3 gap-1.5 border-primary/40 hover:bg-primary/15 text-primary font-bold shadow-sm shrink-0 self-end sm:self-auto"
-            >
-              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>{refreshing ? 'جاري الفحص...' : 'فحص شامل وتحديث فوري'}</span>
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto flex-wrap">
+              {onAdoptLiveBalance && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAdoptLiveBalance}
+                  disabled={adoptingBalance || refreshing}
+                  className="h-7 sm:h-8 text-[11px] sm:text-xs px-2.5 sm:px-3 gap-1.5 border-emerald-500/40 hover:bg-emerald-500/15 text-emerald-400 font-bold shadow-sm"
+                  title="اعتماد الرصيد الفعلي الحالي من شبكة اتصالات فوراً وإزالة أي حظر أو توقف"
+                >
+                  <ShieldCheck className={`w-3.5 h-3.5 ${adoptingBalance ? 'animate-spin' : 'text-emerald-400'}`} />
+                  <span>{adoptingBalance ? 'جاري الاعتماد...' : 'اعتماد الرصيد وفك الحظر'}</span>
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefreshAll}
+                disabled={refreshing || adoptingBalance}
+                className="h-7 sm:h-8 text-[11px] sm:text-xs px-2.5 sm:px-3 gap-1.5 border-primary/40 hover:bg-primary/15 text-primary font-bold shadow-sm"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'جاري الفحص...' : 'فحص شامل وتحديث فوري'}</span>
+              </Button>
+            </div>
           </div>
 
           {/* Console Grid Structure: Row 1 (Owner Details) & Row 2 (Targets & Metrics) */}
