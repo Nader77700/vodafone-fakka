@@ -1405,13 +1405,13 @@ async function handleSingleCycleInternal(
         }
       }
 
-      if (prevOwnerMix > 5000 && childStatusMix < (prevOwnerMix * 0.7)) {
-        engine.log(`[-] تنبيه طوارئ فائق: رصيد الأونر يظهر 0 ميكس بينما كان (${prevOwnerMix.toLocaleString('en-US')}) ميكس، والفرد لا يحمل هذا الرصيد (لديه فقط ${childStatusMix.toLocaleString('en-US')} ميكس)! تم إيقاف الدورة فوراً ومنع الترحيل لحماية ميكسات الأونر من التصفير.`, "error");
+      if (verifiedPeakBalance > 5000 && childStatusMix < (verifiedPeakBalance * 0.7)) {
+        engine.log(`[-] تنبيه طوارئ فائق: رصيد الأونر يظهر 0 ميكس بينما كان (${verifiedPeakBalance.toLocaleString('en-US')}) ميكس، والفرد لا يحمل هذا الرصيد (لديه فقط ${childStatusMix.toLocaleString('en-US')} ميكس)! تم إيقاف الدورة فوراً ومنع الترحيل لحماية ميكسات الأونر من التصفير.`, "error");
         await sendStep("safety_stop", 1, "توقف طوارئ لمنع التصفير", "تم حظر الترحيل: الميكسات غير مركونة عند الفرد");
         return {
           success: false,
           safety_stop: true,
-          error: `تم إيقاف الدورة لحماية ميكساتك: رصيد الأونر السابق (${prevOwnerMix.toLocaleString('en-US')} ميكس) لم يظهر عند الفرد (${childStatusMix.toLocaleString('en-US')}). تم منع الترحيل تلقائياً لحفظ رصيدك.`,
+          error: `تم إيقاف الدورة لحماية ميكساتك: رصيد الأونر السابق (${verifiedPeakBalance.toLocaleString('en-US')} ميكس) لم يظهر عند الفرد (${childStatusMix.toLocaleString('en-US')}). تم منع الترحيل تلقائياً لحفظ رصيدك.`,
           logs: engine.logs,
         };
       }
