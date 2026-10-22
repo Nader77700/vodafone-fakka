@@ -60,6 +60,18 @@ async function sha256Hex(str: string): Promise<string> {
     .join("");
 }
 
+function clean10DigitDial(dial: string): string {
+  const clean = (dial || '').replace(/\D/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('20') && clean.length >= 12) {
+    return clean.substring(2);
+  }
+  if (clean.startsWith('0') && clean.length >= 11) {
+    return clean.substring(1);
+  }
+  return clean;
+}
+
 function normalizeEgyptianNumber(dial: string, format: 'intl' | 'local' = 'intl'): string {
   const clean = (dial || '').replace(/\D/g, '');
   if (!clean) return '';
@@ -183,7 +195,8 @@ class EtisalatEngine {
         const jsonStr = new TextDecoder().decode(bytes);
         const decoded = JSON.parse(jsonStr);
         this.currentDial = decoded.selectedDial || null;
-        this.customerName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+        const rawName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+        this.customerName = (!rawName || rawName.toLowerCase().includes("dummy")) ? "" : rawName;
         this.shortCode = decoded.selectedDialShortCode || "";
         if (this.role === "owner") {
           this.ownerDial = this.currentDial;
@@ -356,7 +369,8 @@ class EtisalatEngine {
               const jsonStr = new TextDecoder().decode(bytes);
               const decoded = JSON.parse(jsonStr);
               this.currentDial = decoded.selectedDial || null;
-              this.customerName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+              const rawName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+              this.customerName = (!rawName || rawName.toLowerCase().includes("dummy")) ? "" : rawName;
               this.shortCode = decoded.selectedDialShortCode || "";
             } catch {
               // fallback
@@ -464,26 +478,37 @@ class EtisalatEngine {
           const meterTypeMatch = block.match(/<consumptionMeterType>([^<]+)<\/consumptionMeterType>/i);
           const meterType = meterTypeMatch ? meterTypeMatch[1].trim() : "";
 
-          // Exclude pure social / whatsapp / home vdsl if they have separate quotas
-          const isSocialOrVdsl = /whatsapp|facebook|vdsl|انترنت\s*المنزلي/i.test(oms) || /فيسبوك|واتساب|انترنت\s*حكاية/i.test(label);
+          // Exclude minutes / calls / voice / family minutes (CRITICAL: دقائق العيلة is 300 minutes, NOT mixes!)
+          const isMinutesBucket = 
+            /دقيقة|دقائق|min|minute/i.test(unit) ||
+            /MINUTES|VOICE|CALLS/i.test(oms) ||
+            (/دقائق|دقيقة/i.test(label) && !/ميكس|وحدة/i.test(label));
+          if (isMinutesBucket) {
+            continue;
+          }
+
+          // Exclude pure social / whatsapp / home vdsl / أقوي كارت if they have separate quotas
+          const isSocialOrVdsl = 
+            /whatsapp|facebook|vdsl|انترنت\s*المنزلي/i.test(oms) || 
+            /فيسبوك|واتساب|انترنت\s*حكاية|أقوي\s*كارت/i.test(label);
           if (isSocialOrVdsl && !/ميكسات\s*الباقة/i.test(label)) {
             continue;
           }
 
-          const isMixBucket = /ميكس|unit/i.test(unit) ||
+          const isMixBucket = (/ميكس|unit|وحدة/i.test(unit) ||
                               /xrp_units|hekaya_units/i.test(meterType) ||
                               /GENERAL_UNIT/i.test(oms) ||
                               /CARRIED_OVER/i.test(oms) ||
-                              /TRANSFER/i.test(oms) ||
-                              /FAMILY/i.test(oms) ||
-                              /ميكسات|ميكس|وحدة/i.test(label);
+                              /TRANSFER_UNITS/i.test(oms) ||
+                              /ميكسات|ميكس|وحدة/i.test(label)) &&
+                              !/دقيقة|دقائق|ميجا/i.test(unit);
 
           if (isMixBucket) {
             if (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || meterType === "xrp_units" || meterType === "hekaya_units") {
               if (remVal > mainMix) mainMix = remVal;
             } else if (/CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة/i.test(label)) {
               if (remVal > carriedMix) carriedMix = remVal;
-            } else if (/TRANSFER|FAMILY/i.test(oms) || /محول|تحويل|عيلة|مسترجع/i.test(label)) {
+            } else if (/TRANSFER/i.test(oms) || /محول|تحويل|مسترجع/i.test(label) || (/عيلة/i.test(label) && /ميكس|وحدة/i.test(label))) {
               if (remVal > transferredMix) transferredMix = remVal;
             }
             if (remVal > 0) {
@@ -492,13 +517,9 @@ class EtisalatEngine {
           }
         }
 
-        // Fallback: If no structured mix bucket matched, scan any remainingValue in the entire document
+        // Fallback: If no structured mix bucket matched, the line legitimately has 0 mixes (do not scrape minutes!)
         if (allMixCandidates.length === 0) {
-          const rawMatches = [...text.matchAll(/<remainingValue>([0-9]+)<\/remainingValue>/gi)];
-          for (const rm of rawMatches) {
-            const v = parseInt(rm[1], 10);
-            if (v > 0) allMixCandidates.push(v);
-          }
+          // Zero mixes verified
         }
 
         const candidateMax = allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0;
@@ -591,6 +612,8 @@ class EtisalatEngine {
 
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
+    const target10 = clean10DigitDial(toDial);
+    const sender10 = clean10DigitDial(this.currentDial || '');
     const targetIntl = normalizeEgyptianNumber(toDial, 'intl');
     const targetLocal = normalizeEgyptianNumber(toDial, 'local');
     const senderIntl = normalizeEgyptianNumber(this.currentDial || '', 'intl');
@@ -600,9 +623,9 @@ class EtisalatEngine {
 
     this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${receiverDisplay} [المرسل: ${senderDisplay} | الباقة: ${productName}]...`, "info");
 
-    // Try multiple formats and endpoints across 3 smart attempts
-    const targetVariants = [targetIntl, targetLocal, toDial].filter((v, i, a) => v && a.indexOf(v) === i);
-    const senderVariants = [this.currentDial, senderIntl, senderLocal].filter((v, i, a) => v && a.indexOf(v) === i);
+    // Clean 10-digit number is the native format required by Etisalat MAB gateway for zero-403 transfer success
+    const targetVariants = [target10, targetIntl, targetLocal, toDial].filter((v, i, a) => v && a.indexOf(v) === i);
+    const senderVariants = [sender10, this.currentDial, senderIntl, senderLocal].filter((v, i, a) => v && a.indexOf(v) === i);
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       for (const tgt of targetVariants) {
