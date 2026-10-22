@@ -1193,23 +1193,86 @@ async function handleSingleCycleInternal(
           }
 
           if (!childArrived) {
-            engine.log(`[-] تحذير أمان صارم: لم يؤكد سيرفر اتصالات استقرار الميكسات المحولة (${parkedMixAmount.toLocaleString('en-US')}) عند الفرد بعد 8 محاولات (الرصيد المقروء: ${latestChildReadMix.toLocaleString('en-US')} فقط).`, "error");
-            engine.log(`[-] تم حظر وإلغاء ترحيل باقة الأونر فوراً لحماية رصيدك من التصفير والضياع.`, "error");
-            await sendStep("safety_stop", 1, "حظر ترحيل الباقة - الميكسات لم تصل للفرد", "تم حظر تغيير الباقة لعدم تأكيد وصول الرصيد المنقول لحساب الفرد");
+            // ── SMART DIAGNOSTIC: Did the mixes actually leave the Owner? ──
+            engine.log(`[*] فحص رصيد الأونر للتحقق مما إذا كان التحويل معلقاً وبقيت الميكسات عنده...`, "info");
+            let ownerHoldsMixes = false;
+            let currentOwnerMix = 0;
+            try {
+              const freshOwnerCheck = await engine.getStatusAndChild(true);
+              currentOwnerMix = freshOwnerCheck.remainingMix || 0;
+              if (currentOwnerMix >= Math.round(parkedMixAmount * 0.70) && currentOwnerMix > 2000) {
+                ownerHoldsMixes = true;
+              }
+            } catch (_) {}
 
-            // Attempt safe rollback recovery
-            if (latestChildReadMix > 0) {
+            if (ownerHoldsMixes) {
+              engine.log(`[⚠️] رصد تحويل وهمي/معلق بسيرفر اتصالات: الميكسات (${currentOwnerMix.toLocaleString('en-US')}) ما زالت في باقة الأونر الأساسية ولم تُخصم! الرصيد محفوظ بأمان.`, "warn");
+              engine.log(`[*] جاري محاولة إعادة أمر التحويل الذكية بعد فترة استقرار ومزامنة 4 ثوانٍ (محاولة 2 من 2)...`, "info");
+              await sleep(4000);
+
+              // Fresh login to refresh session tokens and clear any stale billing cache
               try {
-                await prewarmedChildEngine.transferMix(engine.ownerDial, latestChildReadMix, "Hekaya_XRP_MIX_Child_1");
+                await engine.login(ownerEmail, ownerPass, true, true);
               } catch (_) {}
+
+              // Retry transfer from Owner to Child
+              const retryTransferred = await engine.transferMix(childNum, currentOwnerMix, ownerPlanName);
+              if (retryTransferred) {
+                engine.log(`[+] تم إرسال أمر إعادة التحويل بنجاح! جاري فحص وصول الميكسات للفرد...`, "info");
+                await sleep(5000);
+                for (let retryAttempt = 1; retryAttempt <= 6; retryAttempt++) {
+                  try {
+                    if (retryAttempt === 3) {
+                      await prewarmedChildEngine.login(childEmail, childPass, false, true);
+                    }
+                    const retryChildVerify = await prewarmedChildEngine.getStatusAndChild(true);
+                    latestChildReadMix = retryChildVerify.remainingMix || 0;
+                    if (latestChildReadMix >= expectedMinChildMix) {
+                      engine.log(`[✓] تأكيد استقرار الميكسات: وصلت (${latestChildReadMix.toLocaleString('en-US')} ميكس) لحساب الفرد بنجاح في المحاولة الثانية!`, "success");
+                      childArrived = true;
+                      parkedMixAmount = currentOwnerMix;
+                      break;
+                    } else {
+                      engine.log(`[*] فحص رصيد الفرد بعد إعادة التحويل (${retryAttempt}/6): الرصيد (${latestChildReadMix.toLocaleString('en-US')} ميكس)...`, "info");
+                    }
+                  } catch (_) {}
+                  await sleep(3000);
+                }
+              }
             }
 
-            return {
-              success: false,
-              safety_stop: true,
-              error: `توقف أمان لحماية الميكسات: لم تصل الميكسات المحولة (${parkedMixAmount.toLocaleString('en-US')}) لحساب الفرد (الرصيد ${latestChildReadMix.toLocaleString('en-US')}). تم منع تغيير الباقة لحفظ رصيدك.`,
-              logs: engine.logs,
-            };
+            if (!childArrived) {
+              // Final check on owner balance to give the user 100% reassurance
+              try {
+                const finalOwnerRecheck = await engine.getStatusAndChild(true);
+                currentOwnerMix = finalOwnerRecheck.remainingMix || currentOwnerMix;
+                if (currentOwnerMix >= Math.round(parkedMixAmount * 0.70)) {
+                  ownerHoldsMixes = true;
+                }
+              } catch (_) {}
+
+              const safeMsg = ownerHoldsMixes
+                ? `توقف أمان لحفظ الميكسات: سيرفر اتصالات لم يُنفذ نقل الميكسات وبقيت الميكسات كاملة بحساب الأونر (${currentOwnerMix.toLocaleString('en-US')} ميكس). تم منع ترحيل الباقة لحفظ رصيدك من الضياع بنسبة 100%.`
+                : `توقف أمان لحماية الميكسات: لم تصل الميكسات المحولة (${parkedMixAmount.toLocaleString('en-US')}) لحساب الفرد (الرصيد ${latestChildReadMix.toLocaleString('en-US')}). تم منع تغيير الباقة لحفظ رصيدك.`;
+
+              engine.log(`[-] ${safeMsg}`, "error");
+              await sendStep("safety_stop", 1, "حظر ترحيل الباقة - حماية الرصيد", safeMsg);
+
+              // Attempt safe rollback of child's partial quota if any exists
+              if (latestChildReadMix > 0) {
+                try {
+                  await prewarmedChildEngine.transferMix(engine.ownerDial, latestChildReadMix, "Hekaya_XRP_MIX_Child_1");
+                  engine.log(`[+] تم استرجاع (${latestChildReadMix.toLocaleString('en-US')}) ميكس من الفرد للأونر بأمان.`, "info");
+                } catch (_) {}
+              }
+
+              return {
+                success: false,
+                safety_stop: true,
+                error: safeMsg,
+                logs: engine.logs,
+              };
+            }
           }
         }
       } else {
@@ -1618,7 +1681,7 @@ async function handleSingleCycleInternal(
     engine.log(`[*] استراحة ${cooldownSec} ثانية قبل الدورة القادمة ...`, "info");
   }
 
-  // Update session in database
+  // Update session in database with latest mixes, steps, and real-time logs
   await supabase
     .from("vip_sessions")
     .update({
@@ -1626,6 +1689,14 @@ async function handleSingleCycleInternal(
       owner_current_plan: finalPlan,
       current_cycle: newCycleCount,
       current_step: targetReached ? "completed" : "idle",
+      operation_state: targetReached ? "completed" : (session.operation_state || "idle"),
+      automation_enabled: targetReached ? false : (session.automation_enabled ?? false),
+      current_cycle_details: {
+        latest_logs: engine.logs.slice(-25),
+        cycle_number: newCycleCount,
+        timestamp: Date.now(),
+        final_mix: finalMix,
+      },
       last_successful_op_at: new Date().toISOString(),
       last_actual_operation: "single_cycle_completed",
       updated_at: new Date().toISOString(),
@@ -1680,6 +1751,60 @@ async function handleSingleCycleInternal(
     });
   } catch (dbE) {
     console.warn("Failed to insert into vip_operation_history:", dbE);
+  }
+
+  // ── SERVER-SIDE CLOUD RUNNER CHAINING (الاستمرار السحابي بالخلفية بدون هاتف) ──
+  // If session is marked running and target not reached:
+  // Auto-chain next cycle on the cloud server so it keeps running even if the user
+  // locks the phone, kills the app, or loses internet connection!
+  if (!targetReached && session.automation_enabled && session.operation_state === "running") {
+    const chainDelaySec = Math.max(cooldownSec || 20, 5);
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+
+    if (serviceRoleKey && supabaseUrl) {
+      const triggerNext = async () => {
+        try {
+          await sleep(chainDelaySec * 1000);
+          // Query fresh state to ensure user hasn't stopped or deleted session
+          const { data: checkSess } = await supabase
+            .from("vip_sessions")
+            .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance")
+            .eq("id", session_id)
+            .single();
+
+          if (
+            checkSess &&
+            checkSess.operation_state === "running" &&
+            checkSess.automation_enabled &&
+            (checkSess.owner_mix_balance || 0) < (checkSess.target_mix_balance || 50000)
+          ) {
+            console.log(`[CloudRunner] Chaining cycle #${newCycleCount + 1} on server for session ${session_id}...`);
+            await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${serviceRoleKey}`,
+                "X-VIP-Secret-Key": "VFP_VIP_NADER_AKRAM_MASTER_2026",
+              },
+              body: JSON.stringify({
+                action: "run_single_cycle",
+                session_id: session_id,
+                is_server_background: true,
+              }),
+            });
+          }
+        } catch (chainErr) {
+          console.warn("[CloudRunner] Chain error:", chainErr);
+        }
+      };
+
+      if (typeof (globalThis as any).EdgeRuntime?.waitUntil === "function") {
+        (globalThis as any).EdgeRuntime.waitUntil(triggerNext());
+      } else {
+        triggerNext();
+      }
+    }
   }
 
   return {
@@ -2280,6 +2405,91 @@ serve(async (req: Request) => {
       );
       return new Response(JSON.stringify(result), {
         status: result.success ? 200 : 400,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 3.1: start_server_loop (Cloud background continuous runner)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "start_server_loop") {
+      const targetBalance = body.target_mix || session.target_mix_balance || 50000;
+      const cycleDelay = body.delay_seconds !== undefined ? body.delay_seconds : (session.cycle_delay_seconds || 20);
+
+      // Update session state in database to running and automation enabled
+      await supabase
+        .from("vip_sessions")
+        .update({
+          operation_state: "running",
+          automation_enabled: true,
+          target_mix_balance: targetBalance,
+          cycle_delay_seconds: cycleDelay,
+          current_step: "starting",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
+
+      // Trigger first cycle immediately on cloud server
+      const runFirst = async () => {
+        try {
+          const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+          if (serviceRoleKey && supabaseUrl) {
+            await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${serviceRoleKey}`,
+                "X-VIP-Secret-Key": "VFP_VIP_NADER_AKRAM_MASTER_2026",
+              },
+              body: JSON.stringify({
+                action: "run_single_cycle",
+                session_id: session_id,
+                is_server_background: true,
+              }),
+            });
+          }
+        } catch (e) {
+          console.warn("[start_server_loop] First cycle trigger error:", e);
+        }
+      };
+
+      if (typeof (globalThis as any).EdgeRuntime?.waitUntil === "function") {
+        (globalThis as any).EdgeRuntime.waitUntil(runFirst());
+      } else {
+        runFirst();
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `تم تشغيل محرك الأتمتة السحابي بالخلفية بنجاح على السيرفر (الهدف: ${targetBalance.toLocaleString('ar-EG')} ميكس | الفاصل: ${cycleDelay}ث). يعمل السيرفر الآن بدون توقف حتى لو أغلقت التطبيق أو قفلت الشاشة.`,
+        session_id: session_id,
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 3.2: stop_server_loop (Stop cloud background runner)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "stop_server_loop") {
+      await supabase
+        .from("vip_sessions")
+        .update({
+          operation_state: "stopped",
+          automation_enabled: false,
+          current_step: "idle",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session_id);
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: "تم إيقاف الأتمتة السحابية بنجاح وحفظ كافة الأرصدة والسجلات.",
+        session_id: session_id,
+      }), {
+        status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }

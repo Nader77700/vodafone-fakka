@@ -8,6 +8,7 @@ import {
   executeVipRunSingleCycleStream,
   executeVipCheckStatus,
   updateVipAutomationSettings,
+  invokeVipExecutor,
   VipExecutionLog,
   VipExecutionResponse,
 } from '@/lib/vipApi';
@@ -108,6 +109,7 @@ class VipRunnerService {
   private states = new Map<string, VipRunnerState>();
   private listeners = new Map<string, Set<RunnerListener>>();
   private loopPromises = new Map<string, Promise<void>>();
+  private lastResumeAttempt = new Map<string, number>();
 
   constructor() {
     // Restore or sync when initialized
@@ -291,6 +293,13 @@ class VipRunnerService {
       console.warn('[VipRunnerService] DB update warning:', e);
     }
 
+    // Launch server-side persistent cloud runner so cycles continue on the server even if app is closed or screen is locked!
+    invokeVipExecutor('start_server_loop', {
+      session_id: sessionId,
+      target_mix: targetMix,
+      delay_seconds: delaySeconds,
+    }).catch((e) => console.warn('[VipRunnerService] Server background loop start trigger error:', e));
+
     this.addLog(sessionId, `==================================================`, 'info');
     this.addLog(
       sessionId,
@@ -299,7 +308,7 @@ class VipRunnerService {
     );
     this.addLog(
       sessionId,
-      `[🛡️] نظام الصمود ضد انقطاع الشبكة واستمرار العمل بالخلفية قيد التشغيل (لن يتوقف بالخروج من القسم).`,
+      `[☁️] الحماية السحابية نشطة: الجلسة مدعومة بمحرك سحابي بالخلفية يعمل تلقائياً حتى لو أغلقت التطبيق أو قفلت الشاشة.`,
       'info'
     );
 
@@ -339,6 +348,11 @@ class VipRunnerService {
     } catch (e) {
       console.warn('[VipRunnerService] DB stop error:', e);
     }
+
+    // Stop server-side persistent cloud runner
+    invokeVipExecutor('stop_server_loop', {
+      session_id: sessionId,
+    }).catch((e) => console.warn('[VipRunnerService] Server background loop stop trigger error:', e));
 
     sendVipRemotePushNotification(
       '⏹️ تم إيقاف دورة اتصالات VIP',
@@ -411,6 +425,13 @@ class VipRunnerService {
       const age = Date.now() - (savedLoop.timestamp || 0);
       // Valid if less than 12 hours old
       if (age < 12 * 60 * 60 * 1000) {
+        // Prevent duplicate spam on multiple rapid visibility triggers
+        const lastResume = this.lastResumeAttempt.get(sessionId) || 0;
+        if (Date.now() - lastResume < 15000) {
+          return true;
+        }
+        this.lastResumeAttempt.set(sessionId, Date.now());
+
         this.addLog(
           sessionId,
           `[🔄] استئناف الأتمتة تلقائياً بعد العودة للتطبيق (استعادة من الخلفية)...`,

@@ -161,9 +161,12 @@ export function VipDashboardTab({
       );
     }
 
-    // Handle return from background (e.g., coming back from WhatsApp)
+    // Handle return from background (e.g., coming back from WhatsApp or unlocking screen)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
+        // Immediately fetch the latest server-side database state and cycle updates
+        onRefresh();
+
         // If runner is ALREADY executing continuously in background, do NOT interrupt or restart it!
         if (vipRunnerService.isRunning(session.id)) {
           return;
@@ -179,8 +182,16 @@ export function VipDashboardTab({
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Heartbeat sync interval when session is running to stream server cloud execution updates
+    const syncInterval = setInterval(() => {
+      if (session?.id && (session.operation_state === 'running' || vipRunnerService.isRunning(session.id))) {
+        onRefresh();
+      }
+    }, 5000);
+
     return () => {
       unsubscribe();
+      clearInterval(syncInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [session?.id, onRefresh]);
