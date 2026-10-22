@@ -947,29 +947,15 @@ async function handleSingleCycleInternal(
   childPass: string,
   sendEvent?: (type: string, data: any) => Promise<void>
 ) {
-  // ── 0. ATOMIC DISTRIBUTED CONCURRENCY MUTEX ──
-  const lockCutoff = new Date(Date.now() - 150000).toISOString();
-  const { data: lockAcquired } = await supabase
-    .from("vip_sessions")
-    .update({
+  // Update session heartbeat and active worker status
+  try {
+    await supabase.from("vip_sessions").update({
       worker_status: "executing",
       worker_last_heartbeat: new Date().toISOString(),
       worker_pid: Math.floor(Math.random() * 1000000),
-    })
-    .eq("id", session_id)
-    .or(`worker_status.is.null,worker_status.neq.executing,worker_last_heartbeat.lt.${lockCutoff}`)
-    .select("id");
-
-  if (!lockAcquired || lockAcquired.length === 0) {
-    console.log(`[ConcurrencyGuard] Session ${session_id} is already executing a cycle. Skipping duplicate.`);
-    engine.log(`[🛡️] قفل الاستبعاد الذري: هناك دورة قيد التنفيذ بالفعل لهذا الحساب في الخلفية. تم منع التكرار لحماية الميكسات من التضارب.`, "info");
-    return {
-      success: true,
-      skipped_duplicate: true,
-      message: "هناك دورة قيد التنفيذ بالفعل لهذا الحساب في الخلفية.",
-      logs: engine.logs,
-    };
-  }
+      updated_at: new Date().toISOString(),
+    }).eq("id", session_id);
+  } catch (_) {}
 
   try {
   const sendStep = async (step: string, stepNumber: number, title: string, detail?: string) => {

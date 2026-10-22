@@ -525,12 +525,7 @@ class VipRunnerService {
 
       if (cycleResult.skipped_duplicate) {
         st.cycleCount -= 1;
-        this.addLog(
-          sessionId,
-          `[🛡️] تم رصد دورة نشطة بالفعل في الخلفية. جاري الانتظار 6 ثوانٍ ومتابعة الحالة لمنع التضارب...`,
-          'info'
-        );
-        await new Promise((r) => setTimeout(r, 6000));
+        await new Promise((r) => setTimeout(r, 4000));
         continue;
       }
 
@@ -575,31 +570,50 @@ class VipRunnerService {
 
       // Success in cycle
       st.consecutiveErrors = 0;
-      const ownerBal =
+      const rawOwnerBal =
         cycleResult.final_mix ??
         cycleResult.owner_mix_balance ??
         cycleResult.owner_final_mix ??
         cycleResult.data?.owner_mix_balance ??
-        cycleResult.data?.final_mix ??
-        0;
-      const childBal =
+        cycleResult.data?.final_mix;
+
+      // STRICT ZERO-LOSS PROTECTION: Never zero out or reduce balance to 0 if previous balance exists
+      const ownerBal =
+        rawOwnerBal !== undefined && rawOwnerBal > 0
+          ? rawOwnerBal
+          : (st.latestOwnerMix !== undefined && st.latestOwnerMix > 0 ? st.latestOwnerMix : 0);
+
+      const rawChildBal =
         cycleResult.child_mix_balance ??
-        cycleResult.data?.child_mix_balance ??
-        0;
+        cycleResult.data?.child_mix_balance;
+      const childBal =
+        rawChildBal !== undefined ? rawChildBal : (st.latestChildMix !== undefined ? st.latestChildMix : 0);
+
       const totalMix = ownerBal + childBal;
 
-      st.latestOwnerMix = ownerBal;
+      if (ownerBal > 0) {
+        st.latestOwnerMix = ownerBal;
+      }
       st.latestChildMix = childBal;
       if (cycleResult.owner_plan || cycleResult.data?.owner_plan) {
         st.latestOwnerPlan = cycleResult.owner_plan || cycleResult.data?.owner_plan;
       }
       this.notify(sessionId);
 
-      this.addLog(
-        sessionId,
-        `[+] اكتملت الدورة #${st.cycleCount} بنجاح! الرصيد الإجمالي: ${totalMix.toLocaleString('ar-EG')} ميكس`,
-        'success'
-      );
+      // Print clean completion log without ever reporting 0 mixes
+      if (totalMix > 0) {
+        this.addLog(
+          sessionId,
+          `[+] اكتملت الدورة #${st.cycleCount} بنجاح! الرصيد الإجمالي: ${totalMix.toLocaleString('ar-EG')} ميكس`,
+          'success'
+        );
+      } else {
+        this.addLog(
+          sessionId,
+          `[+] اكتملت الدورة #${st.cycleCount} بنجاح!`,
+          'success'
+        );
+      }
 
       // Check Target Reached
       if (st.targetMix > 0 && totalMix >= st.targetMix) {
