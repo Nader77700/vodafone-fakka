@@ -104,9 +104,7 @@ export default function VipPage() {
       const data = await getVipDashboardData(targetId);
       setDashboardData(data);
 
-      if (isManualRefresh) {
-        toast.success('تم تحديث بيانات الجلسة بنجاح');
-      }
+      // Silent background sync — do NOT show an intrusive banner toast that covers the UI
     } catch (err: any) {
       console.error('[VipPage] Failed to load data:', err);
       toast.error('تعذر جلب بيانات قسم VIP: ' + (err?.message || 'خطأ غير معروف'));

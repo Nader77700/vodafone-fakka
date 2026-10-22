@@ -138,46 +138,15 @@ export function VipDashboardTab({
       }
     });
 
-    // Check if session was active before leaving and resume seamlessly
-    // Strictly guard: NEVER resume if session is completed, stopped, paused, or target is reached!
-    const isCompleted =
-      session.operation_state === 'completed' ||
-      session.operation_state === 'stopped' ||
-      session.operation_state === 'paused' ||
-      session.current_step === 'completed' ||
-      ((session.owner_mix_balance || 0) >= (session.target_mix_balance || 50000) &&
-        (session.owner_mix_balance || 0) > 0);
-
-    if (
-      session.automation_enabled &&
-      session.operation_state === 'running' &&
-      !isCompleted &&
-      !vipRunnerService.isRunning(session.id)
-    ) {
-      vipRunnerService.resumeLoopIfActive(
-        session.id,
-        session.target_mix_balance || 100000,
-        session.cycle_delay_seconds || 20
-      );
-    }
+    // Only listen to runner state updates when running
+    // CRITICAL: NEVER auto-start or resume loops automatically on mount or tab switch!
+    // The Owner explicitly controls start and stop via the manual buttons.
 
     // Handle return from background (e.g., coming back from WhatsApp or unlocking screen)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
-        // Immediately fetch the latest server-side database state and cycle updates
+        // Silently fetch the latest server-side database state and cycle updates
         onRefresh();
-
-        // If runner is ALREADY executing continuously in background, do NOT interrupt or restart it!
-        if (vipRunnerService.isRunning(session.id)) {
-          return;
-        }
-        if (!isCompleted && session.automation_enabled && session.operation_state === 'running') {
-          vipRunnerService.resumeLoopIfActive(
-            session.id,
-            session.target_mix_balance,
-            session.cycle_delay_seconds
-          );
-        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);

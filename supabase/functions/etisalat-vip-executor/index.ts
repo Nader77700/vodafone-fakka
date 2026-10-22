@@ -1766,11 +1766,22 @@ async function handleSingleCycleInternal(
   }
 
   // ── SERVER-SIDE CLOUD RUNNER CHAINING (الاستمرار السحابي بالخلفية بدون هاتف) ──
-  // If session is marked running and target not reached:
-  // Auto-chain next cycle on the cloud server so it keeps running even if the user
-  // locks the phone, kills the app, or loses internet connection!
-  if (!targetReached && session.automation_enabled && session.operation_state === "running") {
-    const chainDelaySec = Math.max(cooldownSec || 20, 5);
+  // Check fresh session status from DB to ensure it's still running
+  const { data: freshSessState } = await supabase
+    .from("vip_sessions")
+    .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance, cycle_delay_seconds")
+    .eq("id", session_id)
+    .maybeSingle();
+
+  const isServerLoopActive =
+    !targetReached &&
+    freshSessState &&
+    freshSessState.automation_enabled &&
+    (freshSessState.operation_state === "running" || freshSessState.operation_state === "active") &&
+    (freshSessState.owner_mix_balance || 0) < (freshSessState.target_mix_balance || 50000);
+
+  if (isServerLoopActive) {
+    const chainDelaySec = Math.max(freshSessState.cycle_delay_seconds || cooldownSec || 20, 5);
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 
@@ -1783,11 +1794,11 @@ async function handleSingleCycleInternal(
             .from("vip_sessions")
             .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance")
             .eq("id", session_id)
-            .single();
+            .maybeSingle();
 
           if (
             checkSess &&
-            checkSess.operation_state === "running" &&
+            (checkSess.operation_state === "running" || checkSess.operation_state === "active") &&
             checkSess.automation_enabled &&
             (checkSess.owner_mix_balance || 0) < (checkSess.target_mix_balance || 50000)
           ) {

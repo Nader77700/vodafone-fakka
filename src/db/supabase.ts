@@ -58,29 +58,13 @@ let cachedSignature: string | null = null;
 let cachedBuildHash: string | null = null;
 let appPackageName: string = 'com.naderakram.vodafonefakka';
 
-// Stealthy Self-Destruct Check
 if (Capacitor.isNativePlatform()) {
   CapApp.getInfo().then(info => {
-    appPackageName = info.id;
-    if (info.id !== 'com.naderakram.vodafonefakka') {
-      setTimeout(() => {
-        localStorage.clear();
-        sessionStorage.clear();
-        document.body.innerHTML = '<div style="background:#000;color:red;padding:20px;text-align:center;font-size:20px;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p></div>';
-      }, 3000);
+    if (info && info.id) {
+      appPackageName = info.id;
     }
   }).catch(() => {});
 }
-
-// DOM Tampering Check
-setInterval(() => {
-  const html = document.body.innerHTML.toLowerCase();
-  if (html.includes('mostafa eid') || html.includes('مصطفى') || appPackageName !== 'com.naderakram.vodafonefakka') {
-    localStorage.clear();
-    sessionStorage.clear();
-    document.body.innerHTML = '<div style="background:#000;color:red;padding:20px;text-align:center;font-size:20px;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h2>تم تدمير النسخة المسروقة.</h2><p>لا يمكنك استخدام هذا التطبيق لأنه مقرصن ومعدل.</p></div>';
-  }
-}, 7000);
 
 // customFetch: يضيف security headers فقط، ثم يستخدم fetch العادي
 // CapacitorHttp.request() تم إلغاؤه — كان يسبب SSL failure على بعض الأجهزة
