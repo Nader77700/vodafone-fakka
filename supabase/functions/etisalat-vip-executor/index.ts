@@ -1574,35 +1574,39 @@ async function handleSingleCycleInternal(
 
     // If telecom sync is still propagating and child temporarily shows small amount (e.g. residual 20 units):
     if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
-      engine.log(`[*] رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')}). جاري التحقق العميق وتحديث جلسة الفرد بالسيرفر...`, "info");
-      for (let syncP = 1; syncP <= 6; syncP++) {
-        await sleep(2000);
-        try {
-          // Force clean re-login on attempts 2 and 4 to refresh Etisalat token and cache
-          if (syncP === 2 || syncP === 4) {
-            await activeChildEngine.login(childEmail, childPass, false, true);
-          }
-          const syncSt = await activeChildEngine.getStatusAndChild(true);
-          if (syncSt.remainingMix >= parkedMixAmount * 0.7 || syncSt.remainingMix > childSt.remainingMix) {
-            childSt = syncSt;
-            break;
-          }
-        } catch (_sErr) {}
+      // First check if Owner already holds the balance (e.g. previous cycle already recovered it or billing settled instantly)
+      let ownerAlreadyHolds = false;
+      try {
+        const ownerMidCheck = await engine.getStatusAndChild(true);
+        if (ownerMidCheck.remainingMix >= Math.round(parkedMixAmount * 0.70)) {
+          ownerAlreadyHolds = true;
+          engine.log(`[✓] تأكيد أمان: رصيد الأونر (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) محمي ومعتمد بالفعل بالسيرفر!`, "success");
+        }
+      } catch (_) {}
+
+      if (!ownerAlreadyHolds) {
+        engine.log(`[*] رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')}). جاري التحقق العميق وتحديث جلسة الفرد بالسيرفر...`, "info");
+        for (let syncP = 1; syncP <= 6; syncP++) {
+          await sleep(2500);
+          try {
+            // Force clean re-login on attempts 2 and 4 to refresh Etisalat token and cache
+            if (syncP === 2 || syncP === 4) {
+              await activeChildEngine.login(childEmail, childPass, false, true);
+            }
+            const syncSt = await activeChildEngine.getStatusAndChild(true);
+            if (syncSt.remainingMix >= parkedMixAmount * 0.7 || syncSt.remainingMix > childSt.remainingMix) {
+              childSt = syncSt;
+              break;
+            }
+          } catch (_sErr) {}
+        }
       }
     }
 
     // Determine the verified transferable amount:
-    // NEVER send more than what the child verifiably holds to avoid phantom orders!
     let attemptAmount = childSt.remainingMix;
     if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
       engine.log(`[!] تنبيه أمان: رصيد الفرد الفعلي المقروء بالسيرفر (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من المركون (${parkedMixAmount.toLocaleString('en-US')}) ميكس.`, "warn");
-      // Check if mixes are still in owner account
-      try {
-        const ownerMidCheck = await engine.getStatusAndChild(true);
-        if (ownerMidCheck.remainingMix >= parkedMixAmount * 0.7) {
-          engine.log(`[🛡️] تم رصد الميكسات (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) ما زالت محفوظة في حساب الأونر!`, "success");
-        }
-      } catch (_) {}
     }
 
     engine.log(`[+] رصيد الفرد الفعلي المستهدف للاسترجاع: (${attemptAmount.toLocaleString('en-US')}) ميكس.`, "info");
@@ -1634,25 +1638,29 @@ async function handleSingleCycleInternal(
         engine.log(`[!] تنبيه: تعذر إتمام أمر استرجاع الميكسات من الفرد. الميكسات لا تزال محفوظة في حساب الفرد.`, "warn");
       }
     } else if (attemptAmount === 0) {
-      engine.log(`[*] رصيد الفرد 0 ميكس (لا توجد ميكسات للتحويل).`, "info");
+      engine.log(`[*] رصيد الفرد 0 ميكس (الميكسات مستقرة بالأونر أو تم استرجاعها).`, "info");
     }
   }
 
   // 7. STEP 5: Read Final Mixes & Cooldown (اكتمال الدورة واستراحة)
   await sendStep("cooldown", 5, "اكتمال الدورة واستراحة", "تحديث البيانات وفترة الاستراحة");
   
-  // Reuse existing owner engine directly (no redundant login!)
+  // Dedicated 4-second settling window for Etisalat billing nodes to reflect transferred quota
+  await sleep(4000);
   let finalStatus = await engine.getStatusAndChild(true);
 
   // POST-RECOVERY STRICT BALANCE VERIFICATION (التحقق الصارم من عدم فقدان الميكسات):
   const expectedMinBalance = parkedMixAmount > 2000 ? Math.round(parkedMixAmount * 0.70) : 0;
 
   if (expectedMinBalance > 0 && finalStatus.remainingMix < expectedMinBalance) {
-    engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة...`, "info");
+    engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة مع اتصالات...`, "info");
     
-    for (let syncAttempt = 1; syncAttempt <= 4; syncAttempt++) {
-      await sleep(2500);
+    for (let syncAttempt = 1; syncAttempt <= 8; syncAttempt++) {
+      await sleep(3500);
       try {
+        if (syncAttempt === 3 || syncAttempt === 6) {
+          await engine.login(ownerEmail, ownerPass, true, true);
+        }
         const recheckStatus = await engine.getStatusAndChild(true);
         if (recheckStatus.remainingMix >= expectedMinBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
           finalStatus = recheckStatus;
@@ -1663,8 +1671,6 @@ async function handleSingleCycleInternal(
     }
 
     // STRICT ZERO-LOSS PROTECTION GATE:
-    // If owner still hasn't received the bulk of the parked balance, STOP AUTOMATION IMMEDIATELY!
-    // NEVER silently adopt a degraded balance and proceed to next cycles!
     if (finalStatus.remainingMix < expectedMinBalance) {
       const emergencyMsg = `توقف أمان حرج: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). تم إيقاف الدورة والأتمتة فوراً لحماية الرصيد ومنع التصفير!`;
       engine.log(`[-] ${emergencyMsg}`, "error");
@@ -1820,6 +1826,8 @@ async function handleSingleCycleInternal(
 
   const isServerLoopActive =
     !targetReached &&
+    !sendEvent && // Never self-chain on server if streaming to client! The client controls its own cycle sequence
+    body.is_server_background === true &&
     freshSessState &&
     freshSessState.automation_enabled &&
     (freshSessState.operation_state === "running" || freshSessState.operation_state === "active") &&
