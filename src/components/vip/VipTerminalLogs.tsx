@@ -201,110 +201,74 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
     const tokens = parseLogTokens(msg);
 
     return (
-      <span className="inline-block leading-relaxed">
+      <span className="leading-relaxed">
         {tokens.map((token, i) => {
           switch (token.type) {
             case 'double_check_confirm':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-cyan-200 bg-cyan-950/90 border border-cyan-500/80 px-2 py-0.5 rounded shadow-sm inline-block mx-0.5"
-                >
-                  🛡️ {token.content}
+                <span key={i} className="font-bold text-emerald-400">
+                  {token.content}
                 </span>
               );
             case 'phantom_alert':
               return (
-                <span
-                  key={i}
-                  className="font-black text-amber-200 bg-amber-950/90 border border-amber-500/80 px-2 py-0.5 rounded shadow-sm inline-block mx-0.5 animate-pulse"
-                >
-                  ⚠️ {token.content}
+                <span key={i} className="font-bold text-amber-400">
+                  {token.content}
                 </span>
               );
             case 'hekaya_270':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-sky-200 bg-sky-950/90 border border-sky-500/70 px-1.5 py-0.5 rounded shadow-sm inline-block mx-0.5"
-                >
-                  ⚡ {token.content}
+                <span key={i} className="font-semibold text-sky-400">
+                  {token.content}
                 </span>
               );
             case 'hekaya_180':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-amber-200 bg-amber-950/90 border border-amber-600/70 px-1.5 py-0.5 rounded shadow-sm inline-block mx-0.5"
-                >
-                  📦 {token.content}
+                <span key={i} className="font-semibold text-amber-300">
+                  {token.content}
                 </span>
               );
             case 'transfer_owner':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-emerald-200 bg-emerald-950/90 border border-emerald-600/70 px-1.5 py-0.5 rounded inline-block mx-0.5 shadow-sm"
-                >
-                  ⬅️ {token.content}
+                <span key={i} className="font-semibold text-emerald-300">
+                  {token.content}
                 </span>
               );
             case 'transfer_child':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-purple-200 bg-purple-950/90 border border-purple-600/70 px-1.5 py-0.5 rounded inline-block mx-0.5 shadow-sm"
-                >
-                  ➔ {token.content}
+                <span key={i} className="font-semibold text-purple-300">
+                  {token.content}
                 </span>
               );
             case 'phone':
               return (
-                <span
-                  key={i}
-                  className="font-mono font-bold text-yellow-300 bg-yellow-950/70 border border-yellow-700/60 px-1.5 py-0.5 rounded inline-block mx-0.5 tracking-wider"
-                  dir="ltr"
-                >
+                <span key={i} className="font-mono font-medium text-yellow-300" dir="ltr">
                   {token.content}
                 </span>
               );
             case 'mix_balance':
               if (isFinalBalanceLine) {
                 return (
-                  <span
-                    key={i}
-                    className="font-mono font-black text-emerald-200 bg-emerald-950/95 border-2 border-emerald-400 px-2.5 py-0.5 rounded-md shadow-md inline-block mx-0.5 text-xs sm:text-[13px] tracking-wider"
-                    dir="ltr"
-                  >
-                    🏆 {token.content}
+                  <span key={i} className="font-mono font-bold text-emerald-300" dir="ltr">
+                    {token.content}
                   </span>
                 );
               }
               return (
-                <span
-                  key={i}
-                  className="font-mono font-bold text-cyan-300 bg-cyan-950/90 border border-cyan-500/70 px-1.5 py-0.5 rounded shadow-sm inline-block mx-0.5 tracking-wider"
-                  dir="ltr"
-                >
+                <span key={i} className="font-mono font-semibold text-cyan-300" dir="ltr">
                   {token.content}
                 </span>
               );
             case 'owner_ref':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-amber-300 bg-amber-950/70 border border-amber-600/60 px-1.5 py-0.5 rounded inline-block mx-0.5"
-                >
-                  👑 {token.content}
+                <span key={i} className="font-medium text-amber-200">
+                  {token.content}
                 </span>
               );
             case 'child_ref':
               return (
-                <span
-                  key={i}
-                  className="font-bold text-purple-300 bg-purple-950/70 border border-purple-600/60 px-1.5 py-0.5 rounded inline-block mx-0.5"
-                >
-                  👤 {token.content}
+                <span key={i} className="font-medium text-purple-300">
+                  {token.content}
                 </span>
               );
             case 'text':

@@ -947,6 +947,31 @@ async function handleSingleCycleInternal(
   childPass: string,
   sendEvent?: (type: string, data: any) => Promise<void>
 ) {
+  // ── 0. ATOMIC DISTRIBUTED CONCURRENCY MUTEX ──
+  const lockCutoff = new Date(Date.now() - 150000).toISOString();
+  const { data: lockAcquired } = await supabase
+    .from("vip_sessions")
+    .update({
+      worker_status: "executing",
+      worker_last_heartbeat: new Date().toISOString(),
+      worker_pid: Math.floor(Math.random() * 1000000),
+    })
+    .eq("id", session_id)
+    .or(`worker_status.is.null,worker_status.neq.executing,worker_last_heartbeat.lt.${lockCutoff}`)
+    .select("id");
+
+  if (!lockAcquired || lockAcquired.length === 0) {
+    console.log(`[ConcurrencyGuard] Session ${session_id} is already executing a cycle. Skipping duplicate.`);
+    engine.log(`[🛡️] قفل الاستبعاد الذري: هناك دورة قيد التنفيذ بالفعل لهذا الحساب في الخلفية. تم منع التكرار لحماية الميكسات من التضارب.`, "info");
+    return {
+      success: true,
+      skipped_duplicate: true,
+      message: "هناك دورة قيد التنفيذ بالفعل لهذا الحساب في الخلفية.",
+      logs: engine.logs,
+    };
+  }
+
+  try {
   const sendStep = async (step: string, stepNumber: number, title: string, detail?: string) => {
     if (sendEvent) {
       await sendEvent("step", { step, stepNumber, title, detail });
@@ -955,6 +980,7 @@ async function handleSingleCycleInternal(
       await supabase.from("vip_sessions").update({
         current_step: step,
         current_cycle_details: { step, stepNumber, title, detail, updated_at: new Date().toISOString() },
+        worker_last_heartbeat: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }).eq("id", session_id);
     } catch (_) {}
@@ -1579,43 +1605,35 @@ async function handleSingleCycleInternal(
       }
     }
 
-    // Determine the optimal transfer amount:
-    // If childSt reported a small dust value (like 20 mixes) but we parked 15,400 mixes,
-    // test transferring the full parkedMixAmount first!
+    // Determine the verified transferable amount:
+    // NEVER send more than what the child verifiably holds to avoid phantom orders!
     let attemptAmount = childSt.remainingMix;
-    let tryParkedFirst = false;
     if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
-      engine.log(`[!] تنبيه الحماية: قراءة العداد أظهرت (${childSt.remainingMix.toLocaleString('en-US')}) ميكس بينما المركون المؤكد (${parkedMixAmount.toLocaleString('en-US')}) ميكس. سيتم تجربة استرجاع كامل الرصيد المركون أولاً...`, "warn");
-      attemptAmount = parkedMixAmount;
-      tryParkedFirst = true;
+      engine.log(`[!] تنبيه أمان: رصيد الفرد الفعلي المقروء بالسيرفر (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من المركون (${parkedMixAmount.toLocaleString('en-US')}) ميكس.`, "warn");
+      // Check if mixes are still in owner account
+      try {
+        const ownerMidCheck = await engine.getStatusAndChild(true);
+        if (ownerMidCheck.remainingMix >= parkedMixAmount * 0.7) {
+          engine.log(`[🛡️] تم رصد الميكسات (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) ما زالت محفوظة في حساب الأونر!`, "success");
+        }
+      } catch (_) {}
     }
 
-    engine.log(`[+] رصيد الفرد المستهدف للاسترجاع: (${attemptAmount.toLocaleString('en-US')}) ميكس.`, "info");
+    engine.log(`[+] رصيد الفرد الفعلي المستهدف للاسترجاع: (${attemptAmount.toLocaleString('en-US')}) ميكس.`, "info");
 
     if (attemptAmount > 0 && engine.ownerDial) {
       let retOk = false;
-      // Attempt 1: Try with full attemptAmount
       retOk = await activeChildEngine.transferMix(engine.ownerDial, attemptAmount, "Hekaya_XRP_MIX_Child_1");
       if (retOk) {
         recoveredMixAmount = attemptAmount;
-      } else if (tryParkedFirst && childSt.remainingMix > 0) {
-        // Fallback: If full parked amount failed, try the read amount
-        engine.log(`[*] محاولة بديلة برصيد العداد المقروء (${childSt.remainingMix.toLocaleString('en-US')} ميكس)...`, "info");
-        await activeChildEngine.login(childEmail, childPass, false, true);
-        retOk = await activeChildEngine.transferMix(engine.ownerDial, childSt.remainingMix, "Hekaya_XRP_MIX_Child_1");
-        if (retOk) {
-          recoveredMixAmount = childSt.remainingMix;
-        }
-      }
-
-      if (!retOk) {
-        // Last-resort retry
+      } else {
+        // Last-resort retry with fresh login
         for (let t = 1; t <= 2; t++) {
-          engine.log(`[!] محاولة استرجاع أخيرة (${t}/2)...`, "warn");
+          engine.log(`[!] محاولة استرجاع بديلة (${t}/2)...`, "warn");
           await activeChildEngine.login(childEmail, childPass, false, true);
-          await sleep(1000);
+          await sleep(1500);
           const lastSt = await activeChildEngine.getStatusAndChild(true);
-          const finalTry = lastSt.remainingMix > 0 ? lastSt.remainingMix : parkedMixAmount;
+          const finalTry = lastSt.remainingMix > 0 ? lastSt.remainingMix : 0;
           if (finalTry > 0) {
             retOk = await activeChildEngine.transferMix(engine.ownerDial, finalTry, "Hekaya_XRP_MIX_Child_1");
             if (retOk) {
@@ -1630,7 +1648,7 @@ async function handleSingleCycleInternal(
         engine.log(`[!] تنبيه: تعذر إتمام أمر استرجاع الميكسات من الفرد. الميكسات لا تزال محفوظة في حساب الفرد.`, "warn");
       }
     } else if (attemptAmount === 0) {
-      engine.log(`[*] رصيد الفرد 0 ميكس (لا توجد ميكسات للتحويل). باقة الأونر الجديدة مؤمنة.`, "info");
+      engine.log(`[*] رصيد الفرد 0 ميكس (لا توجد ميكسات للتحويل).`, "info");
     }
   }
 
@@ -1640,17 +1658,17 @@ async function handleSingleCycleInternal(
   // Reuse existing owner engine directly (no redundant login!)
   let finalStatus = await engine.getStatusAndChild(true);
 
-  // POST-RECOVERY VERIFICATION:
-  const minExpectedRecoveryBalance = recoveredMixAmount > 0 ? Math.round(recoveredMixAmount * 0.80) : 0;
+  // POST-RECOVERY STRICT BALANCE VERIFICATION (التحقق الصارم من عدم فقدان الميكسات):
+  const expectedMinBalance = parkedMixAmount > 2000 ? Math.round(parkedMixAmount * 0.70) : 0;
 
-  if (recoveredMixAmount > 0 && finalStatus.remainingMix < minExpectedRecoveryBalance) {
-    engine.log(`[*] تم استرجاع (${recoveredMixAmount.toLocaleString('en-US')}) ميكس للأونر، وقراءة العداد الحالية (${finalStatus.remainingMix.toLocaleString('en-US')}) ميكس. فحص سريع لمزامنة العداد...`, "info");
+  if (expectedMinBalance > 0 && finalStatus.remainingMix < expectedMinBalance) {
+    engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة...`, "info");
     
-    for (let syncAttempt = 1; syncAttempt <= 3; syncAttempt++) {
-      await sleep(1500);
+    for (let syncAttempt = 1; syncAttempt <= 4; syncAttempt++) {
+      await sleep(2500);
       try {
         const recheckStatus = await engine.getStatusAndChild(true);
-        if (recheckStatus.remainingMix >= minExpectedRecoveryBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
+        if (recheckStatus.remainingMix >= expectedMinBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
           finalStatus = recheckStatus;
           engine.log(`[+] تم تحديث رصيد الأونر بالسيرفر: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
           break;
@@ -1658,8 +1676,49 @@ async function handleSingleCycleInternal(
       } catch (_recheck) {}
     }
 
-    if (finalStatus.remainingMix < minExpectedRecoveryBalance) {
-      engine.log(`[!] تنبيه الموازنة: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس). تم اعتماد هذا الرصيد الحقيقي كنقطة استمرار للدورات التالية لمنع تجميد الجلسة.`, "warn");
+    // STRICT ZERO-LOSS PROTECTION GATE:
+    // If owner still hasn't received the bulk of the parked balance, STOP AUTOMATION IMMEDIATELY!
+    // NEVER silently adopt a degraded balance and proceed to next cycles!
+    if (finalStatus.remainingMix < expectedMinBalance) {
+      const emergencyMsg = `توقف أمان حرج: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). تم إيقاف الدورة والأتمتة فوراً لحماية الرصيد ومنع التصفير!`;
+      engine.log(`[-] ${emergencyMsg}`, "error");
+
+      await sendStep("safety_stop", 5, "توقف أمان - حماية الرصيد", emergencyMsg);
+
+      try {
+        await supabase.from("vip_sessions").update({
+          operation_state: "paused",
+          automation_enabled: false,
+          owner_mix_balance: finalStatus.remainingMix,
+          stop_reason: emergencyMsg,
+          updated_at: new Date().toISOString(),
+        }).eq("id", session_id);
+
+        await supabase.from("vip_cycle_history").insert({
+          session_id: session_id,
+          cycle_number: (session.current_cycle || 0) + 1,
+          started_at: cycleStartTime,
+          ended_at: new Date().toISOString(),
+          duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
+          owner_balance_start: ownerStartMix,
+          system_pre_migration: ownerPlanPre,
+          system_post_migration: engine.getPlanName(finalStatus.planId),
+          amount_transferred_owner_to_indiv: parkedMixAmount,
+          amount_transferred_indiv_to_owner: recoveredMixAmount,
+          final_verified_owner_balance: finalStatus.remainingMix,
+          cycle_status: "paused_safe",
+          failure_step: "recovery_verify",
+          safe_error_summary: emergencyMsg,
+          increased_owner_balance: false,
+        });
+      } catch (_dbE) {}
+
+      return {
+        success: false,
+        safety_stop: true,
+        error: emergencyMsg,
+        logs: engine.logs,
+      };
     }
   }
 
@@ -1841,6 +1900,18 @@ async function handleSingleCycleInternal(
     owner_plan: finalPlan,
     logs: engine.logs,
   };
+  } finally {
+    // Release atomic concurrency lock
+    try {
+      await supabase
+        .from("vip_sessions")
+        .update({
+          worker_status: "idle",
+          worker_last_heartbeat: new Date().toISOString(),
+        })
+        .eq("id", session_id);
+    } catch (_) {}
+  }
 }
 
 serve(async (req: Request) => {

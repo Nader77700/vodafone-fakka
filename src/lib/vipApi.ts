@@ -413,6 +413,7 @@ export interface VipExecutionResponse {
   error?: string;
   message?: string;
   safety_stop?: boolean;
+  skipped_duplicate?: boolean;
   server_timeout?: boolean;
   data?: any;
   config?: any;

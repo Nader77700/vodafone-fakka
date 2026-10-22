@@ -286,35 +286,28 @@ class VipRunnerService {
       }
     } catch (_) {}
 
-    // Sync DB status
+    // Sync DB status to active
     try {
       await updateVipAutomationSettings(true, targetMix, null, 'save', sessionId, delaySeconds);
     } catch (e) {
       console.warn('[VipRunnerService] DB update warning:', e);
     }
 
-    // Launch server-side persistent cloud runner so cycles continue on the server even if app is closed or screen is locked!
-    invokeVipExecutor('start_server_loop', {
-      session_id: sessionId,
-      target_mix: targetMix,
-      delay_seconds: delaySeconds,
-    }).catch((e) => console.warn('[VipRunnerService] Server background loop start trigger error:', e));
-
     this.addLog(sessionId, `==================================================`, 'info');
     this.addLog(
       sessionId,
-      `[🚀] تم تشغيل محرك الأتمتة المستمر في الخلفية (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث).`,
+      `[🚀] تم تشغيل محرك الأتمتة التلقائية (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث).`,
       'success'
     );
     this.addLog(
       sessionId,
-      `[☁️] الحماية السحابية نشطة: الجلسة مدعومة بمحرك سحابي بالخلفية يعمل تلقائياً حتى لو أغلقت التطبيق أو قفلت الشاشة.`,
+      `[🛡️] نظام الحماية القصوى نشط: قفل استبعاد ذري لمنع التضارب، وتحقق صارم من الرصيد لمنع التصفير بنسبة 100%.`,
       'info'
     );
 
     sendVipRemotePushNotification(
       '🚀 بدأت دورة اتصالات VIP التلقائية',
-      `الجلسة نشطة الآن في الخلفية. الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس.`
+      `الجلسة نشطة الآن. الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس.`
     ).catch(() => {});
 
     const loopPromise = this.executeLoop(sessionId);
@@ -529,6 +522,17 @@ class VipRunnerService {
 
       const st = this.states.get(sessionId);
       if (!st || st.stopRequested) break;
+
+      if (cycleResult.skipped_duplicate) {
+        st.cycleCount -= 1;
+        this.addLog(
+          sessionId,
+          `[🛡️] تم رصد دورة نشطة بالفعل في الخلفية. جاري الانتظار 6 ثوانٍ ومتابعة الحالة لمنع التضارب...`,
+          'info'
+        );
+        await new Promise((r) => setTimeout(r, 6000));
+        continue;
+      }
 
       if (!cycleResult.success) {
         if (this.isNetworkGlitch(cycleResult.error) && st.consecutiveErrors < MAX_NETWORK_RETRIES) {
