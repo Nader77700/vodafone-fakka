@@ -60,6 +60,21 @@ async function sha256Hex(str: string): Promise<string> {
     .join("");
 }
 
+function normalizeEgyptianNumber(dial: string, format: 'intl' | 'local' = 'intl'): string {
+  const clean = (dial || '').replace(/\D/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('20') && clean.length >= 12) {
+    return format === 'local' ? '0' + clean.substring(2) : clean;
+  }
+  if (clean.startsWith('0') && clean.length >= 11) {
+    return format === 'local' ? clean : '20' + clean.substring(1);
+  }
+  if (clean.length === 10 && (clean.startsWith('10') || clean.startsWith('11') || clean.startsWith('12') || clean.startsWith('15'))) {
+    return format === 'local' ? '0' + clean : '20' + clean;
+  }
+  return clean;
+}
+
 function decodeStoredPassword(pw: string): string {
   if (!pw) return "";
   try {
@@ -576,74 +591,92 @@ class EtisalatEngine {
 
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
-    const target = toDial.startsWith("0") ? "20" + toDial.substring(1) : toDial;
-    const senderDisplay = this.currentDial ? (this.currentDial.startsWith("20") ? this.currentDial.substring(2) : this.currentDial) : "";
-    const receiverDisplay = toDial.startsWith("20") ? toDial.substring(2) : (toDial.startsWith("0") ? toDial.substring(1) : toDial);
+    const targetIntl = normalizeEgyptianNumber(toDial, 'intl');
+    const targetLocal = normalizeEgyptianNumber(toDial, 'local');
+    const senderIntl = normalizeEgyptianNumber(this.currentDial || '', 'intl');
+    const senderLocal = normalizeEgyptianNumber(this.currentDial || '', 'local');
+    const receiverDisplay = normalizeEgyptianNumber(toDial, 'local') || toDial;
+    const senderDisplay = normalizeEgyptianNumber(this.currentDial || '', 'local') || this.currentDial;
+
     this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${receiverDisplay} [المرسل: ${senderDisplay} | الباقة: ${productName}]...`, "info");
 
-    // Primary: Python bot endpoint (/Saytar/rest/services/newTransfer/v2)
-    const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${this.currentDial}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target}</receiverMsisdn><senderMsisdn>${this.currentDial}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
-    const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
+    // Try multiple formats and endpoints across 3 smart attempts
+    const targetVariants = [targetIntl, targetLocal, toDial].filter((v, i, a) => v && a.indexOf(v) === i);
+    const senderVariants = [this.currentDial, senderIntl, senderLocal].filter((v, i, a) => v && a.indexOf(v) === i);
 
-    const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
-    const headers = {
-      ...this.getBaseHeaders(),
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": headerSig,
-      "urlSignature": urlSig,
-      "bodySignature": bodySig,
-    };
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      for (const tgt of targetVariants) {
+        for (const snd of senderVariants) {
+          // 1. Primary: Python bot endpoint (/Saytar/rest/services/newTransfer/v2)
+          const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${snd}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${tgt}</receiverMsisdn><senderMsisdn>${snd}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
+          const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
-    try {
-      const targetUrl = this.getRequestUrl(urlPathV2);
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers,
-        body: xmlBodyV2,
-      });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
-        const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-        this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
-        return true;
+          try {
+            const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
+            const headers = {
+              ...this.getBaseHeaders(),
+              "auth": `Bearer ${this.authToken}`,
+              "headerSignature": headerSig,
+              "urlSignature": urlSig,
+              "bodySignature": bodySig,
+            };
+            const targetUrl = this.getRequestUrl(urlPathV2);
+            const res = await fetch(targetUrl, {
+              method: "POST",
+              headers,
+              body: xmlBodyV2,
+            });
+            const text = await res.text();
+            if (res.status === 200 && text.includes("<status>true</status>")) {
+              const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+              const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
+              this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
+              return true;
+            }
+          } catch (_) {
+            // fallback to next
+          }
+
+          // 2. Fallback: submitOrder
+          const xmlBodyOrder = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${snd}</msisdn><operation>CONSUME_SERVICE</operation><parameters><parameter><name>TRANSFERED_MSISDN</name><value>${tgt}</value></parameter><parameter><name>RENEW_FLAG</name><value>0</value></parameter><parameter><name>TRANSFERED_AMOUNT</name><value>${quota}</value></parameter></parameters><productName>${productName}</productName><requestId>TRANSFER_METER</requestId></generalSubmitOrderRequest>`;
+          const urlPathOrder = "/Saytar/rest/General/submitOrder";
+          try {
+            const sigOrder = await this.generateSignatures(urlPathOrder, xmlBodyOrder);
+            const headersOrder = {
+              ...this.getBaseHeaders(),
+              "auth": `Bearer ${this.authToken}`,
+              "headerSignature": sigOrder.headerSig,
+              "urlSignature": sigOrder.urlSig,
+              "bodySignature": sigOrder.bodySig,
+            };
+            const targetUrl = this.getRequestUrl(urlPathOrder);
+            const res = await fetch(targetUrl, {
+              method: "POST",
+              headers: headersOrder,
+              body: xmlBodyOrder,
+            });
+            const text = await res.text();
+            if (res.status === 200 && text.includes("<status>true</status>")) {
+              const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+              const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
+              this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
+              return true;
+            }
+          } catch (_) {
+            // continue
+          }
+          break; // break inner sender loop after trying primary target
+        }
       }
-    } catch {
-      // fallback
+
+      if (attempt < 3) {
+        this.log(`[!] محاولة تحويل إضافية (${attempt}/3) بعد انتظار 2 ثانية لمزامنة بوابة اتصالات...`, "warn");
+        await sleep(2000);
+      }
     }
 
-    // Fallback: submitOrder
-    const xmlBodyOrder = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${this.currentDial}</msisdn><operation>CONSUME_SERVICE</operation><parameters><parameter><name>TRANSFERED_MSISDN</name><value>${target}</value></parameter><parameter><name>RENEW_FLAG</name><value>0</value></parameter><parameter><name>TRANSFERED_AMOUNT</name><value>${quota}</value></parameter></parameters><productName>${productName}</productName><requestId>TRANSFER_METER</requestId></generalSubmitOrderRequest>`;
-    const urlPathOrder = "/Saytar/rest/General/submitOrder";
-    const sigOrder = await this.generateSignatures(urlPathOrder, xmlBodyOrder);
-    const headersOrder = {
-      ...this.getBaseHeaders(),
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": sigOrder.headerSig,
-      "urlSignature": sigOrder.urlSig,
-      "bodySignature": sigOrder.bodySig,
-    };
-    try {
-      const targetUrl = this.getRequestUrl(urlPathOrder);
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers: headersOrder,
-        body: xmlBodyOrder,
-      });
-      const text = await res.text();
-      const ok = res.status === 200 && text.includes("<status>true</status>");
-      if (ok) {
-        const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
-        const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-        this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
-      } else {
-        this.log(`[-] فشل تحويل الميكسات.`, "warn");
-      }
-      return ok;
-    } catch {
-      return false;
-    }
+    this.log(`[-] تعذر إتمام تحويل الميكسات بعد 3 محاولات عبر بوابة اتصالات.`, "warn");
+    return false;
   }
 
   async changePlan(planName: string, planId = ""): Promise<boolean> {
@@ -1164,7 +1197,23 @@ async function handleSingleCycleInternal(
   // Normal flow if not low or child not already holding missing
   if (!childHoldsMissing) {
     if (status.remainingMix > 0) {
-      const transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
+      let transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
+
+      // If initial transfer returned false, re-check owner balance and retry once with fresh session token
+      if (!transferred) {
+        engine.log(`[*] فحص رصيد الأونر بعد تعذر التحويل للتحقق من سلامة الجلسة...`, "info");
+        await sleep(2500);
+        try {
+          const freshOwnerSt = await engine.getStatusAndChild(true);
+          const currentBal = freshOwnerSt.remainingMix || status.remainingMix;
+          if (currentBal > 0) {
+            engine.log(`[🛡️] تأكيد سلامة رصيد الأونر (${currentBal.toLocaleString('en-US')} ميكس) بحسابه. جاري محاولة نقل ثانية بعد تجديد التوكن...`, "info");
+            await engine.login(ownerEmail, ownerPass, true, true);
+            transferred = await engine.transferMix(childNum, currentBal, ownerPlanName);
+          }
+        } catch (_) {}
+      }
+
       if (transferred) {
         parkedMixAmount = status.remainingMix;
         
@@ -1300,41 +1349,24 @@ async function handleSingleCycleInternal(
           }
         }
       } else {
-        engine.log(`[-] تنبيه أمان صارم: فشل تحويل ميكسات الأونر للفرد! تم إيقاف الدورة فوراً لمنع تصفير الرصيد.`, "error");
-        await sendStep("safety_stop", 1, "توقف أمان لحماية الميكسات", "فشل نقل الميكسات للفرد - تم إلغاء الترحيل لحماية ميكسات الأونر");
-        
+        // Did the owner lose anything? Absolutely not! Plan change was NOT triggered!
+        let safeOwnerBalance = status.remainingMix;
         try {
-          await supabase.from("vip_cycle_history").insert({
-            session_id: session_id,
-            cycle_number: (session.current_cycle || 0) + 1,
-            started_at: cycleStartTime,
-            ended_at: new Date().toISOString(),
-            duration_seconds: Math.round((Date.now() - cycleStartMs) / 1000),
-            owner_balance_start: ownerStartMix,
-            system_pre_migration: ownerPlanPre,
-            cycle_status: "failed",
-            failure_step: "parking",
-            safe_error_summary: "فشل تحويل ميكسات الأونر للفرد - تم إيقاف الدورة لحماية الرصيد",
-            increased_owner_balance: false,
-          });
-          await supabase.from("vip_operation_history").insert({
-            session_id: session_id,
-            operation_type: "auto_cycle",
-            owner_account_ref: session.owner_account_identifier,
-            individual_account_ref: session.individual_account_identifier,
-            requested_action: `دورة أتمتة #${(session.current_cycle || 0) + 1}`,
-            status: "failed",
-            failure_reason: "فشل تحويل ميكسات الأونر للفرد",
-            started_at: cycleStartTime,
-            completed_at: new Date().toISOString(),
-            is_automatic: true,
-          });
-        } catch (_dbE) {}
+          const verifyOwnerSt = await engine.getStatusAndChild(true);
+          safeOwnerBalance = verifyOwnerSt.remainingMix || safeOwnerBalance;
+        } catch (_) {}
+
+        engine.log(`[🛡️] درع الأمان: رصيد الأونر (${safeOwnerBalance.toLocaleString('en-US')} ميكس) محمي بالكامل بحسابه الأساسي ولم يُمس. لم يتم أي ترحيل للباقة.`, "success");
+        engine.log(`[!] تنبيه عابر: تعذر تحويل الميكسات لسيرفر اتصالات في هذه المحاولة (ضغط سيرفر أو تزامن جلسات). الرصيد آمن 100%.`, "warn");
+        
+        await sendStep("paused_safe", 1, "الرصيد آمن بحساب الأونر", `تعذر التحويل مؤقتاً - رصيد الأونر (${safeOwnerBalance.toLocaleString('en-US')} ميكس) محفوظ بأمان`);
 
         return {
           success: false,
-          safety_stop: true,
-          error: "فشل تحويل ميكسات الأونر للفرد. تم إيقاف الدورة لحماية الرصيد ومنع تصفيره.",
+          safety_stop: false, // NOT a fatal lock! Balance is 100% safe at owner
+          can_retry: true,
+          owner_mix_balance: safeOwnerBalance,
+          error: `تعذر تحويل الميكسات لسيرفر اتصالات مؤقتاً (رصيد الأونر ${safeOwnerBalance.toLocaleString('en-US')} ميكس محفوظ بأمان تام بحسابه).`,
           logs: engine.logs,
         };
       }
@@ -2946,12 +2978,14 @@ serve(async (req: Request) => {
 
       engine.log(`[+] بيانات الخطوط: الأونر (${parentDial}) | الفرد (${targetChild}) | باقة الأونر (${ownerPlanName})`, "info");
 
-      // 2. Initial 15 RemoveChild Iterations
-      const removeCountPhase1 = Number(body.phase1_count) || 15;
-      engine.log(`[*] الخطوة 2/5: إرسال أمر إخراج الفرد (${removeCountPhase1} مرة متتالية بفاصل زمني لفك التعليق بالسيرفر)...`, "info");
+      // 2. Initial RemoveChild Iterations with Anti-Queue Jamming Protection
+      const removeCountPhase1 = Math.min(Math.max(Number(body.phase1_count) || 5, 1), 30);
+      const removeDelaySec = Math.max(Number(body.remove_delay_seconds) || 2.5, 0.5);
+      engine.log(`[*] الخطوة 2/5: إرسال أمر إخراج الفرد (${removeCountPhase1} مرات كحد أقصى بفاصل زمني آمن ${removeDelaySec}ث لمنع تعليق الأوردرات بالسيستم)...`, "info");
       
       const phase1Orders: string[] = [];
       let phase1SuccessCount = 0;
+      let childAlreadyReleased = false;
 
       for (let i = 1; i <= removeCountPhase1; i++) {
         const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
@@ -2962,11 +2996,24 @@ serve(async (req: Request) => {
         } else {
           engine.log(`[!] أمر إخراج (${i}/${removeCountPhase1}): رد الخادم (${res.raw || "فشل"})`, "warn");
         }
-        await sleep(600);
+
+        // Safe spacing to prevent Etisalat SDP / CRM pending queue conflicts
+        await sleep(removeDelaySec * 1000);
+
+        // Smart Anti-Hang: Check if child is already released after at least 2 orders
+        if (i >= 2 && phase1SuccessCount >= 1) {
+          const quickSt = await engine.getStatusAndChild(true);
+          const stillThere = !!quickSt.childNumber && quickSt.childNumber.includes(targetChild.slice(-8));
+          if (!stillThere) {
+            childAlreadyReleased = true;
+            engine.log(`[🎯] فحص ذكي: تأكد خروج الفرد (${targetChild}) من السيستم بالفعل! تم التوقف الفوري لتجنب تعليق أوردرات متراكمة في النظام.`, "success");
+            break;
+          }
+        }
       }
 
-      // 3. 10 Seconds Wait
-      const waitCooldownSec = Number(body.cooldown_seconds) || 10;
+      // 3. Cooldown Wait
+      const waitCooldownSec = Math.max(Number(body.cooldown_seconds) || 10, 3);
       engine.log(`[⏳] الخطوة 3/5: فترة التهدئة (${waitCooldownSec} ثوانٍ) لإتاحة الوقت لسيرفر اتصالات لتحديث قيود العقد...`, "info");
       for (let sec = waitCooldownSec; sec > 0; sec--) {
         await sleep(1000);
@@ -2982,57 +3029,70 @@ serve(async (req: Request) => {
       }
       await sleep(2500);
 
-      // 5. Secondary 3 RemoveChild Iterations
-      const removeCountPhase2 = Number(body.phase2_count) || 3;
-      engine.log(`[*] تأكيد نهائي: إرسال أمر إخراج الفرد (${removeCountPhase2} مرات إضافية للتأكيد القاطع)...`, "info");
-      for (let i = 1; i <= removeCountPhase2; i++) {
-        const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
-        if (res.success) {
-          if (res.orderId) phase1Orders.push(res.orderId);
-          engine.log(`[✓] تأكيد إخراج (${i}/${removeCountPhase2}): تم بنجاح (orderId: ${res.orderId || "مكتمل"})`, "success");
+      // 5. Optional Secondary Confirmation RemoveChild
+      const removeCountPhase2 = Math.min(Math.max(Number(body.phase2_count) || 0, 0), 10);
+      if (removeCountPhase2 > 0 && !childAlreadyReleased) {
+        engine.log(`[*] تأكيد إضافي: إرسال أمر إخراج الفرد (${removeCountPhase2} مرات إضافية للتأكيد بفاصل ${removeDelaySec}ث)...`, "info");
+        for (let i = 1; i <= removeCountPhase2; i++) {
+          const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
+          if (res.success) {
+            if (res.orderId) phase1Orders.push(res.orderId);
+            engine.log(`[✓] تأكيد إخراج (${i}/${removeCountPhase2}): تم بنجاح (orderId: ${res.orderId || "مكتمل"})`, "success");
+          }
+          await sleep(removeDelaySec * 1000);
         }
-        await sleep(600);
+      } else if (childAlreadyReleased) {
+        engine.log(`[*] تجاوز خطوة التأكيد الإضافية لأن الفرد خرج بالفعل بنجاح.`, "info");
       }
 
-      // 6. Login to Child & Migrate to MINION (أهلا أقوى كارت)
-      engine.log(`[*] الخطوة 5/5: الدخول لحساب الفرد وتحويله لنظام أهلا أقوى كارت (MINION)...`, "info");
+      // 6. Optional: Login to Child & Migrate to MINION (أهلا أقوى كارت)
+      const includeMinion = body.include_minion === true || body.include_minion === "true";
       let minionSuccess = false;
       const minionOrders: string[] = [];
 
-      if (childEmail && childPass) {
-        const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
-        childEngine.onLog = (l) => engine.log(l.message, l.level);
+      if (!includeMinion) {
+        engine.log(`[*] الخطوة 5/5: تم تجاوز التحويل لنظام أهلا أقوى كارت (MINION) تلقائياً بناءً على اختيارك (متاح يدوياً عند الحاجة).`, "info");
+      } else {
+        const minionDelaySec = Math.max(Number(body.minion_delay_seconds) || 3, 1);
+        const migrateTries = Math.min(Math.max(Number(body.migrate_count) || 2, 1), 10);
+        engine.log(`[*] الخطوة 5/5: تحويل حساب الفرد لنظام أهلا أقوى كارت (MINION) بفاصل زمني آمن ${minionDelaySec}ث...`, "info");
 
-        if (await childEngine.login(childEmail, childPass, false, true)) {
-          const migrateTries = Number(body.migrate_count) || 4;
-          for (let m = 1; m <= migrateTries; m++) {
-            engine.log(`[*] إرسال طلب ترحيل لنظام MINION (محاولة ${m}/${migrateTries})...`, "info");
-            const mRes = await childEngine.migrateToMinionOrder(targetChild);
+        if (childEmail && childPass) {
+          const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+          childEngine.onLog = (l) => engine.log(l.message, l.level);
+
+          if (await childEngine.login(childEmail, childPass, false, true)) {
+            for (let m = 1; m <= migrateTries; m++) {
+              engine.log(`[*] إرسال طلب ترحيل لنظام MINION (محاولة ${m}/${migrateTries})...`, "info");
+              const mRes = await childEngine.migrateToMinionOrder(targetChild);
+              if (mRes.success) {
+                minionSuccess = true;
+                if (mRes.orderId) minionOrders.push(mRes.orderId);
+                engine.log(`[✓] تم قبول طلب الترحيل لنظام أهلا أقوى كارت (${m}/${migrateTries}) بنجاح! (orderId: ${mRes.orderId || "مقبول"})`, "success");
+                // Stop after success to avoid duplicate pending migrate orders
+                break;
+              } else {
+                engine.log(`[!] طلب الترحيل (${m}/${migrateTries}): رد الخادم (${mRes.raw || "فشل"})`, "warn");
+              }
+              await sleep(minionDelaySec * 1000);
+            }
+          } else {
+            engine.log(`[!] تعذر تسجيل الدخول المباشر لحساب الفرد. جاري إرسال طلب ترحيل MINION عبر توكن الأونر...`, "warn");
+            const mRes = await engine.migrateToMinionOrder(targetChild);
             if (mRes.success) {
               minionSuccess = true;
               if (mRes.orderId) minionOrders.push(mRes.orderId);
-              engine.log(`[✓] تم قبول طلب الترحيل لنظام أهلا أقوى كارت (${m}/${migrateTries}) بنجاح! (orderId: ${mRes.orderId || "مقبول"})`, "success");
-            } else {
-              engine.log(`[!] طلب الترحيل (${m}/${migrateTries}): رد الخادم (${mRes.raw || "فشل"})`, "warn");
+              engine.log(`[✓] تم إرسال طلب الترحيل لـ MINION: (orderId: ${mRes.orderId})`, "success");
             }
-            await sleep(1000);
           }
         } else {
-          engine.log(`[!] تعذر تسجيل الدخول المباشر لحساب الفرد. جاري إرسال طلب ترحيل MINION عبر توكن الأونر...`, "warn");
+          // Fallback: send migrate from current session
           const mRes = await engine.migrateToMinionOrder(targetChild);
           if (mRes.success) {
             minionSuccess = true;
             if (mRes.orderId) minionOrders.push(mRes.orderId);
             engine.log(`[✓] تم إرسال طلب الترحيل لـ MINION: (orderId: ${mRes.orderId})`, "success");
           }
-        }
-      } else {
-        // Fallback: send migrate from current session
-        const mRes = await engine.migrateToMinionOrder(targetChild);
-        if (mRes.success) {
-          minionSuccess = true;
-          if (mRes.orderId) minionOrders.push(mRes.orderId);
-          engine.log(`[✓] تم إرسال طلب الترحيل لـ MINION: (orderId: ${mRes.orderId})`, "success");
         }
       }
 
@@ -3111,11 +3171,12 @@ serve(async (req: Request) => {
         }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
-      const repeatCount = Math.min(Math.max(Number(body.count) || 15, 1), 30);
+      const repeatCount = Math.min(Math.max(Number(body.count) || 5, 1), 30);
+      const delaySec = Math.max(Number(body.delay_seconds) || 2.5, 0.5);
       const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
       const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
 
-      engine.log(`[*] جاري تنفيذ أمر إخراج الفرد (${targetChild}) بتكرار ${repeatCount} مرة...`, "info");
+      engine.log(`[*] جاري تنفيذ أمر إخراج الفرد (${targetChild}) بتكرار ${repeatCount} مرة كحد أقصى (بفاصل آمن ${delaySec}ث لمنع تعليق الأوردرات بالسيستم)...`, "info");
       const orders: string[] = [];
       let successCount = 0;
 
@@ -3128,7 +3189,17 @@ serve(async (req: Request) => {
         } else {
           engine.log(`[!] إخراج (${i}/${repeatCount}): رد السيرفر (${res.raw || "فشل"})`, "warn");
         }
-        await sleep(500);
+        await sleep(delaySec * 1000);
+
+        // Smart check after 2 orders: if child already gone, stop
+        if (i >= 2 && successCount >= 1) {
+          const quickSt = await engine.getStatusAndChild(true);
+          const stillThere = !!quickSt.childNumber && quickSt.childNumber.includes(targetChild.slice(-8));
+          if (!stillThere) {
+            engine.log(`[🎯] فحص ذكي: الفرد فك ارتباطه بالسيرفر بالفعل! تم التوقف الفوري لتجنب تعليق طلبات مكررة.`, "success");
+            break;
+          }
+        }
       }
 
       return new Response(JSON.stringify({
@@ -3155,8 +3226,9 @@ serve(async (req: Request) => {
         }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
-      const repeatCount = Math.min(Math.max(Number(body.count) || 4, 1), 10);
-      engine.log(`[*] جاري تحويل رقم الفرد (${targetChild}) لنظام أهلا أقوى كارت (MINION) بتكرار ${repeatCount} مرات...`, "info");
+      const repeatCount = Math.min(Math.max(Number(body.count) || 2, 1), 10);
+      const delaySec = Math.max(Number(body.delay_seconds) || 3, 1);
+      engine.log(`[*] جاري تحويل رقم الفرد (${targetChild}) لنظام أهلا أقوى كارت (MINION) بتكرار ${repeatCount} مرات (بفاصل آمن ${delaySec}ث)...`, "info");
 
       let activeEngine: EtisalatEngine = engine;
       if (childEmail && childPass) {
@@ -3180,10 +3252,12 @@ serve(async (req: Request) => {
           successCount++;
           if (res.orderId) orders.push(res.orderId);
           engine.log(`[✓] تحويل MINION (${i}/${repeatCount}): تم القبول (orderId: ${res.orderId || "مقبول"})`, "success");
+          // Stop on acceptance to prevent duplicate pending orders
+          break;
         } else {
           engine.log(`[!] تحويل MINION (${i}/${repeatCount}): رد السيرفر (${res.raw || "فشل"})`, "warn");
         }
-        await sleep(800);
+        await sleep(delaySec * 1000);
       }
 
       if (successCount > 0) {

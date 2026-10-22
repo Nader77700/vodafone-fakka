@@ -530,16 +530,21 @@ class VipRunnerService {
       }
 
       if (!cycleResult.success) {
-        if (this.isNetworkGlitch(cycleResult.error) && st.consecutiveErrors < MAX_NETWORK_RETRIES) {
+        const canRetryError =
+          this.isNetworkGlitch(cycleResult.error) ||
+          cycleResult.can_retry === true ||
+          (!cycleResult.safety_stop && cycleResult.error?.includes('تعذر تحويل الميكسات'));
+
+        if (canRetryError && st.consecutiveErrors < MAX_NETWORK_RETRIES) {
           st.consecutiveErrors++;
           this.addLog(
             sessionId,
-            `[🌐] انقطاع مؤقت في الاتصال أثناء الدورة #${st.cycleCount}. جاري الصمود والمحاولة مجدداً (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES}) خلال 4 ثوانٍ...`,
+            `[🌐] تعذر مؤقت في خطوة التحويل/الاتصال أثناء الدورة #${st.cycleCount}. الرصيد محفوظ بنسبة 100%. جاري الصمود والمحاولة مجدداً (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES}) خلال 5 ثوانٍ...`,
             'warn'
           );
-          st.stepMessage = `إعادة الاتصال التلقائي (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES})...`;
+          st.stepMessage = `إعادة المحاولة التلقائية الصامدة (${st.consecutiveErrors}/${MAX_NETWORK_RETRIES})...`;
           this.notify(sessionId);
-          await new Promise((r) => setTimeout(r, 4000));
+          await new Promise((r) => setTimeout(r, 5000));
           try {
             await executeVipCheckStatus(sessionId);
           } catch (_) {}

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import {
   UserMinus,
@@ -42,10 +43,13 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
   const [childNumber, setChildNumber] = useState<string>(
     session.individual_account_identifier || ''
   );
-  const [phase1Count, setPhase1Count] = useState<number>(15);
+  const [phase1Count, setPhase1Count] = useState<number>(5);
+  const [removeDelaySec, setRemoveDelaySec] = useState<number>(2);
   const [cooldownSec, setCooldownSec] = useState<number>(10);
-  const [phase2Count, setPhase2Count] = useState<number>(3);
-  const [migrateCount, setMigrateCount] = useState<number>(4);
+  const [phase2Count, setPhase2Count] = useState<number>(2);
+  const [includeMinion, setIncludeMinion] = useState<boolean>(false);
+  const [migrateCount, setMigrateCount] = useState<number>(3);
+  const [minionDelaySec, setMinionDelaySec] = useState<number>(2);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
   // Execution states
@@ -91,6 +95,9 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
         cooldown_seconds: cooldownSec,
         phase2_count: phase2Count,
         migrate_count: migrateCount,
+        include_minion: includeMinion,
+        remove_delay_seconds: removeDelaySec,
+        minion_delay_seconds: minionDelaySec,
       });
 
       if (res.logs && res.logs.length > 0) {
@@ -132,9 +139,9 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
     }
 
     setIsRemoving(true);
-    addLocalLog(`[*] بدء إرسال أمر إخراج الفرد (${phase1Count} مرة متتالية)...`, 'info');
+    addLocalLog(`[*] بدء إرسال أمر إخراج الفرد (${phase1Count} مرات بفاصل ${removeDelaySec}ث)...`, 'info');
     try {
-      const res = await executeRemoveChildMulti(session.id, phase1Count, targetChild);
+      const res = await executeRemoveChildMulti(session.id, phase1Count, targetChild, removeDelaySec);
       if (res.logs && res.logs.length > 0) {
         setLogs(res.logs);
       }
@@ -182,9 +189,9 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
     }
 
     setIsMigrating(true);
-    addLocalLog(`[*] بدء إرسال أمر التحويل لنظام أهلا أقوى كارت (MINION) (${migrateCount} مرات)...`, 'info');
+    addLocalLog(`[*] بدء إرسال أمر التحويل لنظام أهلا أقوى كارت (MINION) (${migrateCount} مرات بفاصل ${minionDelaySec}ث)...`, 'info');
     try {
-      const res = await executeMigrateChildToMinion(session.id, migrateCount, targetChild);
+      const res = await executeMigrateChildToMinion(session.id, migrateCount, targetChild, minionDelaySec);
       if (res.logs && res.logs.length > 0) {
         setLogs(res.logs);
       }
@@ -257,11 +264,26 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             <Input
               type="number"
               min={1}
-              max={30}
+              max={15}
               value={phase1Count}
-              onChange={(e) => setPhase1Count(Number(e.target.value) || 15)}
+              onChange={(e) => setPhase1Count(Number(e.target.value) || 5)}
               className="h-8 text-xs font-mono text-center"
             />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[11px] font-medium text-muted-foreground">فاصل الأمان بين طلبات الإخراج</Label>
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={removeDelaySec}
+                onChange={(e) => setRemoveDelaySec(Number(e.target.value) || 2)}
+                className="h-8 text-xs font-mono text-center"
+              />
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">ثوانٍ</span>
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -278,16 +300,43 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               <span className="text-[11px] text-muted-foreground whitespace-nowrap">ثوانٍ</span>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-1">
-            <Label className="text-[11px] font-medium text-muted-foreground">تكرار ترحيل MINION</Label>
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={migrateCount}
-              onChange={(e) => setMigrateCount(Number(e.target.value) || 4)}
-              className="h-8 text-xs font-mono text-center"
+        {/* Optional MINION Migration Toggle Box */}
+        <div className="p-3 rounded-xl border border-border bg-card/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="include-minion-switch" className="text-xs font-semibold cursor-pointer">
+                ترحيل خط الفرد تلقائياً لنظام أهلا أقوى كارت (MINION)
+              </Label>
+              <Badge variant="outline" className={`text-[10px] ${includeMinion ? 'text-amber-500 border-amber-500/40 bg-amber-500/10' : 'text-muted-foreground'}`}>
+                {includeMinion ? 'مفعّل' : 'معطّل (موصى به لتفادي تعليق SDP)'}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {includeMinion
+                ? `سيتم إرسال ${migrateCount} طلبات تحويل لنظام MINION بفاصل ${minionDelaySec}ث بعد إخراج الفرد وتجديد الباقة.`
+                : 'يكتفي بإخراج الفرد وتجديد باقة الأونر دون محاولة تغيير خط الفرد لنظام MINION.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {includeMinion && (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={migrateCount}
+                  onChange={(e) => setMigrateCount(Number(e.target.value) || 3)}
+                  className="h-7 w-14 text-xs font-mono text-center"
+                />
+                <span className="text-[10px] text-muted-foreground">مرات</span>
+              </div>
+            )}
+            <Switch
+              id="include-minion-switch"
+              checked={includeMinion}
+              onCheckedChange={setIncludeMinion}
             />
           </div>
         </div>
@@ -298,11 +347,11 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
               <span className="text-xs md:text-sm font-bold text-foreground">
-                التشغيل الآلي الكامل للتسلسل المعتمد (1-Click Sequence)
+                التشغيل الآلي لتسلسل إخراج الفرد {includeMinion ? 'والتحويل لـ MINION' : 'وتجديد الباقة'}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              ينفذ: 15x إخراج للفرد ➔ انتظار 10ث ➔ تجديد باقة الأونر ➔ 3x تأكيد إخراج ➔ 4x ترحيل لـ MINION
+              ينفذ: {phase1Count}x إخراج للفرد (بفاصل {removeDelaySec}ث) ➔ انتظار {cooldownSec}ث ➔ تجديد باقة الأونر{includeMinion ? ` ➔ ${migrateCount}x ترحيل لـ MINION (بفاصل ${minionDelaySec}ث)` : ' (تخطي MINION)'}
             </p>
           </div>
 
@@ -319,7 +368,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             ) : (
               <>
                 <Play className="w-3.5 h-3.5 fill-black" />
-                <span>تشغيل السكريبت الكامل الآن</span>
+                <span>تشغيل السكريبت الآن</span>
               </>
             )}
           </Button>

@@ -413,6 +413,7 @@ export interface VipExecutionResponse {
   error?: string;
   message?: string;
   safety_stop?: boolean;
+  can_retry?: boolean;
   skipped_duplicate?: boolean;
   server_timeout?: boolean;
   data?: any;
@@ -847,33 +848,38 @@ export async function executeFullReleaseAndMinion(
   options?: {
     child_number?: string;
     phase1_count?: number;
+    remove_delay_seconds?: number;
     cooldown_seconds?: number;
     phase2_count?: number;
+    include_minion?: boolean;
     migrate_count?: number;
+    minion_delay_seconds?: number;
   }
 ): Promise<VipExecutionResponse> {
   return invokeVipExecutor('execute_full_release_and_minion', { session_id: sessionId, ...options });
 }
 
 /**
- * Action 11: Execute Multi-Remove Child from Owner Family (e.g. 15 times)
+ * Action 11: Execute Multi-Remove Child from Owner Family (e.g. 5 times with safe delay)
  */
 export async function executeRemoveChildMulti(
   sessionId: string,
-  count = 15,
-  childNumber?: string
+  count = 5,
+  childNumber?: string,
+  delaySeconds = 2.5
 ): Promise<VipExecutionResponse> {
-  return invokeVipExecutor('remove_child_multi', { session_id: sessionId, count, child_number: childNumber });
+  return invokeVipExecutor('remove_child_multi', { session_id: sessionId, count, child_number: childNumber, delay_seconds: delaySeconds });
 }
 
 /**
- * Action 12: Execute Multi-Migrate to Ahlan Akwa Kart (MINION) (e.g. 4 times)
+ * Action 12: Execute Multi-Migrate to Ahlan Akwa Kart (MINION) (e.g. 2 times with safe delay)
  */
 export async function executeMigrateChildToMinion(
   sessionId: string,
-  count = 4,
-  childNumber?: string
+  count = 2,
+  childNumber?: string,
+  delaySeconds = 3
 ): Promise<VipExecutionResponse> {
-  return invokeVipExecutor('migrate_child_to_minion', { session_id: sessionId, count, child_number: childNumber });
+  return invokeVipExecutor('migrate_child_to_minion', { session_id: sessionId, count, child_number: childNumber, delay_seconds: delaySeconds });
 }
 
