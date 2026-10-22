@@ -89,9 +89,19 @@ export function VipLiveBalanceStrip({
         {/* Current Active Plan Badge */}
         <div className="flex items-center gap-1.5 self-end sm:self-auto">
           <span className="text-[10px] text-zinc-400 font-medium">النظام المعتمد:</span>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono border-primary/40 text-primary bg-primary/5">
-            {activePlan}
-          </Badge>
+          {activePlan.includes('270') || activePlan.includes('Parent_7') ? (
+            <Badge className="text-[10px] px-2 py-0.5 font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm">
+              ⚡ {activePlan}
+            </Badge>
+          ) : activePlan.includes('180') || activePlan.includes('170') || activePlan.includes('Parent_6') ? (
+            <Badge className="text-[10px] px-2 py-0.5 font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+              📦 {activePlan}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono border-primary/40 text-primary bg-primary/5">
+              {activePlan}
+            </Badge>
+          )}
         </div>
       </div>
 

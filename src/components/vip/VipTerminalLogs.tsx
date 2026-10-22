@@ -23,6 +23,99 @@ interface Props {
   isRunning?: boolean;
 }
 
+// Helper to convert Arabic-Indic numerals to standard English numbers
+function toEnglishDigits(str: string): string {
+  if (!str) return '';
+  return str.replace(/[٠-٩]/g, (d) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+}
+
+interface ParsedToken {
+  type:
+    | 'phantom_alert'
+    | 'double_check_confirm'
+    | 'hekaya_270'
+    | 'hekaya_180'
+    | 'transfer_owner'
+    | 'transfer_child'
+    | 'phone'
+    | 'mix_balance'
+    | 'owner_ref'
+    | 'child_ref'
+    | 'text';
+  content: string;
+}
+
+function parseLogTokens(rawMsg: string): ParsedToken[] {
+  const msg = toEnglishDigits(rawMsg);
+
+  const tokenRegex = new RegExp(
+    [
+      '(فحص تأكيدي مزدوج[^\\n!]+!?)', // 0. Double-check confirmation
+      '(رصد تحويل وهمي(?:\\/معلق)?[^\\n!]+!?)', // 1. Phantom alert
+      '(حكاية ميكسات 270|Hekaya_XRP_MIX_Parent_7|باقة 270|نظام 270)', // 2. Hekaya 270
+      '(حكاية ميكسات 180|Hekaya_XRP_MIX_Parent_6|باقة 180|نظام 180|170)', // 3. Hekaya 180
+      '(رجعنا للأونر|استرجاع الميكسات للأونر|تم استرجاع)', // 4. Return to owner
+      '(تم تحويل|جاري تحويل|أمر النقل|نقل الميكسات للفرد)', // 5. Transfer to child
+      '(\\b(?:011|11)\\d{8}\\b)', // 6. Phone numbers
+      '(\\(\\d{1,3}(?:,\\d{3})*(?:\\s*ميكس)?\\))', // 7. (88,600) or (88,600 ميكس)
+      '(\\b\\d{1,3}(?:,\\d{3})+(?:\\s*ميكس)?\\b)', // 8. 88,600 ميكس
+      '(الأونر|حساب الأونر|باقة الأونر)', // 9. Owner
+      '(الفرد|حساب الفرد|باقة الفرد)', // 10. Child
+    ].join('|'),
+    'gi'
+  );
+
+  const parts: ParsedToken[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tokenRegex.exec(msg)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({
+        type: 'text',
+        content: msg.substring(lastIndex, match.index),
+      });
+    }
+
+    const matchedText = match[0];
+
+    if (/فحص تأكيدي مزدوج/i.test(matchedText)) {
+      parts.push({ type: 'double_check_confirm', content: matchedText });
+    } else if (/تحويل وهمي/i.test(matchedText)) {
+      parts.push({ type: 'phantom_alert', content: matchedText });
+    } else if (/270|Parent_7/i.test(matchedText)) {
+      parts.push({ type: 'hekaya_270', content: matchedText });
+    } else if (/180|170|Parent_6/i.test(matchedText)) {
+      parts.push({ type: 'hekaya_180', content: matchedText });
+    } else if (/رجعنا للأونر|استرجاع/i.test(matchedText)) {
+      parts.push({ type: 'transfer_owner', content: matchedText });
+    } else if (/تحويل|أمر النقل/i.test(matchedText)) {
+      parts.push({ type: 'transfer_child', content: matchedText });
+    } else if (/^(?:011|11)\d{8}$/.test(matchedText)) {
+      parts.push({ type: 'phone', content: matchedText });
+    } else if (/\d/.test(matchedText)) {
+      parts.push({ type: 'mix_balance', content: matchedText });
+    } else if (/الأونر/i.test(matchedText)) {
+      parts.push({ type: 'owner_ref', content: matchedText });
+    } else if (/الفرد/i.test(matchedText)) {
+      parts.push({ type: 'child_ref', content: matchedText });
+    } else {
+      parts.push({ type: 'text', content: matchedText });
+    }
+
+    lastIndex = tokenRegex.lastIndex;
+  }
+
+  if (lastIndex < msg.length) {
+    parts.push({
+      type: 'text',
+      content: msg.substring(lastIndex),
+    });
+  }
+
+  return parts;
+}
+
 export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -86,31 +179,145 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
   };
 
   const renderColoredMessage = (msg: string) => {
-    if (msg.startsWith('[*]')) {
-      return <span className="text-sky-400 font-semibold">{msg}</span>;
-    }
-    if (msg.startsWith('[+]')) {
-      return <span className="text-emerald-400 font-bold">{msg}</span>;
-    }
-    if (msg.startsWith('[-]')) {
-      return <span className="text-rose-400 font-semibold">{msg}</span>;
-    }
-    if (msg.startsWith('[!]')) {
-      return <span className="text-amber-400 font-semibold">{msg}</span>;
-    }
-    if (msg.startsWith('[🎉]')) {
-      return <span className="text-amber-300 font-black">{msg}</span>;
-    }
-    if (msg.startsWith('[⚡]')) {
-      return <span className="text-yellow-300 font-bold">{msg}</span>;
-    }
-    if (msg.startsWith('[🛡️]') || msg.startsWith('[🌐]')) {
-      return <span className="text-cyan-300 font-semibold">{msg}</span>;
-    }
     if (msg.startsWith('---') || msg.startsWith('===')) {
-      return <span className="text-purple-300 font-mono font-bold">{msg}</span>;
+      return <span className="text-purple-300 font-mono font-bold">{toEnglishDigits(msg)}</span>;
     }
-    return <span className="text-zinc-300">{msg}</span>;
+
+    let baseTextColor = 'text-zinc-300';
+    let prefixIcon = '';
+    if (msg.startsWith('[*]')) baseTextColor = 'text-sky-400';
+    else if (msg.startsWith('[+]')) baseTextColor = 'text-emerald-400';
+    else if (msg.startsWith('[-]')) baseTextColor = 'text-rose-400';
+    else if (msg.startsWith('[!]')) baseTextColor = 'text-amber-400';
+    else if (msg.startsWith('[⚠️]')) baseTextColor = 'text-amber-300';
+    else if (msg.startsWith('[✓]')) baseTextColor = 'text-emerald-300';
+    else if (msg.startsWith('[🎉]')) baseTextColor = 'text-amber-300';
+    else if (msg.startsWith('[⚡]')) baseTextColor = 'text-yellow-300';
+    else if (msg.startsWith('[🛡️]') || msg.startsWith('[🌐]')) baseTextColor = 'text-cyan-300';
+    else if (msg.startsWith('[🚀]')) baseTextColor = 'text-purple-300';
+    else if (msg.startsWith('[☁️]')) baseTextColor = 'text-sky-300';
+
+    const isFinalBalanceLine = msg.includes('رصيده الآن') || msg.includes('الرصيد الإجمالي') || msg.includes('الرصيد النهائي');
+    const tokens = parseLogTokens(msg);
+
+    return (
+      <span className="inline-block leading-relaxed">
+        {tokens.map((token, i) => {
+          switch (token.type) {
+            case 'double_check_confirm':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-cyan-200 bg-cyan-950/90 border border-cyan-500/80 px-2 py-0.5 rounded shadow-sm inline-block mx-0.5"
+                >
+                  🛡️ {token.content}
+                </span>
+              );
+            case 'phantom_alert':
+              return (
+                <span
+                  key={i}
+                  className="font-black text-amber-200 bg-amber-950/90 border border-amber-500/80 px-2 py-0.5 rounded shadow-sm inline-block mx-0.5 animate-pulse"
+                >
+                  ⚠️ {token.content}
+                </span>
+              );
+            case 'hekaya_270':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-sky-200 bg-sky-950/90 border border-sky-500/70 px-1.5 py-0.5 rounded shadow-sm inline-block mx-0.5"
+                >
+                  ⚡ {token.content}
+                </span>
+              );
+            case 'hekaya_180':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-amber-200 bg-amber-950/90 border border-amber-600/70 px-1.5 py-0.5 rounded shadow-sm inline-block mx-0.5"
+                >
+                  📦 {token.content}
+                </span>
+              );
+            case 'transfer_owner':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-emerald-200 bg-emerald-950/90 border border-emerald-600/70 px-1.5 py-0.5 rounded inline-block mx-0.5 shadow-sm"
+                >
+                  ⬅️ {token.content}
+                </span>
+              );
+            case 'transfer_child':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-purple-200 bg-purple-950/90 border border-purple-600/70 px-1.5 py-0.5 rounded inline-block mx-0.5 shadow-sm"
+                >
+                  ➔ {token.content}
+                </span>
+              );
+            case 'phone':
+              return (
+                <span
+                  key={i}
+                  className="font-mono font-bold text-yellow-300 bg-yellow-950/70 border border-yellow-700/60 px-1.5 py-0.5 rounded inline-block mx-0.5 tracking-wider"
+                  dir="ltr"
+                >
+                  {token.content}
+                </span>
+              );
+            case 'mix_balance':
+              if (isFinalBalanceLine) {
+                return (
+                  <span
+                    key={i}
+                    className="font-mono font-black text-emerald-200 bg-emerald-950/95 border-2 border-emerald-400 px-2.5 py-0.5 rounded-md shadow-md inline-block mx-0.5 text-xs sm:text-[13px] tracking-wider"
+                    dir="ltr"
+                  >
+                    🏆 {token.content}
+                  </span>
+                );
+              }
+              return (
+                <span
+                  key={i}
+                  className="font-mono font-bold text-cyan-300 bg-cyan-950/90 border border-cyan-500/70 px-1.5 py-0.5 rounded shadow-sm inline-block mx-0.5 tracking-wider"
+                  dir="ltr"
+                >
+                  {token.content}
+                </span>
+              );
+            case 'owner_ref':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-amber-300 bg-amber-950/70 border border-amber-600/60 px-1.5 py-0.5 rounded inline-block mx-0.5"
+                >
+                  👑 {token.content}
+                </span>
+              );
+            case 'child_ref':
+              return (
+                <span
+                  key={i}
+                  className="font-bold text-purple-300 bg-purple-950/70 border border-purple-600/60 px-1.5 py-0.5 rounded inline-block mx-0.5"
+                >
+                  👤 {token.content}
+                </span>
+              );
+            case 'text':
+            default:
+              return (
+                <span key={i} className={baseTextColor}>
+                  {token.content}
+                </span>
+              );
+          }
+        })}
+      </span>
+    );
   };
 
   return (
