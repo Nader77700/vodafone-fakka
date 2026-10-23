@@ -9,6 +9,7 @@ import {
   executeVipCheckStatus,
   updateVipAutomationSettings,
   invokeVipExecutor,
+  executeSmartEjectionSequence,
   VipExecutionLog,
   VipExecutionResponse,
 } from '@/lib/vipApi';
@@ -665,6 +666,36 @@ class VipRunnerService {
             updated_at: new Date().toISOString(),
           }).eq('id', sessionId);
         } catch (_) {}
+
+        // Check if Auto-Eject child is enabled on complete
+        let shouldAutoEject = false;
+        try {
+          const { data: sessRow } = await supabase
+            .from('vip_sessions')
+            .select('auto_eject_child_on_complete')
+            .eq('id', sessionId)
+            .maybeSingle();
+          shouldAutoEject = !!sessRow?.auto_eject_child_on_complete;
+        } catch (_) {}
+
+        if (shouldAutoEject) {
+          this.addLog(sessionId, `[🚀] تفعيل تسلسل الإخراج الذكي التلقائي للفرد بعد اكتمال الجلسة (Auto-Eject)...`, 'warn');
+          try {
+            const ejectRes = await executeSmartEjectionSequence(sessionId);
+            if (ejectRes.logs && ejectRes.logs.length > 0) {
+              for (const l of ejectRes.logs) {
+                this.addLog(sessionId, l.message, l.level || 'info');
+              }
+            }
+            if (ejectRes.success) {
+              this.addLog(sessionId, `[✓] ${ejectRes.message || 'اكتمل تسلسل إخراج الفرد بنجاح تام!'}`, 'success');
+            } else {
+              this.addLog(sessionId, `[-] تنبيه في تسلسل إخراج الفرد: ${ejectRes.error || ejectRes.message}`, 'warn');
+            }
+          } catch (ejectErr: any) {
+            this.addLog(sessionId, `[-] تعذر تنفيذ الإخراج التلقائي للفرد: ${ejectErr?.message || ejectErr}`, 'error');
+          }
+        }
 
         disableVipBackgroundExecution();
         break;

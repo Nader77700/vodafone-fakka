@@ -28,6 +28,9 @@ import {
   executeRemoveChildMulti,
   executeMigrateChildToMinion,
   executeVipRenewBundle,
+  executeSmartEjectionSequence,
+  updateVipAutoEjectSetting,
+  executeVipCheckStatusStream,
   type VipExecutionLog,
 } from '@/lib/vipApi';
 
@@ -60,6 +63,37 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
   const [phase1Orders, setPhase1Orders] = useState<string[]>([]);
   const [minionOrders, setMinionOrders] = useState<string[]>([]);
 
+  // Auto-Eject setting state
+  const [autoEjectEnabled, setAutoEjectEnabled] = useState<boolean>(
+    session.auto_eject_child_on_complete ?? false
+  );
+  const [isUpdatingAutoEject, setIsUpdatingAutoEject] = useState<boolean>(false);
+  const [isCheckingStrict, setIsCheckingStrict] = useState<boolean>(false);
+
+  // Sync state when session changes
+  React.useEffect(() => {
+    setAutoEjectEnabled(session.auto_eject_child_on_complete ?? false);
+  }, [session.id, session.auto_eject_child_on_complete]);
+
+  const handleToggleAutoEject = async (newVal: boolean) => {
+    setAutoEjectEnabled(newVal);
+    setIsUpdatingAutoEject(true);
+    try {
+      await updateVipAutoEjectSetting(session.id, newVal);
+      toast.success(
+        newVal
+          ? 'تم تفعيل خيار إخراج الفرد تلقائياً بعد اكتمال الجلسة بنجاح!'
+          : 'تم تعطيل خيار الإخراج التلقائي للفرد.'
+      );
+      onRefresh?.();
+    } catch (e: any) {
+      setAutoEjectEnabled(!newVal);
+      toast.error('تعذر تحديث إعداد الإخراج التلقائي: ' + (e?.message || ''));
+    } finally {
+      setIsUpdatingAutoEject(false);
+    }
+  };
+
   // Individual action loading states
   const [isRemoving, setIsRemoving] = useState<boolean>(false);
   const [isRenewing, setIsRenewing] = useState<boolean>(false);
@@ -68,6 +102,58 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
   const addLocalLog = (message: string, level: VipExecutionLog['level'] = 'info') => {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
     setLogs((prev) => [...prev, { time, level, message }]);
+  };
+
+  // 1. One-Click Smart Ejection Sequence (The requested 5-step master sequence)
+  const handleRunSmartEjectionSequence = async () => {
+    const targetChild = (childNumber || session.individual_account_identifier || '').trim();
+    if (!targetChild) {
+      toast.error('يرجى تحديد رقم خط الفرد المراد إخراجه.');
+      return;
+    }
+
+    setIsRunning(true);
+    setCurrentStage('smart_eject');
+    setProgressPercent(20);
+    setLogs([]);
+    setPhase1Orders([]);
+    setMinionOrders([]);
+
+    addLocalLog(`[🚀] إطلاق تسلسل الإخراج الذكي المعتمد (5 خطوات) للجلسة: ${session.session_name}`, 'info');
+    addLocalLog(`[*] خط الفرد: ${targetChild} | خط الأونر: ${session.owner_account_identifier || 'حساب الجلسة'}`, 'info');
+
+    try {
+      const res = await executeSmartEjectionSequence(session.id, {
+        child_number: targetChild,
+      });
+
+      if (res.logs && res.logs.length > 0) {
+        setLogs(res.logs);
+      }
+      if ((res as any).orders) {
+        setPhase1Orders((res as any).orders);
+      }
+      if ((res as any).minion_orders) {
+        setMinionOrders((res as any).minion_orders);
+      }
+
+      if (res.success) {
+        setProgressPercent(100);
+        setCurrentStage('completed');
+        toast.success(res.message || 'اكتمل تسلسل الإخراج الذكي بنجاح تام وتم فك ارتباط الفرد بالسيرفر!');
+        onRefresh?.();
+      } else {
+        setProgressPercent(75);
+        setCurrentStage('error');
+        toast.error(res.error || 'تم تنفيذ الخطوات مع ملاحظات خادم اتصالات.');
+      }
+    } catch (err: any) {
+      addLocalLog(`[-] فشل الاتصال: ${err?.message || 'خطأ غير متوقع'}`, 'error');
+      setCurrentStage('error');
+      toast.error('تعذر استكمال السكريبت: ' + (err?.message || 'خطأ اتصال'));
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   // 1. One-Click Full Automated Sequence
@@ -208,6 +294,33 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
     }
   };
 
+  // 5. Individual: Strict Server Family Verification
+  const handleStrictFamilyCheck = async () => {
+    setIsCheckingStrict(true);
+    addLocalLog(`[*] بدء الفحص الصارم المباشر من سيرفر اتصالات لعائلة الأونر والتأكد من وجود الفرد...`, 'info');
+    try {
+      const res = await executeVipCheckStatusStream(session.id);
+      if (res.logs && res.logs.length > 0) {
+        setLogs(res.logs);
+      }
+      if (res.success) {
+        const found = (res as any).owner?.has_child_in_family;
+        if (found) {
+          toast.success(`تأكيد السيرفر: الفرد مضاف داخل العائلة (${(res as any).owner?.child_number_found || ''})`);
+        } else {
+          toast.info('تأكيد السيرفر: لا يوجد أي فرد مسجل داخل عائلة الأونر حالياً (الفرد خارج العائلة).');
+        }
+        onRefresh?.();
+      } else {
+        toast.error(res.error || 'تعذر استكمال الفحص');
+      }
+    } catch (err: any) {
+      toast.error('خطأ: ' + (err?.message || 'تعذر الاتصال'));
+    } finally {
+      setIsCheckingStrict(false);
+    }
+  };
+
   const copyLogs = () => {
     const text = logs.map((l) => `[${l.time}] ${l.message}`).join('\n');
     navigator.clipboard.writeText(text);
@@ -246,6 +359,32 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
       </CardHeader>
 
       <CardContent className="p-4 space-y-4">
+        {/* ── AUTO-EJECT TOGGLE BANNER ── */}
+        <div className="p-3.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-background/80 to-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <Label htmlFor="auto-eject-switch" className="text-xs sm:text-sm font-bold text-foreground cursor-pointer">
+                الإخراج التلقائي للفرد بعد اكتمال الجلسة (Auto-Eject on Complete)
+              </Label>
+              <Badge className={`text-[10px] px-2 py-0.5 font-semibold ${autoEjectEnabled ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-muted text-muted-foreground'}`}>
+                {autoEjectEnabled ? 'مفعّل تلقائياً ✓' : 'معطّل يدوي'}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              عند تفعيل هذا الخيار، فور اكتمال الجلسة أو الوصول للحد الأقصى، سينتقل النظام تلقائياً لتنفيذ تسلسل الإخراج المعتمد (تجديد باقة الأونر ➔ انتظار استقرار الميكسات للفرد ➔ 5 محاولات إخراج بفاصل 20 ثانية ➔ فحص صارم وتكرار ➔ الترحيل لـ MINION لحل التعليق 100%).
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <Switch
+              id="auto-eject-switch"
+              checked={autoEjectEnabled}
+              disabled={isUpdatingAutoEject}
+              onCheckedChange={handleToggleAutoEject}
+            />
+          </div>
+        </div>
+
         {/* Target Child Input & Parameters Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 rounded-xl border border-border/80 bg-background/50">
           <div className="space-y-1">
@@ -341,13 +480,50 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
           </div>
         </div>
 
-        {/* ── MODE 1: ONE-CLICK AUTOMATED EXECUTION BUTTON ── */}
-        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="space-y-0.5 text-right w-full md:w-auto">
-            <div className="flex items-center gap-2">
+        {/* ── MODE 1: ONE-CLICK AUTOMATED EXECUTION BUTTONS ── */}
+        {/* 1A. THE REQUESTED SMART 5-STEP PROTOCOL */}
+        <div className="p-3.5 rounded-xl border border-amber-500/50 bg-gradient-to-r from-amber-500/20 via-card to-amber-500/10 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md">
+          <div className="space-y-1 text-right w-full md:w-auto">
+            <div className="flex items-center gap-2 flex-wrap">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
               <span className="text-xs md:text-sm font-bold text-foreground">
-                التشغيل الآلي لتسلسل إخراج الفرد {includeMinion ? 'والتحويل لـ MINION' : 'وتجديد الباقة'}
+                تسلسل الإخراج الذكي الكامل (5 خطوات معتمدة)
+              </span>
+              <Badge className="bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] px-1.5 py-0">
+                الحل الموصى به
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              1. تجديد باقة الأونر ➔ 2. انتظار استقرار ميكسات الفرد ➔ 3. إخراج الفرد 5 مرات بفاصل 20ث ➔ 4. فحص صارم (وتكرار بعد 60ث إذا لزم) ➔ 5. الحل الحاسم: تحويل لـ MINION لفك التعليق نهائياً
+            </p>
+          </div>
+
+          <Button
+            onClick={handleRunSmartEjectionSequence}
+            disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict}
+            className="w-full md:w-auto shrink-0 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs h-9 px-5 gap-2 shadow-sm"
+          >
+            {isRunning && currentStage === 'smart_eject' ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>جاري تسلسل الإخراج الذكي...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-black" />
+                <span>تشغيل التسلسل الذكي الآن</span>
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* 1B. Custom Sequence */}
+        <div className="p-3 rounded-xl border border-border/70 bg-card/60 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="space-y-0.5 text-right w-full md:w-auto">
+            <div className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs font-semibold text-foreground">
+                التشغيل المخصص: إخراج الفرد ({phase1Count}x) {includeMinion ? 'والتحويل لـ MINION' : 'وتجديد الباقة'}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground">
@@ -356,19 +532,20 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
           </div>
 
           <Button
+            variant="outline"
             onClick={handleRunFullSequence}
-            disabled={isRunning || isRemoving || isRenewing || isMigrating}
-            className="w-full md:w-auto shrink-0 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs h-9 px-5 gap-2 shadow-sm"
+            disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict}
+            className="w-full md:w-auto shrink-0 text-xs h-8 px-4 gap-1.5 border-border hover:bg-accent"
           >
-            {isRunning ? (
+            {isRunning && currentStage !== 'smart_eject' ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>جاري التنفيذ الآلي...</span>
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span>جاري التنفيذ...</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-black" />
-                <span>تشغيل السكريبت الآن</span>
+                <Play className="w-3 h-3" />
+                <span>تشغيل مخصص</span>
               </>
             )}
           </Button>
@@ -414,41 +591,53 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {/* Step 1: Remove child multi */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRemoveChildOnly}
-              disabled={isRunning || isRemoving || isRenewing || isMigrating}
-              className="h-8 text-xs border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/5 justify-start gap-2"
-            >
-              <UserMinus className={`w-3.5 h-3.5 text-amber-500 ${isRemoving ? 'animate-spin' : ''}`} />
-              <span className="truncate">1. إخراج الفرد ({phase1Count} مرة)</span>
-            </Button>
-
-            {/* Step 2: Renew Bundle */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            {/* Step 1: Renew Bundle */}
             <Button
               variant="outline"
               size="sm"
               onClick={handleRenewOwnerBundle}
-              disabled={isRunning || isRemoving || isRenewing || isMigrating}
+              disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict}
               className="h-8 text-xs border-primary/30 hover:border-primary/60 hover:bg-primary/5 justify-start gap-2"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-primary ${isRenewing ? 'animate-spin' : ''}`} />
-              <span className="truncate">2. تجديد باقة الأونر</span>
+              <span className="truncate">1. تجديد باقة الأونر</span>
             </Button>
 
-            {/* Step 3: Migrate to MINION */}
+            {/* Step 2: Remove child multi */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRemoveChildOnly}
+              disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict}
+              className="h-8 text-xs border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/5 justify-start gap-2"
+            >
+              <UserMinus className={`w-3.5 h-3.5 text-amber-500 ${isRemoving ? 'animate-spin' : ''}`} />
+              <span className="truncate">2. إخراج الفرد (5x بـ 20ث)</span>
+            </Button>
+
+            {/* Step 3: Strict Server Family Check */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStrictFamilyCheck}
+              disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict}
+              className="h-8 text-xs border-blue-500/30 hover:border-blue-500/60 hover:bg-blue-500/5 justify-start gap-2"
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 text-blue-400 ${isCheckingStrict ? 'animate-spin' : ''}`} />
+              <span className="truncate">3. فحص الخادم الصارم</span>
+            </Button>
+
+            {/* Step 4: Migrate to MINION */}
             <Button
               variant="outline"
               size="sm"
               onClick={handleMigrateMinionOnly}
-              disabled={isRunning || isRemoving || isRenewing || isMigrating}
+              disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict}
               className="h-8 text-xs border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/5 justify-start gap-2"
             >
               <Zap className={`w-3.5 h-3.5 text-emerald-500 ${isMigrating ? 'animate-spin' : ''}`} />
-              <span className="truncate">3. تحويل لـ MINION ({migrateCount}x)</span>
+              <span className="truncate">4. تحويل لـ MINION (4x)</span>
             </Button>
           </div>
         </div>

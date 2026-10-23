@@ -4,6 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
+import { updateVipAutoEjectSetting } from '@/lib/vipApi';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -68,12 +71,14 @@ export function VipAutoLoopCard({
   );
   const [cycleDelay, setCycleDelay] = useState<number>(session.cycle_delay_seconds || 20);
   const [hasNotifPerm, setHasNotifPerm] = useState(false);
+  const [autoEject, setAutoEject] = useState<boolean>(session.auto_eject_child_on_complete ?? false);
+  const [isUpdatingAutoEject, setIsUpdatingAutoEject] = useState<boolean>(false);
 
   useEffect(() => {
     setHasNotifPerm(isVipNotificationGranted());
   }, []);
 
-  // Synchronize target and delay strictly when session changes
+  // Synchronize target, delay, and auto-eject strictly when session changes
   useEffect(() => {
     setTargetPreset(
       [50000, 100000, 150000, 200000].includes(session.target_mix_balance || 50000)
@@ -82,7 +87,26 @@ export function VipAutoLoopCard({
     );
     setCustomTarget(String(session.target_mix_balance || 50000));
     setCycleDelay(session.cycle_delay_seconds || 20);
-  }, [session.id, session.target_mix_balance, session.cycle_delay_seconds]);
+    setAutoEject(session.auto_eject_child_on_complete ?? false);
+  }, [session.id, session.target_mix_balance, session.cycle_delay_seconds, session.auto_eject_child_on_complete]);
+
+  const handleToggleAutoEject = async (newVal: boolean) => {
+    setAutoEject(newVal);
+    setIsUpdatingAutoEject(true);
+    try {
+      await updateVipAutoEjectSetting(session.id, newVal);
+      toast.success(
+        newVal
+          ? 'تم تفعيل خيار إخراج الفرد تلقائياً بعد اكتمال الجلسة!'
+          : 'تم تعطيل خيار الإخراج التلقائي للفرد.'
+      );
+    } catch (e: any) {
+      setAutoEject(!newVal);
+      toast.error('تعذر تحديث إعداد الإخراج التلقائي: ' + (e?.message || ''));
+    } finally {
+      setIsUpdatingAutoEject(false);
+    }
+  };
 
   const handleToggleNotifications = async () => {
     const granted = await requestVipNotificationPermission();
@@ -312,6 +336,29 @@ export function VipAutoLoopCard({
             <p className="text-[10px] text-muted-foreground">
               فحص نزول الميكسات مطبق تلقائياً كل ثانيتين كما في السكريبت.
             </p>
+          </div>
+
+          {/* Auto-Eject Child on Complete Toggle directly in Session Auto-Loop Card */}
+          <div className="p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 flex items-center justify-between gap-2">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="text-xs font-bold text-foreground">
+                  إخراج الفرد تلقائياً بعد اكتمال الجلسة (Auto-Eject)
+                </span>
+                <Badge className={`text-[9px] px-1.5 py-0 font-semibold ${autoEject ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-muted text-muted-foreground'}`}>
+                  {autoEject ? 'مفعّل ✓' : 'معطّل'}
+                </Badge>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                ينفذ التسلسل الذكي فور اكتمال الجلسة: تجديد الباقة ➔ انتظار الميكسات ➔ 5 محاولات إخراج بفاصل 20ث ➔ فحص وتكرار ➔ تحويل MINION.
+              </p>
+            </div>
+            <Switch
+              checked={autoEject}
+              disabled={isUpdatingAutoEject}
+              onCheckedChange={handleToggleAutoEject}
+            />
           </div>
         </div>
       </CardContent>

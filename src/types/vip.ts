@@ -69,6 +69,7 @@ export interface VipSession {
 
   // Automation Settings per Session
   automation_enabled: boolean;
+  auto_eject_child_on_complete?: boolean;
   operation_state: 'stopped' | 'running' | 'paused' | 'awaiting_integration' | 'error' | 'completed';
   target_mix_balance: number;
   custom_target_balance?: number | null;

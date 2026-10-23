@@ -870,16 +870,59 @@ export async function executeRemoveChildMulti(
 ): Promise<VipExecutionResponse> {
   return invokeVipExecutor('remove_child_multi', { session_id: sessionId, count, child_number: childNumber, delay_seconds: delaySeconds });
 }
-
 /**
- * Action 12: Execute Multi-Migrate to Ahlan Akwa Kart (MINION) (e.g. 2 times with safe delay)
+ * Action 12: Migrate Child to MINION (Ahlan Akwa Kart)
  */
 export async function executeMigrateChildToMinion(
   sessionId: string,
-  count = 2,
+  count = 4,
   childNumber?: string,
-  delaySeconds = 3
+  delaySeconds = 1
 ): Promise<VipExecutionResponse> {
-  return invokeVipExecutor('migrate_child_to_minion', { session_id: sessionId, count, child_number: childNumber, delay_seconds: delaySeconds });
+  return invokeVipExecutor('migrate_to_minion_multi', {
+    session_id: sessionId,
+    count,
+    child_number: childNumber,
+    delay_seconds: delaySeconds,
+  });
 }
+
+
+/**
+ * Action 13: Execute Smart Ejection Sequence (Renew -> Wait for mixes -> 5x Eject (20s delay) -> Verify -> Retry / MINION)
+ */
+export async function executeSmartEjectionSequence(
+  sessionId: string,
+  options?: {
+    child_number?: string;
+    is_automatic?: boolean;
+    force?: boolean;
+  }
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('run_smart_ejection_sequence', { session_id: sessionId, ...options });
+}
+
+/**
+ * Toggle auto-eject setting for a session
+ */
+export async function updateVipAutoEjectSetting(
+  sessionId: string,
+  autoEject: boolean
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const { error } = await supabase
+      .from('vip_sessions')
+      .update({
+        auto_eject_child_on_complete: autoEject,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+    if (error) throw error;
+    return { success: true };
+  } catch (err: any) {
+    console.error('[vipApi] updateVipAutoEjectSetting error:', err);
+    throw err;
+  }
+}
+
 

@@ -21,6 +21,7 @@ import { vipRunnerService, VipRunnerState } from '@/lib/vipRunnerService';
 
 import { VipUnifiedMasterCard } from '@/components/vip/VipUnifiedMasterCard';
 import { VipAutoLoopCard } from '@/components/vip/VipAutoLoopCard';
+import { VipReleaseAndMinionCard } from '@/components/vip/VipReleaseAndMinionCard';
 import { VipTerminalLogs } from '@/components/vip/VipTerminalLogs';
 import { VipCycleStepper } from '@/components/vip/VipCycleStepper';
 import { VipLiveBalanceStrip } from '@/components/vip/VipLiveBalanceStrip';
@@ -397,6 +398,11 @@ export function VipDashboardTab({
             isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
           />
         </div>
+      </div>
+
+      {/* Smart Release & MINION Management Card (Integrated directly inside active session details) */}
+      <div className="mt-3">
+        <VipReleaseAndMinionCard activeSession={displaySession} onRefresh={onRefresh} />
       </div>
     </div>
   );

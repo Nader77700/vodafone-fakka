@@ -162,6 +162,7 @@ class EtisalatEngine {
   private authToken: string | null = null;
   public cookieHeader: string = "";
   public customerName: string = "";
+  public knownName: string = "";
   public shortCode: string = "";
   public currentDial: string | null = null;
   public ownerDial: string | null = null;
@@ -170,9 +171,10 @@ class EtisalatEngine {
   public sessionId?: string;
   public logs: Array<{ time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }> = [];
 
-  constructor(role: 'owner' | 'child', config?: BridgeConfig, sessionId?: string) {
+  constructor(role: 'owner' | 'child', config?: BridgeConfig, sessionId?: string, knownName?: string) {
     this.role = role;
     this.sessionId = sessionId;
+    this.knownName = knownName || "";
     this.bridgeConfig = config || DEFAULT_BRIDGE_CONFIG;
     this.device = generateSessionDeviceProfile(role, sessionId, this.bridgeConfig);
   }
@@ -289,8 +291,8 @@ class EtisalatEngine {
         const testStatus = await this.getStatusAndChild(true);
         if (testStatus && testStatus.planId && testStatus.planId !== "غير معروف") {
           if (!silent) {
-            const nameInfo = this.customerName ? ` | الاسم: ${this.customerName}` : "";
-            this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح (الرقم: ${this.currentDial}${nameInfo}) وتخطي الدخول لمنع حظر الحساب.`, "success");
+            const displayName = this.customerName || this.knownName || (this.role === "owner" ? "الأونر" : "الفرد");
+            this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) وتخطي الدخول لتسريع الأتمتة.`, "success");
           }
           return true;
         }
@@ -376,6 +378,18 @@ class EtisalatEngine {
               // fallback
             }
 
+            // Extract Arabic customer name directly from login response XML if available
+            if (!this.customerName || this.customerName.toLowerCase().includes("dummy")) {
+              const nameMatch = text.match(/<(?:customerName|subscriberName|fullName|name|accountName)>([^<]+)<\//i);
+              if (nameMatch && nameMatch[1].trim() && !nameMatch[1].toLowerCase().includes("dummy")) {
+                this.customerName = nameMatch[1].trim();
+              }
+            }
+
+            if (!this.customerName && this.knownName) {
+              this.customerName = this.knownName;
+            }
+
             if (isOwner) {
               this.ownerDial = this.currentDial;
             } else {
@@ -387,8 +401,8 @@ class EtisalatEngine {
               } catch (_) {}
             }
             if (!silent) {
-              const nameInfo = this.customerName ? ` | الاسم: ${this.customerName}` : "";
-              this.log(`[+] تم الدخول بنجاح! (الرقم: ${this.currentDial}${nameInfo} | بصمة الجهاز: ${this.device.modelType})`, "success");
+              const displayName = this.customerName || this.knownName || (isOwner ? "الأونر" : "الفرد");
+              this.log(`[+] تم تسجيل الدخول بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) | بصمة الجهاز: ${this.device.modelType}`, "success");
             }
             return true;
           }
@@ -612,6 +626,7 @@ class EtisalatEngine {
 
   async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
     const quota = Math.floor(amount);
+    if (quota <= 0) return true;
     const target10 = clean10DigitDial(toDial);
     const sender10 = clean10DigitDial(this.currentDial || '');
     const targetIntl = normalizeEgyptianNumber(toDial, 'intl');
@@ -906,12 +921,15 @@ async function handleCheckStatusInternal(
     }
   }
 
-  const detectedChild = status.childNumber || (session.individual_account_identifier || null);
-  const hasChild = !!status.childNumber || !!detectedChild;
+  // ── STRICT SERVER-AUTHORITATIVE CHILD PRESENCE CHECK ──
+  // CRITICAL FIX: Only confirm child is in family IF status.childNumber was actually returned from Etisalat server XML!
+  // NEVER fallback to session.individual_account_identifier as evidence of family membership!
+  const realChildOnServer = status.childNumber ? status.childNumber.trim() : null;
+  const hasChild = !!realChildOnServer;
   if (hasChild) {
-    engine.log(`[+] تم تأكيد وجود فرد مضاف في العيلة: ${status.childNumber || detectedChild}`, "success");
+    engine.log(`[✓] فحص السيرفر القطعي: تم تأكيد وجود فرد مضاف في عائلة الأونر: ${realChildOnServer}`, "success");
   } else {
-    engine.log(`[!] تنبيه: لا يوجد فرد مضاف في العيلة (يلزم إضافة الفرد بالعائلة أولاً).`, "warn");
+    engine.log(`[!] تنبيه حاسم من سيرفر اتصالات: لا يوجد أي فرد مضاف في عائلة الأونر حالياً (يجب إضافة الفرد بالعائلة أولاً).`, "warn");
   }
 
   // Check Child account with distinct device profile & IP
@@ -953,7 +971,7 @@ async function handleCheckStatusInternal(
       owner_current_plan: finalOwnerPlanName,
       owner_mix_balance: status.remainingMix,
       last_owner_refresh_at: new Date().toISOString(),
-      individual_account_identifier: status.childNumber || childDial || session.individual_account_identifier,
+      individual_account_identifier: realChildOnServer || childDial || session.individual_account_identifier,
       individual_account_status: childDial ? "verified" : session.individual_account_status,
       individual_current_plan: childPlan || session.individual_current_plan || "حكاية ميكسات فرد 1",
       individual_mix_balance: childBalance !== null ? childBalance : session.individual_mix_balance,
@@ -963,7 +981,7 @@ async function handleCheckStatusInternal(
       relationship_details: {
         owner_name: engine.customerName || null,
         child_name: childName || null,
-        child_number: status.childNumber || detectedChild,
+        child_number: realChildOnServer,
         verified_at: new Date().toISOString(),
       },
       updated_at: new Date().toISOString(),
@@ -978,7 +996,7 @@ async function handleCheckStatusInternal(
       plan: finalOwnerPlanName,
       mix_balance: status.remainingMix,
       has_child_in_family: hasChild,
-      child_number_found: status.childNumber || detectedChild,
+      child_number_found: realChildOnServer,
       device: engine.device,
     },
     child: {
@@ -1085,7 +1103,7 @@ async function handleSingleCycleInternal(
   let prewarmedChildEngine: EtisalatEngine | null = null;
   if (childEmail && childPass) {
     try {
-      prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+      prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
       prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
       prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
         supabase.from("vip_sessions").update({
@@ -1619,7 +1637,7 @@ async function handleSingleCycleInternal(
     engine.log(`[⚡] بدء الاسترجاع اللحظي الفوري للميكسات من الفرد للأونر ...`, "info");
     let activeChildEngine = prewarmedChildEngine;
     if (!activeChildEngine || !activeChildEngine.authToken) {
-      activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+      activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
       activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
@@ -1669,24 +1687,37 @@ async function handleSingleCycleInternal(
     if (attemptAmount > 0 && engine.ownerDial) {
       let retOk = false;
       retOk = await activeChildEngine.transferMix(engine.ownerDial, attemptAmount, "Hekaya_XRP_MIX_Child_1");
-      if (retOk) {
-        recoveredMixAmount = attemptAmount;
-      } else {
-        // Last-resort retry with fresh login
-        for (let t = 1; t <= 2; t++) {
-          engine.log(`[!] محاولة استرجاع بديلة (${t}/2)...`, "warn");
-          await activeChildEngine.login(childEmail, childPass, false, true);
+
+      // ── REAL-TIME INSTANT VERIFICATION SYSTEM (نظام التحقق اللحظي لمكافحة التحويل الوهمي) ──
+      // حتى بعد صدور أمر التحويل ونجاح البوابة ظاهرياً، يقوم النظام اللحظي بفحص رصيد الفرد فوراً.
+      // إذا وجد أن الميكسات ما زالت موجودة بحساب الفرد (لم تُخصم)، فهذا يعني أن التحويل كان وهمياً!
+      // يقوم النظام فوراً بإعادة تحويل لحظي فوري للأونر حتى يتم تصفير وتفريغ رصيد الفرد تماماً.
+      engine.log(`[*] تشغيل نظام التحقق اللحظي: فحص رصيد الفرد الفعلي بالسيرفر للتأكد من تصفيره وتفادي التحويل الوهمي...`, "info");
+      await sleep(2000);
+      let childPostVerify = await activeChildEngine.getStatusAndChild(true);
+
+      const ghostThreshold = 1300;
+      if (childPostVerify.remainingMix > ghostThreshold) {
+        engine.log(`[⚠️] كشف تحويل وهمي: رصيد الفرد ما زال (${childPostVerify.remainingMix.toLocaleString('en-US')} ميكس) ولم يُخصم بالسيرفر! جاري إعادة التحويل اللحظي فوراً للأونر...`, "warn");
+        for (let ghostRetry = 1; ghostRetry <= 3; ghostRetry++) {
           await sleep(1500);
-          const lastSt = await activeChildEngine.getStatusAndChild(true);
-          const finalTry = lastSt.remainingMix > 0 ? lastSt.remainingMix : 0;
-          if (finalTry > 0) {
-            retOk = await activeChildEngine.transferMix(engine.ownerDial, finalTry, "Hekaya_XRP_MIX_Child_1");
-            if (retOk) {
-              recoveredMixAmount = finalTry;
-              break;
-            }
+          const realAmountToTransfer = childPostVerify.remainingMix;
+          const retryOk = await activeChildEngine.transferMix(engine.ownerDial, realAmountToTransfer, "Hekaya_XRP_MIX_Child_1");
+          await sleep(2000);
+          childPostVerify = await activeChildEngine.getStatusAndChild(true);
+          if (childPostVerify.remainingMix <= ghostThreshold) {
+            engine.log(`[✓] نجح التحقق اللحظي: تم تفريغ وتصفير رصيد الفرد بالسيرفر (${childPostVerify.remainingMix.toLocaleString('en-US')} ميكس) وتأكيد خروج الرصيد للأونر بنجاح!`, "success");
+            retOk = true;
+            recoveredMixAmount = realAmountToTransfer;
+            break;
+          } else {
+            engine.log(`[*] فحص التحقق اللحظي (${ghostRetry}/3): رصيد الفرد (${childPostVerify.remainingMix.toLocaleString('en-US')} ميكس) - إعادة المحاولة...`, "info");
           }
         }
+      } else {
+        engine.log(`[✓] تأكيد التحقق اللحظي: رصيد الفرد أصبح (${childPostVerify.remainingMix.toLocaleString('en-US')} ميكس)، تم تصفير وخصم الميكسات بنجاح تام من الفرد!`, "success");
+        retOk = true;
+        recoveredMixAmount = attemptAmount;
       }
 
       if (!retOk) {
@@ -1708,18 +1739,19 @@ async function handleSingleCycleInternal(
   const expectedMinBalance = parkedMixAmount > 2000 ? Math.round(parkedMixAmount * 0.70) : 0;
 
   if (expectedMinBalance > 0 && finalStatus.remainingMix < expectedMinBalance) {
-    engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة مع اتصالات...`, "info");
+    engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة المعمقة مع اتصالات...`, "info");
     
     for (let syncAttempt = 1; syncAttempt <= 8; syncAttempt++) {
       await sleep(3500);
       try {
-        if (syncAttempt === 3 || syncAttempt === 6) {
+        if (syncAttempt === 2 || syncAttempt === 5) {
           await engine.login(ownerEmail, ownerPass, true, true);
         }
         const recheckStatus = await engine.getStatusAndChild(true);
+        engine.log(`[*] فحص تسوية رصيد الأونر بالسيرفر (${syncAttempt}/8): الرصيد المقروء (${recheckStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس)...`, "info");
         if (recheckStatus.remainingMix >= expectedMinBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
           finalStatus = recheckStatus;
-          engine.log(`[+] تم تحديث رصيد الأونر بالسيرفر: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
+          engine.log(`[+] تم تحديث واعتماد رصيد الأونر بالسيرفر بنجاح: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
           break;
         }
       } catch (_recheck) {}
@@ -2284,7 +2316,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const engine = new EtisalatEngine("owner", bridgeConfig, session_id);
+    const engine = new EtisalatEngine("owner", bridgeConfig, session_id, session.owner_name || "");
     engine.setAuthSession(session.cached_owner_token, session.cached_owner_cookie);
     engine.onNewAuthToken = (token, cookie, isOwner) => {
       supabase.from("vip_sessions").update(isOwner ? {
@@ -3299,6 +3331,206 @@ serve(async (req: Request) => {
         logs: engine.logs,
       }), {
         status: successCount > 0 ? 200 : 400,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 13: run_smart_ejection_sequence
+    // تسلسل الإخراج الذكي الكامل: تجديد باقة الأونر -> انتظار نزول الميكسات للفرد ->
+    // 5 محاولات إخراج (20ث بين كل محاولة) -> فحص صارم -> تكرار -> تحويل MINION
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "run_smart_ejection_sequence") {
+      if (!await engine.login(ownerEmail, ownerPass, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الأونر.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const st = await engine.getStatusAndChild(false);
+      const isSeven = st.planId.includes("Parent_7") || st.planId.includes("7");
+      const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+      const planCost = isSeven ? 270 : 180;
+      const parentDial = engine.ownerDial || session.owner_account_identifier;
+      const targetChild = body.child_number || st.childNumber || session.individual_account_identifier;
+
+      engine.log(`[🚀] بدء تسلسل الإخراج الذكي المعتمد للفرد (${targetChild || "الفرد"}) للجلسة «${session.session_name}»...`, "info");
+
+      // Check if child is actually in the family
+      if (!st.childNumber && !body.force) {
+        engine.log(`[✓] فحص سيرفر اتصالات: لا يوجد أي فرد مسجل داخل عائلة الأونر حالياً بالسيرفر. الفرد خارج العائلة بالفعل!`, "success");
+        return new Response(JSON.stringify({
+          success: true,
+          message: "الفرد غير موجود داخل عائلة الأونر حالياً (خارج العائلة بالفعل).",
+          child_removed: true,
+          logs: engine.logs,
+        }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      // ── الخطوة 1: تجديد باقة الأونر ──
+      engine.log(`[*] الخطوة 1/5: تجديد باقة الأونر (${engine.getPlanName(st.planId)}) لتحديث حالة العقد...`, "info");
+      try {
+        const renewOk = await engine.renewBundleAction(ownerPlanName, planCost);
+        if (renewOk) {
+          engine.log(`[✓] تم إرسال أمر تجديد باقة الأونر بنجاح!`, "success");
+        } else {
+          engine.log(`[!] تجديد باقة الأونر: تم إرسال الأمر (أو الباقة مجددة بالفعل)`, "warn");
+        }
+      } catch (rErr: any) {
+        engine.log(`[!] تجديد باقة الأونر: ${rErr?.message || "تم المتابعة"}`, "warn");
+      }
+
+      // ── الخطوة 2: الانتظار حتى نزول الميكسات عند الفرد ──
+      engine.log(`[*] الخطوة 2/5: الانتظار لتأكيد نزول واستقرار الميكسات عند الفرد...`, "info");
+      let childConfirmedMix = 0;
+      if (childEmail && childPass) {
+        try {
+          const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+          childEngine.onLog = (l) => engine.log(l.message, l.level);
+          if (await childEngine.login(childEmail, childPass, false, true)) {
+            for (let p = 1; p <= 6; p++) {
+              await sleep(2500);
+              const cSt = await childEngine.getStatusAndChild(true);
+              if (cSt.remainingMix > 0) {
+                childConfirmedMix = cSt.remainingMix;
+                engine.log(`[✓] تم تأكيد نزول الميكسات عند الفرد: (${cSt.remainingMix.toLocaleString('en-US')} ميكس جاهزة).`, "success");
+                break;
+              }
+            }
+          }
+        } catch (_) {}
+      } else {
+        await sleep(6000);
+      }
+
+      // Helper function to execute 5 ejection attempts with 20 seconds delay
+      let childEjected = false;
+      const attemptOrders: string[] = [];
+
+      const executeEjectionAttemptsCycle = async (cycleNum: number): Promise<boolean> => {
+        engine.log(`[*] الخطوة 3/5 (الدورة ${cycleNum}): تنفيذ 5 محاولات إخراج للفرد بفاصل 20 ثانية بين كل محاولة...`, "info");
+        for (let i = 1; i <= 5; i++) {
+          const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
+          if (res.success) {
+            if (res.orderId) attemptOrders.push(res.orderId);
+            engine.log(`[✓] محاولة إخراج (${i}/5 - جولة ${cycleNum}): تم قبول أمر الإخراج بالسيرفر (orderId: ${res.orderId || "مكتمل"})`, "success");
+          } else {
+            engine.log(`[!] محاولة إخراج (${i}/5 - جولة ${cycleNum}): رد الخادم (${res.raw || "فشل"})`, "warn");
+          }
+
+          // Check if child is out already after each attempt
+          const checkSt = await engine.getStatusAndChild(true);
+          const stillThere = !!checkSt.childNumber && checkSt.childNumber.includes(targetChild.slice(-8));
+          if (!stillThere) {
+            engine.log(`[🎯] نجاح فوري: تأكد خروج الفرد (${targetChild}) من عائلة الأونر بالسيرفر! تم إيقاف باقي المحاولات.`, "success");
+            return true;
+          }
+
+          if (i < 5) {
+            engine.log(`[⏳] انتظار 20 ثانية قبل المحاولة القادمة (${i + 1}/5) لمزامنة سيرفر اتصالات...`, "info");
+            await sleep(20000);
+          }
+        }
+        return false;
+      };
+
+      // الجولة الأولى: 5 محاولات إخراج بفاصل 20 ثانية
+      childEjected = await executeEjectionAttemptsCycle(1);
+
+      // ── الخطوة 4: الفحص الصارم والانتظار 60-120 ثانية وتكرار العملية إن لزم ──
+      if (!childEjected) {
+        engine.log(`[*] الخطوة 4/5: الفحص الصارم أظهر أن الفرد ما زال مسجلاً بالعائلة بالسيرفر بعد 5 محاولات.`, "warn");
+        engine.log(`[⏳] انتظار فترة تهدئة ومزامنة شبكة (60 ثانية) قبل تكرار محاولات الإخراج للجولة الثانية...`, "info");
+        await sleep(60000);
+
+        // الجولة الثانية: 5 محاولات إخراج أخرى
+        childEjected = await executeEjectionAttemptsCycle(2);
+      }
+
+      // ── الخطوة 5: الحل الحاسم النهائي - التحويل لنظام أهلاً أقوى كارت (MINION) ──
+      let minionSuccess = false;
+      const minionOrders: string[] = [];
+
+      if (!childEjected) {
+        engine.log(`[🚀] الخطوة 5/5 (الحل الحاسم 100%): الفرد ما زال معلقاً بالعائلة بعد جولتين كاملتين (10 محاولات إخراج). جاري ترحيل خط الفرد فوراً لنظام «أهلاً أقوى كارت» (MINION) لفك التعليق والارتباط نهائياً!`, "warn");
+
+        let minionEngine = engine;
+        if (childEmail && childPass) {
+          try {
+            const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+            childEngine.onLog = (l) => engine.log(l.message, l.level);
+            if (await childEngine.login(childEmail, childPass, false, true)) {
+              minionEngine = childEngine;
+            }
+          } catch (_) {}
+        }
+
+        for (let m = 1; m <= 3; m++) {
+          engine.log(`[*] إرسال طلب ترحيل لنظام أهلاً أقوى كارت MINION (محاولة ${m}/3)...`, "info");
+          const mRes = await minionEngine.migrateToMinionOrder(targetChild);
+          if (mRes.success) {
+            minionSuccess = true;
+            if (mRes.orderId) minionOrders.push(mRes.orderId);
+            engine.log(`[✓] تم قبول طلب الترحيل لنظام أهلا أقوى كارت بنجاح! (orderId: ${mRes.orderId || "مقبول"})`, "success");
+            break;
+          } else {
+            engine.log(`[!] طلب ترحيل MINION (${m}/3): رد الخادم (${mRes.raw || "فشل"})`, "warn");
+          }
+          await sleep(3000);
+        }
+
+        // Post-migration check
+        await sleep(4000);
+        const finalSt = await engine.getStatusAndChild(true);
+        const stillInFamily = !!finalSt.childNumber && finalSt.childNumber.includes(targetChild.slice(-8));
+        if (!stillInFamily) {
+          childEjected = true;
+          engine.log(`[🎉] تأكيد نهائي: تم فك ارتباط الفرد وخروجه من العائلة نهائياً وتحويله لنظام أهلا أقوى كارت بنجاح!`, "success");
+        }
+      }
+
+      // Update Supabase Database session
+      try {
+        await supabase.from("vip_sessions").update({
+          relationship_status: childEjected ? "no_child_linked" : session.relationship_status,
+          individual_current_plan: minionSuccess ? "أهلا أقوى كارت (MINION)" : session.individual_current_plan,
+          last_actual_operation: "smart_ejection_completed",
+          updated_at: new Date().toISOString(),
+        }).eq("id", session_id);
+
+        await supabase.from("vip_operation_history").insert({
+          session_id: session_id,
+          operation_type: "smart_ejection",
+          owner_account_ref: parentDial,
+          individual_account_ref: targetChild,
+          requested_action: `تسلسل الإخراج الذكي (${attemptOrders.length} محاولات إخراج${minionSuccess ? " + تحويل لـ MINION" : ""})`,
+          status: childEjected ? "succeeded" : "partial",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          result: {
+            child_removed: childEjected,
+            attempt_orders: attemptOrders,
+            minion_orders: minionOrders,
+            minion_success: minionSuccess,
+          },
+          is_automatic: body.is_automatic === true,
+        });
+      } catch (_) {}
+
+      return new Response(JSON.stringify({
+        success: childEjected || minionSuccess,
+        message: childEjected
+          ? "تم خروج الفرد من العائلة بنجاح تام وتأكيده بالسيرفر!"
+          : "تم تنفيذ كافة محاولات الإخراج والترحيل لنظام MINION بنجاح.",
+        child_removed: childEjected,
+        minion_success: minionSuccess,
+        orders: attemptOrders,
+        minion_orders: minionOrders,
+        logs: engine.logs,
+      }), {
+        status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
