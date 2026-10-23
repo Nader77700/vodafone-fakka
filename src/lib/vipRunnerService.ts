@@ -547,7 +547,15 @@ class VipRunnerService {
           this.notify(sessionId);
           await new Promise((r) => setTimeout(r, 5000));
           try {
-            await executeVipCheckStatus(sessionId);
+            const checkRes = await executeVipCheckStatus(sessionId) as any;
+            if (checkRes?.owner?.mix_balance !== undefined) {
+              st.latestOwnerMix = checkRes.owner.mix_balance;
+            }
+            if (checkRes?.child?.mix_balance !== undefined) {
+              st.latestChildMix = checkRes.child.mix_balance;
+            }
+            this.saveToLocalStorage(sessionId, st);
+            this.notify(sessionId);
           } catch (_) {}
           st.cycleCount -= 1;
           continue;

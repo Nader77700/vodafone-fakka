@@ -889,6 +889,19 @@ export async function executeMigrateChildToMinion(
 
 
 /**
+ * Action 14: Change Child Plan (to 270 or 180)
+ */
+export async function executeChangeChildPlan(
+  sessionId: string,
+  targetPlan = '7'
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('change_child_plan', {
+    session_id: sessionId,
+    target_plan: targetPlan,
+  });
+}
+
+/**
  * Action 13: Execute Smart Ejection Sequence (Renew -> Wait for mixes -> 5x Eject (20s delay) -> Verify -> Retry / MINION)
  */
 export async function executeSmartEjectionSequence(

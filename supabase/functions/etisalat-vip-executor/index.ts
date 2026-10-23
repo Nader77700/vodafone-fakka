@@ -1121,12 +1121,29 @@ async function handleSingleCycleInternal(
     }
   }
 
+  // ── PRE-FLIGHT LIVE CHECK OF BOTH ACCOUNTS (فحص استباقي شامل للأونر والفرد) ──
+  // طالما حدث انقطاع أو قبل بدء أي دورة، نتحقق مباشرة من رصيد الأونر ورصيد الفرد بالسيرفر
+  let childDetectedMix = 0;
+  if (prewarmedChildEngine) {
+    try {
+      const liveChildCheck = await prewarmedChildEngine.getStatusAndChild(true);
+      childDetectedMix = liveChildCheck.remainingMix || 0;
+      engine.log(`[*] فحص رصيد البداية المباشر: الأونر (${status.remainingMix.toLocaleString('en-US')} ميكس) | الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس).`, "info");
+      
+      // إذا كان الفرد يحمل رصيداً كبيراً (من دورة سابقة أو تحويل سابق حدث أثناء انقطاع الاتصال)
+      if (childDetectedMix > 2000 && (childDetectedMix >= status.remainingMix || status.remainingMix < 3000)) {
+        childHoldsMissing = true;
+        parkedMixAmount = childDetectedMix;
+        engine.log(`[🛡️] تم رصد ميكسات مركونة مسبقاً لدى الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس)! لن يتم إعادة التحويل من الأونر. استكمال الدورة فوراً بأمان.`, "success");
+      }
+    } catch (_) {}
+  }
+
   // ── INTELLIGENT ZERO-LOSS BALANCE CONTINUITY GATE ──
-  // Calculate verified historical peak balance from the immediate previous cycle only
-  // (NEVER deep-dive into old cycles that may hold outdated balances from before network resets).
   let verifiedPeakBalance = Math.max(
     parseInt(session.owner_mix_balance || "0", 10) || 0,
-    parseInt(session.peak_mix_balance || "0", 10) || 0
+    parseInt(session.peak_mix_balance || "0", 10) || 0,
+    parseInt(session.verified_peak_balance || "0", 10) || 0
   );
 
   try {
@@ -1143,14 +1160,13 @@ async function handleSingleCycleInternal(
       const sMix = Number(lastCycle.owner_balance_start) || 0;
       const rMix = Number(lastCycle.amount_transferred_indiv_to_owner) || 0;
       const recentValid = Math.max(fMix, sMix, rMix);
-      // Only consider if reasonably close to current session balance
-      if (recentValid > 0 && Math.abs(recentValid - verifiedPeakBalance) < 15000) {
+      if (recentValid > 0) {
         verifiedPeakBalance = Math.max(verifiedPeakBalance, recentValid);
       }
     }
   } catch (_e) {}
 
-  const isSuspiciouslyLow = verifiedPeakBalance > 3000 && (status.remainingMix < verifiedPeakBalance * 0.70);
+  const isSuspiciouslyLow = !childHoldsMissing && verifiedPeakBalance > 3000 && (status.remainingMix < verifiedPeakBalance * 0.70);
 
   let childHoldsMissing = false;
   let childDetectedMix = 0;
@@ -1758,8 +1774,32 @@ async function handleSingleCycleInternal(
     }
 
     // STRICT ZERO-LOSS PROTECTION GATE:
+    // Check if the Child STILL holds the missing balance before jumping to emergency stop
+    let childStillHolds = 0;
+    if (prewarmedChildEngine) {
+      try {
+        const cSt = await prewarmedChildEngine.getStatusAndChild(true);
+        childStillHolds = cSt.remainingMix || 0;
+      } catch (_) {}
+    }
+
+    if (childStillHolds >= expectedMinBalance * 0.65 && childStillHolds > 1500) {
+      engine.log(`[🛡️] فحص الأمان المزدوج: الميكسات (${childStillHolds.toLocaleString('en-US')} ميكس) ما زالت محفوظة بالكامل بأمان بحساب الفرد ولم تُفقد! جاري إعادة الاسترجاع للأونر...`, "info");
+      try {
+        await prewarmedChildEngine.transferMix(engine.ownerDial, childStillHolds, "Hekaya_XRP_MIX_Child_1");
+        await sleep(4500);
+        const postRecoveryStatus = await engine.getStatusAndChild(true);
+        if (postRecoveryStatus.remainingMix >= expectedMinBalance) {
+          finalStatus = postRecoveryStatus;
+          engine.log(`[✓] تم استرجاع الميكسات بنجاح وتأكيد رصيد الأونر: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
+        }
+      } catch (_) {}
+    }
+
     if (finalStatus.remainingMix < expectedMinBalance) {
-      const emergencyMsg = `توقف أمان حرج: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). تم إيقاف الدورة والأتمتة فوراً لحماية الرصيد ومنع التصفير!`;
+      const emergencyMsg = childStillHolds > 1500
+        ? `توقف أمان لحفظ الميكسات: الميكسات (${childStillHolds.toLocaleString('en-US')} ميكس) محفوظة بأمان تام في حساب الفرد، ولم تصل للأونر بعد (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس). الرصيد آمن 100%.`
+        : `توقف أمان حرج: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). تم إيقاف الدورة والأتمتة لحماية الرصيد ومنع التصفير!`;
       engine.log(`[-] ${emergencyMsg}`, "error");
 
       await sendStep("safety_stop", 5, "توقف أمان - حماية الرصيد", emergencyMsg);
@@ -3449,53 +3489,41 @@ serve(async (req: Request) => {
         childEjected = await executeEjectionAttemptsCycle(2);
       }
 
-      // ── الخطوة 5: الحل الحاسم النهائي - التحويل لنظام أهلاً أقوى كارت (MINION) ──
-      let minionSuccess = false;
-      const minionOrders: string[] = [];
+      // ── الخطوة 5: التحقق النهائي والتحويل لنظام 270 أو تفعيل زر MINION اليدوي ──
+      let childPlan270Converted = false;
+      let canMigrateMinion = false;
 
-      if (!childEjected) {
-        engine.log(`[🚀] الخطوة 5/5 (الحل الحاسم 100%): الفرد ما زال معلقاً بالعائلة بعد جولتين كاملتين (10 محاولات إخراج). جاري ترحيل خط الفرد فوراً لنظام «أهلاً أقوى كارت» (MINION) لفك التعليق والارتباط نهائياً!`, "warn");
-
-        let minionEngine = engine;
+      if (childEjected) {
+        engine.log(`[🎉] تأكيد نهائي: خرج الفرد (${targetChild}) من عائلة الأونر بنجاح تام!`, "success");
+        engine.log(`[🚀] جاري تحويل خط الفرد تلقائياً لنظام 270 (Hekaya_XRP_MIX_Parent_7)...`, "info");
         if (childEmail && childPass) {
           try {
             const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
             childEngine.onLog = (l) => engine.log(l.message, l.level);
             if (await childEngine.login(childEmail, childPass, false, true)) {
-              minionEngine = childEngine;
+              const pOk = await childEngine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
+              if (pOk) {
+                childPlan270Converted = true;
+                engine.log(`[✓] تم تحويل خط الفرد بنجاح تام إلى نظام 270 (Parent 7)!`, "success");
+              } else {
+                engine.log(`[!] تم طلب تحويل الفرد لـ 270، أو يمكنك الضغط على زر تحويل الفرد لـ 270 يدوياً.`, "warn");
+              }
             }
-          } catch (_) {}
-        }
-
-        for (let m = 1; m <= 3; m++) {
-          engine.log(`[*] إرسال طلب ترحيل لنظام أهلاً أقوى كارت MINION (محاولة ${m}/3)...`, "info");
-          const mRes = await minionEngine.migrateToMinionOrder(targetChild);
-          if (mRes.success) {
-            minionSuccess = true;
-            if (mRes.orderId) minionOrders.push(mRes.orderId);
-            engine.log(`[✓] تم قبول طلب الترحيل لنظام أهلا أقوى كارت بنجاح! (orderId: ${mRes.orderId || "مقبول"})`, "success");
-            break;
-          } else {
-            engine.log(`[!] طلب ترحيل MINION (${m}/3): رد الخادم (${mRes.raw || "فشل"})`, "warn");
+          } catch (cErr: any) {
+            engine.log(`[!] خطأ في تحويل الفرد لـ 270: ${cErr?.message || cErr}`, "warn");
           }
-          await sleep(3000);
         }
-
-        // Post-migration check
-        await sleep(4000);
-        const finalSt = await engine.getStatusAndChild(true);
-        const stillInFamily = !!finalSt.childNumber && finalSt.childNumber.includes(targetChild.slice(-8));
-        if (!stillInFamily) {
-          childEjected = true;
-          engine.log(`[🎉] تأكيد نهائي: تم فك ارتباط الفرد وخروجه من العائلة نهائياً وتحويله لنظام أهلا أقوى كارت بنجاح!`, "success");
-        }
+      } else {
+        canMigrateMinion = true;
+        engine.log(`[⚠️] الفرد ما زال معلقاً بعائلة الأونر بعد جولتين كاملتين (10 محاولات إخراج متباعدة).`, "warn");
+        engine.log(`[🔔] لم يتم التحويل التلقائي لـ MINION بناءً على تعليماتك. تم تفعيل زر [حان الآن تحويل الفرد لنظام أهلاً أقوى كارت MINION لفك التعليق] بالواجهة لتقوم بالضغط عليه يدوياً إذا رغبت.`, "warn");
       }
 
       // Update Supabase Database session
       try {
         await supabase.from("vip_sessions").update({
-          relationship_status: childEjected ? "no_child_linked" : session.relationship_status,
-          individual_current_plan: minionSuccess ? "أهلا أقوى كارت (MINION)" : session.individual_current_plan,
+          relationship_status: childEjected ? "none" : session.relationship_status,
+          individual_current_plan: childPlan270Converted ? "حكاية عيلة 270" : session.individual_current_plan,
           last_actual_operation: "smart_ejection_completed",
           updated_at: new Date().toISOString(),
         }).eq("id", session_id);
@@ -3505,34 +3533,74 @@ serve(async (req: Request) => {
           operation_type: "smart_ejection",
           owner_account_ref: parentDial,
           individual_account_ref: targetChild,
-          requested_action: `تسلسل الإخراج الذكي (${attemptOrders.length} محاولات إخراج${minionSuccess ? " + تحويل لـ MINION" : ""})`,
+          requested_action: `تسلسل الإخراج الذكي (${attemptOrders.length} محاولات إخراج${childPlan270Converted ? " + تحويل الفرد لـ 270" : ""}${canMigrateMinion ? " + فتح زر MINION اليدوي" : ""})`,
           status: childEjected ? "succeeded" : "partial",
           started_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
           result: {
             child_removed: childEjected,
             attempt_orders: attemptOrders,
-            minion_orders: minionOrders,
-            minion_success: minionSuccess,
+            child_plan_270_converted: childPlan270Converted,
+            can_migrate_minion: canMigrateMinion,
           },
           is_automatic: body.is_automatic === true,
         });
       } catch (_) {}
 
       return new Response(JSON.stringify({
-        success: childEjected || minionSuccess,
+        success: childEjected,
         message: childEjected
-          ? "تم خروج الفرد من العائلة بنجاح تام وتأكيده بالسيرفر!"
-          : "تم تنفيذ كافة محاولات الإخراج والترحيل لنظام MINION بنجاح.",
+          ? `تم خروج الفرد من العائلة بنجاح${childPlan270Converted ? " وتم تحويله لنظام 270!" : "!"}`
+          : "لم يخرج الفرد بعد جولتي إخراج. حان الآن وقت التحويل إلى أهلاً أقوى كارت (MINION) يدوياً لفك التعليق.",
         child_removed: childEjected,
-        minion_success: minionSuccess,
+        child_plan_270_converted: childPlan270Converted,
+        can_migrate_minion: canMigrateMinion,
         orders: attemptOrders,
-        minion_orders: minionOrders,
         logs: engine.logs,
-      }), {
-        status: 200,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+      }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+    // ══════════════════════════════════════════════════════════════════
+    // ACTION 14: change_child_plan (تحويل خط الفرد لنظام 270 أو 180)
+    // ══════════════════════════════════════════════════════════════════
+    if (action === "change_child_plan") {
+      if (!childEmail || !childPass) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "بيانات تسجيل دخول حساب الفرد غير متوفرة في الجلسة.",
+          logs: engine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+      childEngine.onLog = (l) => engine.log(l.message, l.level);
+      if (!await childEngine.login(childEmail, childPass, false, true)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "فشل تسجيل الدخول لحساب الفرد.",
+          logs: childEngine.logs,
+        }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      }
+
+      const targetPlan = body.target_plan === "6" ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7";
+      const ratePlanId = body.target_plan === "6" ? "951" : "";
+      const ok = await childEngine.changePlan(targetPlan, ratePlanId);
+
+      if (ok) {
+        childEngine.log(`[✓] تم تحويل خط الفرد بنجاح إلى: ${targetPlan === "Hekaya_XRP_MIX_Parent_7" ? "نظام 270" : "نظام 180"}!`, "success");
+        await supabase
+          .from("vip_sessions")
+          .update({
+            individual_current_plan: targetPlan === "Hekaya_XRP_MIX_Parent_7" ? "حكاية عيلة 270" : "حكاية عيلة 180",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", session_id);
+      }
+
+      return new Response(JSON.stringify({
+        success: ok,
+        message: ok ? "تم تحويل خط الفرد إلى نظام 270 بنجاح!" : "فشل تحويل خط الفرد إلى نظام 270",
+        logs: childEngine.logs,
+      }), { status: ok ? 200 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ success: false, error: `Invalid action: ${action}` }), {

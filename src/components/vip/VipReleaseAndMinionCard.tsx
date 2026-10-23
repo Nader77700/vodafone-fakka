@@ -31,6 +31,7 @@ import {
   executeSmartEjectionSequence,
   updateVipAutoEjectSetting,
   executeVipCheckStatusStream,
+  executeChangeChildPlan,
   type VipExecutionLog,
 } from '@/lib/vipApi';
 
@@ -62,6 +63,9 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
   const [logs, setLogs] = useState<VipExecutionLog[]>([]);
   const [phase1Orders, setPhase1Orders] = useState<string[]>([]);
   const [minionOrders, setMinionOrders] = useState<string[]>([]);
+  const [canMigrateMinionManually, setCanMigrateMinionManually] = useState<boolean>(false);
+  const [childConvertedTo270, setChildConvertedTo270] = useState<boolean>(false);
+  const [isChangingPlan270, setIsChangingPlan270] = useState<boolean>(false);
 
   // Auto-Eject setting state
   const [autoEjectEnabled, setAutoEjectEnabled] = useState<boolean>(
@@ -137,6 +141,16 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
         setMinionOrders((res as any).minion_orders);
       }
 
+      if ((res as any).can_migrate_minion) {
+        setCanMigrateMinionManually(true);
+      } else {
+        setCanMigrateMinionManually(false);
+      }
+
+      if ((res as any).child_plan_270_converted) {
+        setChildConvertedTo270(true);
+      }
+
       if (res.success) {
         setProgressPercent(100);
         setCurrentStage('completed');
@@ -145,7 +159,11 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
       } else {
         setProgressPercent(75);
         setCurrentStage('error');
-        toast.error(res.error || 'تم تنفيذ الخطوات مع ملاحظات خادم اتصالات.');
+        if ((res as any).can_migrate_minion) {
+          toast.warning('تعذر خروج الفرد تلقائياً. يرجى الضغط على زر التحويل لـ MINION أدناه لفك التعليق.');
+        } else {
+          toast.error(res.error || 'تم تنفيذ الخطوات مع ملاحظات خادم اتصالات.');
+        }
       }
     } catch (err: any) {
       addLocalLog(`[-] فشل الاتصال: ${err?.message || 'خطأ غير متوقع'}`, 'error');
@@ -153,6 +171,28 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
       toast.error('تعذر استكمال السكريبت: ' + (err?.message || 'خطأ اتصال'));
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const handleMigrateChildPlan270 = async () => {
+    setIsChangingPlan270(true);
+    addLocalLog(`[⚡] بدء تحويل خط الفرد إلى نظام باقة 270 (Hekaya_XRP_MIX_Parent_7)...`, 'info');
+    try {
+      const res = await executeChangeChildPlan(session.id, '7');
+      if (res.logs && res.logs.length > 0) {
+        setLogs((prev) => [...prev, ...res.logs!]);
+      }
+      if (res.success) {
+        setChildConvertedTo270(true);
+        toast.success('تم تحويل خط الفرد بنجاح إلى نظام باقة 270!');
+        onRefresh?.();
+      } else {
+        toast.error(res.error || 'تعذر تحويل خط الفرد إلى باقة 270');
+      }
+    } catch (err: any) {
+      toast.error('خطأ: ' + (err?.message || 'تعذر الاتصال'));
+    } finally {
+      setIsChangingPlan270(false);
     }
   };
 
@@ -494,7 +534,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              1. تجديد باقة الأونر ➔ 2. انتظار استقرار ميكسات الفرد ➔ 3. إخراج الفرد 5 مرات بفاصل 20ث ➔ 4. فحص صارم (وتكرار بعد 60ث إذا لزم) ➔ 5. الحل الحاسم: تحويل لـ MINION لفك التعليق نهائياً
+              1. تجديد باقة الأونر ➔ 2. محاولات إخراج الفرد 5 مرات بفاصل 20ث ➔ 3. فحص صارم وتكرار دورة ثانية بعد تهدئة 60ث ➔ 4. تحويل خط الفرد تلقائياً إلى باقة 270 عند تأكيد خروجه ➔ 5. زر يدوي فوري للتحويل لـ MINION في حال تعليق الخط
             </p>
           </div>
 
@@ -639,8 +679,67 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               <Zap className={`w-3.5 h-3.5 text-emerald-500 ${isMigrating ? 'animate-spin' : ''}`} />
               <span className="truncate">4. تحويل لـ MINION (4x)</span>
             </Button>
+
+            {/* Step 5: Migrate Child to Plan 270 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMigrateChildPlan270}
+              disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict || isChangingPlan270}
+              className="h-8 text-xs border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/5 justify-start gap-2 col-span-1 sm:col-span-2 lg:col-span-4"
+            >
+              <Sparkles className={`w-3.5 h-3.5 text-purple-400 ${isChangingPlan270 ? 'animate-spin' : ''}`} />
+              <span className="truncate">5. تحويل خط الفرد إلى باقة 270 (Hekaya_XRP_MIX_Parent_7) يدوياً</span>
+            </Button>
           </div>
         </div>
+
+        {/* Stuck Child MINION Action Prompt Banner */}
+        {canMigrateMinionManually && (
+          <div className="p-4 rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-500/20 via-card to-red-500/10 space-y-3 shadow-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5 animate-pulse" />
+              <div className="space-y-1">
+                <h4 className="text-xs sm:text-sm font-bold text-red-400">
+                  ⚠️ حان الآن تحويل الفرد لنظام أهلاً أقوى كارت (MINION) لفك التعليق يدوياً
+                </h4>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  لم يخرج الفرد تلقائياً بعد محاولات الإخراج المكررة وجولات التهدئة (60 ثانية). يرجى الضغط على الزر أدناه لتحويل خط الفرد فوراً لنظام MINION لفك ارتباطه الإجباري بنظام اتصالات.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <Button
+                onClick={handleMigrateMinionOnly}
+                disabled={isRunning || isMigrating}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-9 px-5 gap-2 shadow-md"
+              >
+                {isMigrating ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>جاري تحويل خط الفرد إلى MINION...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    <span>تحويل خط الفرد إلى أهلاً أقوى كارت الآن (MINION)</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {childConvertedTo270 && (
+          <div className="p-3 rounded-xl border border-emerald-500/50 bg-emerald-500/10 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-xs font-semibold text-emerald-400">
+                تم بنجاح ترحيل خط الفرد الخارج إلى باقة 270 (Hekaya_XRP_MIX_Parent_7)
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Live Terminal & Response Orders */}
         {logs.length > 0 && (
