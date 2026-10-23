@@ -1,32 +1,35 @@
-# Theme Name: Dark
-# Vibe & Description: Against a dark base, information density is intentionally reduced, using whitespace and rhythm to structure content. Hierarchy is built primarily through font size, weight, and spacing rather than ornamentation. The overall design is highly restrained, with almost no shadows or strokes, keeping the interface calm and visually durable in dark environments.
+# DESIGN.md - Vodafone Fakka & Etisalat VIP Multi-Session Design System
 
-# Color
-""- Primary Background: #0B0F19;
-- Secondary Background / Cards: #0F172A.
-- Primary Text: #E5E7EB.
--Secondary Text: #9CA3AF.
--Border: #1F2937 (1px).
-- Unique Signal Color (selectable based on user requirements): Used for selected states, primary buttons, and current status indicators. → Should remain clear but not glaring in dark environments.
+## Vibe
+- Telecom Executive Cyberpunk & High-Security Dark Terminal (Dark Luxury, Crisp High-Contrast Telecommunications Dashboard with Neon Red & Gold Accents).
 
-# Font
-- Heading & Body: Montserrat (url: https://resource-static.bj.bcebos.com/fonts/Montserrat-VariableFont_wght.woff2)
-# Animation
-## Elemental animation
-- The animation is minimalist and linear. Elements slide into place along the grid lines;
-##Entrance animation
-- There is no bouncing or elasticity effect; the page scrolls naturally like a document with an ease-out effect.
-## Transition animation
-- Use a fade-in or slight shift when loading content;
-## Animation implementation
-- The project integrates the tailwindcss-intersect plugin, which allows you to achieve animation effects when elements enter the viewport in a manner similar to the following:
-opacity-0 intersect:opacity-100 transition duration-700
--Animations can also be achieved using motion/react.
+## Color
+- Primary: #DC2626 (Vibrant Telecom Red)
+- On Primary: #FFFFFF
+- Accent: #D97706 (Amber VIP Gold)
+- On Accent: #000000
+- Background: #0B0B0E (Ultra-Deep Obsidian Charcoal)
+- Foreground: #F4F4F5 (Crisp Off-White)
+- Muted: #1C1C24 (Subtle Elevated Surface)
+- Border: #2A2A38 (Dark Border Accent)
+- Secondary: #991B1B (Deep Wine Red)
 
-# Layout
-- Content is organized into clear modules. Ample white space is used to distinguish different sections.
-- Prefers left-aligned text and structured image layouts, avoiding decorative misalignments.
+## Typography
+- Heading: Cairo, Alexandria, Inter, sans-serif (family: 'Cairo', sans-serif, weight: 700)
+- Body: Cairo, Inter, system-ui, sans-serif (family: 'Cairo', sans-serif, weight: 400)
 
-# Elements
-- Prefers minimalist linear charts with uniform stroke thickness and no fill.
-- Shadow ≈ 0, border ≤ 1px, minimizes the button's visual impact; main button ≠ large color block, emphasizes text more.
+## Visual Language
+- Core visual signature: Deep charcoal terminal panels with glowing red/amber status pill badges, live telemetry indicators, and monospaced terminal consoles with emerald log feeds.
+- Material & depth: Layered elevation (0B0B0E base -> 14141A cards -> 1E1E28 interactive badges) with subtle 1px border glows.
+- Containers & buttons: Rounded rectangular control cards with crisp micro-borders, segmented session switchers with active glow, and icon-paired action triggers.
+- Layout rhythm: Compact telemetry headers, responsive session selector ribbon with session pills, clean separation between active session context and background runners.
+
+## Animation
+- Entrance: Session cards fade-slide 180ms ease-out.
+- Interaction: Active session pill expands smoothly with subtle ring highlight.
+- Console: Terminal log feed autoscrolls smoothly on incoming line updates.
+
+## Forbidden
+- No flat white surfaces or blinding bright backgrounds.
+- No mixing of session states or unisolated shared global variables.
+- No decorative emojis in technical headers or action buttons.

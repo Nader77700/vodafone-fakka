@@ -517,16 +517,33 @@ class EtisalatEngine {
                               /ميكسات|ميكس|وحدة/i.test(label)) &&
                               !/دقيقة|دقائق|ميجا/i.test(unit);
 
-          if (isMixBucket) {
-            if (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || meterType === "xrp_units" || meterType === "hekaya_units") {
-              if (remVal > mainMix) mainMix = remVal;
-            } else if (/CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة/i.test(label)) {
-              if (remVal > carriedMix) carriedMix = remVal;
-            } else if (/TRANSFER/i.test(oms) || /محول|تحويل|مسترجع/i.test(label) || (/عيلة/i.test(label) && /ميكس|وحدة/i.test(label))) {
+          if (isMixBucket && remVal > 0) {
+            allMixCandidates.push(remVal);
+            
+            // STRICT DISCRIMINATIVE BUCKET CATEGORIZATION:
+            // Transferred or family units must NEVER be swallowed into basic quota!
+            const isTransfer = /TRANSFER/i.test(oms) || /محول|تحويل|مسترجع/i.test(label) || (/عيلة/i.test(label) && /ميكس|وحدة/i.test(label));
+            const isCarried = /CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة|مرحل/i.test(label);
+            const isGeneral = (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || /الأساسية/i.test(label)) && !isTransfer && !isCarried;
+
+            if (isTransfer) {
               if (remVal > transferredMix) transferredMix = remVal;
-            }
-            if (remVal > 0) {
-              allMixCandidates.push(remVal);
+            } else if (isCarried) {
+              if (remVal > carriedMix) carriedMix = remVal;
+            } else if (isGeneral) {
+              if (remVal > mainMix) mainMix = remVal;
+            } else {
+              // General XRP bucket without explicit flags
+              if (mainMix === 0) {
+                mainMix = remVal;
+              } else if (remVal !== mainMix && remVal !== carriedMix && remVal !== transferredMix) {
+                // Distinct secondary bucket (e.g. transferred quota on XRP)
+                if (transferredMix === 0) {
+                  transferredMix = remVal;
+                } else {
+                  transferredMix += remVal;
+                }
+              }
             }
           }
         }
@@ -537,13 +554,12 @@ class EtisalatEngine {
         }
 
         const candidateMax = allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0;
-        // Sum basic quota and carried/transferred quota if both are present
+        // Sum basic quota, carried quota, and transferred quota when separate buckets exist
         const combinedMix = (mainMix > 0 && carriedMix > 0) ? (mainMix + carriedMix) : (mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : 0));
         const bucketSum = mainMix + carriedMix + transferredMix;
         
         // CRITICAL ZERO-LOSS FIX:
-        // Never allow a smaller combinedMix (e.g. 3,975) to hide a larger bucket (e.g. 80,025)
-        // that exists in allMixCandidates or transferredMix!
+        // Sum all separate buckets, and take the true maximum across combined sums and candidate values
         const remainingMix = Math.max(combinedMix, bucketSum, candidateMax);
 
         // 3. Child in family (fafNumberList/fafNumber/value)
@@ -1148,31 +1164,41 @@ async function handleSingleCycleInternal(
   }
 
   // ── INTELLIGENT ZERO-LOSS BALANCE CONTINUITY GATE ──
-  let verifiedPeakBalance = Math.max(
-    parseInt(session.owner_mix_balance || "0", 10) || 0,
-    parseInt(session.peak_mix_balance || "0", 10) || 0,
-    parseInt(session.verified_peak_balance || "0", 10) || 0
-  );
+  // For new sessions or Cycle 1 (current_cycle === 0 or newly initialized),
+  // do NOT inherit an old peak balance from an unrelated past session or previous number!
+  const isFirstCycleOfSession = (session.current_cycle === 0 || !session.current_cycle);
+  let verifiedPeakBalance = 0;
 
-  try {
-    const { data: lastCycle } = await supabase
-      .from("vip_cycle_history")
-      .select("final_verified_owner_balance, owner_balance_start, amount_transferred_indiv_to_owner")
-      .eq("session_id", session_id)
-      .order("cycle_number", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  if (!isFirstCycleOfSession) {
+    verifiedPeakBalance = Math.max(
+      parseInt(session.owner_mix_balance || "0", 10) || 0,
+      parseInt(session.peak_mix_balance || "0", 10) || 0
+    );
 
-    if (lastCycle) {
-      const fMix = Number(lastCycle.final_verified_owner_balance) || 0;
-      const sMix = Number(lastCycle.owner_balance_start) || 0;
-      const rMix = Number(lastCycle.amount_transferred_indiv_to_owner) || 0;
-      const recentValid = Math.max(fMix, sMix, rMix);
-      if (recentValid > 0) {
-        verifiedPeakBalance = Math.max(verifiedPeakBalance, recentValid);
+    try {
+      const { data: lastCycle } = await supabase
+        .from("vip_cycle_history")
+        .select("final_verified_owner_balance, owner_balance_start, amount_transferred_indiv_to_owner")
+        .eq("session_id", session_id)
+        .order("cycle_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastCycle) {
+        const fMix = Number(lastCycle.final_verified_owner_balance) || 0;
+        const sMix = Number(lastCycle.owner_balance_start) || 0;
+        const rMix = Number(lastCycle.amount_transferred_indiv_to_owner) || 0;
+        const recentValid = Math.max(fMix, sMix, rMix);
+        if (recentValid > 0) {
+          verifiedPeakBalance = Math.max(verifiedPeakBalance, recentValid);
+        }
       }
-    }
-  } catch (_e) {}
+    } catch (_e) {}
+  } else {
+    // In Cycle 1 or fresh start, the baseline is purely the live balance read directly from the SIM
+    verifiedPeakBalance = status.remainingMix;
+    engine.log(`[★] دورة انطلاق أولى للجلسة: تم فحص وتأكيد رصيد الأونر بالسيرفر (${status.remainingMix.toLocaleString('en-US')} ميكس) كنقطة بداية رسمية.`, "info");
+  }
 
   const isSuspiciouslyLow = !childHoldsMissing && verifiedPeakBalance > 3000 && (status.remainingMix < verifiedPeakBalance * 0.70);
 
@@ -1247,7 +1273,6 @@ async function handleSingleCycleInternal(
       try {
         await supabase.from("vip_sessions").update({
           owner_mix_balance: status.remainingMix,
-          verified_peak_balance: status.remainingMix,
           operation_state: "active",
           pause_reason: null,
           updated_at: new Date().toISOString(),
@@ -1446,7 +1471,7 @@ async function handleSingleCycleInternal(
         }
       }
 
-      if (verifiedPeakBalance > 5000 && childStatusMix < (verifiedPeakBalance * 0.7)) {
+      if (!isFirstCycleOfSession && verifiedPeakBalance > 5000 && childStatusMix < (verifiedPeakBalance * 0.7)) {
         engine.log(`[-] تنبيه طوارئ فائق: رصيد الأونر يظهر 0 ميكس بينما كان (${verifiedPeakBalance.toLocaleString('en-US')}) ميكس، والفرد لا يحمل هذا الرصيد (لديه فقط ${childStatusMix.toLocaleString('en-US')} ميكس)! تم إيقاف الدورة فوراً ومنع الترحيل لحماية ميكسات الأونر من التصفير.`, "error");
         await sendStep("safety_stop", 1, "توقف طوارئ لمنع التصفير", "تم حظر الترحيل: الميكسات غير مركونة عند الفرد");
         return {
@@ -1455,6 +1480,8 @@ async function handleSingleCycleInternal(
           error: `تم إيقاف الدورة لحماية ميكساتك: رصيد الأونر السابق (${verifiedPeakBalance.toLocaleString('en-US')} ميكس) لم يظهر عند الفرد (${childStatusMix.toLocaleString('en-US')}). تم منع الترحيل تلقائياً لحفظ رصيدك.`,
           logs: engine.logs,
         };
+      } else if (isFirstCycleOfSession) {
+        engine.log(`[✓] دورة بداية جديدة: الأونر يبدأ بدون ميكسات مسبقة، وجاهز للترحيل وتنزيل باقة الميكسات الأساسية الأولى!`, "info");
       }
     }
   }
@@ -1718,7 +1745,11 @@ async function handleSingleCycleInternal(
           }
         }
       } else {
-        engine.log(`[✓] تأكيد التحقق اللحظي: رصيد الفرد أصبح (${childPostVerify.remainingMix.toLocaleString('en-US')} ميكس)، تم تصفير وخصم الميكسات بنجاح تام من الفرد!`, "success");
+        if (childPostVerify.remainingMix === 0) {
+          engine.log(`[✓] تأكيد التحقق اللحظي: تم تفريغ وتصفير رصيد الفرد بالكامل (0 ميكس) وتأكيد وصول الميكسات للأونر بنجاح!`, "success");
+        } else {
+          engine.log(`[✓] تأكيد التحقق اللحظي: تم خصم الميكسات المحولة بنجاح (المتبقي بحساب الفرد: ${childPostVerify.remainingMix.toLocaleString('en-US')} ميكس حصة النظام المخصصة تلقائياً).`, "success");
+        }
         retOk = true;
         recoveredMixAmount = attemptAmount;
       }
@@ -1734,8 +1765,8 @@ async function handleSingleCycleInternal(
   // 7. STEP 5: Read Final Mixes & Cooldown (اكتمال الدورة واستراحة)
   await sendStep("cooldown", 5, "اكتمال الدورة واستراحة", "تحديث البيانات وفترة الاستراحة");
   
-  // Dedicated 4-second settling window for Etisalat billing nodes to reflect transferred quota
-  await sleep(4000);
+  // Dedicated 6-second settling window for Etisalat billing nodes to reflect transferred quota
+  await sleep(6000);
   let finalStatus = await engine.getStatusAndChild(true);
 
   // POST-RECOVERY STRICT BALANCE VERIFICATION (التحقق الصارم من عدم فقدان الميكسات):
@@ -1744,14 +1775,15 @@ async function handleSingleCycleInternal(
   if (expectedMinBalance > 0 && finalStatus.remainingMix < expectedMinBalance) {
     engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة المعمقة مع اتصالات...`, "info");
     
-    for (let syncAttempt = 1; syncAttempt <= 3; syncAttempt++) {
-      await sleep(2000);
+    // Extended sync loop: up to 5 attempts with adaptive delay for billing propagation
+    for (let syncAttempt = 1; syncAttempt <= 5; syncAttempt++) {
+      await sleep(3000);
       try {
-        if (syncAttempt === 2) {
+        if (syncAttempt === 2 || syncAttempt === 4) {
           await engine.login(ownerEmail, ownerPass, true, true);
         }
         const recheckStatus = await engine.getStatusAndChild(true);
-        engine.log(`[*] فحص تسوية رصيد الأونر بالسيرفر (${syncAttempt}/3): الرصيد المقروء (${recheckStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس)...`, "info");
+        engine.log(`[*] فحص تسوية رصيد الأونر بالسيرفر (${syncAttempt}/5): الرصيد المقروء (${recheckStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس)...`, "info");
         if (recheckStatus.remainingMix >= expectedMinBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
           finalStatus = recheckStatus;
           engine.log(`[+] تم تحديث واعتماد رصيد الأونر بالسيرفر بنجاح: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
@@ -1795,7 +1827,7 @@ async function handleSingleCycleInternal(
         await supabase.from("vip_sessions").update({
           operation_state: "paused",
           automation_enabled: false,
-          owner_mix_balance: finalStatus.remainingMix,
+          owner_mix_balance: Math.max(finalStatus.remainingMix, parkedMixAmount, Number(session.owner_mix_balance) || 0),
           stop_reason: emergencyMsg,
           updated_at: new Date().toISOString(),
         }).eq("id", session_id);
@@ -3032,7 +3064,6 @@ serve(async (req: Request) => {
         owner_mix_balance: liveOwner.remainingMix,
         individual_mix_balance: liveChildMix,
         owner_current_plan: planName,
-        verified_peak_balance: liveOwner.remainingMix,
         operation_state: "active",
         pause_reason: null,
         current_step: "idle",

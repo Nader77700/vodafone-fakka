@@ -50,7 +50,8 @@ export function parseBalancesFromLog(message: string): {
   const childParkedMatch = clean.match(/الفرد جاهز ولديه\s*\(?(\d+)\)?\s*ميكس/);
   if (childParkedMatch) {
     res.childMix = parseInt(childParkedMatch[1], 10);
-    res.ownerMix = 0; // While parked, owner temporarily holds 0 until drop
+    // STRICT ZERO-LOSS PROTECTION: NEVER reset ownerMix to 0 while parked!
+    // The user's mixes are preserved in transit, not wiped.
   }
 
   // 4. "جاري تحويل (66100) ميكس إلى الرقم"
@@ -62,7 +63,11 @@ export function parseBalancesFromLog(message: string): {
   // 5. "تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (6000)"
   const dropMatch = clean.match(/تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح:\s*\(?(\d+)\)?/);
   if (dropMatch) {
-    res.ownerMix = parseInt(dropMatch[1], 10);
+    // Only adopt if it represents an increase or valid baseline
+    const droppedVal = parseInt(dropMatch[1], 10);
+    if (droppedVal > 0) {
+      res.ownerMix = droppedVal;
+    }
   }
 
   // 6. "فحص رصيد الفرد الفعلي بالسيرفر: 0 ميكس متبقية"
@@ -234,7 +239,9 @@ class VipRunnerService {
     state.logs = [...state.logs.slice(-299), { time, level, message }];
 
     const parsed = parseBalancesFromLog(message);
-    if (parsed.ownerMix !== undefined) state.latestOwnerMix = parsed.ownerMix;
+    if (parsed.ownerMix !== undefined && parsed.ownerMix > 0) {
+      state.latestOwnerMix = parsed.ownerMix;
+    }
     if (parsed.childMix !== undefined) state.latestChildMix = parsed.childMix;
     if (parsed.ownerPlan) state.latestOwnerPlan = parsed.ownerPlan;
 
@@ -486,7 +493,7 @@ class VipRunnerService {
 
               // Parse balances directly from the streaming log line
               const parsed = parseBalancesFromLog(liveLog.message);
-              if (parsed.ownerMix !== undefined) {
+              if (parsed.ownerMix !== undefined && parsed.ownerMix > 0) {
                 st.latestOwnerMix = parsed.ownerMix;
               }
               if (parsed.childMix !== undefined) {

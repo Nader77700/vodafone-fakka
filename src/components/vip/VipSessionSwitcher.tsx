@@ -50,10 +50,12 @@ import {
   ArrowRightLeft,
   Radio,
   Flame,
+  Edit2,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import { vipRunnerService } from '@/lib/vipRunnerService';
 import { Progress } from '@/components/ui/progress';
+import { VipSessionEditModal } from './VipSessionEditModal';
 import {
   createVipSession,
   archiveVipSession,
@@ -88,6 +90,8 @@ export function VipSessionSwitcher({
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [openDefaultChildModal, setOpenDefaultChildModal] = useState(false);
+  const [openEditCredsModal, setOpenEditCredsModal] = useState(false);
+  const [editSessionTarget, setEditSessionTarget] = useState<VipSession | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // New session form states matching EtisalatBot script
@@ -458,9 +462,13 @@ export function VipSessionSwitcher({
                 const isRunning = runnerState.isRunning;
                 const ownerId = sess.owner_account_identifier || sess.owner_email || 'يُستخرج بالفحص';
                 const childId = sess.individual_account_identifier || sess.individual_email || 'غير مضاف';
-                const ownerMix = (runnerState.latestOwnerMix !== undefined && runnerState.latestOwnerMix !== null)
+                const liveOwnerMix = (runnerState.latestOwnerMix !== undefined && runnerState.latestOwnerMix !== null)
                   ? runnerState.latestOwnerMix
                   : (sess.owner_mix_balance || 0);
+                const liveChildMix = runnerState.latestChildMix || 0;
+                // Zero-loss visual shield: always show the peak protected balance during active cycles
+                const ownerMix = Math.max(liveOwnerMix, (sess.owner_mix_balance || 0));
+                const isParked = runnerState.currentStep === 'parking' || runnerState.currentStep === 'migrating' || runnerState.currentStep === 'waiting_server';
                 const targetMix = sess.target_mix_balance || 50000;
                 const progressPct = Math.min(100, Math.round((ownerMix / targetMix) * 100));
 
@@ -492,6 +500,19 @@ export function VipSessionSwitcher({
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditSessionTarget(sess);
+                            setOpenEditCredsModal(true);
+                          }}
+                          className="h-5 w-5 p-0 text-muted-foreground hover:text-amber-500"
+                          title="تعديل بيانات الجلسة (البريد وكلمة المرور)"
+                        >
+                          <Edit2 className="w-2.5 h-2.5" />
+                        </Button>
                         {isRunning ? (
                           <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 flex items-center gap-1 animate-pulse">
                             <Flame className="w-3 h-3 text-emerald-400" />
@@ -539,9 +560,16 @@ export function VipSessionSwitcher({
                           <Zap className="w-3 h-3 text-amber-400 shrink-0" />
                           <span>رصيد الميكسات:</span>
                         </span>
-                        <span className="font-extrabold text-foreground font-mono">
-                          {ownerMix.toLocaleString('ar-EG')} <span className="text-[10px] text-muted-foreground">ميكس</span>
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {isParked && liveChildMix > 0 && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded font-bold">
+                              مركونة بأمان
+                            </span>
+                          )}
+                          <span className="font-extrabold text-foreground font-mono">
+                            {ownerMix.toLocaleString('ar-EG')} <span className="text-[10px] text-muted-foreground">ميكس</span>
+                          </span>
+                        </div>
                       </div>
 
                       {/* Mini Target Progress */}
@@ -959,6 +987,22 @@ export function VipSessionSwitcher({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Modal: Edit Session Credentials ── */}
+      {editSessionTarget && (
+        <VipSessionEditModal
+          open={openEditCredsModal}
+          onOpenChange={setOpenEditCredsModal}
+          sessionId={editSessionTarget.id}
+          sessionName={editSessionTarget.session_name}
+          currentDial={editSessionTarget.owner_account_identifier || ''}
+          currentOwnerEmail={editSessionTarget.owner_email || ''}
+          currentChildEmail={editSessionTarget.individual_email || ''}
+          onSuccess={() => {
+            onSessionsChanged();
+          }}
+        />
+      )}
     </>
   );
 }

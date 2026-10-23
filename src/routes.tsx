@@ -6,26 +6,61 @@ import LoginPage from './pages/LoginPage';
 import MainLayout from './components/layouts/MainLayout';
 import HomePage from './pages/HomePage';
 
-// ── تحميل كسول لتسريع الفتح الأول ──────────────────────────────
-const ActivationPage        = lazy(() => import('./pages/ActivationPage'));
-const RechargePage          = lazy(() => import('./pages/RechargePage'));
-const FavoritesPage         = lazy(() => import('./pages/FavoritesPage'));
-const OperationsPage        = lazy(() => import('./pages/OperationsPage'));
-const StatisticsPage        = lazy(() => import('./pages/StatisticsPage'));
-const NotificationsPage     = lazy(() => import('./pages/NotificationsPage'));
-const SettingsPage          = lazy(() => import('./pages/SettingsPage'));
-const AdminDashboard        = lazy(() => import('./pages/AdminDashboard'));
-const AdminServicesControlPage = lazy(() => import('./pages/admin/AdminServicesControlPage'));
-const AdminHotfixPage          = lazy(() => import('./pages/admin/AdminHotfixPage'));
-const AdminLineInfoDebugPage   = lazy(() => import('./pages/admin/AdminLineInfoDebugPage'));
-const AdminVipRedSettingsPage  = lazy(() => import('./pages/admin/AdminVipRedSettingsPage'));
-const VipRedCenterPage          = lazy(() => import('./pages/vip-red/VipRedCenterPage'));
-const VipRedMerchantsPage       = lazy(() => import('./pages/vip-red/VipRedMerchantsPage'));
-const VipRedMerchantDetailsPage = lazy(() => import('./pages/vip-red/VipRedMerchantDetailsPage'));
-const VipRedRenewalsPage        = lazy(() => import('./pages/vip-red/VipRedRenewalsPage'));
-const VipRedRequestsPage        = lazy(() => import('./pages/vip-red/VipRedRequestsPage'));
-const VipPage                   = lazy(() => import('./pages/vip/VipPage'));
-const VipTemporarySharePage     = lazy(() => import('./pages/vip/VipTemporarySharePage'));
+// ── دالة تحميل كسول مرنة تدعم إعادة المحاولة التلقائية عند عثرات الشبكة أو تحديثات Vite ──
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>,
+  retries = 3
+) {
+  return lazy(async () => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await factory();
+      } catch (error: any) {
+        const isDynamicImportError =
+          error?.message?.includes('Failed to fetch dynamically imported module') ||
+          error?.name === 'TypeError' ||
+          String(error).includes('dynamically imported');
+
+        if (i < retries - 1 && isDynamicImportError) {
+          await new Promise((res) => setTimeout(res, 600 * (i + 1)));
+          continue;
+        }
+
+        if (isDynamicImportError && typeof window !== 'undefined') {
+          const key = 'vfp_dyn_reload';
+          const lastReload = parseInt(sessionStorage.getItem(key) || '0', 10);
+          if (Date.now() - lastReload > 8000) {
+            sessionStorage.setItem(key, String(Date.now()));
+            window.location.reload();
+          }
+        }
+        throw error;
+      }
+    }
+    return factory();
+  });
+}
+
+// ── تحميل كسول لتسريع الفتح الأول مع حماية من تعثر الوحدات ──────────────────────────────
+const ActivationPage        = lazyWithRetry(() => import('./pages/ActivationPage'));
+const RechargePage          = lazyWithRetry(() => import('./pages/RechargePage'));
+const FavoritesPage         = lazyWithRetry(() => import('./pages/FavoritesPage'));
+const OperationsPage        = lazyWithRetry(() => import('./pages/OperationsPage'));
+const StatisticsPage        = lazyWithRetry(() => import('./pages/StatisticsPage'));
+const NotificationsPage     = lazyWithRetry(() => import('./pages/NotificationsPage'));
+const SettingsPage          = lazyWithRetry(() => import('./pages/SettingsPage'));
+const AdminDashboard        = lazyWithRetry(() => import('./pages/AdminDashboard'));
+const AdminServicesControlPage = lazyWithRetry(() => import('./pages/admin/AdminServicesControlPage'));
+const AdminHotfixPage          = lazyWithRetry(() => import('./pages/admin/AdminHotfixPage'));
+const AdminLineInfoDebugPage   = lazyWithRetry(() => import('./pages/admin/AdminLineInfoDebugPage'));
+const AdminVipRedSettingsPage  = lazyWithRetry(() => import('./pages/admin/AdminVipRedSettingsPage'));
+const VipRedCenterPage          = lazyWithRetry(() => import('./pages/vip-red/VipRedCenterPage'));
+const VipRedMerchantsPage       = lazyWithRetry(() => import('./pages/vip-red/VipRedMerchantsPage'));
+const VipRedMerchantDetailsPage = lazyWithRetry(() => import('./pages/vip-red/VipRedMerchantDetailsPage'));
+const VipRedRenewalsPage        = lazyWithRetry(() => import('./pages/vip-red/VipRedRenewalsPage'));
+const VipRedRequestsPage        = lazyWithRetry(() => import('./pages/vip-red/VipRedRequestsPage'));
+const VipPage                   = lazyWithRetry(() => import('./pages/vip/VipPage'));
+const VipTemporarySharePage     = lazyWithRetry(() => import('./pages/vip/VipTemporarySharePage'));
 const SubscriptionHistoryPage = lazy(() => import('./pages/SubscriptionHistoryPage'));
 const UpdatesPage           = lazy(() => import('./pages/UpdatesPage'));
 const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));

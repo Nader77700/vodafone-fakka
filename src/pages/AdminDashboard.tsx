@@ -93,6 +93,7 @@ import AdminSmartEngine from '@/components/admin/AdminSmartEngine';
 import AdminReferralManagement from '@/components/admin/AdminReferralManagement';
 import AdminReferralRewards from '@/components/admin/AdminReferralRewards';
 import AdminReferralTesting from '@/components/admin/AdminReferralTesting';
+import { VipDelegationManagerTab } from '@/components/vip/VipDelegationManagerTab';
 import { formatError } from '@/lib/formatError';
 
 
@@ -104,7 +105,7 @@ type AdminTab =
   | 'numbers'  | 'globalstats' | 'recharge'  | 'operations' | 'logs'
   | 'notifications' | 'notif_automation' | 'navlinks' | 'settings' | 'assets' | 'giftbox' | 'integrity' | 'update_diag' | 'product_config' | 'server_config'
   | 'version_center' | 'live_monitoring' | 'crash_logs' | 'feature_mgmt' | 'card_feedbacks' | 'balance_products' | 'legacy_flex' | 'merchants' | 'member_monitor' | 'duplicate_accounts' | 'charge_throttles'
-  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer' | 'offers_center' | 'vip_red' | 'whatsapp_business';
+  | 'red_packages' | 'promotions' | 'security' | 'vodafone_cash_center' | 'referral_management' | 'referral_rewards' | 'referral_testing' | 'services_control' | 'hotfix' | 'line_info_debug' | 'disclaimer' | 'offers_center' | 'vip_red' | 'vip_delegation' | 'whatsapp_business';
 
 interface TabMeta {
   id: AdminTab;
@@ -124,6 +125,7 @@ const VISIBLE_TABS: TabMeta[] = [
   { id: 'globalstats',    label: 'إحصائيات',         desc: 'تقارير وإحصائيات متقدمة',           icon: TrendingUp },
   { id: 'recharge',       label: 'محرك الشحن',       desc: 'ربط سكربت الشحن الخارجي',          icon: Zap },
   { id: 'vodafone_cash_center', label: 'Vodafone Cash',    desc: 'إدارة عمليات فودافون كاش',          icon: Wallet },
+  { id: 'vip_delegation',    label: '👑 إدارة باقات VIP (الأونر والفرد)', desc: 'التحكم في وصول المستخدمين، سقف الميكسات، الخانات المصرح بها (50k/200k)، الجلسات، الفواصل، وإحصائيات الفشل والنجاح', icon: Crown },
   { id: 'referral_management', label: 'نظام الإحالات',    desc: 'إدارة أكواد الإحالة وسجلاتها',       icon: Gift },
   { id: 'referral_rewards',   label: 'Referral Rewards', desc: 'مهام ومكافآت وتحويلات الإحالات',      icon: Trophy },
   { id: 'referral_testing',   label: 'Referral Testing', desc: 'Sandbox — اختبار معزول عن Production', icon: FlaskConical },
@@ -6713,6 +6715,39 @@ function AdminDashboard() {
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
               <Loader2 className="w-6 h-6 animate-spin" />
               <p className="text-sm">جاري فتح إعدادات مراقبة خطوط ريد VIP...</p>
+            </div>
+          )}
+
+          {/* ════ إدارة باقات VIP (الأونر والفرد) ════ */}
+          {activeTab === 'vip_delegation' && (
+            <div className="space-y-4 page-enter">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-primary/20 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">
+                      لوحة تحكم باقات VIP (الأونر والفرد)
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      تحكم فوري خادمي (Zero-Trust): تحديد الخانات المصرح بها للمستخدمين (50k / 200k أو يدوي)، الفواصل الزمنية (50ث / 60ث)، عدد الجلسات، وسجل أسباب الفشل.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/vip')}
+                    className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold hover:brightness-110"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    فتح محطة تشغيل VIP
+                  </Button>
+                </div>
+              </div>
+
+              <VipDelegationManagerTab />
             </div>
           )}
 
