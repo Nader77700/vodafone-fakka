@@ -25,6 +25,7 @@ const VipRedMerchantDetailsPage = lazy(() => import('./pages/vip-red/VipRedMerch
 const VipRedRenewalsPage        = lazy(() => import('./pages/vip-red/VipRedRenewalsPage'));
 const VipRedRequestsPage        = lazy(() => import('./pages/vip-red/VipRedRequestsPage'));
 const VipPage                   = lazy(() => import('./pages/vip/VipPage'));
+const VipTemporarySharePage     = lazy(() => import('./pages/vip/VipTemporarySharePage'));
 const SubscriptionHistoryPage = lazy(() => import('./pages/SubscriptionHistoryPage'));
 const UpdatesPage           = lazy(() => import('./pages/UpdatesPage'));
 const BuildInfoPage         = lazy(() => import('./pages/BuildInfoPage'));
@@ -152,4 +153,8 @@ export const routes: RouteConfig[] = [
   { name: 'InvitePage', path: '/invite/:token', element: <S><InvitePage /></S>, public: true },
   { name: 'RefPage',    path: '/ref/:code',     element: <S><RefLandingPage /></S>, public: true },
   { name: 'Download',   path: '/download',    element: <S><DownloadPage /></S>, public: true },
+
+  // ── Standalone Isolated Temporary VIP Section Link ──
+  { name: 'VipTemporaryShare',      path: '/vip-share/:token', element: <S><VipTemporarySharePage /></S>, public: true },
+  { name: 'VipTemporaryShareAlias', path: '/temp-vip/:token',  element: <S><VipTemporarySharePage /></S>, public: true },
 ];

@@ -40,6 +40,19 @@
         100% { transform: scale(0.9); opacity: 0.8; }
       }
     </style>
+    <!-- ══ CRITICAL: تحويل روابط VIP المؤقتة إلى HashRouter تلقائياً ══ -->
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname;
+          if (p && (p.indexOf('/vip-share/') === 0 || p.indexOf('/temp-vip/') === 0)) {
+            if (!window.location.hash || window.location.hash.indexOf(p) === -1) {
+              window.location.replace('/#' + p);
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <!-- ══ CRITICAL: تطبيق الثيم قبل React لمنع الوميض ══ -->
     <script>
       (function() {
@@ -89,6 +102,20 @@
     <div id="boot-loader" style="position: fixed; inset: 0; z-index: 99999; background: #050000; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.3s ease;">
       <img src="/vfp-logo.png" alt="Vodafone Fakka Premium" style="width: 120px; height: 120px; animation: bl-pulse 2s infinite ease-in-out;" />
     </div>
+    
+    <!-- حماية أمان: إخفاء boot-loader تلقائياً حتى لا يعلق المستخدم أبداً مهما حدث -->
+    <script>
+      (function() {
+        setTimeout(function() {
+          var bl = document.getElementById('boot-loader');
+          if (bl) {
+            bl.style.opacity = '0';
+            bl.style.pointerEvents = 'none';
+            setTimeout(function() { bl.style.display = 'none'; }, 200);
+          }
+        }, 800);
+      })();
+    </script>
     
     <script>
       window.__STARTUP_STEP__ = 'HTML Parsed';

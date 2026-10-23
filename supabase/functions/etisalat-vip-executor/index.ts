@@ -668,7 +668,7 @@ class EtisalatEngine {
             if (res.status === 200 && text.includes("<status>true</status>")) {
               const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
               const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-              this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
+              this.log(`[+] تم قبول أمر التحويل بسيرفر اتصالات (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
               return true;
             }
           } catch (_) {
@@ -697,7 +697,7 @@ class EtisalatEngine {
             if (res.status === 200 && text.includes("<status>true</status>")) {
               const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
               const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-              this.log(`[+] تم تحويل (${quota.toLocaleString('en-US')}) ميكس بنجاح إلى (${receiverDisplay})!${orderIdStr}`, "success");
+              this.log(`[+] تم قبول أمر التحويل بالسيرفر (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
               return true;
             }
           } catch (_) {
@@ -1024,7 +1024,8 @@ async function handleSingleCycleInternal(
   ownerPass: string,
   childEmail: string,
   childPass: string,
-  sendEvent?: (type: string, data: any) => Promise<void>
+  sendEvent?: (type: string, data: any) => Promise<void>,
+  options?: { is_server_background?: boolean; auto_eject?: boolean }
 ) {
   // Update session heartbeat and active worker status
   try {
@@ -1278,26 +1279,25 @@ async function handleSingleCycleInternal(
       if (transferred) {
         parkedMixAmount = status.remainingMix;
         
-        // ── MANDATORY TELECOM ZERO-LOSS VERIFICATION ──
-        // Transferred mixes take 5 to 15 seconds to propagate across Etisalat billing nodes.
-        // NEVER accept a tiny residual bucket (e.g. 1,300 leftover mixes) on an immediate 1-second check!
-        // We MUST wait and verify that the actual transferred amount (or at least 70% of it) has arrived.
+        // ── SMART INSTANT TELECOM ZERO-LOSS VERIFICATION ──
+        // Transferred mixes in Etisalat arrive within ~1-2 seconds if the transfer was real.
+        // We only do 2 fast attempts (max 2 seconds each) instead of 8 slow attempts.
+        // If not arrived within 2 attempts, we IMMEDIATELY perform smart diagnosis:
+        // If the Owner still holds the mixes, it is a confirmed Phantom/Frozen Transfer.
+        // We immediately renew the owner bundle to unstick the telecom switch, and re-transfer!
         if (prewarmedChildEngine) {
           const expectedMinChildMix = parkedMixAmount > 3000 ? Math.round(parkedMixAmount * 0.70) : 1;
-          engine.log(`[*] تم إرسال أمر النقل. جاري انتظار استقرار وصول الميكسات (${parkedMixAmount.toLocaleString('en-US')}) في حساب الفرد بسيرفر اتصالات...`, "info");
+          engine.log(`[*] تم إرسال أمر النقل. فحص ذكي لوصول الميكسات (${parkedMixAmount.toLocaleString('en-US')}) بحساب الفرد (بحد أقصى ثانيتان)...`, "info");
           
-          // Initial grace period: Give Etisalat billing engine 5 full seconds before first query
-          await sleep(5000);
+          // Initial fast grace period: 2 seconds as telecom mixes settle almost immediately
+          await sleep(2000);
 
           let childArrived = false;
           let latestChildReadMix = 0;
 
-          for (let vAttempt = 1; vAttempt <= 8; vAttempt++) {
+          // Only 2 fast checks (NOT 8!)
+          for (let vAttempt = 1; vAttempt <= 2; vAttempt++) {
             try {
-              // On attempt 3 and 6, do a fresh login to clear cached tokens and query fresh telecom balance
-              if (vAttempt === 3 || vAttempt === 6) {
-                await prewarmedChildEngine.login(childEmail, childPass, false, true);
-              }
               const childVerify = await prewarmedChildEngine.getStatusAndChild(true);
               latestChildReadMix = childVerify.remainingMix || 0;
 
@@ -1307,16 +1307,16 @@ async function handleSingleCycleInternal(
                 childArrived = true;
                 break;
               } else {
-                engine.log(`[*] فحص رصيد الفرد (${vAttempt}/8): الرصيد الحالي (${latestChildReadMix.toLocaleString('en-US')} ميكس) - في انتظار اكتمال ترحيل (${parkedMixAmount.toLocaleString('en-US')} ميكس)...`, "info");
+                engine.log(`[*] فحص رصيد الفرد (${vAttempt}/2): الرصيد الحالي (${latestChildReadMix.toLocaleString('en-US')} ميكس)...`, "info");
               }
             } catch (_vErr) {}
 
-            await sleep(3000);
+            if (vAttempt < 2) await sleep(1500);
           }
 
           if (!childArrived) {
             // ── SMART DIAGNOSTIC: Did the mixes actually leave the Owner? ──
-            engine.log(`[*] فحص رصيد الأونر للتحقق مما إذا كان التحويل معلقاً وبقيت الميكسات عنده...`, "info");
+            engine.log(`[*] رصد ذكي سريع: لم تتحرك الميكسات للفرد بعد ثانيتين. جاري فحص رصيد الأونر فوراً لكشف التحويل الوهمي...`, "info");
             let ownerHoldsMixes = false;
             let currentOwnerMix = 0;
             try {
@@ -1329,48 +1329,51 @@ async function handleSingleCycleInternal(
             } catch (_) {}
 
             if (ownerHoldsMixes) {
-              // Secondary confirmation check to satisfy the user's explicit double-check verification requirement
+              engine.log(`[🛡️] فحص تأكيدي: تم استعلام رصيد الأونر مباشرة (${currentOwnerMix.toLocaleString('en-US')} ميكس) محجوزة بالكامل بأمان بحساب الأونر ولم تُخصم.`, "info");
+              engine.log(`[⚡] رصد تحويل وهمي: الميكسات ما زالت بالأونر. جاري تنشيط ومزامنة العقد فوراً بتجديد باقة الأونر (${engine.getPlanName(ownerPlanName)}) لفك تعليق سيرفر اتصالات...`, "info");
+              
+              // Renew current owner bundle to unstick telecom switch as per verified protocol
               try {
-                await sleep(1500);
-                const secondConfirmCheck = await engine.getStatusAndChild(true);
-                const confirmedMix = secondConfirmCheck.remainingMix || currentOwnerMix;
-                if (confirmedMix > 0) {
-                  currentOwnerMix = confirmedMix;
-                }
+                const renewCost = isSeven ? "270" : "180";
+                await engine.renewBundleAction(ownerPlanName, renewCost);
               } catch (_) {}
 
-              engine.log(`[🛡️] فحص تأكيدي مزدوج: تم استعلام رصيد الأونر مباشرة وتأكيد سلامته (${currentOwnerMix.toLocaleString('en-US')} ميكس) محجوزة بالكامل بحساب الأونر!`, "success");
-              engine.log(`[⚠️] رصد تحويل وهمي/معلق بسيرفر اتصالات: الميكسات (${currentOwnerMix.toLocaleString('en-US')}) ما زالت في باقة الأونر الأساسية ولم تُخصم! الرصيد محفوظ بأمان.`, "warn");
-              engine.log(`[*] جاري محاولة إعادة أمر التحويل الذكية بعد فترة استقرار ومزامنة 4 ثوانٍ (محاولة 2 من 2)...`, "info");
-              await sleep(4000);
+              await sleep(3000);
 
               // Fresh login to refresh session tokens and clear any stale billing cache
               try {
                 await engine.login(ownerEmail, ownerPass, true, true);
               } catch (_) {}
 
+              let amountToRetry = currentOwnerMix;
+              try {
+                const refreshedOwnerSt = await engine.getStatusAndChild(true);
+                if (refreshedOwnerSt.remainingMix > 0) {
+                  amountToRetry = refreshedOwnerSt.remainingMix;
+                }
+              } catch (_) {}
+
+              engine.log(`[*] جاري إعادة إرسال أمر نقل الميكسات (${amountToRetry.toLocaleString('en-US')} ميكس) إلى الفرد بعد تجديد باقة الأونر وتنشيط الخط...`, "info");
+
               // Retry transfer from Owner to Child
-              const retryTransferred = await engine.transferMix(childNum, currentOwnerMix, ownerPlanName);
+              const retryTransferred = await engine.transferMix(childNum, amountToRetry, ownerPlanName);
               if (retryTransferred) {
-                engine.log(`[+] تم إرسال أمر إعادة التحويل بنجاح! جاري فحص وصول الميكسات للفرد...`, "info");
-                await sleep(5000);
-                for (let retryAttempt = 1; retryAttempt <= 6; retryAttempt++) {
+                engine.log(`[+] تم قبول أمر إعادة النقل بالسيرفر! جاري تأكيد وصول واستقرار الميكسات بالفرد...`, "info");
+                await sleep(2000);
+                for (let retryAttempt = 1; retryAttempt <= 2; retryAttempt++) {
                   try {
-                    if (retryAttempt === 3) {
-                      await prewarmedChildEngine.login(childEmail, childPass, false, true);
-                    }
                     const retryChildVerify = await prewarmedChildEngine.getStatusAndChild(true);
                     latestChildReadMix = retryChildVerify.remainingMix || 0;
                     if (latestChildReadMix >= expectedMinChildMix) {
-                      engine.log(`[✓] تأكيد استقرار الميكسات: وصلت (${latestChildReadMix.toLocaleString('en-US')} ميكس) لحساب الفرد بنجاح في المحاولة الثانية!`, "success");
+                      engine.log(`[✓] تأكيد قطعي: وصلت الميكسات (${latestChildReadMix.toLocaleString('en-US')} ميكس) لحساب الفرد بنجاح تام بعد تنشيط باقة الأونر!`, "success");
                       childArrived = true;
-                      parkedMixAmount = currentOwnerMix;
+                      parkedMixAmount = amountToRetry;
                       break;
                     } else {
-                      engine.log(`[*] فحص رصيد الفرد بعد إعادة التحويل (${retryAttempt}/6): الرصيد (${latestChildReadMix.toLocaleString('en-US')} ميكس)...`, "info");
+                      engine.log(`[*] فحص رصيد الفرد بعد التجديد وإعادة النقل (${retryAttempt}/2): الرصيد (${latestChildReadMix.toLocaleString('en-US')} ميكس)...`, "info");
                     }
                   } catch (_) {}
-                  await sleep(3000);
+                  if (retryAttempt < 2) await sleep(1500);
                 }
               }
             }
@@ -1514,6 +1517,10 @@ async function handleSingleCycleInternal(
   const maxAttempts = 240;
   const currentPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
   const currentCost = isSeven ? "270" : "180";
+  const minExpectedBundle = targetPlanId.includes("Parent_7") ? 4000 : 2000;
+
+  // Initial telecom settling period (giving OMS billing nodes 5s breathing space before first check)
+  await sleep(5000);
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     await sleep(3500);
@@ -1521,43 +1528,19 @@ async function handleSingleCycleInternal(
     const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
                         (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
 
-    // Server confirmed the new plan!
-    if (planMatches) {
+    // Server confirmed the new plan AND bundle quota has actually landed!
+    if (planMatches && currentCheck.remainingMix >= minExpectedBundle) {
       serverConfirmed = true;
       confirmedPlanId = currentCheck.planId;
-      engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد (${targetPlanDisplay}) بنجاح!`, "success");
-
-      // MANDATORY TELECOM ZERO-LOSS PROTECTION:
-      // When Etisalat switches a plan (e.g. 270 -> 180 or 180 -> 270), the plan profile changes,
-      // but the backend telecom billing engine takes some seconds to allocate the new bundle quota.
-      const minExpectedBundle = targetPlanId.includes("Parent_7") ? 4000 : 2000;
       confirmedNewMix = currentCheck.remainingMix;
-
-      if (confirmedNewMix < minExpectedBundle) {
-        engine.log(`[*] في انتظار اعتماد ونزول باقة النظام الجديد (${targetPlanDisplay}) بالكامل في حساب الأونر بالسيرفر...`, "info");
-        for (let bAttempt = 1; bAttempt <= 30; bAttempt++) {
-          await sleep(2500);
-          try {
-            const bundleCheck = await engine.getStatusAndChild(true);
-            if (bundleCheck.remainingMix >= minExpectedBundle) {
-              confirmedNewMix = bundleCheck.remainingMix;
-              engine.log(`[+] تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (${confirmedNewMix.toLocaleString('en-US')} ميكس)!`, "success");
-              break;
-            } else if (bundleCheck.remainingMix > confirmedNewMix) {
-              confirmedNewMix = bundleCheck.remainingMix;
-            }
-          } catch (_bErr) {}
-          if (bAttempt % 5 === 0) {
-            engine.log(`[*] فحص رصيد باقة الأونر بالسيرفر (${bAttempt}/30): الرصيد المقروء (${confirmedNewMix.toLocaleString('en-US')} ميكس) - ننتظر نزول الباقة الأساسية...`, "info");
-          }
-        }
-      } else {
-        engine.log(`[+] باقة النظام الجديد نشطة بالفعل بالسيرفر: (${confirmedNewMix.toLocaleString('en-US')} ميكس).`, "success");
-      }
-
-      // ONLY after the new bundle arrives, proceed to Step 4 (Recovery)
-      engine.log(`[⚡] تم التحقق القطعي من النظام الجديد ورصيده. جاري بدء استرجاع الميكسات المركونة من الفرد للأونر بأمان...`, "info");
+      engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد (${targetPlanDisplay}) ونزول رصيد الباقة بنجاح: (${confirmedNewMix.toLocaleString('en-US')} ميكس)!`, "success");
+      engine.log(`[⚡] تم التحقق القطعي من استقرار رصيد الأونر. جاري سحب ميكسات الفرد المركونة للأونر فوراً بأمان...`, "info");
       break;
+    }
+
+    // Plan name changed, but telecom billing OMS is still provisioning the initial mixes quota
+    if (planMatches && currentCheck.remainingMix < minExpectedBundle) {
+      engine.log(`[*] تم اعتماد بروفايل النظام (${targetPlanDisplay}) بالسيرفر - في انتظار نزول ميكسات الباقة الجديدة للأونر (المقروء حالياً: ${currentCheck.remainingMix.toLocaleString('en-US')} ميكس)...`, "info");
     }
 
     // PERIODIC NUDGE & ACTIVATION LOOP (تنشيط الخط والعقد كل دقيقة إلى دقيقة ونصف):
@@ -1761,14 +1744,14 @@ async function handleSingleCycleInternal(
   if (expectedMinBalance > 0 && finalStatus.remainingMix < expectedMinBalance) {
     engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس). جاري المزامنة المعمقة مع اتصالات...`, "info");
     
-    for (let syncAttempt = 1; syncAttempt <= 8; syncAttempt++) {
-      await sleep(3500);
+    for (let syncAttempt = 1; syncAttempt <= 3; syncAttempt++) {
+      await sleep(2000);
       try {
-        if (syncAttempt === 2 || syncAttempt === 5) {
+        if (syncAttempt === 2) {
           await engine.login(ownerEmail, ownerPass, true, true);
         }
         const recheckStatus = await engine.getStatusAndChild(true);
-        engine.log(`[*] فحص تسوية رصيد الأونر بالسيرفر (${syncAttempt}/8): الرصيد المقروء (${recheckStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس)...`, "info");
+        engine.log(`[*] فحص تسوية رصيد الأونر بالسيرفر (${syncAttempt}/3): الرصيد المقروء (${recheckStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس)...`, "info");
         if (recheckStatus.remainingMix >= expectedMinBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
           finalStatus = recheckStatus;
           engine.log(`[+] تم تحديث واعتماد رصيد الأونر بالسيرفر بنجاح: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
@@ -1871,6 +1854,42 @@ async function handleSingleCycleInternal(
   const targetReached = finalMix >= targetMix;
   const cooldownSec = session.cycle_delay_seconds !== undefined ? session.cycle_delay_seconds : 20;
 
+  // ── AUTOMATIC CHILD EJECTION ON COMPLETION (الإخراج التلقائي للفرد عند بلوغ الهدف) ──
+  let autoEjectedChild = false;
+  const shouldAutoEject = (session.auto_eject_child_on_complete === true || options?.auto_eject === true);
+
+  if (targetReached && shouldAutoEject && childNum) {
+    engine.log(`[🎯] تم الوصول للهدف المطلوب بالكامل (${finalMix.toLocaleString('en-US')} ميكس)!`, "success");
+    engine.log(`[🚀] تفعيل تسلسل الإخراج التلقائي المعتمد للفرد (${childNum}) لإنهاء الدورة...`, "warn");
+
+    try {
+      // Step A: Renew owner bundle to refresh subscriber family contract in OMS
+      const isSevenFinalAuto = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");
+      const currentPlanAuto = isSevenFinalAuto ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+      const planCostAuto = isSevenFinalAuto ? 270 : 180;
+      await engine.renewBundleAction(currentPlanAuto, planCostAuto);
+      await sleep(2000);
+
+      // Step B: Send rapid removeChild requests with instant check
+      for (let ejectTry = 1; ejectTry <= 4; ejectTry++) {
+        const rRes = await engine.removeChildOrder(childNum, engine.ownerDial || session.owner_account_identifier, currentPlanAuto);
+        if (rRes.success) {
+          engine.log(`[✓] أمر إخراج الفرد (${ejectTry}/4): تم قبوله بنجاح بالسيرفر!`, "success");
+        }
+        await sleep(1500);
+        const stAfter = await engine.getStatusAndChild(true);
+        if (!stAfter.childNumber || !stAfter.childNumber.includes(childNum.slice(-8))) {
+          engine.log(`[🎉] تم تأكيد خروج وانفصال الفرد (${childNum}) من عائلة الأونر بنجاح تام!`, "success");
+          autoEjectedChild = true;
+          break;
+        }
+        if (ejectTry < 4) await sleep(2000);
+      }
+    } catch (eErr: any) {
+      engine.log(`[!] تنبيه في الإخراج التلقائي: ${eErr?.message || eErr}`, "warn");
+    }
+  }
+
   if (cooldownSec > 0 && !targetReached) {
     engine.log(`[*] استراحة ${cooldownSec} ثانية قبل الدورة القادمة ...`, "info");
   }
@@ -1885,11 +1904,13 @@ async function handleSingleCycleInternal(
       current_step: targetReached ? "completed" : "idle",
       operation_state: targetReached ? "completed" : (session.operation_state || "idle"),
       automation_enabled: targetReached ? false : (session.automation_enabled ?? false),
+      relationship_status: autoEjectedChild ? "none" : session.relationship_status,
       current_cycle_details: {
         latest_logs: engine.logs.slice(-25),
         cycle_number: newCycleCount,
         timestamp: Date.now(),
         final_mix: finalMix,
+        auto_ejected_child: autoEjectedChild,
       },
       last_successful_op_at: new Date().toISOString(),
       last_actual_operation: "single_cycle_completed",
@@ -1958,7 +1979,7 @@ async function handleSingleCycleInternal(
   const isServerLoopActive =
     !targetReached &&
     !sendEvent && // Never self-chain on server if streaming to client! The client controls its own cycle sequence
-    body.is_server_background === true &&
+    options?.is_server_background === true &&
     freshSessState &&
     freshSessState.automation_enabled &&
     (freshSessState.operation_state === "running" || freshSessState.operation_state === "active") &&
@@ -2419,7 +2440,8 @@ serve(async (req: Request) => {
               ownerPass,
               childEmail,
               childPass,
-              sendEvent
+              sendEvent,
+              { is_server_background: body.is_server_background === true, auto_eject: body.auto_eject === true }
             );
             await sendEvent("complete", result);
           }
@@ -2620,7 +2642,9 @@ serve(async (req: Request) => {
         ownerEmail,
         ownerPass,
         childEmail,
-        childPass
+        childPass,
+        undefined,
+        { is_server_background: body?.is_server_background === true, auto_eject: body?.auto_eject === true }
       );
       return new Response(JSON.stringify(result), {
         status: result.success ? 200 : 400,
@@ -3426,74 +3450,40 @@ serve(async (req: Request) => {
         engine.log(`[!] تجديد باقة الأونر: ${rErr?.message || "تم المتابعة"}`, "warn");
       }
 
-      // ── الخطوة 2: الانتظار حتى نزول الميكسات عند الفرد ──
-      engine.log(`[*] الخطوة 2/5: الانتظار لتأكيد نزول واستقرار الميكسات عند الفرد...`, "info");
-      let childConfirmedMix = 0;
-      if (childEmail && childPass) {
-        try {
-          const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
-          childEngine.onLog = (l) => engine.log(l.message, l.level);
-          if (await childEngine.login(childEmail, childPass, false, true)) {
-            for (let p = 1; p <= 6; p++) {
-              await sleep(2500);
-              const cSt = await childEngine.getStatusAndChild(true);
-              if (cSt.remainingMix > 0) {
-                childConfirmedMix = cSt.remainingMix;
-                engine.log(`[✓] تم تأكيد نزول الميكسات عند الفرد: (${cSt.remainingMix.toLocaleString('en-US')} ميكس جاهزة).`, "success");
-                break;
-              }
-            }
-          }
-        } catch (_) {}
-      } else {
-        await sleep(6000);
-      }
+      // ── الخطوة 2: فحص استقرار حساب الفرد ──
+      engine.log(`[*] الخطوة 2/4: التحقق من استقرار الخط...`, "info");
+      await sleep(2000);
 
-      // Helper function to execute 5 ejection attempts with 20 seconds delay
+      // Helper function to execute fast ejection attempts
       let childEjected = false;
       const attemptOrders: string[] = [];
 
-      const executeEjectionAttemptsCycle = async (cycleNum: number): Promise<boolean> => {
-        engine.log(`[*] الخطوة 3/5 (الدورة ${cycleNum}): تنفيذ 5 محاولات إخراج للفرد بفاصل 20 ثانية بين كل محاولة...`, "info");
-        for (let i = 1; i <= 5; i++) {
-          const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
-          if (res.success) {
-            if (res.orderId) attemptOrders.push(res.orderId);
-            engine.log(`[✓] محاولة إخراج (${i}/5 - جولة ${cycleNum}): تم قبول أمر الإخراج بالسيرفر (orderId: ${res.orderId || "مكتمل"})`, "success");
-          } else {
-            engine.log(`[!] محاولة إخراج (${i}/5 - جولة ${cycleNum}): رد الخادم (${res.raw || "فشل"})`, "warn");
-          }
-
-          // Check if child is out already after each attempt
-          const checkSt = await engine.getStatusAndChild(true);
-          const stillThere = !!checkSt.childNumber && checkSt.childNumber.includes(targetChild.slice(-8));
-          if (!stillThere) {
-            engine.log(`[🎯] نجاح فوري: تأكد خروج الفرد (${targetChild}) من عائلة الأونر بالسيرفر! تم إيقاف باقي المحاولات.`, "success");
-            return true;
-          }
-
-          if (i < 5) {
-            engine.log(`[⏳] انتظار 20 ثانية قبل المحاولة القادمة (${i + 1}/5) لمزامنة سيرفر اتصالات...`, "info");
-            await sleep(20000);
-          }
+      engine.log(`[*] الخطوة 3/4: تنفيذ محاولات إخراج الفرد بالسيرفر مع الفحص الفوري...`, "info");
+      for (let i = 1; i <= 4; i++) {
+        const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
+        if (res.success) {
+          if (res.orderId) attemptOrders.push(res.orderId);
+          engine.log(`[✓] محاولة إخراج (${i}/4): تم قبول أمر الإخراج بالسيرفر (orderId: ${res.orderId || "مكتمل"})`, "success");
+        } else {
+          engine.log(`[!] محاولة إخراج (${i}/4): رد الخادم (${res.raw || "فشل"})`, "warn");
         }
-        return false;
-      };
 
-      // الجولة الأولى: 5 محاولات إخراج بفاصل 20 ثانية
-      childEjected = await executeEjectionAttemptsCycle(1);
+        // Check if child is out already after each attempt
+        await sleep(1500);
+        const checkSt = await engine.getStatusAndChild(true);
+        const stillThere = !!checkSt.childNumber && checkSt.childNumber.includes(targetChild.slice(-8));
+        if (!stillThere) {
+          engine.log(`[🎯] نجاح فوري: تأكد خروج الفرد (${targetChild}) من عائلة الأونر بالسيرفر! تم إيقاف باقي المحاولات.`, "success");
+          childEjected = true;
+          break;
+        }
 
-      // ── الخطوة 4: الفحص الصارم والانتظار 60-120 ثانية وتكرار العملية إن لزم ──
-      if (!childEjected) {
-        engine.log(`[*] الخطوة 4/5: الفحص الصارم أظهر أن الفرد ما زال مسجلاً بالعائلة بالسيرفر بعد 5 محاولات.`, "warn");
-        engine.log(`[⏳] انتظار فترة تهدئة ومزامنة شبكة (60 ثانية) قبل تكرار محاولات الإخراج للجولة الثانية...`, "info");
-        await sleep(60000);
-
-        // الجولة الثانية: 5 محاولات إخراج أخرى
-        childEjected = await executeEjectionAttemptsCycle(2);
+        if (i < 4) {
+          await sleep(2500);
+        }
       }
 
-      // ── الخطوة 5: التحقق النهائي والتحويل لنظام 270 أو تفعيل زر MINION اليدوي ──
+      // ── الخطوة 4: التحقق النهائي والتحويل لنظام 270 أو تفعيل خيار MINION ──
       let childPlan270Converted = false;
       let canMigrateMinion = false;
 

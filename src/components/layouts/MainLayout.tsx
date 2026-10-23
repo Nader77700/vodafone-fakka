@@ -1,5 +1,5 @@
 // التخطيط الرئيسي مع شريط التنقل السفلي (موبايل) والجانبي (ديسكتوب)
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -70,6 +70,29 @@ export default function MainLayout() {
 
   const isAdmin    = profile?.role === 'admin' || profile?.role === 'super_admin';
   const isMerchant = profile?.role === 'merchant';
+  const [hasDelegatedVip, setHasDelegatedVip] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    if (isAdmin) {
+      setHasDelegatedVip(true);
+      return;
+    }
+    const checkDelegation = async () => {
+      try {
+        const { data } = await supabase
+          .from('vip_delegated_users')
+          .select('is_active')
+          .eq('user_id', profile.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (data?.is_active) setHasDelegatedVip(true);
+      } catch (err) {
+        // ignore
+      }
+    };
+    checkDelegation();
+  }, [profile?.id, isAdmin]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -158,7 +181,7 @@ export default function MainLayout() {
             </>
           )}
 
-          {isAdmin && (
+          {(isAdmin || hasDelegatedVip) && (
             <NavLink
               to="/vip"
               className={({ isActive }) =>
@@ -170,7 +193,7 @@ export default function MainLayout() {
               }
             >
               <Crown className="w-4 h-4 shrink-0 text-amber-500" />
-              <span>إدارة باقات VIP</span>
+              <span>{isAdmin ? 'إدارة باقات VIP' : 'باقات اتصالات VIP'}</span>
             </NavLink>
           )}
         </nav>
@@ -310,7 +333,7 @@ export default function MainLayout() {
                       </NavLink>
                     )}
 
-                    {isAdmin && (
+                    {(isAdmin || hasDelegatedVip) && (
                       <NavLink
                         to="/vip"
                         onClick={() => setMobileOpen(false)}
@@ -323,7 +346,7 @@ export default function MainLayout() {
                         }
                       >
                         <Crown className="w-5 h-5 shrink-0 text-amber-500" />
-                        <span>إدارة باقات VIP للأونر</span>
+                        <span>{isAdmin ? 'إدارة باقات VIP للأونر' : 'باقات اتصالات VIP'}</span>
                         <ChevronLeft className="w-4 h-4 mr-auto opacity-40" />
                       </NavLink>
                     )}

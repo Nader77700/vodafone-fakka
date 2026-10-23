@@ -50,8 +50,8 @@ function parseLogTokens(rawMsg: string): ParsedToken[] {
 
   const tokenRegex = new RegExp(
     [
-      '(فحص تأكيدي مزدوج[^\\n!]+!?)', // 0. Double-check confirmation
-      '(رصد تحويل وهمي(?:\\/معلق)?[^\\n!]+!?)', // 1. Phantom alert
+      '(فحص تأكيدي(?: مزدوج)?[^\\n!]+!?)', // 0. Double-check confirmation
+      '(تنشيط ومزامنة العقد|تجديد باقة الأونر|رصد تحويل وهمي(?:\\/معلق)?|رصد عدم تحرك الميكسات[^\\n!]+!?)', // 1. Contract sync / renewal
       '(حكاية ميكسات 270|Hekaya_XRP_MIX_Parent_7|باقة 270|نظام 270)', // 2. Hekaya 270
       '(حكاية ميكسات 180|Hekaya_XRP_MIX_Parent_6|باقة 180|نظام 180|170)', // 3. Hekaya 180
       '(رجعنا للأونر|استرجاع الميكسات للأونر|تم استرجاع)', // 4. Return to owner

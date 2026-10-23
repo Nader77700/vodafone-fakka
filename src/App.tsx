@@ -153,6 +153,7 @@ const VipRedMerchantDetailsPage    = lazyImport(() => import('./pages/vip-red/Vi
 const VipRedRenewalsPage           = lazyImport(() => import('./pages/vip-red/VipRedRenewalsPage'));
 const VipRedRequestsPage           = lazyImport(() => import('./pages/vip-red/VipRedRequestsPage'));
 const VipPage                      = lazyImport(() => import('./pages/vip/VipPage'));
+const VipTemporarySharePage        = lazyImport(() => import('./pages/vip/VipTemporarySharePage'));
 const LineInfoPage                 = lazyImport(() => import('./pages/line-info/LineInfoPage'));
 const WalletLinesRegisterPage   = lazyImport(() => import('./pages/wallet-lines/WalletLinesRegisterPage'));
 const WalletLinesOtpPage        = lazyImport(() => import('./pages/wallet-lines/WalletLinesOtpPage'));
@@ -380,19 +381,20 @@ function PostSplashNavigator({ onNavigated, isHotStart }: { onNavigated: () => v
     if (navigated.current) return;
     navigated.current = true;
 
-    // ── مسارات عامة لا يجب المساس بها (روابط الدعوة) ──────────────────────────
-    // InvitePage و JoinPage تدير منطقهما الخاص (حفظ التوكن ثم التوجيه للـ login)
-    // إذا تدخّل PostSplashNavigator هنا فلن تعمل هذه الصفحات أبداً
-    const isPublicInviteRoute =
+    // ── مسارات عامة لا يجب المساس بها (روابط الدعوة والروابط المؤقتة) ──────────
+    const isPublicRoute =
       location.pathname.startsWith('/invite/') ||
-      location.pathname.startsWith('/join/');
+      location.pathname.startsWith('/join/') ||
+      location.pathname.startsWith('/vip-share/') ||
+      location.pathname.startsWith('/temp-vip/');
 
-    if (!user && !isPublicInviteRoute) {
-      navigate('/login', { replace: true });
-    } else if (!user && isPublicInviteRoute) {
-      // اترك الصفحة تعمل بمفردها — ستحفظ التوكن وتوجّه للـ login بنفسها
+    if (isPublicRoute) {
       onNavigated();
       return;
+    }
+
+    if (!user) {
+      navigate('/login', { replace: true });
     } else if (isHotStart) {
       // ── Hot Start (عودة من الخلفية) ──
       // دائماً أعد المسار المحفوظ — بغض النظر عن المسار الحالي
@@ -451,8 +453,16 @@ function AppInner() {
     return true; 
   })();
 
-  // نظهر الشاشة البدائية دائمًا لضمان تهيئة التطبيق
-  const [showSplash,     setShowSplash]     = useState(true);
+  // إذا كان الرابط مباشر لمشاركة VIP المستقلة نتخطى Splash فوراً
+  const isVipDirectShare =
+    typeof window !== 'undefined' &&
+    (window.location.pathname.includes('/vip-share') ||
+     window.location.pathname.includes('/temp-vip') ||
+     window.location.hash.includes('/vip-share') ||
+     window.location.hash.includes('/temp-vip'));
+
+  // نظهر الشاشة البدائية دائمًا لضمان تهيئة التطبيق (إلا في روابط المشاركة المستقلة)
+  const [showSplash,     setShowSplash]     = useState(!isVipDirectShare);
   const [splashDoneReq,  setSplashDoneReq]  = useState(false); // طلب الانتهاء من SplashOverlay
   const [navigateNow,    setNavigateNow]    = useState(false);
 
@@ -514,10 +524,16 @@ function AppInner() {
   const isLoginPage = window.location.pathname === '/login' || window.location.hash.includes('/login');
   
   const renderBlockingScreen = () => {
+    // ── روابط المشاركة المؤقتة المستقلة معفية تماماً من أي حظر أو شاشات مانعة ──
+    if (isVipDirectShare) return null;
+
+    // شاشة التحديث الإجباري مخصصة لتطبيق APK على الهاتف فقط (وليس لمتصفح الويب)
+    const isNative = Capacitor.isNativePlatform();
+
     let Component = null;
     let props: any = {};
 
-    if (forceUpdate) { Component = ForceUpdateScreen; props = { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version }; }
+    if (forceUpdate && isNative) { Component = ForceUpdateScreen; props = { apkUrl: latestVersion?.apk_url, latestVersion: latestVersion?.version }; }
     else if (deviceBan?.banned) { Component = DeviceBannedScreen; props = { reason: deviceBan.reason, bannedAt: deviceBan.banned_at }; }
     else if (flags.ff_maintenance_mode && !isAdmin && !isLoginPage && !isConfigLoading) { Component = MaintenanceScreen; }
     else if (flags.ff_maintenance_mode && !isAdmin && isLoginPage && profile && !isConfigLoading) { Component = MaintenanceScreen; }
@@ -621,6 +637,9 @@ function AppInner() {
         <Route path="/login" element={<PageErrorBoundary pageName="login"><LoginPage /></PageErrorBoundary>} />
         <Route path="/join/:code"    element={<PageErrorBoundary pageName="join"><S><JoinPage /></S></PageErrorBoundary>} />
         <Route path="/invite/:token" element={<PageErrorBoundary pageName="invite"><S><InvitePage /></S></PageErrorBoundary>} />
+        {/* روابط مشاركة VIP المستقلة المؤقتة */}
+        <Route path="/vip-share/:token" element={<PageErrorBoundary pageName="vip-share"><S><VipTemporarySharePage /></S></PageErrorBoundary>} />
+        <Route path="/temp-vip/:token"  element={<PageErrorBoundary pageName="temp-vip"><S><VipTemporarySharePage /></S></PageErrorBoundary>} />
         <Route path="/activate" element={<RouteGuard><PageErrorBoundary pageName="activate"><S><ActivationPage /></S></PageErrorBoundary></RouteGuard>} />
 
         <Route path="/" element={<RouteGuard><MerchantClientGate /></RouteGuard>}>

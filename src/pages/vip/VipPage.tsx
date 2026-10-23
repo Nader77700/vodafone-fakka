@@ -21,8 +21,10 @@ import {
   ChevronLeft,
   Code2,
   Activity,
+  Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { VipTemporaryShareModal } from '@/components/vip/VipTemporaryShareModal';
 import {
   verifyVipOwnerSession,
   getVipDashboardData,
@@ -47,8 +49,19 @@ import { VipSystemEligibilityTab } from './VipSystemEligibilityTab';
 import { VipOperationHistoryTab } from './VipOperationHistoryTab';
 import { VipBotScriptTab } from './VipBotScriptTab';
 import { VipDiagnosticsTab } from './VipDiagnosticsTab';
+import { VipDelegatedClientView } from '@/components/vip/VipDelegatedClientView';
+import { VipDelegationManagerTab } from '@/components/vip/VipDelegationManagerTab';
+import { VipSessionInspectorTab } from '@/components/vip/VipSessionInspectorTab';
+import { VipSecurityTamperTab } from '@/components/vip/VipSecurityTamperTab';
+import { checkVipAccessServer, type VipAccessStatus } from '@/services/vipDelegationService';
+import { supabase } from '@/db/supabase';
 
-export default function VipPage() {
+interface VipPageProps {
+  shareToken?: string;
+  isTemporaryShareMode?: boolean;
+}
+
+export default function VipPage({ shareToken, isTemporaryShareMode }: VipPageProps = {}) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
@@ -56,6 +69,10 @@ export default function VipPage() {
 
   const [verifying, setVerifying] = useState(true);
   const [authResult, setAuthResult] = useState<VipOwnerSessionVerification | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [vipAccess, setVipAccess] = useState<VipAccessStatus | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
 
   // Multi-Session states
   const [sessions, setSessions] = useState<VipSession[]>([]);
@@ -69,6 +86,47 @@ export default function VipPage() {
   const checkOwnerAuth = useCallback(async () => {
     setVerifying(true);
     try {
+      // Check if accessed in temporary share mode
+      if (
+        isTemporaryShareMode ||
+        (typeof window !== 'undefined' &&
+          (window.location.pathname.startsWith('/vip-share') ||
+            window.location.pathname.startsWith('/temp-vip')))
+      ) {
+        setAuthResult({
+          is_authorized: true,
+          user_id: 'temp-share-access',
+          is_verified_owner: true,
+          verified_at: new Date().toISOString(),
+          owner_account_identifier: 'nader77@miaoda.com',
+        });
+        await loadSessionsAndData();
+        return;
+      }
+
+      // First check user session from Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+
+      if (user) {
+        setCurrentUserId(user.id);
+        setCurrentUserEmail(user.email || '');
+        const access = await checkVipAccessServer(user.id);
+        setVipAccess(access);
+
+        // If user is delegated client (not owner)
+        if (access.is_delegated && !access.is_owner) {
+          setAuthResult({
+            is_authorized: true,
+            user_id: user.id,
+            is_verified_owner: false,
+            verified_at: new Date().toISOString(),
+          });
+          setVerifying(false);
+          return;
+        }
+      }
+
       const result = await verifyVipOwnerSession();
       setAuthResult(result);
       if (result.is_authorized) {
@@ -81,7 +139,7 @@ export default function VipPage() {
     } finally {
       setVerifying(false);
     }
-  }, []);
+  }, [isTemporaryShareMode]);
 
   // 2. Load Sessions & Dashboard Data
   const loadSessionsAndData = async (preferredSessionId?: string, isManualRefresh = false) => {
@@ -170,7 +228,7 @@ export default function VipPage() {
           <div className="space-y-1.5">
             <h2 className="text-base font-bold text-foreground">قسم الإدارة الخاصة VIP مقيّد ومحمي سيرفرياً</h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              هذا القسم مخصص حصرياً للمالك المعتمد (Nader Akram) ومحمي سيرفرياً بنظام Zero-Trust ضد أي تلاعب أو هندسة عكسية. حتى لو تم تعديل رتبة الحساب محلياً أو تفكيك ملفات التطبيق، يرفض السيرفر أي وصول برمز 403 ولا يُسرّب أي بيانات.
+              هذا القسم مخصص ومحمي سيرفرياً بنظام Zero-Trust ضد أي تلاعب أو هندسة عكسية. حتى لو تم تعديل رتبة الحساب محلياً أو تفكيك ملفات التطبيق، يرفض السيرفر أي وصول برمز 403 ولا يُسرّب أي بيانات.
             </p>
           </div>
 
@@ -179,8 +237,8 @@ export default function VipPage() {
               <ShieldAlert className="w-4 h-4 text-amber-500" />
               <span>إرشادات الوصول والأمان:</span>
             </div>
-            <p>1. يتطلب تسجيل الدخول المسبق بحساب المالك المعتمد سيرفرياً (nader77@miaoda.com).</p>
-            <p>2. يتم التحقق وتوقيع الجلسة مشفراً مع قاعدة البيانات ومنفذ Edge Function في نفس اللحظة.</p>
+            <p>1. يتطلب حساباً مفعلاً ومفوضاً من قبل المالك العام للنظام.</p>
+            <p>2. يتم التحقق وتوقيع الجلسة مشفراً مع قاعدة البيانات ومنفذ السيرفر في نفس اللحظة.</p>
           </div>
 
           <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
@@ -202,6 +260,38 @@ export default function VipPage() {
             </Button>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  // ── Render Case 2.5: Delegated Client View (Confidential & Obfuscated) ──
+  if (vipAccess?.is_delegated && !vipAccess?.is_owner) {
+    return (
+      <div className="min-h-screen bg-background pb-16" dir="rtl">
+        <div className="sticky top-0 z-20 border-b border-border/80 bg-background/95 backdrop-blur-md px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/home')}
+                className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"
+                title="العودة للرئيسية"
+              >
+                <ChevronLeft className="w-4 h-4 rotate-180" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
+                <h1 className="text-sm font-bold text-foreground">بوابة اتصالات VIP</h1>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
+              مستخدم مفوض
+            </Badge>
+          </div>
+        </div>
+
+        <VipDelegatedClientView userId={currentUserId} userEmail={currentUserEmail} />
       </div>
     );
   }
@@ -246,6 +336,17 @@ export default function VipPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShareModalOpen(true)}
+              className="h-8 text-xs gap-1.5 border-amber-500/40 text-amber-500 hover:bg-amber-500/10 px-2.5"
+              title="مشاركة القسم عبر رابط مؤقت مع خاصية الحرق"
+            >
+              <Share2 className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">رابط مؤقت</span>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -327,6 +428,21 @@ export default function VipPage() {
                   <Code2 className="w-3.5 h-3.5 text-primary" />
                   <span>الاسكريبت والجسر والأجهزة</span>
                 </TabsTrigger>
+
+                <TabsTrigger value="delegation" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-amber-500/10 text-amber-400">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                  <span>تفويض المستخدمين والحدود</span>
+                </TabsTrigger>
+
+                <TabsTrigger value="inspector" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
+                  <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>فاحص جلسات المستخدمين</span>
+                </TabsTrigger>
+
+                <TabsTrigger value="tamper" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg text-destructive font-bold">
+                  <ShieldAlert className="w-3.5 h-3.5 text-destructive" />
+                  <span>سجل كشف التلاعب والحظر</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -387,10 +503,31 @@ export default function VipPage() {
               <VipBotScriptTab />
             </TabsContent>
 
+            {/* Tab 7: Delegated Users & Quota Limits */}
+            <TabsContent value="delegation" className="space-y-4 focus-visible:outline-none">
+              <VipDelegationManagerTab />
+            </TabsContent>
+
+            {/* Tab 8: User Sessions & Error Inspector */}
+            <TabsContent value="inspector" className="space-y-4 focus-visible:outline-none">
+              <VipSessionInspectorTab />
+            </TabsContent>
+
+            {/* Tab 9: Anti-Tamper & Security Audit */}
+            <TabsContent value="tamper" className="space-y-4 focus-visible:outline-none">
+              <VipSecurityTamperTab />
+            </TabsContent>
+
           </Tabs>
         ) : null}
 
       </main>
+
+      {/* ── Modal: Temporary Share Link with Instant Burn ── */}
+      <VipTemporaryShareModal
+        open={shareModalOpen}
+        onOpenChange={setShareModalOpen}
+      />
 
     </div>
   );
