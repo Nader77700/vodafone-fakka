@@ -990,6 +990,11 @@ async function handleCheckStatusInternal(
 
   return {
     success: true,
+    owner_mix_balance: status.remainingMix,
+    child_mix_balance: childBalance,
+    owner_plan: finalOwnerPlanName,
+    owner_dial: engine.ownerDial,
+    child_dial: childDial,
     owner: {
       dial: engine.ownerDial,
       name: engine.customerName,
@@ -1123,7 +1128,9 @@ async function handleSingleCycleInternal(
 
   // ── PRE-FLIGHT LIVE CHECK OF BOTH ACCOUNTS (فحص استباقي شامل للأونر والفرد) ──
   // طالما حدث انقطاع أو قبل بدء أي دورة، نتحقق مباشرة من رصيد الأونر ورصيد الفرد بالسيرفر
+  let childHoldsMissing = false;
   let childDetectedMix = 0;
+
   if (prewarmedChildEngine) {
     try {
       const liveChildCheck = await prewarmedChildEngine.getStatusAndChild(true);
@@ -1167,9 +1174,6 @@ async function handleSingleCycleInternal(
   } catch (_e) {}
 
   const isSuspiciouslyLow = !childHoldsMissing && verifiedPeakBalance > 3000 && (status.remainingMix < verifiedPeakBalance * 0.70);
-
-  let childHoldsMissing = false;
-  let childDetectedMix = 0;
 
   if (isSuspiciouslyLow) {
     engine.log(`[!] تنبيه رصد الرصيد الذكي: رصيد الأونر المقروء (${status.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد التاريخي المعتمد (${verifiedPeakBalance.toLocaleString('en-US')} ميكس)!`, "warn");

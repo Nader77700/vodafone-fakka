@@ -484,6 +484,10 @@ export async function invokeVipExecutor(
     return json as VipExecutionResponse;
   } catch (err: any) {
     console.error('[vipApi] invokeVipExecutor error:', err);
+    const msg = err?.message || '';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
+      throw new Error('انقطاع مؤقت في الاتصال بالإنترنت أو الخادم (Failed to fetch). جاري المحاولة مرة أخرى...');
+    }
     throw new Error(err?.message || 'حدث خطأ أثناء الاتصال بمحرك اتصالات المباشر');
   }
 }
@@ -809,8 +813,12 @@ export async function invokeVipExecutorStream(
     }
   } catch (err: any) {
     console.error('[vipApi] invokeVipExecutorStream error:', err);
-    callbacks?.onError?.(err?.message || 'خطأ اتصال');
-    throw err;
+    let msg = err?.message || 'خطأ اتصال';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
+      msg = 'انقطاع مؤقت في الاتصال بالإنترنت أو الخادم (Failed to fetch). يرجى التحقق من اتصال الشبكة.';
+    }
+    callbacks?.onError?.(msg);
+    throw new Error(msg);
   }
 }
 
