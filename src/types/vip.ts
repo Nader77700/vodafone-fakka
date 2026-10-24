@@ -77,7 +77,7 @@ export interface VipSession {
   current_cycle: number;
 
   // Background Worker & Realtime Execution
-  worker_status?: 'idle' | 'ready' | 'running' | 'paused' | 'stopped' | 'completed' | 'error';
+  worker_status?: 'idle' | 'ready' | 'running' | 'executing' | 'paused' | 'stopped' | 'completed' | 'error';
   worker_last_heartbeat?: string | null;
   current_step?: string | null;
   current_cycle_details?: Record<string, any> | null;

@@ -335,14 +335,13 @@ class VipRunnerService {
    */
   public async stopLoop(sessionId: string, reason = 'طلب المستخدم'): Promise<void> {
     const state = this.states.get(sessionId);
-    if (!state || !state.isRunning) return;
-
-    state.stopRequested = true;
-    state.currentStep = 'stopping';
-    state.stepMessage = `جاري إيقاف الدورة التلقائية (${reason})...`;
-    this.notify(sessionId);
-
-    this.addLog(sessionId, `[!] جاري إيقاف الدورة التلقائية: ${reason}...`, 'warn');
+    if (state && state.isRunning) {
+      state.stopRequested = true;
+      state.currentStep = 'stopping';
+      state.stepMessage = `جاري إيقاف الدورة التلقائية (${reason})...`;
+      this.notify(sessionId);
+      this.addLog(sessionId, `[!] جاري إيقاف الدورة التلقائية: ${reason}...`, 'warn');
+    }
 
     // Clear persistent active loop from localStorage
     try {
@@ -351,9 +350,9 @@ class VipRunnerService {
       }
     } catch (_) {}
 
-    // Update DB
+    // Update DB to paused/stopped state
     try {
-      await updateVipAutomationSettings(false, state.targetMix, null, 'stop', sessionId, state.delaySeconds);
+      await updateVipAutomationSettings(false, state?.targetMix || 50000, null, 'stop', sessionId, state?.delaySeconds || 20);
     } catch (e) {
       console.warn('[VipRunnerService] DB stop error:', e);
     }

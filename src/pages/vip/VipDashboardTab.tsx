@@ -9,6 +9,7 @@ import {
   executeVipChangePlan,
   executeVipAdoptLiveBalance,
   executeVipRunSingleCycleStream,
+  fetchVipSessionServerLogs,
   type VipExecutionLog,
 } from '@/lib/vipApi';
 import {
@@ -114,14 +115,6 @@ export function VipDashboardTab({
       setStepMessage(state.stepMessage);
       if (state.logs && state.logs.length > 0) {
         setTerminalLogs(state.logs);
-      } else {
-        setTerminalLogs([
-          {
-            time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
-            level: 'info',
-            message: `[+] تم فتح جلسة «${session.session_name || 'VIP'}» المعزولة (${session.owner_account_identifier || session.owner_email || 'جلسة جديدة'}). سجلات وأرصدة مستقلة تماماً.`,
-          },
-        ]);
       }
       setLiveOwnerMix(
         state.latestOwnerMix !== undefined
@@ -144,23 +137,45 @@ export function VipDashboardTab({
       }
     });
 
-    // Only listen to runner state updates when running
-    // CRITICAL: NEVER auto-start or resume loops automatically on mount or tab switch!
-    // The Owner explicitly controls start and stop via the manual buttons.
+    // Initial server logs fetch: If client runner logs are empty, load complete persisted audit logs from server DB
+    const runnerState = vipRunnerService.getState(session.id);
+    if (!runnerState.logs || runnerState.logs.length === 0) {
+      fetchVipSessionServerLogs(session.id).then((serverLogs) => {
+        if (serverLogs && serverLogs.length > 0) {
+          setTerminalLogs(serverLogs);
+        }
+      }).catch((err) => console.warn('[VipDashboardTab] Fetch server logs error:', err));
+    }
 
     // Handle return from background (e.g., coming back from WhatsApp or unlocking screen)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
         // Silently fetch the latest server-side database state and cycle updates
         onRefresh();
+        fetchVipSessionServerLogs(session.id).then((serverLogs) => {
+          if (serverLogs && serverLogs.length > 0) {
+            setTerminalLogs(serverLogs);
+          }
+        }).catch(() => {});
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Heartbeat sync interval when session is running to stream server cloud execution updates
     const syncInterval = setInterval(() => {
-      if (session?.id && (session.operation_state === 'running' || vipRunnerService.isRunning(session.id))) {
+      if (session?.id && (session.operation_state === 'running' || session.worker_status === 'executing' || vipRunnerService.isRunning(session.id))) {
         onRefresh();
+        fetchVipSessionServerLogs(session.id).then((serverLogs) => {
+          if (serverLogs && serverLogs.length > 0) {
+            setTerminalLogs((prev) => {
+              const currentRunner = vipRunnerService.getState(session.id);
+              if (currentRunner.isRunning && currentRunner.logs && currentRunner.logs.length > 0) {
+                return currentRunner.logs;
+              }
+              return serverLogs;
+            });
+          }
+        }).catch(() => {});
       }
     }, 5000);
 
@@ -377,9 +392,10 @@ export function VipDashboardTab({
             session={displaySession}
             onStartLoop={handleStartAutoLoop}
             onStopLoop={handleStopAutoLoop}
-            isRunning={loopRunning}
-            isPaused={false}
-            currentCycle={loopCycle}
+            isRunning={loopRunning || displaySession.operation_state === 'running' || displaySession.worker_status === 'running' || displaySession.worker_status === 'executing'}
+            isServerRunning={displaySession.operation_state === 'running' || displaySession.worker_status === 'running' || displaySession.worker_status === 'executing'}
+            isPaused={displaySession.operation_state === 'paused'}
+            currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}
             countdownSeconds={countdownSeconds}
             stepMessage={stepMessage}
             isDelegatedUser={isDelegatedUser}

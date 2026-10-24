@@ -48,6 +48,7 @@ interface Props {
   onStopLoop: () => void;
   isRunning: boolean;
   isPaused: boolean;
+  isServerRunning?: boolean;
   currentCycle: number;
   countdownSeconds: number | null;
   stepMessage: string | null;
@@ -61,6 +62,7 @@ export function VipAutoLoopCard({
   onStopLoop,
   isRunning,
   isPaused,
+  isServerRunning = false,
   currentCycle,
   countdownSeconds,
   stepMessage,
@@ -173,9 +175,14 @@ export function VipAutoLoopCard({
           <div className="min-w-0">
             <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5 flex-wrap">
               <span>أتمتة الدورات الحية</span>
-              {isRunning ? (
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 animate-pulse">
-                  الدورة نشطة (#{currentCycle})
+              {isRunning || isServerRunning ? (
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 animate-pulse flex items-center gap-1 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>{isServerRunning ? `⚡ نشطة بالسيرفر (#${currentCycle})` : `الدورة نشطة (#${currentCycle})`}</span>
+                </Badge>
+              ) : isPaused || session.operation_state === 'paused' ? (
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] px-1.5 py-0 font-bold">
+                  ⏸️ متوقفة مؤقتاً
                 </Badge>
               ) : isTargetReached ? (
                 <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0">
@@ -183,7 +190,7 @@ export function VipAutoLoopCard({
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-muted-foreground border-border text-[10px] px-1.5 py-0">
-                  متوقف
+                  جاهزة للتشغيل
                 </Badge>
               )}
             </CardTitle>
@@ -209,12 +216,12 @@ export function VipAutoLoopCard({
             <span className="hidden sm:inline">{hasNotifPerm ? 'الإشعارات نشطة' : 'تفعيل الإشعارات'}</span>
           </Button>
 
-          {isRunning ? (
+          {isRunning || isServerRunning ? (
             <Button
               variant="destructive"
               size="sm"
               onClick={onStopLoop}
-              className="h-7 text-xs px-2.5 gap-1 font-bold"
+              className="h-7 text-xs px-2.5 gap-1 font-bold shadow-sm"
             >
               <Square className="w-3 h-3 fill-current" />
               <span>إيقاف الأتمتة</span>

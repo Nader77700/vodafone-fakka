@@ -958,3 +958,119 @@ export async function updateVipAutoEjectSetting(
 }
 
 
+/**
+ * Fetch persisted execution logs, cycle history, and audit records for a session from the server/DB.
+ * Ensures the Owner or any delegated user can see the full chronological history even if run on another device or background worker.
+ */
+export async function fetchVipSessionServerLogs(sessionId: string): Promise<VipExecutionLog[]> {
+  try {
+    const logs: VipExecutionLog[] = [];
+
+    // 1. Fetch latest in-session cycle details (realtime engine logs)
+    const { data: sess } = await supabase
+      .from('vip_sessions')
+      .select('session_name, owner_account_identifier, individual_account_identifier, current_cycle_details, operation_state, worker_status, owner_mix_balance, individual_mix_balance, current_cycle, created_at, updated_at')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    // 2. Fetch all completed or paused cycles from cycle history
+    const { data: cycles } = await supabase
+      .from('vip_cycle_history')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('cycle_number', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (cycles && cycles.length > 0) {
+      cycles.forEach((c) => {
+        const timeStr = c.created_at ? new Date(c.created_at).toLocaleTimeString('ar-EG', { hour12: false }) : '';
+        const cycleNum = c.cycle_number || 1;
+        const startBal = Number(c.owner_balance_start || 0).toLocaleString('en-US');
+        const parkedBal = Number(c.amount_transferred_owner_to_indiv || 0).toLocaleString('en-US');
+        const indivToOwnerBal = Number(c.amount_transferred_indiv_to_owner || 0).toLocaleString('en-US');
+        const finalBal = Number(c.final_verified_owner_balance || 0).toLocaleString('en-US');
+
+        logs.push({
+          time: timeStr,
+          level: 'info',
+          message: `[+] دورة أتمتة #${cycleNum}: بدء الدورة برصيد أونر (${startBal} ميكس) ➔ ركن (${parkedBal} ميكس) بالفرد لحماية الرصيد.`,
+        });
+
+        if (c.system_post_migration) {
+          logs.push({
+            time: timeStr,
+            level: 'info',
+            message: `[*] ترحيل وتنشيط الباقة: من «${c.system_pre_migration || 'الحالي'}» إلى «${c.system_post_migration}».`,
+          });
+        }
+
+        if (c.amount_transferred_indiv_to_owner !== undefined && c.amount_transferred_indiv_to_owner !== null) {
+          logs.push({
+            time: timeStr,
+            level: 'info',
+            message: `[+] استرجاع الرصيد من الفرد للأونر: ${indivToOwnerBal} ميكس.`,
+          });
+        }
+
+        if (c.cycle_status === 'completed' || c.cycle_status === 'stopped_at_target') {
+          logs.push({
+            time: timeStr,
+            level: 'success',
+            message: `[✓] اكتملت الدورة #${cycleNum} بنجاح: الرصيد النهائي المعتمد للأونر بالسيرفر (${finalBal} ميكس).`,
+          });
+        } else if (c.safe_error_summary) {
+          logs.push({
+            time: timeStr,
+            level: 'warn',
+            message: `[🛡️ درع الأمان] ${c.safe_error_summary}`,
+          });
+        }
+      });
+    }
+
+    // 3. Add latest live engine logs if present
+    if (sess?.current_cycle_details?.latest_logs && Array.isArray(sess.current_cycle_details.latest_logs)) {
+      sess.current_cycle_details.latest_logs.forEach((item: any) => {
+        if (typeof item === 'string') {
+          logs.push({
+            time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+            level: item.includes('[-]') ? 'error' : item.includes('[✓]') || item.includes('[+]') ? 'success' : item.includes('[!]') || item.includes('[🛡️]') ? 'warn' : 'info',
+            message: item,
+          });
+        } else if (item && item.message) {
+          logs.push({
+            time: item.time || new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+            level: item.level || 'info',
+            message: item.message,
+          });
+        }
+      });
+    }
+
+    // 4. If current cycle has an active step, append current step indicator
+    if (sess?.current_cycle_details?.step && sess?.operation_state === 'running') {
+      const stepDetail = sess.current_cycle_details.detail || sess.current_cycle_details.title || 'تنفيذ الخطوة الحالية';
+      logs.push({
+        time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+        level: 'info',
+        message: `[⚡ نشط بالسيرفر] خطوة #${sess.current_cycle_details.stepNumber || 1}: ${stepDetail}`,
+      });
+    }
+
+    // 5. Default log if still empty
+    if (logs.length === 0) {
+      logs.push({
+        time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+        level: 'info',
+        message: `[+] تم فتح سجلات الجلسة «${sess?.session_name || 'VIP'}» (${sess?.owner_account_identifier || 'رقم الأونر'}). السجلات والبيانات متزامنة 100% مع السيرفر وقاعدة البيانات.`,
+      });
+    }
+
+    return logs;
+  } catch (err) {
+    console.error('[vipApi] fetchVipSessionServerLogs exception:', err);
+    return [];
+  }
+}
+
+

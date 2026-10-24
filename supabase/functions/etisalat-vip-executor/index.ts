@@ -1043,6 +1043,37 @@ async function handleSingleCycleInternal(
   sendEvent?: (type: string, data: any) => Promise<void>,
   options?: { is_server_background?: boolean; auto_eject?: boolean }
 ) {
+  // ── SERVER-SIDE MUTEX CONCURRENCY GUARD ──
+  // Prevents multiple parallel requests from executing simultaneously against the same line
+  try {
+    const { data: lockCheck } = await supabase
+      .from("vip_sessions")
+      .select("worker_status, worker_last_heartbeat")
+      .eq("id", session_id)
+      .maybeSingle();
+
+    if (lockCheck && lockCheck.worker_status === "executing") {
+      const lastHeartbeatMs = lockCheck.worker_last_heartbeat
+        ? new Date(lockCheck.worker_last_heartbeat).getTime()
+        : 0;
+      const elapsedMs = Date.now() - lastHeartbeatMs;
+      // If actively executing within last 45 seconds, reject duplicate execution
+      if (elapsedMs < 45000) {
+        console.warn(`[Mutex] Session ${session_id} is already executing a cycle (${elapsedMs}ms ago). Skipping duplicate trigger!`);
+        return {
+          success: true,
+          skipped_duplicate: true,
+          message: "الدورة قيد التنفيذ بالفعل على السيرفر - تم تخطي النداء المكرر لحماية الرصيد",
+          logs: [{
+            time: new Date().toLocaleTimeString("ar-EG", { hour12: false }),
+            level: "warn",
+            message: "[🛡️ قفل التزامن] تم تجاهل طلب تشغيل مكرر لمنع تضارب تحويل الميكسات وتصفير الرصيد.",
+          }],
+        };
+      }
+    }
+  } catch (_lockErr) {}
+
   // Update session heartbeat and active worker status
   try {
     await supabase.from("vip_sessions").update({
@@ -2009,6 +2040,7 @@ async function handleSingleCycleInternal(
     .maybeSingle();
 
   const isServerLoopActive =
+    options?.is_server_background && // CRITICAL: Only chain if cycle was explicitly triggered in server background mode!
     !targetReached &&
     freshSessState &&
     freshSessState.automation_enabled &&
@@ -2016,7 +2048,7 @@ async function handleSingleCycleInternal(
     (freshSessState.owner_mix_balance || 0) < (freshSessState.target_mix_balance || 50000);
 
   if (isServerLoopActive) {
-    const chainDelaySec = Math.max(freshSessState.cycle_delay_seconds || cooldownSec || 20, 5);
+    const chainDelaySec = Math.max(freshSessState.cycle_delay_seconds || cooldownSec || 20, 15);
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 
