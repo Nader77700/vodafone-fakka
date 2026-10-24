@@ -106,7 +106,7 @@ export function startAudioKeepAlive() {
       }
     }
 
-    // 3. Web Audio Oscillator fallback for continuous audio stream
+    // 3. Web Audio Context initialization (without continuous CPU battery-draining intervals)
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioCtx) {
       if (!audioContext) {
@@ -114,25 +114,6 @@ export function startAudioKeepAlive() {
       }
       if (audioContext.state === 'suspended') {
         audioContext.resume().catch(() => {});
-      }
-
-      if (!audioInterval) {
-        audioInterval = setInterval(() => {
-          try {
-            if (!audioContext) return;
-            if (audioContext.state === 'suspended') {
-              audioContext.resume().catch(() => {});
-            }
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            gain.gain.value = 0.0001; // inaudible
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.frequency.setValueAtTime(100, audioContext.currentTime);
-            osc.start();
-            osc.stop(audioContext.currentTime + 0.1);
-          } catch (_) {}
-        }, 5000);
       }
     }
   } catch (err) {
@@ -158,7 +139,9 @@ export function stopAudioKeepAlive() {
       audioContext.close().catch(() => {});
       audioContext = null;
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('[VipBackground] Stop Audio Keep-Alive error:', err);
+  }
 }
 
 /**

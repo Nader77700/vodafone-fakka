@@ -144,7 +144,7 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
   }, [isTemporaryShareMode]);
 
   // 2. Load Sessions & Dashboard Data
-  const loadSessionsAndData = async (preferredSessionId?: string, isManualRefresh = false) => {
+  const loadSessionsAndData = useCallback(async (preferredSessionId?: string, isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
     else setLoadingData(true);
 
@@ -172,11 +172,15 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
       setLoadingData(false);
       setRefreshing(false);
     }
-  };
+  }, [activeSessionId, urlSessionId]);
 
   useEffect(() => {
     checkOwnerAuth();
   }, [checkOwnerAuth]);
+
+  const handleRefreshActive = useCallback(() => {
+    loadSessionsAndData(activeSessionId, true);
+  }, [loadSessionsAndData, activeSessionId]);
 
   // Switch Active Session with Full Data & State Isolation
   const handleSelectSession = (newSessionId: string) => {
@@ -425,7 +429,7 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
                 key={activeSession?.id || 'empty-dashboard'}
                 data={dashboardData}
                 activeSession={activeSession}
-                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
+                onRefresh={handleRefreshActive}
                 refreshing={refreshing}
                 onNavigateTab={handleTabChange}
                 isDelegatedUser={isDelegatedUser}

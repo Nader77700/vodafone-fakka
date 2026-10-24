@@ -132,13 +132,17 @@ export function VipAutoLoopCard({
   const progressPercent = selectedTarget > 0 ? Math.min(100, Math.round((currentMix / selectedTarget) * 100)) : 0;
   const isTargetReached = currentMix >= selectedTarget && currentMix > 0;
 
+  const isExplicitlyStopped =
+    session.operation_state === 'stopped' ||
+    session.operation_state === 'completed' ||
+    session.operation_state === 'paused';
+
   const effectiveIsRunning =
-    isRunning ||
-    isServerRunning ||
-    session.operation_state === 'running' ||
-    session.automation_enabled === true ||
-    session.worker_status === 'running' ||
-    session.worker_status === 'executing';
+    !isExplicitlyStopped &&
+    (isRunning ||
+      isServerRunning ||
+      session.operation_state === 'running' ||
+      session.automation_enabled === true);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 

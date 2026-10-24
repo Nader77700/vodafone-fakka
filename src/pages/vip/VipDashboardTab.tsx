@@ -177,13 +177,16 @@ export function VipDashboardTab({
 
     // Heartbeat sync interval when session is running to stream server cloud execution updates
     const syncInterval = setInterval(() => {
-      if (session?.id && (
-        session.operation_state === 'running' ||
-        session.automation_enabled === true ||
-        session.worker_status === 'executing' ||
-        session.worker_status === 'running' ||
-        vipRunnerService.isRunning(session.id)
-      )) {
+      const isActuallyRunning =
+        session?.id &&
+        session.operation_state !== 'stopped' &&
+        session.operation_state !== 'completed' &&
+        session.operation_state !== 'paused' &&
+        (session.operation_state === 'running' ||
+          session.automation_enabled === true ||
+          vipRunnerService.isRunning(session.id));
+
+      if (isActuallyRunning) {
         onRefresh();
         fetchVipSessionServerLogs(session.id).then((serverLogs) => {
           if (serverLogs && serverLogs.length > 0) {
@@ -197,7 +200,7 @@ export function VipDashboardTab({
           }
         }).catch(() => {});
       }
-    }, 4000);
+    }, 6000);
 
     return () => {
       unsubscribe();
@@ -365,8 +368,11 @@ export function VipDashboardTab({
   const handleStopAutoLoop = async () => {
     if (!session) return;
     try {
+      setLoopRunning(false);
+      setStepMessage('تم إيقاف الدورة التلقائية');
       await vipRunnerService.stopLoop(session.id, 'طلب المستخدم');
-      toast.info('جاري إيقاف الدورة التلقائية...');
+      toast.info('تم إيقاف الدورة التلقائية بنجاح');
+      onRefresh();
     } catch (err: any) {
       toast.error('تعذر إيقاف الدورة: ' + (err?.message || ''));
     }
@@ -413,17 +419,20 @@ export function VipDashboardTab({
             onStartLoop={handleStartAutoLoop}
             onStopLoop={handleStopAutoLoop}
             isRunning={
-              loopRunning ||
-              displaySession.operation_state === 'running' ||
-              displaySession.automation_enabled === true ||
-              displaySession.worker_status === 'running' ||
-              displaySession.worker_status === 'executing'
+              displaySession.operation_state !== 'stopped' &&
+              displaySession.operation_state !== 'completed' &&
+              displaySession.operation_state !== 'paused' &&
+              (loopRunning ||
+                displaySession.operation_state === 'running' ||
+                displaySession.automation_enabled === true ||
+                vipRunnerService.isRunning(session.id))
             }
             isServerRunning={
-              displaySession.operation_state === 'running' ||
-              displaySession.automation_enabled === true ||
-              displaySession.worker_status === 'running' ||
-              displaySession.worker_status === 'executing'
+              displaySession.operation_state !== 'stopped' &&
+              displaySession.operation_state !== 'completed' &&
+              displaySession.operation_state !== 'paused' &&
+              (displaySession.operation_state === 'running' ||
+                displaySession.automation_enabled === true)
             }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}

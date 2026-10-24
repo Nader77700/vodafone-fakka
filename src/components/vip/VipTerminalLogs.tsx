@@ -204,11 +204,32 @@ function parseLogTokens(rawMsg: string): ParsedToken[] {
   return parts;
 }
 
+// Memoized individual log row to eliminate re-renders and CPU heat
+const LogLineRow = React.memo(function LogLineRow({
+  log,
+  renderColoredMessage,
+}: {
+  log: VipExecutionLog;
+  renderColoredMessage: (msg: string) => React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/60 px-1 rounded transition-colors text-right">
+      <span className="text-zinc-500 text-[10.5px] shrink-0 select-none pt-0.5 font-mono" dir="ltr">
+        {log.time}
+      </span>
+      <div className="flex-1 min-w-0 break-words font-mono text-zinc-200 text-right leading-snug">
+        {renderColoredMessage(log.message)}
+      </div>
+    </div>
+  );
+});
+
 export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedUser = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasScrolledUp, setHasScrolledUp] = useState(false);
+  const [showAllLogs, setShowAllLogs] = useState(false);
 
   // Apply sanitized logs filter for delegated users (zero-trust protection)
   const effectiveLogs = React.useMemo(() => {
@@ -493,19 +514,26 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
               </p>
             </div>
           ) : (
-            effectiveLogs.map((log, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/60 px-1 rounded transition-colors text-right"
-              >
-                <span className="text-zinc-500 text-[10.5px] shrink-0 select-none pt-0.5 font-mono" dir="ltr">
-                  {log.time}
-                </span>
-                <div className="flex-1 min-w-0 break-words font-mono text-zinc-200 text-right leading-snug">
-                  {renderColoredMessage(log.message)}
+            <>
+              {!showAllLogs && effectiveLogs.length > 100 && (
+                <div className="flex items-center justify-between p-1.5 mb-1 bg-zinc-900/80 rounded border border-zinc-800 text-[11px] text-zinc-400">
+                  <span>تم تقليص العرض إلى أحدث 100 سجل لمنع تهنيج وسخونة الهاتف.</span>
+                  <button
+                    onClick={() => setShowAllLogs(true)}
+                    className="text-primary hover:underline font-bold px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px]"
+                  >
+                    عرض كافة السجلات ({effectiveLogs.length})
+                  </button>
                 </div>
-              </div>
-            ))
+              )}
+              {(showAllLogs ? effectiveLogs : effectiveLogs.slice(-100)).map((log, index) => (
+                <LogLineRow
+                  key={`${log.time}_${index}`}
+                  log={log}
+                  renderColoredMessage={renderColoredMessage}
+                />
+              ))}
+            </>
           )}
         </div>
 
