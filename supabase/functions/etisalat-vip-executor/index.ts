@@ -2125,7 +2125,7 @@ async function handleSingleCycleInternal(
 
   // ── SERVER-SIDE CLOUD RUNNER CHAINING (الاستمرار السحابي بالخلفية بدون هاتف 24/7) ──
   // Check fresh session status from DB to ensure it's still running
-  const { data: freshSessState } = await supabase
+  const { data: latestChainSessState } = await supabase
     .from("vip_sessions")
     .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance, cycle_delay_seconds, auto_eject_child_on_complete")
     .eq("id", session_id)
@@ -2134,13 +2134,13 @@ async function handleSingleCycleInternal(
   // Chain automatically whenever automation is active and target has not been reached yet
   const isServerLoopActive =
     !targetReached &&
-    freshSessState &&
-    freshSessState.automation_enabled &&
-    (freshSessState.operation_state === "running" || freshSessState.operation_state === "active") &&
-    (freshSessState.owner_mix_balance || 0) < (freshSessState.target_mix_balance || 50000);
+    latestChainSessState &&
+    latestChainSessState.automation_enabled &&
+    (latestChainSessState.operation_state === "running" || latestChainSessState.operation_state === "active") &&
+    (latestChainSessState.owner_mix_balance || 0) < (latestChainSessState.target_mix_balance || 50000);
 
   if (isServerLoopActive) {
-    const chainDelaySec = Math.max(freshSessState.cycle_delay_seconds || cooldownSec || 20, 15);
+    const chainDelaySec = Math.max(latestChainSessState.cycle_delay_seconds || cooldownSec || 20, 15);
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 
