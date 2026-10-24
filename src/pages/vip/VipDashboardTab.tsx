@@ -137,6 +137,15 @@ export function VipDashboardTab({
       }
     });
 
+    // Check and resume active loop if running in cloud or saved in storage
+    vipRunnerService.resumeLoopIfActive(session.id, session.target_mix_balance, session.cycle_delay_seconds)
+      .then((resumed) => {
+        if (resumed) {
+          setLoopRunning(true);
+        }
+      })
+      .catch(() => {});
+
     // Initial server logs fetch: If client runner logs are empty, load complete persisted audit logs from server DB
     const runnerState = vipRunnerService.getState(session.id);
     if (!runnerState.logs || runnerState.logs.length === 0) {
@@ -152,6 +161,11 @@ export function VipDashboardTab({
       if (document.visibilityState === 'visible' && session?.id) {
         // Silently fetch the latest server-side database state and cycle updates
         onRefresh();
+        vipRunnerService.resumeLoopIfActive(session.id, session.target_mix_balance, session.cycle_delay_seconds)
+          .then((resumed) => {
+            if (resumed) setLoopRunning(true);
+          })
+          .catch(() => {});
         fetchVipSessionServerLogs(session.id).then((serverLogs) => {
           if (serverLogs && serverLogs.length > 0) {
             setTerminalLogs(serverLogs);
@@ -163,7 +177,13 @@ export function VipDashboardTab({
 
     // Heartbeat sync interval when session is running to stream server cloud execution updates
     const syncInterval = setInterval(() => {
-      if (session?.id && (session.operation_state === 'running' || session.worker_status === 'executing' || vipRunnerService.isRunning(session.id))) {
+      if (session?.id && (
+        session.operation_state === 'running' ||
+        session.automation_enabled === true ||
+        session.worker_status === 'executing' ||
+        session.worker_status === 'running' ||
+        vipRunnerService.isRunning(session.id)
+      )) {
         onRefresh();
         fetchVipSessionServerLogs(session.id).then((serverLogs) => {
           if (serverLogs && serverLogs.length > 0) {
@@ -177,7 +197,7 @@ export function VipDashboardTab({
           }
         }).catch(() => {});
       }
-    }, 5000);
+    }, 4000);
 
     return () => {
       unsubscribe();
@@ -392,8 +412,19 @@ export function VipDashboardTab({
             session={displaySession}
             onStartLoop={handleStartAutoLoop}
             onStopLoop={handleStopAutoLoop}
-            isRunning={loopRunning || displaySession.operation_state === 'running' || displaySession.worker_status === 'running' || displaySession.worker_status === 'executing'}
-            isServerRunning={displaySession.operation_state === 'running' || displaySession.worker_status === 'running' || displaySession.worker_status === 'executing'}
+            isRunning={
+              loopRunning ||
+              displaySession.operation_state === 'running' ||
+              displaySession.automation_enabled === true ||
+              displaySession.worker_status === 'running' ||
+              displaySession.worker_status === 'executing'
+            }
+            isServerRunning={
+              displaySession.operation_state === 'running' ||
+              displaySession.automation_enabled === true ||
+              displaySession.worker_status === 'running' ||
+              displaySession.worker_status === 'executing'
+            }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}
             countdownSeconds={countdownSeconds}

@@ -240,6 +240,72 @@ export function showVipNotification(
   }
 }
 
+let activePersistentNotification: any = null;
+
+/**
+ * Show a persistent foreground sticky notification in the status bar while automation is running
+ * Uses requireInteraction to stay sticky in Android notification drawer, plus mediaSession
+ */
+export function showVipPersistentNotification(
+  sessionId: string,
+  details = 'الأتمتة السحابية تعمل 24/7 بالسيرفر'
+) {
+  try {
+    if (typeof window !== 'undefined') {
+      // 1. Update MediaSession in status bar
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: '⚡ أتمتة اتصالات VIP نشطة بالسيرفر 24/7',
+          artist: 'Vodafone Fakka Premium',
+          album: details,
+        });
+        navigator.mediaSession.playbackState = 'playing';
+      }
+
+      // 2. Show Sticky Notification if permission granted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        if (activePersistentNotification) {
+          try {
+            activePersistentNotification.close();
+          } catch (_) {}
+        }
+
+        activePersistentNotification = new Notification('⚡ اتصالات VIP: الأتمتة السحابية جارية', {
+          body: `${details}\nتعمل بالسيرفر بدون توقف حتى لو أغلقت التطبيق أو قفلت الشاشة.`,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: `vip-persistent-${sessionId}`,
+          requireInteraction: true, // Keep notification sticky in notification bar
+          silent: true,
+          dir: 'rtl',
+          lang: 'ar',
+        });
+
+        activePersistentNotification.onclick = () => {
+          window.focus();
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[VipBackground] showVipPersistentNotification failed:', err);
+  }
+}
+
+/**
+ * Dismiss persistent sticky notification upon manual stop or target completion
+ */
+export function dismissVipPersistentNotification(sessionId?: string) {
+  try {
+    if (activePersistentNotification) {
+      activePersistentNotification.close();
+      activePersistentNotification = null;
+    }
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'none';
+    }
+  } catch (_) {}
+}
+
 /**
  * Send real FCM remote push notification to phone status bar via Edge Function
  * Works even if browser / app is completely closed or screen is off (same as Vodafone Red)

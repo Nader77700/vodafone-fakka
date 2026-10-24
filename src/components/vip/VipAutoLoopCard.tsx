@@ -132,6 +132,14 @@ export function VipAutoLoopCard({
   const progressPercent = selectedTarget > 0 ? Math.min(100, Math.round((currentMix / selectedTarget) * 100)) : 0;
   const isTargetReached = currentMix >= selectedTarget && currentMix > 0;
 
+  const effectiveIsRunning =
+    isRunning ||
+    isServerRunning ||
+    session.operation_state === 'running' ||
+    session.automation_enabled === true ||
+    session.worker_status === 'running' ||
+    session.worker_status === 'executing';
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleStartClick = () => {
@@ -175,10 +183,10 @@ export function VipAutoLoopCard({
           <div className="min-w-0">
             <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5 flex-wrap">
               <span>أتمتة الدورات الحية</span>
-              {isRunning || isServerRunning ? (
+              {effectiveIsRunning ? (
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 animate-pulse flex items-center gap-1 font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>{isServerRunning ? `⚡ نشطة بالسيرفر (#${currentCycle})` : `الدورة نشطة (#${currentCycle})`}</span>
+                  <span>{isServerRunning || session.automation_enabled ? `⚡ نشطة بالسيرفر (#${currentCycle})` : `الدورة نشطة (#${currentCycle})`}</span>
                 </Badge>
               ) : isPaused || session.operation_state === 'paused' ? (
                 <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] px-1.5 py-0 font-bold">
@@ -216,7 +224,7 @@ export function VipAutoLoopCard({
             <span className="hidden sm:inline">{hasNotifPerm ? 'الإشعارات نشطة' : 'تفعيل الإشعارات'}</span>
           </Button>
 
-          {isRunning || isServerRunning ? (
+          {effectiveIsRunning ? (
             <Button
               variant="destructive"
               size="sm"

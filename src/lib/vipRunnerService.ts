@@ -17,6 +17,8 @@ import {
   enableVipBackgroundExecution,
   disableVipBackgroundExecution,
   showVipNotification,
+  showVipPersistentNotification,
+  dismissVipPersistentNotification,
   sendVipRemotePushNotification,
   requestVipNotificationPermission,
 } from '@/lib/vipBackgroundManager';
@@ -326,6 +328,11 @@ class VipRunnerService {
       `الجلسة نشطة الآن. الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس.`
     ).catch(() => {});
 
+    showVipPersistentNotification(
+      sessionId,
+      `الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الفاصل: ${delaySeconds}ث`
+    );
+
     const loopPromise = this.executeLoop(sessionId);
     this.loopPromises.set(sessionId, loopPromise);
   }
@@ -367,6 +374,7 @@ class VipRunnerService {
       `توقفت الأتمتة للجلسة: ${reason}`
     ).catch(() => {});
 
+    dismissVipPersistentNotification(sessionId);
     disableVipBackgroundExecution();
   }
 
@@ -396,7 +404,7 @@ class VipRunnerService {
     try {
       const { data: sess } = await supabase
         .from('vip_sessions')
-        .select('automation_enabled, operation_state, owner_mix_balance, target_mix_balance, current_step')
+        .select('automation_enabled, operation_state, owner_mix_balance, target_mix_balance, current_step, cycle_delay_seconds, current_cycle')
         .eq('id', sessionId)
         .maybeSingle();
 
@@ -417,6 +425,37 @@ class VipRunnerService {
             window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
           }
           return false;
+        }
+
+        // If the server session is running or active:
+        if (
+          sess.automation_enabled &&
+          (sess.operation_state === 'running' || sess.operation_state === 'active')
+        ) {
+          const st = this.states.get(sessionId) || this.getState(sessionId);
+          st.isRunning = true;
+          st.stopRequested = false;
+          st.targetMix = sess.target_mix_balance || fallbackTarget || 100000;
+          st.delaySeconds = sess.cycle_delay_seconds || fallbackDelay || 20;
+          st.cycleCount = sess.current_cycle || 0;
+          st.currentStep = (sess.current_step as any) || 'running';
+          st.stepMessage = 'الأتمتة السحابية تعمل في الخلفية على السيرفر 24/7...';
+          st.latestOwnerMix = sess.owner_mix_balance;
+          this.states.set(sessionId, st);
+          this.saveToLocalStorage(sessionId, st);
+          this.notify(sessionId);
+          enableVipBackgroundExecution().catch(() => {});
+          showVipPersistentNotification(
+            sessionId,
+            `الهدف: ${st.targetMix.toLocaleString('ar-EG')} ميكس | الفاصل: ${st.delaySeconds}ث`
+          );
+
+          // If loop runner is not already actively running in this JS window, start execution monitor
+          if (!this.loopPromises.has(sessionId)) {
+            const loopPromise = this.executeLoop(sessionId);
+            this.loopPromises.set(sessionId, loopPromise);
+          }
+          return true;
         }
       }
     } catch (_) {}

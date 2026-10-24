@@ -1041,8 +1041,34 @@ async function handleSingleCycleInternal(
   childEmail: string,
   childPass: string,
   sendEvent?: (type: string, data: any) => Promise<void>,
-  options?: { is_server_background?: boolean; auto_eject?: boolean }
+  options?: { is_server_background?: boolean; auto_eject?: boolean; delay_before_start?: number }
 ) {
+  // If delay_before_start requested (e.g. cloud runner chained cycle), wait on fresh worker invocation
+  if (options?.delay_before_start && typeof options.delay_before_start === "number" && options.delay_before_start > 0) {
+    const waitSec = Math.min(options.delay_before_start, 90);
+    console.log(`[CloudRunner] Waiting ${waitSec}s delay_before_start on fresh invocation before starting cycle...`);
+    try {
+      await supabase.from("vip_sessions").update({
+        worker_status: "ready",
+        current_step: "cooldown",
+        worker_last_heartbeat: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+    } catch (_) {}
+    await sleep(waitSec * 1000);
+
+    // Re-verify if user requested stop while waiting
+    const { data: preCheck } = await supabase
+      .from("vip_sessions")
+      .select("operation_state, automation_enabled")
+      .eq("id", session_id)
+      .maybeSingle();
+    if (preCheck && (preCheck.operation_state === "stopped" || !preCheck.automation_enabled)) {
+      console.log(`[CloudRunner] Session ${session_id} was stopped during cooldown. Aborting cycle.`);
+      return { success: true, message: "تم إيقاف الأتمتة بطلب المستخدم أثناء الانتظار." };
+    }
+  }
+
   // ── SERVER-SIDE MUTEX CONCURRENCY GUARD ──
   // Prevents multiple parallel requests from executing simultaneously against the same line
   try {
@@ -2039,8 +2065,8 @@ async function handleSingleCycleInternal(
     .eq("id", session_id)
     .maybeSingle();
 
+  // Chain automatically whenever automation is active and target has not been reached yet
   const isServerLoopActive =
-    options?.is_server_background && // CRITICAL: Only chain if cycle was explicitly triggered in server background mode!
     !targetReached &&
     freshSessState &&
     freshSessState.automation_enabled &&
@@ -2055,35 +2081,21 @@ async function handleSingleCycleInternal(
     if (serviceRoleKey && supabaseUrl) {
       const triggerNext = async () => {
         try {
-          await sleep(chainDelaySec * 1000);
-          // Query fresh state to ensure user hasn't stopped or deleted session
-          const { data: checkSess } = await supabase
-            .from("vip_sessions")
-            .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance")
-            .eq("id", session_id)
-            .maybeSingle();
-
-          if (
-            checkSess &&
-            (checkSess.operation_state === "running" || checkSess.operation_state === "active") &&
-            checkSess.automation_enabled &&
-            (checkSess.owner_mix_balance || 0) < (checkSess.target_mix_balance || 50000)
-          ) {
-            console.log(`[CloudRunner] Chaining cycle #${newCycleCount + 1} on server 24/7 for session ${session_id}...`);
-            await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${serviceRoleKey}`,
-                "X-VIP-Secret-Key": "VFP_VIP_NADER_AKRAM_MASTER_2026",
-              },
-              body: JSON.stringify({
-                action: "run_single_cycle",
-                session_id: session_id,
-                is_server_background: true,
-              }),
-            });
-          }
+          console.log(`[CloudRunner] Chaining cycle #${newCycleCount + 1} on server with delay_before_start=${chainDelaySec}s for session ${session_id}...`);
+          await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${serviceRoleKey}`,
+              "X-VIP-Secret-Key": "VFP_VIP_NADER_AKRAM_MASTER_2026",
+            },
+            body: JSON.stringify({
+              action: "run_single_cycle",
+              session_id: session_id,
+              is_server_background: true,
+              delay_before_start: chainDelaySec,
+            }),
+          });
         } catch (chainErr) {
           console.warn("[CloudRunner] Chain error:", chainErr);
         }
@@ -2599,7 +2611,11 @@ serve(async (req: Request) => {
               childEmail,
               childPass,
               sendEvent,
-              { is_server_background: body.is_server_background === true, auto_eject: body.auto_eject === true }
+              {
+                is_server_background: body.is_server_background === true,
+                delay_before_start: body.delay_before_start,
+                auto_eject: body.auto_eject === true,
+              }
             );
             await sendEvent("complete", result);
           }
@@ -2802,7 +2818,11 @@ serve(async (req: Request) => {
         childEmail,
         childPass,
         undefined,
-        { is_server_background: body?.is_server_background === true, auto_eject: body?.auto_eject === true }
+        {
+          is_server_background: body?.is_server_background === true,
+          delay_before_start: body?.delay_before_start,
+          auto_eject: body?.auto_eject === true,
+        }
       );
       return new Response(JSON.stringify(result), {
         status: result.success ? 200 : 400,
@@ -2823,6 +2843,8 @@ serve(async (req: Request) => {
         .update({
           operation_state: "running",
           automation_enabled: true,
+          worker_status: "running",
+          worker_last_heartbeat: new Date().toISOString(),
           target_mix_balance: targetBalance,
           cycle_delay_seconds: cycleDelay,
           current_step: "starting",
@@ -2880,6 +2902,7 @@ serve(async (req: Request) => {
         .update({
           operation_state: "stopped",
           automation_enabled: false,
+          worker_status: "stopped",
           current_step: "idle",
           updated_at: new Date().toISOString(),
         })
