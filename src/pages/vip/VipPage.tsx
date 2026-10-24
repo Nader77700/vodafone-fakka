@@ -336,6 +336,8 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
           onSelectSession={handleSelectSession}
           onSessionsChanged={() => loadSessionsAndData(activeSessionId, false)}
           disabled={loadingData || refreshing}
+          isDelegatedUser={isDelegatedUser}
+          vipAccess={vipAccess}
         />
 
         {loadingData && !dashboardData ? (

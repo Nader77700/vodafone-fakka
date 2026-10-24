@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -51,6 +51,7 @@ import {
   Radio,
   Flame,
   Edit2,
+  Lock,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import { vipRunnerService } from '@/lib/vipRunnerService';
@@ -74,6 +75,8 @@ interface Props {
   onSelectSession: (sessionId: string) => void;
   onSessionsChanged: () => void;
   disabled?: boolean;
+  isDelegatedUser?: boolean;
+  vipAccess?: any;
 }
 
 export function VipSessionSwitcher({
@@ -82,6 +85,8 @@ export function VipSessionSwitcher({
   onSelectSession,
   onSessionsChanged,
   disabled = false,
+  isDelegatedUser = false,
+  vipAccess = null,
 }: Props) {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openArchiveModal, setOpenArchiveModal] = useState(false);
@@ -112,6 +117,15 @@ export function VipSessionSwitcher({
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
 
+  // Restrict packages and cooldown if user is delegated
+  const allowedPkgs: number[] = useMemo(() => {
+    if (!isDelegatedUser) return [50000, 100000, 150000, 200000];
+    if (vipAccess?.allowed_packages && Array.isArray(vipAccess.allowed_packages) && vipAccess.allowed_packages.length > 0) {
+      return vipAccess.allowed_packages;
+    }
+    return [50000];
+  }, [isDelegatedUser, vipAccess?.allowed_packages]);
+
   // Listen to runner service across all sessions so cards update their live balances and running badges in real time
   const [, setRunnerTick] = useState(0);
   useEffect(() => {
@@ -128,17 +142,23 @@ export function VipSessionSwitcher({
   // Auto-fill child credentials from saved defaults when opening add modal
   useEffect(() => {
     if (openAddModal) {
+      if (isDelegatedUser) {
+        setTargetPreset(String(allowedPkgs[0] || 50000));
+        setCycleDelaySeconds(vipAccess?.cooldown_seconds || 30);
+      }
       getVipDefaultChildCredentials()
         .then((res) => {
           if (res && res.child_email) {
             setIndividualEmail(res.child_email);
             if (res.child_password) setIndividualPassword(res.child_password);
             setIsChildPreFilled(true);
+          } else {
+            setIsChildPreFilled(false);
           }
         })
         .catch(() => {});
     }
-  }, [openAddModal]);
+  }, [openAddModal, isDelegatedUser, allowedPkgs, vipAccess?.cooldown_seconds]);
 
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +181,7 @@ export function VipSessionSwitcher({
     }
 
     let finalTarget = 50000;
-    if (targetPreset === 'custom') {
+    if (targetPreset === 'custom' && !isDelegatedUser) {
       const parsed = parseInt(customTarget, 10);
       if (isNaN(parsed) || parsed <= 0) {
         toast.error('يرجى إدخال رقم صحيح وموجب لهدف الميكسات');
@@ -172,7 +192,16 @@ export function VipSessionSwitcher({
       finalTarget = parseInt(targetPreset, 10);
     }
 
-    const delay = cycleDelaySeconds < 0 ? 20 : cycleDelaySeconds;
+    // Zero-Trust client validation
+    if (isDelegatedUser) {
+      if (!allowedPkgs.includes(finalTarget)) {
+        toast.error(`باقة ${finalTarget.toLocaleString('ar-EG')} ميكس غير مسموحة لحسابك. الباقات المصرح بها: ${allowedPkgs.map((p) => p.toLocaleString('ar-EG')).join('، ')} ميكس`);
+        return;
+      }
+    }
+
+    const minDelay = isDelegatedUser ? (vipAccess?.cooldown_seconds || 30) : 0;
+    const delay = isDelegatedUser ? minDelay : (cycleDelaySeconds < 0 ? 20 : cycleDelaySeconds);
 
     setSubmitting(true);
     try {
@@ -393,8 +422,8 @@ export function VipSessionSwitcher({
               <span>الأرشيف</span>
             </Button>
 
-            {/* 4. Delete/Archive All */}
-            {sessions.length > 0 && (
+            {/* 4. Delete/Archive All (Owner Only) */}
+            {!isDelegatedUser && sessions.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -745,22 +774,33 @@ export function VipSessionSwitcher({
             {/* Target & Delay */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">هدف الميكسات</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">هدف الميكسات</Label>
+                  {isDelegatedUser && (
+                    <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 gap-1 px-1.5 py-0">
+                      <Lock className="w-2.5 h-2.5" />
+                      مقيد بالصلاحيات
+                    </Badge>
+                  )}
+                </div>
                 <Select value={targetPreset} onValueChange={setTargetPreset}>
                   <SelectTrigger className="text-xs h-8">
                     <SelectValue placeholder="اختر هدف الميكسات" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="50000">50,000 ميكس (الافتراضي)</SelectItem>
-                    <SelectItem value="100000">100,000 ميكس</SelectItem>
-                    <SelectItem value="150000">150,000 ميكس</SelectItem>
-                    <SelectItem value="200000">200,000 ميكس</SelectItem>
-                    <SelectItem value="custom">قيمة مخصصة يدوياً...</SelectItem>
+                    {allowedPkgs.map((pkg) => (
+                      <SelectItem key={pkg} value={String(pkg)}>
+                        {pkg.toLocaleString('ar-EG')} ميكس {pkg === 50000 ? '(الافتراضي)' : ''}
+                      </SelectItem>
+                    ))}
+                    {!isDelegatedUser && (
+                      <SelectItem value="custom">قيمة مخصصة يدوياً...</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
-              {targetPreset === 'custom' ? (
+              {targetPreset === 'custom' && !isDelegatedUser ? (
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold">الهدف المخصص (ميكس)</Label>
                   <Input
@@ -774,13 +814,22 @@ export function VipSessionSwitcher({
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold">مدة الانتظار (ثواني)</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">مدة الانتظار (ثواني)</Label>
+                    {isDelegatedUser && (
+                      <span className="text-[10px] text-amber-400 flex items-center gap-1 font-mono">
+                        <Lock className="w-2.5 h-2.5" />
+                        مفروض خادمياً
+                      </span>
+                    )}
+                  </div>
                   <Input
                     type="number"
-                    min="0"
-                    value={cycleDelaySeconds}
+                    min="5"
+                    value={isDelegatedUser ? (vipAccess?.cooldown_seconds || 30) : cycleDelaySeconds}
+                    disabled={isDelegatedUser}
                     onChange={(e) => setCycleDelaySeconds(parseInt(e.target.value, 10) || 20)}
-                    className="text-xs h-8 font-mono"
+                    className="text-xs h-8 font-mono disabled:opacity-80 disabled:bg-muted/50"
                     dir="ltr"
                   />
                 </div>
