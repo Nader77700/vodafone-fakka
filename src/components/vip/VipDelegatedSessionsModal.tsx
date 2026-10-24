@@ -65,13 +65,16 @@ export const VipDelegatedSessionsModal: React.FC<Props> = ({
 
     delegatedSessions.forEach((sess) => {
       const runnerState = vipRunnerService.getState(sess.id);
-      const isRunning = runnerState.isRunning;
+      const isRunning =
+        runnerState.isRunning ||
+        sess.operation_state === 'running' ||
+        sess.worker_status === 'running';
       const target = sess.target_mix_balance || 50000;
       const balance = Math.max(runnerState.latestOwnerMix || 0, sess.owner_mix_balance || 0);
 
       if (isRunning) {
         running++;
-      } else if (balance >= target && target > 0) {
+      } else if ((balance >= target && target > 0) || sess.operation_state === 'completed') {
         completed++;
       } else {
         paused++;
@@ -255,11 +258,14 @@ export const VipDelegatedSessionsModal: React.FC<Props> = ({
           ) : (
             filteredSessions.map((sess) => {
               const runnerState = vipRunnerService.getState(sess.id);
-              const isRunning = runnerState.isRunning;
+              const isRunning =
+                runnerState.isRunning ||
+                sess.operation_state === 'running' ||
+                sess.worker_status === 'running';
               const target = sess.target_mix_balance || 50000;
               const currentMix = Math.max(runnerState.latestOwnerMix || 0, sess.owner_mix_balance || 0);
               const progressPct = Math.min(100, Math.round((currentMix / target) * 100));
-              const isCompleted = currentMix >= target && target > 0;
+              const isCompleted = (currentMix >= target && target > 0) || sess.operation_state === 'completed';
               const isSelected = sess.id === activeSessionId;
 
               return (

@@ -95,6 +95,7 @@ export function VipSessionSwitcher({
   const [archivedSessions, setArchivedSessions] = useState<VipSession[]>([]);
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
+  const [archiveScope, setArchiveScope] = useState<'owner_only' | 'completed_only' | 'all'>('owner_only');
   const [openDefaultChildModal, setOpenDefaultChildModal] = useState(false);
   const [openEditCredsModal, setOpenEditCredsModal] = useState(false);
   const [openDelegatedModal, setOpenDelegatedModal] = useState(false);
@@ -130,6 +131,27 @@ export function VipSessionSwitcher({
   const delegatedSessionsCount = useMemo(() => {
     return sessions.filter((s) => s.is_delegated_session).length;
   }, [sessions]);
+
+  const ownerSessionsCount = useMemo(() => {
+    return sessions.filter((s) => !s.is_delegated_session).length;
+  }, [sessions]);
+
+  const activeRunningSessionsCount = useMemo(() => {
+    return sessions.filter((s) => {
+      const rs = vipRunnerService.getState(s.id);
+      return rs.isRunning || s.operation_state === 'running' || s.worker_status === 'running';
+    }).length;
+  }, [sessions]);
+
+  const completedSessionsCount = useMemo(() => {
+    return sessions.filter((s) => {
+      const ownerMix = s.owner_mix_balance || 0;
+      const targetMix = s.target_mix_balance || 50000;
+      return ownerMix >= targetMix || s.operation_state === 'completed';
+    }).length;
+  }, [sessions]);
+
+  const inProgressSessionsCount = Math.max(0, sessions.length - completedSessionsCount);
 
   // Determine sessions visible to current viewer
   const visibleSessions = useMemo(() => {
@@ -349,9 +371,9 @@ export function VipSessionSwitcher({
   const handleDeleteAllSessions = async () => {
     setSubmitting(true);
     try {
-      const res = await deleteAllVipSessions();
+      const res = await deleteAllVipSessions(archiveScope);
       if (res.success) {
-        toast.success('تم أرشفة جميع جلسات اتصالات بنجاح.');
+        toast.success(res.message || 'تمت أرشفة الجلسات المحددة بنجاح.');
         setOpenDeleteAllModal(false);
         onSelectSession('');
         onSessionsChanged();
@@ -401,8 +423,8 @@ export function VipSessionSwitcher({
 
           {/* Action Buttons Toolbar */}
           <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto flex-wrap">
-            {/* Owner: Delegated Sessions Monitor Modal Button */}
-            {!isDelegatedUser && delegatedSessionsCount > 0 && (
+            {/* Owner: Delegated Sessions Monitor Modal Button - Always visible for owner */}
+            {!isDelegatedUser && (
               <Button
                 variant="outline"
                 size="sm"
@@ -419,8 +441,8 @@ export function VipSessionSwitcher({
               </Button>
             )}
 
-            {/* Owner: Toggle Show / Hide Delegated Sessions */}
-            {!isDelegatedUser && delegatedSessionsCount > 0 && (
+            {/* Owner: Toggle Show / Hide Delegated Sessions - Always visible for owner */}
+            {!isDelegatedUser && (
               <Button
                 variant="outline"
                 size="sm"
@@ -581,7 +603,10 @@ export function VipSessionSwitcher({
               {visibleSessions.map((sess, idx) => {
                 const isSelected = sess.id === activeSessionId;
                 const runnerState = vipRunnerService.getState(sess.id);
-                const isRunning = runnerState.isRunning;
+                const isRunning =
+                  runnerState.isRunning ||
+                  sess.operation_state === 'running' ||
+                  sess.worker_status === 'running';
                 const ownerId = sess.owner_account_identifier || sess.owner_email || 'يُستخرج بالفحص';
                 const childId = sess.individual_account_identifier || sess.individual_email || 'غير مضاف';
                 const liveOwnerMix = (runnerState.latestOwnerMix !== undefined && runnerState.latestOwnerMix !== null)
@@ -593,6 +618,8 @@ export function VipSessionSwitcher({
                 const isParked = runnerState.currentStep === 'parking' || runnerState.currentStep === 'migrating' || runnerState.currentStep === 'waiting_server';
                 const targetMix = sess.target_mix_balance || 50000;
                 const progressPct = Math.min(100, Math.round((ownerMix / targetMix) * 100));
+                const isCompleted = progressPct >= 100 || sess.operation_state === 'completed' || (ownerMix >= targetMix && targetMix > 0);
+                const isPaused = sess.operation_state === 'paused';
 
                 return (
                   <div
@@ -603,7 +630,9 @@ export function VipSessionSwitcher({
                       }
                     }}
                     className={`relative rounded-xl p-3 border transition-all text-right select-none ${
-                      isSelected
+                      isRunning
+                        ? 'border-emerald-500/70 ring-2 ring-emerald-500/50 bg-gradient-to-br from-emerald-950/20 via-card to-card shadow-lg shadow-emerald-500/10 cursor-pointer'
+                        : isSelected
                         ? (sess.is_delegated_session && !isDelegatedUser)
                           ? 'border-sky-500 ring-2 ring-sky-500/40 bg-gradient-to-br from-sky-950/25 via-card to-card shadow-lg shadow-sky-500/15 cursor-default'
                           : 'border-primary ring-2 ring-primary/40 bg-gradient-to-br from-primary/10 via-card to-card shadow-lg shadow-primary/10 cursor-default'
@@ -616,7 +645,11 @@ export function VipSessionSwitcher({
                     <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border/40">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                          isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                          isRunning
+                            ? 'bg-emerald-500 text-emerald-950 font-bold'
+                            : isSelected
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground'
                         }`}>
                           <span className="text-[11px] font-bold font-mono">#{idx + 1}</span>
                         </div>
@@ -640,21 +673,41 @@ export function VipSessionSwitcher({
                           <Edit2 className="w-2.5 h-2.5" />
                         </Button>
                         {isRunning ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 flex items-center gap-1 animate-pulse">
-                            <Flame className="w-3 h-3 text-emerald-400" />
-                            <span>شغال ⚡</span>
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10.5px] px-2 py-0.5 flex items-center gap-1 font-bold animate-pulse shadow-sm shadow-emerald-500/20">
+                            <Flame className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
+                            <span>⚡ قيد التشغيل والتحويل</span>
+                          </Badge>
+                        ) : isCompleted ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/35 text-[10px] px-1.5 py-0.5 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>مكتملة 100%</span>
+                          </Badge>
+                        ) : isPaused ? (
+                          <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px] px-1.5 py-0.5 font-bold">
+                            <span>⏸️ متوقفة مؤقتاً</span>
                           </Badge>
                         ) : isSelected ? (
                           <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0 font-bold">
                             نشطة الآن
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] text-muted-foreground px-1.5 py-0">
-                            جاهزة
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground px-1.5 py-0.5">
+                            جاهزة للبدء
                           </Badge>
                         )}
                       </div>
                     </div>
+
+                    {/* Live Running Notification Banner on Card */}
+                    {isRunning && (
+                      <div className="mb-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between text-[10.5px]">
+                        <span className="text-emerald-400 font-bold flex items-center gap-1 animate-pulse">
+                          <Flame className="w-3 h-3 text-emerald-400" />
+                          <span>جلسة الفرد شغالة: نقل ومزامنة مستمرة</span>
+                        </span>
+                        <span className="text-[9.5px] text-emerald-300/80 font-mono">Running</span>
+                      </div>
+                    )}
 
                     {/* Owner vs Delegated User Identification Banner */}
                     {!isDelegatedUser && (
@@ -1132,32 +1185,162 @@ export function VipSessionSwitcher({
         </DialogContent>
       </Dialog>
 
-      {/* ── Modal: Delete ALL Sessions ── */}
-      <AlertDialog open={openDeleteAllModal} onOpenChange={setOpenDeleteAllModal}>
-        <AlertDialogContent className="max-w-[calc(100%-2rem)] md:max-w-md" dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-bold text-destructive flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              تأكيد حذف وأرشفة كافة الجلسات ({sessions.length})
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              تحذير: سيتم حذف وأرشفة جميع جلسات اتصالات VIP المسجلة في النظام وإيقاف كافة الأتمتة المفتوحة، وستصبح اللوحة فارغة تماماً لمنع أي بدء تلقائي حتى تقوم بإضافة جلسة جديدة بنفسك.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={submitting} className="text-xs">
+      {/* ── Modal: Smart Multi-Option Archive Sessions ── */}
+      <Dialog open={openDeleteAllModal} onOpenChange={setOpenDeleteAllModal}>
+        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-lg bg-card/95 backdrop-blur-xl border-border" dir="rtl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <Archive className="w-5 h-5 text-amber-500" />
+              <span>خيارات أرشفة جلسات اتصالات VIP ({sessions.length})</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
+              اختر نطاق الأرشفة المناسب. يمكنك أرشفة جلسات المالك فقط، أو أرشفة الجلسات المكتملة 100% فقط، أو أرشفة شاملة لكافة الجلسات.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Running or In-Progress Warning Alert */}
+          {(activeRunningSessionsCount > 0 || inProgressSessionsCount > 0) && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-300">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>تنبيه وعي النظام بشأن الجلسات النشطة:</span>
+              </div>
+              <p className="text-[11.5px] leading-relaxed text-amber-200/90">
+                {activeRunningSessionsCount > 0 && (
+                  <span className="font-bold block">
+                    ⚡ توجد ({activeRunningSessionsCount}) جلسة قيد التشغيل ونقل الميكسات حالياً بالسيرفر!
+                  </span>
+                )}
+                {inProgressSessionsCount > 0 && (
+                  <span className="block">
+                    • توجد ({inProgressSessionsCount}) جلسة لم تكتمل بنسبة 100% بعد.
+                  </span>
+                )}
+                للحفاظ على دورات العمل الجارية، نوصي باختيار «أرشفة الجلسات المكتملة فقط» أو «أرشفة جلسات المالك فقط».
+              </p>
+            </div>
+          )}
+
+          {/* Scope Options Selector */}
+          <div className="space-y-2 py-1">
+            {/* Option 1: Owner Only */}
+            <div
+              onClick={() => setArchiveScope('owner_only')}
+              className={`p-3 rounded-xl border transition-all cursor-pointer text-right flex items-start gap-2.5 ${
+                archiveScope === 'owner_only'
+                  ? 'border-amber-500/70 bg-amber-500/10 ring-1 ring-amber-500/50 shadow-sm'
+                  : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+              }`}
+            >
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                archiveScope === 'owner_only' ? 'border-amber-500 bg-amber-500' : 'border-muted-foreground'
+              }`}>
+                {archiveScope === 'owner_only' && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1">
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span>أرشفة جلسات المالك فقط (الموصى به)</span>
+                  </span>
+                  <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30">
+                    {ownerSessionsCount} جلسة
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  يتم نقل جلسات المالك للأرشيف مع بقاء جلسات المستخدمين المفوضين ({delegatedSessionsCount}) نشطة وظاهرة للمستخدمين بدون مساس.
+                </p>
+              </div>
+            </div>
+
+            {/* Option 2: Completed Only */}
+            <div
+              onClick={() => setArchiveScope('completed_only')}
+              className={`p-3 rounded-xl border transition-all cursor-pointer text-right flex items-start gap-2.5 ${
+                archiveScope === 'completed_only'
+                  ? 'border-emerald-500/70 bg-emerald-500/10 ring-1 ring-emerald-500/50 shadow-sm'
+                  : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+              }`}
+            >
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                archiveScope === 'completed_only' ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
+              }`}>
+                {archiveScope === 'completed_only' && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-bold text-emerald-300 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>أرشفة الجلسات المكتملة فقط (100%)</span>
+                  </span>
+                  <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">
+                    {completedSessionsCount} جلسة
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  أرشفة الجلسات التي بلغت الهدف المحدد بالكامل، مع الإبقاء على الجلسات الجارية أو التي لم تكتمل بعد في القائمة النشطة.
+                </p>
+              </div>
+            </div>
+
+            {/* Option 3: All Sessions */}
+            <div
+              onClick={() => setArchiveScope('all')}
+              className={`p-3 rounded-xl border transition-all cursor-pointer text-right flex items-start gap-2.5 ${
+                archiveScope === 'all'
+                  ? 'border-rose-500/70 bg-rose-500/10 ring-1 ring-rose-500/50 shadow-sm'
+                  : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+              }`}
+            >
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                archiveScope === 'all' ? 'border-rose-500 bg-rose-500' : 'border-muted-foreground'
+              }`}>
+                {archiveScope === 'all' && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-bold text-rose-300 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                    <span>أرشفة شاملة لكافة الجلسات</span>
+                  </span>
+                  <Badge variant="outline" className="text-[10px] text-rose-400 border-rose-500/30">
+                    {sessions.length} جلسة
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  أرشفة جميع الجلسات المسجلة وإيقاف كافة الأتمتة المفتوحة بالسيرفر وتفريغ القائمة.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOpenDeleteAllModal(false)}
+              disabled={submitting}
+              className="text-xs"
+            >
               إلغاء
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </Button>
+            <Button
+              size="sm"
               onClick={handleDeleteAllSessions}
               disabled={submitting}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-bold"
+              className={`text-xs font-bold text-white ${
+                archiveScope === 'owner_only'
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : archiveScope === 'completed_only'
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-destructive hover:bg-destructive/90'
+              }`}
             >
-              {submitting ? 'جاري حذف كافة الجلسات...' : 'نعم، حذف كافة الجلسات الآن'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {submitting ? 'جاري تنفيذ الأرشفة...' : 'تأكيد الأرشفة المحددة'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Modal: Delegated Sessions Monitor ── */}
       <VipDelegatedSessionsModal

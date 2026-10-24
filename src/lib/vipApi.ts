@@ -71,7 +71,13 @@ export async function listVipSessions(): Promise<VipSession[]> {
   try {
     const { data, error } = await supabase.rpc('vip_list_sessions');
     if (error) throw error;
-    return (data?.sessions || []) as VipSession[];
+    const sessions = (data?.sessions || []) as VipSession[];
+    // Ensure newest sessions are sorted first (created_at DESC)
+    return sessions.sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
   } catch (err) {
     console.error('[vipApi] listVipSessions error:', err);
     throw err;
@@ -214,11 +220,16 @@ export async function deleteVipSession(
 }
 
 /**
- * Delete / Archive all active VIP sessions.
+ * Delete / Archive all active VIP sessions with smart scope support:
+ * scope: 'owner_only' (default) | 'completed_only' | 'all'
  */
-export async function deleteAllVipSessions(): Promise<{ success: boolean; deleted_count: number; message: string }> {
+export async function deleteAllVipSessions(
+  scope: 'owner_only' | 'completed_only' | 'all' = 'owner_only'
+): Promise<{ success: boolean; deleted_count: number; message: string; scope?: string }> {
   try {
-    const { data, error } = await supabase.rpc('vip_delete_all_sessions');
+    const { data, error } = await supabase.rpc('vip_delete_all_sessions', {
+      p_scope: scope,
+    });
     if (error) throw error;
     return data;
   } catch (err) {

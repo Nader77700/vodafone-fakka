@@ -29,7 +29,7 @@ export function sanitizeLogForDelegatedUser(msg: string): string | null {
   if (!msg) return null;
   const lower = msg.toLowerCase();
 
-  // 1. Strip sensitive internal scripts, auth tokens, headers, curls, endpoints
+  // 1. Strip sensitive internal scripts, auth tokens, headers, curls, endpoints, uuids, passwords
   if (
     lower.includes('bearer') ||
     lower.includes('token') ||
@@ -46,12 +46,45 @@ export function sanitizeLogForDelegatedUser(msg: string): string | null {
     lower.includes('trace_id') ||
     lower.includes('node:') ||
     lower.includes('python') ||
-    lower.includes('subprocess')
+    lower.includes('subprocess') ||
+    lower.includes('minion')
   ) {
     return null;
   }
 
-  // 2. Hide internal seconds countdown / timer mechanics so clients don't reverse-engineer script pacing
+  // 2. Hide internal proprietary mechanics & system transition steps (180, 270, ahlan, golden shield, migration, attempt counts)
+  if (
+    msg.includes('درع الأمان') ||
+    msg.includes('محجوزة ومحمية') ||
+    msg.includes('يحظر استرجاعها') ||
+    msg.includes('حكاية ميكسات 180') ||
+    msg.includes('حكاية ميكسات 270') ||
+    msg.includes('باقة 180') ||
+    msg.includes('باقة 270') ||
+    msg.includes('نظام 180') ||
+    msg.includes('نظام 270') ||
+    msg.includes('Parent_6') ||
+    msg.includes('Parent_7') ||
+    msg.includes('أهلاً أقوى كارت') ||
+    msg.includes('تغيير النظام إلى') ||
+    msg.includes('اعتماد النظام الجديد') ||
+    msg.includes('فحص استجابة السيرفر للنظام') ||
+    msg.includes('تنشيط ومزامنة العقد') ||
+    msg.includes('تجديد باقة الأونر') ||
+    msg.includes('رصد تحويل وهمي') ||
+    msg.includes('فك تعليق') ||
+    msg.includes('فك التعليق') ||
+    msg.includes('ترحيل') ||
+    msg.includes('الترحيل') ||
+    /محاولة \d+\/\d+/i.test(msg) ||
+    /فحص رصيد الفرد \(\d+\/\d+\)/i.test(msg) ||
+    msg.includes('فحص ذكي لوصول الميكسات') ||
+    msg.includes('بحد أقصى ثانيتان')
+  ) {
+    return null;
+  }
+
+  // 3. Hide internal seconds countdown / timer mechanics so clients don't reverse-engineer script pacing
   if (
     (lower.includes('متبقي') && (lower.includes('ثانية') || lower.includes('ثواني'))) ||
     /\[\d+s\]/i.test(msg) ||
@@ -63,14 +96,19 @@ export function sanitizeLogForDelegatedUser(msg: string): string | null {
     return null;
   }
 
-  // 3. Clean technical jargon to standard high-level business phrases
+  // 4. Strip internal server order IDs / transaction hashes
   let cleaned = msg
+    .replace(/\[\s*رقم أمر التحويل بسيرفر اتصالات:\s*[a-f0-9-]+\s*\]/gi, '')
+    .replace(/\[\s*[a-f0-9]{8}-[a-f0-9-]{12,}\s*\]/gi, '')
     .replace(/Hekaya_XRP_MIX_Parent_\d+/gi, 'حكاية ميكسات')
     .replace(/XRP_MIX_\w+/gi, 'باقة ميكسات')
     .replace(/sess_[a-f0-9]+/gi, 'جلسة VIP')
     .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '***');
 
-  return cleaned;
+  // Clean double spaces or trailing punctuation
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  return cleaned || null;
 }
 
 // Helper to convert Arabic-Indic numerals to standard English numbers
