@@ -2088,7 +2088,7 @@ function AdminDashboard() {
         )}
 
         {/* Sticky top bar with breadcrumb */}
-        <div className="sticky top-0 lg:top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+        <div className="sticky top-[49px] lg:top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
           <Breadcrumb items={[
             { label: 'الرئيسية', onClick: () => navigate('/home') },
             { label: 'الإدارة', onClick: () => setActiveTab('overview') },
@@ -6721,28 +6721,33 @@ function AdminDashboard() {
           {/* ════ إدارة باقات VIP (الأونر والفرد) ════ */}
           {activeTab === 'vip_delegation' && (
             <div className="space-y-4 page-enter">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-primary/20 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl bg-card border border-border shadow-xs">
+                <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-primary/20 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0 mt-0.5 sm:mt-0">
                     <Crown className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h2 className="text-base font-bold text-foreground">
-                      لوحة تحكم باقات VIP (الأونر والفرد)
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      تحكم فوري خادمي (Zero-Trust): تحديد الخانات المصرح بها للمستخدمين (50k / 200k أو يدوي)، الفواصل الزمنية (50ث / 60ث)، عدد الجلسات، وسجل أسباب الفشل.
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-sm sm:text-base font-bold text-foreground">
+                        لوحة تحكم باقات VIP (الأونر والفرد)
+                      </h2>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 font-medium">
+                        Zero-Trust
+                      </span>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      إدارة وتفويض وصول المستخدمين، سقف التفعيلات، الخانات المصرح بها (50k/100k)، والجلسات بأمان سيرفري مشدد
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-0">
                   <Button
                     size="sm"
                     onClick={() => navigate('/vip')}
-                    className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold hover:brightness-110"
+                    className="h-8 text-xs gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold hover:brightness-110 w-full sm:w-auto justify-center"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    فتح محطة تشغيل VIP
+                    <span>فتح محطة تشغيل VIP</span>
                   </Button>
                 </div>
               </div>

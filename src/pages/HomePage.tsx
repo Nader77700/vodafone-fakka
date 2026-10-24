@@ -208,8 +208,48 @@ function HomeVipOwnerCard() {
   const { profile } = useAuth();
   const L = useIsLight();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const [hasDelegatedVip, setHasDelegatedVip] = useState(false);
+  const [delegatedInfo, setDelegatedInfo] = useState<{
+    cycles_remaining: number;
+    max_daily_cycles: number;
+  } | null>(null);
 
-  if (!isAdmin) return null;
+  useEffect(() => {
+    if (!profile?.id) return;
+    if (isAdmin) {
+      setHasDelegatedVip(true);
+      return;
+    }
+    let isMounted = true;
+    const checkDelegation = async () => {
+      try {
+        const { data } = await supabase
+          .from('vip_delegated_users')
+          .select('is_active, max_daily_cycles, cycle_count_today')
+          .eq('user_id', profile.id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (isMounted && data?.is_active) {
+          setHasDelegatedVip(true);
+          const maxCycles = data.max_daily_cycles ?? 10;
+          const consumed = data.cycle_count_today ?? 0;
+          setDelegatedInfo({
+            max_daily_cycles: maxCycles,
+            cycles_remaining: Math.max(0, maxCycles - consumed),
+          });
+        }
+      } catch (err) {
+        // silent fallback
+      }
+    };
+    checkDelegation();
+    return () => {
+      isMounted = false;
+    };
+  }, [profile?.id, isAdmin]);
+
+  if (!isAdmin && !hasDelegatedVip) return null;
 
   return (
     <div className="px-4 pt-3">
@@ -219,7 +259,7 @@ function HomeVipOwnerCard() {
         style={{
           boxShadow: L ? '0 4px 24px rgba(245,158,11,0.15)' : '0 10px 40px rgba(0,0,0,0.55)',
         }}
-        aria-label="فتح قسم إدارة باقات VIP للأونر والفرد"
+        aria-label={isAdmin ? 'فتح قسم إدارة باقات VIP للأونر والفرد' : 'فتح بوابة باقات اتصالات VIP'}
       >
         {/* Gradient Background */}
         <div
@@ -268,14 +308,16 @@ function HomeVipOwnerCard() {
               <div className="text-right">
                 <div className="flex items-center gap-2">
                   <h3 className={`text-base font-black ${L ? 'text-gray-900' : 'text-white'}`}>
-                    إدارة باقات VIP (الأونر والفرد)
+                    {isAdmin ? 'إدارة باقات VIP (الأونر والفرد)' : 'بوابة باقات اتصالات VIP'}
                   </h3>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-rose-600 text-white shadow-xs">
-                    Phase 1 VIP
+                    {isAdmin ? 'Phase 1 VIP' : 'مفوض معتمد'}
                   </span>
                 </div>
                 <p className={`text-xs mt-0.5 ${L ? 'text-gray-600' : 'text-gray-300'}`}>
-                  مركز التحكم المشفر والموثق لدورات تجديد وميكسات الحسابات مع أمان الخادم المشدد
+                  {isAdmin
+                    ? 'مركز التحكم المشفر والموثق لدورات تجديد وميكسات الحسابات مع أمان الخادم المشدد'
+                    : 'بوابة تنفيذ وتحويل ميكسات اتصالات VIP المصرح بها لحسابك بنظام Zero-Trust الخادمي'}
                 </p>
               </div>
             </div>
@@ -291,34 +333,62 @@ function HomeVipOwnerCard() {
 
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                L ? 'bg-amber-100/90 text-amber-900 border border-amber-300' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-              }`}
-            >
-              👑 حساب الأونر والفرد
-            </span>
-            <span
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                L ? 'bg-rose-100/80 text-rose-700' : 'bg-rose-500/15 text-rose-300 border border-rose-500/25'
-              }`}
-            >
-              ⚡ تحكم يدوي وأتمتة
-            </span>
-            <span
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                L ? 'bg-emerald-100/80 text-emerald-700' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
-              }`}
-            >
-              🔒 توثيق محمي بالسيرفر
-            </span>
-            <span
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                L ? 'bg-purple-100/80 text-purple-700' : 'bg-purple-500/15 text-purple-300 border border-purple-500/25'
-              }`}
-            >
-              📜 سجل عمليات وتدقيق
-            </span>
+            {isAdmin ? (
+              <>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-amber-100/90 text-amber-900 border border-amber-300' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  }`}
+                >
+                  👑 حساب الأونر والفرد
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-rose-100/80 text-rose-700' : 'bg-rose-500/15 text-rose-300 border border-rose-500/25'
+                  }`}
+                >
+                  ⚡ تحكم يدوي وأتمتة
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-emerald-100/80 text-emerald-700' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+                  }`}
+                >
+                  🔒 توثيق محمي بالسيرفر
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-purple-100/80 text-purple-700' : 'bg-purple-500/15 text-purple-300 border border-purple-500/25'
+                  }`}
+                >
+                  📜 سجل عمليات وتدقيق
+                </span>
+              </>
+            ) : (
+              <>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-emerald-100/90 text-emerald-900 border border-emerald-300' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  }`}
+                >
+                  🔒 تفويض خادمي معتمد
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-amber-100/80 text-amber-800' : 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
+                  }`}
+                >
+                  ⚡ متبقي اليوم: {delegatedInfo?.cycles_remaining ?? '10'} تفعيلات
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    L ? 'bg-blue-100/80 text-blue-800' : 'bg-blue-500/15 text-blue-300 border border-blue-500/25'
+                  }`}
+                >
+                  🚀 تحويل ميكسات مباشر
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>

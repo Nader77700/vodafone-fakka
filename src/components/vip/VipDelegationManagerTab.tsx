@@ -352,175 +352,299 @@ export const VipDelegationManagerTab: React.FC = () => {
       )}
 
       {/* ── شريط الإدارة والتحكم في المستخدمين ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-card border border-border">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-card border border-border shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <ShieldCheck className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-foreground">
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-sm font-bold text-foreground truncate">
               المستخدمون المفوضون وصلاحيات التفعيل
             </h2>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground line-clamp-1">
               القسم مخفي عن الجميع؛ قم بتفويض حساب مسجل وتحديد عدد التفعيلات والجلسات
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="h-7 text-xs px-2.5">
-            <RefreshCw className={`w-3 h-3 ml-1 ${loading ? 'animate-spin' : ''}`} />
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+          <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="h-8 text-xs px-2.5 flex-1 sm:flex-none">
+            <RefreshCw className={`w-3.5 h-3.5 ml-1 ${loading ? 'animate-spin' : ''}`} />
             تحديث
           </Button>
 
-          <Button size="sm" onClick={openAddModal} className="h-7 text-xs px-2.5 bg-primary text-primary-foreground font-semibold hover:bg-primary/90">
-            <UserPlus className="w-3 h-3 ml-1" />
+          <Button size="sm" onClick={openAddModal} className="h-8 text-xs px-3 bg-primary text-primary-foreground font-semibold hover:bg-primary/90 flex-1 sm:flex-none">
+            <UserPlus className="w-3.5 h-3.5 ml-1" />
             تفويض مستخدم مسجل
           </Button>
         </div>
       </div>
 
-      {/* ── جدول المستخدمين المصرح لهم ── */}
-      <Card className="border border-border bg-card overflow-hidden">
-        <CardHeader className="py-2 px-3 border-b border-border/60 bg-muted/20">
+      {/* ── جدول وقوائم المستخدمين المصرح لهم ── */}
+      <Card className="border border-border bg-card overflow-hidden shadow-xs">
+        <CardHeader className="py-2.5 px-3.5 border-b border-border/60 bg-muted/20">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-bold flex items-center gap-1 text-foreground">
-              <Users className="w-3.5 h-3.5 text-primary" />
+            <CardTitle className="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-foreground">
+              <Users className="w-4 h-4 text-primary" />
               <span>قائمة المستخدمين المفوضين ({users.length})</span>
             </CardTitle>
-            <span className="text-[10px] text-muted-foreground">تحقق خادمي Zero-Trust</span>
+            <span className="text-[10px] font-mono text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border">
+              Zero-Trust Verified
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-6 text-center text-xs text-muted-foreground">
-              <RefreshCw className="w-4 h-4 mx-auto mb-1 animate-spin text-primary" />
-              جاري تحميل المستخدمين...
+            <div className="p-8 text-center text-xs text-muted-foreground">
+              <RefreshCw className="w-5 h-5 mx-auto mb-2 animate-spin text-primary" />
+              جاري تحميل المستخدمين وبيانات الصلاحيات...
             </div>
           ) : users.length === 0 ? (
-            <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
-              <Lock className="w-6 h-6 mx-auto text-muted-foreground/40" />
-              <p className="font-semibold text-foreground">القسم مخفي تماماً عن جميع المستخدمين.</p>
-              <p className="text-[10px]">انقر على &ldquo;تفويض مستخدم مسجل&rdquo; لاختيار حساب مسجل ومنحه الصلاحيات.</p>
+            <div className="p-8 text-center text-xs text-muted-foreground space-y-1.5">
+              <Lock className="w-7 h-7 mx-auto text-muted-foreground/40" />
+              <p className="font-semibold text-foreground text-sm">القسم مخفي تماماً عن جميع المستخدمين.</p>
+              <p className="text-xs">انقر على &ldquo;تفويض مستخدم مسجل&rdquo; لاختيار حساب مسجل ومنحه الصلاحيات.</p>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-muted/10 text-muted-foreground text-[10px]">
-                    <th className="py-1.5 pr-2.5 font-semibold">المستخدم</th>
-                    <th className="py-1.5 font-semibold">الحالة</th>
-                    <th className="py-1.5 font-semibold">التفعيلات اليوم</th>
-                    <th className="py-1.5 font-semibold">الخانات المصرح بها</th>
-                    <th className="py-1.5 font-semibold">إدخال يدوي</th>
-                    <th className="py-1.5 font-semibold">الجلسات</th>
-                    <th className="py-1.5 font-semibold">الفاصل</th>
-                    <th className="py-1.5 pl-2.5 text-left font-semibold">إجراءات وتدقيق</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {users.map((u) => {
-                    const pkgs = u.allowed_packages?.length ? u.allowed_packages : [50000, 200000];
-                    return (
-                      <tr key={u.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="py-1.5 pr-2.5">
-                          <div className="font-semibold text-foreground text-[11px] leading-tight">
-                            {u.user_name || 'مستخدم'}
+            <>
+              {/* ── طريقة عرض بطاقات الهواتف الذكية (Mobile View < md) ── */}
+              <div className="md:hidden divide-y divide-border/60">
+                {users.map((u) => {
+                  const pkgs = u.allowed_packages?.length ? u.allowed_packages : [50000, 200000];
+                  return (
+                    <div key={u.id} className="p-3.5 space-y-3 hover:bg-muted/10 transition-colors">
+                      {/* رأس البطاقة: المستخدم والحالة ومفتاح التشغيل */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500 font-bold text-sm shrink-0">
+                            {(u.user_name || 'U').charAt(0).toUpperCase()}
                           </div>
-                          <div className="text-[9px] text-muted-foreground font-mono" dir="ltr">
-                            {u.user_email}
+                          <div className="min-w-0">
+                            <div className="font-bold text-xs text-foreground truncate">
+                              {u.user_name || 'مستخدم مسجل'}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono truncate" dir="ltr">
+                              {u.user_email}
+                            </div>
                           </div>
-                        </td>
-                        <td className="py-1.5">
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
                           <Badge
                             variant="outline"
                             className={
                               u.is_active
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px] py-0 px-1'
-                                : 'bg-muted text-muted-foreground border-border text-[9px] py-0 px-1'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] py-0.5 px-2'
+                                : 'bg-muted text-muted-foreground border-border text-[10px] py-0.5 px-2'
                             }
                           >
                             {u.is_active ? 'مفعل' : 'معطل'}
                           </Badge>
-                        </td>
-                        <td className="py-1.5 font-mono text-[11px] font-semibold text-foreground">
-                          {u.cycle_count_today ?? 0}
-                          <span className="text-[10px] text-muted-foreground font-normal">
-                            {' '}/ {u.max_daily_cycles ?? 10}
+                          <Switch
+                            checked={u.is_active}
+                            onCheckedChange={() => handleToggleStatus(u)}
+                            title={u.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+                          />
+                        </div>
+                      </div>
+
+                      {/* شبكة الإحصائيات المصغرة للهاتف */}
+                      <div className="grid grid-cols-2 gap-1.5 bg-muted/20 p-2.5 rounded-lg border border-border/50 text-[11px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-[10px]">التفعيلات اليوم:</span>
+                          <span className="font-mono font-bold text-foreground">
+                            {u.cycle_count_today ?? 0} / {u.max_daily_cycles ?? 10}
                           </span>
-                        </td>
-                        <td className="py-1.5">
-                          <div className="flex flex-wrap gap-0.5 max-w-[130px]">
-                            {pkgs.map((p) => (
-                              <span
-                                key={p}
-                                className="bg-primary/10 text-primary border border-primary/20 text-[8px] font-mono px-1 rounded"
-                              >
-                                {p >= 1000 ? `${p / 1000}k` : p}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="py-1.5">
-                          {u.allow_custom_amount ? (
-                            <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[9px] px-1 py-0">مسموح</Badge>
-                          ) : (
-                            <span className="text-[9px] text-muted-foreground">لا</span>
-                          )}
-                        </td>
-                        <td className="py-1.5 font-mono text-foreground font-semibold text-[11px]">
-                          {u.max_concurrent_sessions ?? 1}
-                        </td>
-                        <td className="py-1.5 font-mono text-amber-400 text-[10px]">
-                          {u.cooldown_seconds ?? u.min_cooldown_seconds ?? 60}ث
-                        </td>
-                        <td className="py-1.5 pl-2.5 text-left">
-                          <div className="flex items-center justify-end gap-1">
-                            {/* زر المراجعة والتدقيق الشامل */}
-                            <Button
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-[10px]">الفاصل الزمني:</span>
+                          <span className="font-mono text-amber-400 font-bold">
+                            {u.cooldown_seconds ?? u.min_cooldown_seconds ?? 60}ث
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-[10px]">الجلسات:</span>
+                          <span className="font-mono font-bold text-foreground">
+                            {u.max_concurrent_sessions ?? 1}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-[10px]">إدخال يدوي:</span>
+                          <span className="font-medium text-foreground">
+                            {u.allow_custom_amount ? 'مسموح' : 'غير متاح'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* الخانات المصرح بها */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground font-medium">الخانات المصرحة:</span>
+                        {pkgs.map((p) => (
+                          <span
+                            key={p}
+                            className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono px-1.5 py-0.5 rounded font-bold"
+                          >
+                            {p >= 1000 ? `${p / 1000}k` : p}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* أزرار الإجراءات واضحة وواسعة */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-border/40">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openUserAudit(u)}
+                          className="flex-1 h-8 text-xs gap-1.5 border-amber-500/40 text-amber-500 hover:bg-amber-500/10 font-bold"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>سجل وتدقيق شامل</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal(u)}
+                          className="h-8 px-3 text-xs gap-1 border-border hover:bg-muted"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>تعديل</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(u.user_id)}
+                          className="h-8 px-2.5 text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
+                          title="حذف التفويض"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── طريقة عرض الجدول للشاشات الكبيرة (Desktop View >= md) ── */}
+              <div className="hidden md:block w-full overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/10 text-muted-foreground text-[10px]">
+                      <th className="py-2 pr-3 font-semibold">المستخدم</th>
+                      <th className="py-2 font-semibold">الحالة</th>
+                      <th className="py-2 font-semibold">التفعيلات اليوم</th>
+                      <th className="py-2 font-semibold">الخانات المصرح بها</th>
+                      <th className="py-2 font-semibold">إدخال يدوي</th>
+                      <th className="py-2 font-semibold">الجلسات</th>
+                      <th className="py-2 font-semibold">الفاصل</th>
+                      <th className="py-2 pl-3 text-left font-semibold">إجراءات وتدقيق</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {users.map((u) => {
+                      const pkgs = u.allowed_packages?.length ? u.allowed_packages : [50000, 200000];
+                      return (
+                        <tr key={u.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="py-2 pr-3">
+                            <div className="font-semibold text-foreground text-[11px] leading-tight">
+                              {u.user_name || 'مستخدم'}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono" dir="ltr">
+                              {u.user_email}
+                            </div>
+                          </td>
+                          <td className="py-2">
+                            <Badge
                               variant="outline"
-                              size="sm"
-                              onClick={() => openUserAudit(u)}
-                              className="h-6 px-1.5 text-[10px] gap-1 border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-                              title="عرض السجل الكامل والجلسات وكلمات المرور"
+                              className={
+                                u.is_active
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] py-0 px-1.5'
+                                  : 'bg-muted text-muted-foreground border-border text-[10px] py-0 px-1.5'
+                              }
                             >
-                              <Eye className="w-3 h-3" />
-                              <span className="hidden sm:inline">تدقيق شامل</span>
-                            </Button>
+                              {u.is_active ? 'مفعل' : 'معطل'}
+                            </Badge>
+                          </td>
+                          <td className="py-2 font-mono text-[11px] font-semibold text-foreground">
+                            {u.cycle_count_today ?? 0}
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              {' '}/ {u.max_daily_cycles ?? 10}
+                            </span>
+                          </td>
+                          <td className="py-2">
+                            <div className="flex flex-wrap gap-1 max-w-[150px]">
+                              {pkgs.map((p) => (
+                                <span
+                                  key={p}
+                                  className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono px-1.5 py-0.5 rounded font-bold"
+                                >
+                                  {p >= 1000 ? `${p / 1000}k` : p}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-2">
+                            {u.allow_custom_amount ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[9px] px-1.5 py-0.5">مسموح</Badge>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">لا</span>
+                            )}
+                          </td>
+                          <td className="py-2 font-mono text-foreground font-semibold text-[11px]">
+                            {u.max_concurrent_sessions ?? 1}
+                          </td>
+                          <td className="py-2 font-mono text-amber-400 text-[11px]">
+                            {u.cooldown_seconds ?? u.min_cooldown_seconds ?? 60}ث
+                          </td>
+                          <td className="py-2 pl-3 text-left">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* زر المراجعة والتدقيق الشامل */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openUserAudit(u)}
+                                className="h-7 px-2 text-[10px] gap-1 border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                                title="عرض السجل الكامل والجلسات وكلمات المرور"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>تدقيق شامل</span>
+                              </Button>
 
-                            <Switch
-                              checked={u.is_active}
-                              onCheckedChange={() => handleToggleStatus(u)}
-                              title={u.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
-                            />
+                              <Switch
+                                checked={u.is_active}
+                                onCheckedChange={() => handleToggleStatus(u)}
+                                title={u.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+                              />
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditModal(u)}
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                              title="تعديل الصلاحيات"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditModal(u)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                title="تعديل الصلاحيات"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(u.user_id)}
-                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                              title="حذف التفويض"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(u.user_id)}
+                                className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                title="حذف التفويض"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

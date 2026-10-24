@@ -73,101 +73,106 @@ export function VipUserAuditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100%-1rem)] md:max-w-2xl max-h-[90dvh] overflow-y-auto p-3 sm:p-4 bg-card border-border shadow-2xl">
-        <DialogHeader className="pb-2 border-b border-border text-right space-y-1">
+      <DialogContent className="w-full max-w-full h-full max-h-[100dvh] sm:max-w-3xl sm:max-h-[90vh] sm:rounded-2xl rounded-none inset-0 p-3 sm:p-5 flex flex-col overflow-hidden bg-card border-border shadow-2xl" dir="rtl">
+        {/* شريط رأس متكامل للهواتف والشاشات الكبيرة */}
+        <DialogHeader className="pb-2.5 border-b border-border/80 text-right space-y-0 shrink-0">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
               </div>
-              <div>
-                <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <span>سجل ومراجعة المستخدم الشاملة</span>
-                  <Badge variant="outline" className="text-[10px] h-4 px-1 border-amber-500/30 text-amber-500">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <DialogTitle className="text-xs sm:text-base font-bold text-foreground truncate">
+                    سجل ومراجعة المستخدم الشاملة
+                  </DialogTitle>
+                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-amber-500/30 text-amber-500 shrink-0">
                     تدقيق المالك
                   </Badge>
-                </DialogTitle>
-                <DialogDescription className="text-[11px] text-muted-foreground font-mono">
+                </div>
+                <DialogDescription className="text-[11px] text-muted-foreground font-mono truncate" dir="ltr">
                   {userEmail}
                 </DialogDescription>
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadData}
-              disabled={loading}
-              className="h-7 text-xs px-2 gap-1"
-            >
-              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">تحديث</span>
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadData}
+                disabled={loading}
+                className="h-8 text-xs px-2.5 gap-1.5 border-border"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">تحديث</span>
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
         {loading && !data ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-            <RefreshCw className="w-5 h-5 animate-spin text-primary" />
-            <span className="text-xs">جاري جلب السجل الكامل للمستخدم...</span>
+          <div className="flex-1 py-16 flex flex-col items-center justify-center gap-2.5 text-muted-foreground">
+            <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+            <span className="text-xs sm:text-sm">جاري جلب السجل الكامل والبيانات المشفرة...</span>
           </div>
         ) : !data ? (
-          <div className="py-8 text-center text-xs text-muted-foreground">
-            تعذر جلب تفاصيل المستخدم
+          <div className="flex-1 py-12 text-center text-xs text-muted-foreground flex items-center justify-center">
+            تعذر جلب تفاصيل المستخدم من السيرفر
           </div>
         ) : (
-          <div className="space-y-3 pt-1">
+          <div className="flex-1 overflow-y-auto min-h-0 space-y-3.5 pt-2 pr-0.5">
             {/* Quick KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-              <div className="p-2 rounded-lg bg-background border border-border">
-                <div className="text-[10px] text-muted-foreground">التفعيلات اليوم</div>
-                <div className="text-sm font-bold text-foreground mt-0.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="p-2.5 rounded-xl bg-background border border-border shadow-xs">
+                <div className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">التفعيلات اليوم</div>
+                <div className="text-base sm:text-lg font-bold text-foreground mt-0.5 font-mono">
                   {data.delegation?.cycle_count_today ?? 0}
-                  <span className="text-[10px] font-normal text-muted-foreground">
+                  <span className="text-[10px] sm:text-[11px] font-normal text-muted-foreground">
                     {' '}/ {data.delegation?.max_daily_cycles ?? 'غير محدد'}
                   </span>
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-background border border-border">
-                <div className="text-[10px] text-muted-foreground">إجمالي العمليات</div>
-                <div className="text-sm font-bold text-foreground mt-0.5">
+              <div className="p-2.5 rounded-xl bg-background border border-border shadow-xs">
+                <div className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">إجمالي العمليات</div>
+                <div className="text-base sm:text-lg font-bold text-foreground mt-0.5 font-mono">
                   {data.stats.total_ops}
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-background border border-border">
-                <div className="text-[10px] text-emerald-500">العمليات الناجحة</div>
-                <div className="text-sm font-bold text-emerald-500 mt-0.5">
+              <div className="p-2.5 rounded-xl bg-background border border-border shadow-xs">
+                <div className="text-[10px] sm:text-[11px] text-emerald-500 font-medium">العمليات الناجحة</div>
+                <div className="text-base sm:text-lg font-bold text-emerald-500 mt-0.5 font-mono">
                   {data.stats.success_ops}
                 </div>
               </div>
 
-              <div className="p-2 rounded-lg bg-background border border-border">
-                <div className="text-[10px] text-rose-500">العمليات الفاشلة</div>
-                <div className="text-sm font-bold text-rose-500 mt-0.5">
+              <div className="p-2.5 rounded-xl bg-background border border-border shadow-xs">
+                <div className="text-[10px] sm:text-[11px] text-rose-500 font-medium">العمليات الفاشلة</div>
+                <div className="text-base sm:text-lg font-bold text-rose-500 mt-0.5 font-mono">
                   {data.stats.failed_ops}
                 </div>
               </div>
             </div>
 
             {/* User Profile Mini Bar */}
-            <div className="p-2.5 rounded-lg bg-background border border-border flex flex-wrap items-center justify-between gap-2 text-[11px]">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <User className="w-3.5 h-3.5 text-primary" />
-                <span className="text-foreground font-semibold">
+            <div className="p-2.5 sm:p-3 rounded-xl bg-background border border-border flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <User className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-foreground font-bold">
                   {data.profile?.full_name || data.profile?.username || 'مستخدم بدون اسم'}
                 </span>
               </div>
               {data.profile?.phone && (
-                <div className="flex items-center gap-1 font-mono text-muted-foreground">
-                  <Phone className="w-3 h-3 text-amber-500" />
-                  <span dir="ltr">{data.profile.phone}</span>
+                <div className="flex items-center gap-1.5 font-mono text-muted-foreground">
+                  <Phone className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span dir="ltr" className="text-foreground font-semibold">{data.profile.phone}</span>
                 </div>
               )}
               {data.profile?.created_at && (
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Calendar className="w-3 h-3" />
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5 shrink-0" />
                   <span>انضم: {new Date(data.profile.created_at).toLocaleDateString('ar-EG')}</span>
                 </div>
               )}
@@ -175,14 +180,14 @@ export function VipUserAuditModal({
 
             {/* Tabs: Sessions / Operations Logs / Permissions */}
             <Tabs defaultValue="sessions" className="w-full">
-              <TabsList className="grid grid-cols-3 h-7 bg-muted/60 p-0.5 rounded-md">
-                <TabsTrigger value="sessions" className="text-[11px] h-6 py-0 data-[state=active]:bg-card">
-                  الجلسات وبيانات الدخول ({data.sessions.length})
+              <TabsList className="grid grid-cols-3 h-8 bg-muted/60 p-0.5 rounded-lg">
+                <TabsTrigger value="sessions" className="text-xs h-7 data-[state=active]:bg-card font-medium">
+                  الجلسات ({data.sessions.length})
                 </TabsTrigger>
-                <TabsTrigger value="logs" className="text-[11px] h-6 py-0 data-[state=active]:bg-card">
+                <TabsTrigger value="logs" className="text-xs h-7 data-[state=active]:bg-card font-medium">
                   سجل العمليات ({data.logs.length})
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="text-[11px] h-6 py-0 data-[state=active]:bg-card">
+                <TabsTrigger value="settings" className="text-xs h-7 data-[state=active]:bg-card font-medium">
                   الصلاحيات المفروضة
                 </TabsTrigger>
               </TabsList>
