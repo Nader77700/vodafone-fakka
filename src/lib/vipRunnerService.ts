@@ -227,7 +227,7 @@ class VipRunnerService {
     } catch (_) {}
   }
 
-  private addLog(sessionId: string, message: string, level: 'info' | 'success' | 'warn' | 'error') {
+  public addLog(sessionId: string, message: string, level: 'info' | 'success' | 'warn' | 'error') {
     const state = this.states.get(sessionId);
     if (!state) return;
 
@@ -521,12 +521,18 @@ class VipRunnerService {
       txt.includes('connection') ||
       txt.includes('load failed') ||
       txt.includes('stream') ||
-      txt.includes('offline')
+      txt.includes('offline') ||
+      txt.includes('terminated') ||
+      txt.includes('signal') ||
+      txt.includes('econnreset') ||
+      txt.includes('socket') ||
+      txt.includes('unexpected end of') ||
+      txt.includes('reader has been cancelled')
     );
   }
 
   private async executeLoop(sessionId: string) {
-    const MAX_NETWORK_RETRIES = 5;
+    const MAX_NETWORK_RETRIES = 50;
 
     while (true) {
       const state = this.states.get(sessionId);
@@ -691,6 +697,12 @@ class VipRunnerService {
           'success'
         );
       }
+
+      // Live update sticky curtain notification
+      showVipPersistentNotification(
+        sessionId,
+        `الدورة #${st.cycleCount} ناجحة | الرصيد: ${totalMix.toLocaleString('ar-EG')} ميكس | الهدف: ${st.targetMix.toLocaleString('ar-EG')}`
+      ).catch(() => {});
 
       // Check Target Reached
       if (st.targetMix > 0 && totalMix >= st.targetMix) {

@@ -3658,8 +3658,13 @@ serve(async (req: Request) => {
 
     // ══════════════════════════════════════════════════════════════════
     // ACTION 13: run_smart_ejection_sequence
-    // تسلسل الإخراج الذكي الكامل: تجديد باقة الأونر -> انتظار نزول الميكسات للفرد ->
-    // 5 محاولات إخراج (20ث بين كل محاولة) -> فحص صارم -> تكرار -> تحويل MINION
+    // تسلسل الإخراج وفك التعليق الذكي المعتمد (6 خطوات دقيقة ومطابقة بنسبة 100%):
+    // 1. تجديد باقة الأونر لتحديث العقد وتثبيت الحالة.
+    // 2. إرسال طلب إخراج الفرد 10 مرات متتالية بفاصل زمني.
+    // 3. انتظار 40 ثانية ثم فحص بالسيرفر هل خرج الفرد أم لا.
+    // 4. إذا لم يخرج: التحويل لنظام «أهلاً أقوى كارت» (MINION) وإرسال طلب التحويل.
+    // 5. انتظار 60 ثانية ثم إعادة الفحص للتأكد من خروج الفرد.
+    // 6. عند تأكيد خروج الفرد: تحويل خط الفرد تلقائياً إلى باقة 270 (Parent 7).
     // ══════════════════════════════════════════════════════════════════
     if (action === "run_smart_ejection_sequence") {
       if (!await engine.login(ownerEmail, ownerPass, true)) {
@@ -3675,11 +3680,11 @@ serve(async (req: Request) => {
       const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
       const planCost = isSeven ? 270 : 180;
       const parentDial = engine.ownerDial || session.owner_account_identifier;
-      const targetChild = body.child_number || st.childNumber || session.individual_account_identifier;
+      const targetChild = (body.child_number || st.childNumber || session.individual_account_identifier || "").trim();
 
-      engine.log(`[🚀] بدء تسلسل الإخراج الذكي المعتمد للفرد (${targetChild || "الفرد"}) للجلسة «${session.session_name}»...`, "info");
+      engine.log(`[🚀] بدء تسلسل الإخراج وفك التعليق الذكي المعتمد للفرد (${targetChild || "الفرد"}) للجلسة «${session.session_name}»...`, "info");
 
-      // Check if child is actually in the family
+      // فحص أولي: هل الفرد موجود بالفعل؟
       if (!st.childNumber && !body.force) {
         engine.log(`[✓] فحص سيرفر اتصالات: لا يوجد أي فرد مسجل داخل عائلة الأونر حالياً بالسيرفر. الفرد خارج العائلة بالفعل!`, "success");
         return new Response(JSON.stringify({
@@ -3691,7 +3696,7 @@ serve(async (req: Request) => {
       }
 
       // ── الخطوة 1: تجديد باقة الأونر ──
-      engine.log(`[*] الخطوة 1/5: تجديد باقة الأونر (${engine.getPlanName(st.planId)}) لتحديث حالة العقد...`, "info");
+      engine.log(`[*] الخطوة 1/6: تجديد باقة الأونر (${engine.getPlanName(st.planId)}) لتحديث العقد وتثبيت الحالة...`, "info");
       try {
         const renewOk = await engine.renewBundleAction(ownerPlanName, planCost);
         if (renewOk) {
@@ -3703,46 +3708,94 @@ serve(async (req: Request) => {
         engine.log(`[!] تجديد باقة الأونر: ${rErr?.message || "تم المتابعة"}`, "warn");
       }
 
-      // ── الخطوة 2: فحص استقرار حساب الفرد ──
-      engine.log(`[*] الخطوة 2/4: التحقق من استقرار الخط...`, "info");
-      await sleep(2000);
-
-      // Helper function to execute fast ejection attempts
-      let childEjected = false;
+      // ── الخطوة 2: إرسال طلب إخراج الفرد 10 مرات متتالية بفاصل زمني ──
+      engine.log(`[*] الخطوة 2/6: إرسال طلب إخراج الفرد 10 مرات متتالية بفاصل زمني لضمان تسجيل الأمر في مقسم اتصالات...`, "info");
       const attemptOrders: string[] = [];
+      let childEjected = false;
 
-      engine.log(`[*] الخطوة 3/4: تنفيذ محاولات إخراج الفرد بالسيرفر مع الفحص الفوري...`, "info");
-      for (let i = 1; i <= 4; i++) {
+      for (let i = 1; i <= 10; i++) {
         const res = await engine.removeChildOrder(targetChild, parentDial, ownerPlanName);
         if (res.success) {
           if (res.orderId) attemptOrders.push(res.orderId);
-          engine.log(`[✓] محاولة إخراج (${i}/4): تم قبول أمر الإخراج بالسيرفر (orderId: ${res.orderId || "مكتمل"})`, "success");
+          engine.log(`[✓] إخراج الفرد (${i}/10): تم قبول الأمر بالسيرفر (orderId: ${res.orderId || "مكتمل"})`, "success");
         } else {
-          engine.log(`[!] محاولة إخراج (${i}/4): رد الخادم (${res.raw || "فشل"})`, "warn");
+          engine.log(`[!] إخراج الفرد (${i}/10): رد الخادم (${res.raw || "قيد المعالجة"})`, "info");
         }
-
-        // Check if child is out already after each attempt
-        await sleep(1500);
-        const checkSt = await engine.getStatusAndChild(true);
-        const stillThere = !!checkSt.childNumber && checkSt.childNumber.includes(targetChild.slice(-8));
-        if (!stillThere) {
-          engine.log(`[🎯] نجاح فوري: تأكد خروج الفرد (${targetChild}) من عائلة الأونر بالسيرفر! تم إيقاف باقي المحاولات.`, "success");
-          childEjected = true;
-          break;
-        }
-
-        if (i < 4) {
-          await sleep(2500);
+        if (i < 10) {
+          await sleep(1500);
         }
       }
 
-      // ── الخطوة 4: التحقق النهائي والتحويل لنظام 270 أو تفعيل خيار MINION ──
-      let childPlan270Converted = false;
-      let canMigrateMinion = false;
+      // ── الخطوة 3: انتظار 40 ثانية ثم فحص بالسيرفر هل خرج الفرد أم لا ──
+      engine.log(`[⏳] الخطوة 3/6: انتظار 40 ثانية لتسوية ومعالجة طلبات الإخراج داخل مقسم اتصالات...`, "info");
+      await sleep(40000);
 
+      engine.log(`[*] فحص السيرفر بعد مهلة الـ 40 ثانية: التحقق من خروج الفرد...`, "info");
+      const checkSt1 = await engine.getStatusAndChild(true);
+      const isStillInFamily1 = !!checkSt1.childNumber && checkSt1.childNumber.includes(targetChild.slice(-8));
+
+      if (!isStillInFamily1) {
+        childEjected = true;
+        engine.log(`[🎯] نتيجة الفحص: تأكد خروج وانفصال الفرد (${targetChild}) من عائلة الأونر بنجاح بعد مهلة الـ 40 ثانية!`, "success");
+      } else {
+        engine.log(`[⚠️] نتيجة الفحص: الفرد ما زال مرتبطاً بالعائلة. الانتقال التلقائي للخطوة 4 (التحويل لنظام أهلاً أقوى كارت)...`, "warn");
+      }
+
+      // ── الخطوة 4: إذا لم يخرج الفرد: تحويل خط الفرد لنظام أهلاً أقوى كارت (MINION) ──
+      const minionOrders: string[] = [];
+      let minionMigrated = false;
+
+      if (!childEjected) {
+        engine.log(`[*] الخطوة 4/6: الدخول في مرحلة تحويل خط الفرد لنظام «أهلاً أقوى كارت» (MINION) لفك التعليق نهائياً...`, "info");
+        try {
+          // 4.1 إرسال طلب ترحيل MINION عبر مقسم Saytar HekayaPartial
+          const mRes = await engine.migrateToMinionOrder(targetChild);
+          if (mRes.success) {
+            minionMigrated = true;
+            if (mRes.orderId) minionOrders.push(mRes.orderId);
+            engine.log(`[✓] تم إرسال طلب ترحيل خط الفرد لنظام MINION بنجاح (orderId: ${mRes.orderId || "مقبول"})!`, "success");
+          } else {
+            engine.log(`[!] رد المقسم على طلب ترحيل MINION: (${mRes.raw || "تم الإرسال"})`, "warn");
+          }
+
+          // 4.2 محاولة تسجيل دخول مباشرة لحساب الفرد وترحيل النظام
+          if (childEmail && childPass) {
+            try {
+              const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
+              childEngine.onLog = (l) => engine.log(l.message, l.level);
+              if (await childEngine.login(childEmail, childPass, false, true)) {
+                await childEngine.changePlan("MINION_1", "");
+                engine.log(`[✓] تم تأكيد إرسال طلب تحويل الفرد لـ MINION عبر حسابه المباشر!`, "success");
+                minionMigrated = true;
+              }
+            } catch (ce) {
+              console.warn("[SmartEject] Child direct login migrate warning:", ce);
+            }
+          }
+        } catch (mErr: any) {
+          engine.log(`[!] خطأ في إرسال طلب MINION: ${mErr?.message || mErr}`, "warn");
+        }
+
+        // ── الخطوة 5: انتظار حوالي 60 ثانية ثم فحص ثاني للتأكد من خروج الفرد ──
+        engine.log(`[⏳] الخطوة 5/6: انتظار 60 ثانية لمعالجة تحويل النظام إلى أهلاً وفك التعليق بالمقسم...`, "info");
+        await sleep(60000);
+
+        engine.log(`[*] فحص السيرفر بعد مهلة الـ 60 ثانية: التحقق النهائي من خروج الفرد...`, "info");
+        const checkSt2 = await engine.getStatusAndChild(true);
+        const isStillInFamily2 = !!checkSt2.childNumber && checkSt2.childNumber.includes(targetChild.slice(-8));
+
+        if (!isStillInFamily2) {
+          childEjected = true;
+          engine.log(`[🎯] نتيجة الفحص الثاني: تأكد خروج وانفصال الفرد (${targetChild}) بنجاح تام بعد تحويل النظام!`, "success");
+        } else {
+          engine.log(`[⚠️] نتيجة الفحص الثاني: الفرد ما زال قيد المعالجة في مقسم اتصالات. تم تفعيل زر التحويل اليدوي إذا لزم الأمر.`, "warn");
+        }
+      }
+
+      // ── الخطوة 6: لو خرج الفرد: تحويل خط الفرد إلى باقة 270 (Hekaya 270) ──
+      let childPlan270Converted = false;
       if (childEjected) {
-        engine.log(`[🎉] تأكيد نهائي: خرج الفرد (${targetChild}) من عائلة الأونر بنجاح تام!`, "success");
-        engine.log(`[🚀] جاري تحويل خط الفرد تلقائياً لنظام 270 (Hekaya_XRP_MIX_Parent_7)...`, "info");
+        engine.log(`[🚀] الخطوة 6/6: خروج الفرد مؤكد بالسيرفر! جاري تحويل خط الفرد إلى باقة 270 (Hekaya_XRP_MIX_Parent_7) لإعداده وتجهيزه...`, "info");
         if (childEmail && childPass) {
           try {
             const childEngine = new EtisalatEngine("child", bridgeConfig, session_id);
@@ -3751,26 +3804,24 @@ serve(async (req: Request) => {
               const pOk = await childEngine.changePlan("Hekaya_XRP_MIX_Parent_7", "");
               if (pOk) {
                 childPlan270Converted = true;
-                engine.log(`[✓] تم تحويل خط الفرد بنجاح تام إلى نظام 270 (Parent 7)!`, "success");
+                engine.log(`[🎉] تم تحويل خط الفرد بنجاح تام إلى نظام باقة 270 (Parent 7)!`, "success");
               } else {
-                engine.log(`[!] تم طلب تحويل الفرد لـ 270، أو يمكنك الضغط على زر تحويل الفرد لـ 270 يدوياً.`, "warn");
+                engine.log(`[!] تم إرسال أمر ترحيل الفرد لـ 270 (أو النظام 270 بالفعل). متاح أيضاً عبر الزر اليدوي.`, "warn");
               }
             }
           } catch (cErr: any) {
             engine.log(`[!] خطأ في تحويل الفرد لـ 270: ${cErr?.message || cErr}`, "warn");
           }
+        } else {
+          engine.log(`[!] ملاحظة: لم يتم إدخال بيانات دخول الفرد في الجلسة لتحويله لـ 270 تلقائياً. يمكنك استخدام زر باقة 270 اليدوي.`, "info");
         }
-      } else {
-        canMigrateMinion = true;
-        engine.log(`[⚠️] الفرد ما زال معلقاً بعائلة الأونر بعد جولتين كاملتين (10 محاولات إخراج متباعدة).`, "warn");
-        engine.log(`[🔔] لم يتم التحويل التلقائي لـ MINION بناءً على تعليماتك. تم تفعيل زر [حان الآن تحويل الفرد لنظام أهلاً أقوى كارت MINION لفك التعليق] بالواجهة لتقوم بالضغط عليه يدوياً إذا رغبت.`, "warn");
       }
 
-      // Update Supabase Database session
+      // تحديث بيانات الجلسة في قاعدة بيانات Supabase
       try {
         await supabase.from("vip_sessions").update({
           relationship_status: childEjected ? "none" : session.relationship_status,
-          individual_current_plan: childPlan270Converted ? "حكاية عيلة 270" : session.individual_current_plan,
+          individual_current_plan: childPlan270Converted ? "حكاية عيلة 270" : (minionMigrated ? "أهلا أقوى كارت (MINION)" : session.individual_current_plan),
           last_actual_operation: "smart_ejection_completed",
           updated_at: new Date().toISOString(),
         }).eq("id", session_id);
@@ -3780,15 +3831,16 @@ serve(async (req: Request) => {
           operation_type: "smart_ejection",
           owner_account_ref: parentDial,
           individual_account_ref: targetChild,
-          requested_action: `تسلسل الإخراج الذكي (${attemptOrders.length} محاولات إخراج${childPlan270Converted ? " + تحويل الفرد لـ 270" : ""}${canMigrateMinion ? " + فتح زر MINION اليدوي" : ""})`,
+          requested_action: `تسلسل الإخراج وفك التعليق الذكي (10 أوامر إخراج + تجديد الأونر${minionMigrated ? " + ترحيل MINION" : ""}${childPlan270Converted ? " + تحويل لـ 270" : ""})`,
           status: childEjected ? "succeeded" : "partial",
           started_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
           result: {
             child_removed: childEjected,
             attempt_orders: attemptOrders,
+            minion_orders: minionOrders,
             child_plan_270_converted: childPlan270Converted,
-            can_migrate_minion: canMigrateMinion,
+            can_migrate_minion: !childEjected,
           },
           is_automatic: body.is_automatic === true,
         });
@@ -3797,12 +3849,13 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({
         success: childEjected,
         message: childEjected
-          ? `تم خروج الفرد من العائلة بنجاح${childPlan270Converted ? " وتم تحويله لنظام 270!" : "!"}`
-          : "لم يخرج الفرد بعد جولتي إخراج. حان الآن وقت التحويل إلى أهلاً أقوى كارت (MINION) يدوياً لفك التعليق.",
+          ? `تم فك التعليق وخروج الفرد بنجاح${childPlan270Converted ? " وتم تحويله لنظام 270!" : "!"}`
+          : "تم تنفيذ محاولات الإخراج وتحويل أهلاً أقوى كارت. الفرد ما زال قيد المعالجة بمقسم اتصالات.",
         child_removed: childEjected,
         child_plan_270_converted: childPlan270Converted,
-        can_migrate_minion: canMigrateMinion,
+        can_migrate_minion: !childEjected,
         orders: attemptOrders,
+        minion_orders: minionOrders,
         logs: engine.logs,
       }), { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }

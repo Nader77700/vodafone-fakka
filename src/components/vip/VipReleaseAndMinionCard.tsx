@@ -34,6 +34,7 @@ import {
   executeChangeChildPlan,
   type VipExecutionLog,
 } from '@/lib/vipApi';
+import { vipRunnerService } from '@/lib/vipRunnerService';
 
 interface Props {
   activeSession: VipSession;
@@ -124,8 +125,9 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh, isDelegatedU
     setPhase1Orders([]);
     setMinionOrders([]);
 
-    addLocalLog(`[🚀] إطلاق تسلسل الإخراج الذكي المعتمد (5 خطوات) للجلسة: ${session.session_name}`, 'info');
+    addLocalLog(`[🚀] إطلاق تسلسل الإخراج وفك التعليق الذكي المعتمد (6 خطوات دقيقة) للجلسة: ${session.session_name}`, 'info');
     addLocalLog(`[*] خط الفرد: ${targetChild} | خط الأونر: ${session.owner_account_identifier || 'حساب الجلسة'}`, 'info');
+    vipRunnerService.addLog(session.id, `[🚀] إطلاق تسلسل الإخراج وفك التعليق الذكي المعتمد (6 خطوات دقيقة)...`, 'info');
 
     try {
       const res = await executeSmartEjectionSequence(session.id, {
@@ -134,6 +136,10 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh, isDelegatedU
 
       if (res.logs && res.logs.length > 0) {
         setLogs(res.logs);
+        // Stream directly into the Live Terminal so the user sees everything live
+        for (const l of res.logs) {
+          vipRunnerService.addLog(session.id, l.message, l.level || 'info');
+        }
       }
       if ((res as any).orders) {
         setPhase1Orders((res as any).orders);

@@ -1,12 +1,18 @@
 // ── VIP Background Execution & Notification Manager ──
-// Supports Screen WakeLock, Web Audio Keep-Alive for background execution, System Notifications, and Remote FCM Push
+// Supports Screen WakeLock, Web Audio Keep-Alive for background execution, Native Sticky Android Curtain Notifications, and Remote FCM Push
 import { supabase } from '@/db/supabase';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 let wakeLockSentinel: any = null;
 let audioContext: AudioContext | null = null;
 let audioInterval: any = null;
 let backgroundWorker: Worker | null = null;
 let silentAudioEl: HTMLAudioElement | null = null;
+let isNativeCurtainActive = false;
+
+// Channel ID for persistent background automation
+const VIP_NOTIFICATION_CHANNEL_ID = 'vip-continuous-automation-channel';
+const VIP_STICKY_NOTIFICATION_ID = 9911;
 
 // Minimal base64 1-second silent WAV
 const SILENT_WAV_BASE64 =
@@ -162,6 +168,16 @@ export async function disableVipBackgroundExecution(): Promise<void> {
   stopWorkerKeepAlive();
 }
 export async function requestVipNotificationPermission(): Promise<boolean> {
+  // 1. Try Capacitor native local notifications permission first
+  try {
+    const perm = await LocalNotifications.requestPermissions();
+    if (perm.display === 'granted') {
+      await ensureVipNotificationChannel();
+      return true;
+    }
+  } catch (_) {}
+
+  // 2. Web Notification fallback
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return false;
   }
@@ -176,6 +192,26 @@ export async function requestVipNotificationPermission(): Promise<boolean> {
     return permission === 'granted';
   } catch {
     return false;
+  }
+}
+
+/**
+ * Ensure notification channel with max priority exists on Android
+ */
+async function ensureVipNotificationChannel() {
+  try {
+    await LocalNotifications.createChannel({
+      id: VIP_NOTIFICATION_CHANNEL_ID,
+      name: 'أتمتة اتصالات VIP المستمرة',
+      description: 'إشعار مثبت في ستارة الهاتف أثناء تشغيل الدورات بالخلفية 24/7',
+      importance: 5, // MAX importance in Android (heads up & high priority)
+      visibility: 1, // Public on lockscreen
+      sound: undefined,
+      vibration: false,
+      lights: false,
+    });
+  } catch (err) {
+    console.warn('[VipBackground] Create channel error:', err);
   }
 }
 
@@ -226,16 +262,38 @@ export function showVipNotification(
 let activePersistentNotification: any = null;
 
 /**
- * Show a persistent foreground sticky notification in the status bar while automation is running
- * Uses requireInteraction to stay sticky in Android notification drawer, plus mediaSession
+ * Show a persistent foreground sticky notification in the Android notification curtain (ستارة الهاتف) while automation is running
+ * Uses Capacitor LocalNotifications with ongoing: true so Android never dismisses it, plus MediaSession and Web Audio keep-alive
  */
-export function showVipPersistentNotification(
+export async function showVipPersistentNotification(
   sessionId: string,
   details = 'الأتمتة السحابية تعمل 24/7 بالسيرفر'
 ) {
   try {
     if (typeof window !== 'undefined') {
-      // 1. Update MediaSession in status bar
+      // 1. Native Capacitor Android Notification in Status Bar / Notification Curtain (ستارة الهاتف)
+      try {
+        await ensureVipNotificationChannel();
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: VIP_STICKY_NOTIFICATION_ID,
+              title: '⚡ أتمتة اتصالات VIP تعمل بالخلفية 24/7',
+              body: `${details} (نشطة بالستارة والسيرفر بدون توقف)`,
+              channelId: VIP_NOTIFICATION_CHANNEL_ID,
+              ongoing: true, // Pinned permanently in the Android curtain! Cannot be swiped away.
+              autoCancel: false,
+              schedule: { at: new Date(Date.now() + 50) },
+              extra: { sessionId },
+            },
+          ],
+        });
+        isNativeCurtainActive = true;
+      } catch (nativeErr) {
+        // Fallback smoothly if running in desktop browser
+      }
+
+      // 2. Update MediaSession in status bar
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: '⚡ أتمتة اتصالات VIP نشطة بالسيرفر 24/7',
@@ -245,7 +303,7 @@ export function showVipPersistentNotification(
         navigator.mediaSession.playbackState = 'playing';
       }
 
-      // 2. Show Sticky Notification if permission granted
+      // 3. Show Sticky Notification if permission granted on desktop
       if ('Notification' in window && Notification.permission === 'granted') {
         if (activePersistentNotification) {
           try {
@@ -277,8 +335,17 @@ export function showVipPersistentNotification(
 /**
  * Dismiss persistent sticky notification upon manual stop or target completion
  */
-export function dismissVipPersistentNotification(sessionId?: string) {
+export async function dismissVipPersistentNotification(sessionId?: string) {
   try {
+    // 1. Cancel native Android curtain notification
+    try {
+      await LocalNotifications.cancel({
+        notifications: [{ id: VIP_STICKY_NOTIFICATION_ID }],
+      });
+      isNativeCurtainActive = false;
+    } catch (_) {}
+
+    // 2. Dismiss Web Notification
     if (activePersistentNotification) {
       activePersistentNotification.close();
       activePersistentNotification = null;
