@@ -119,9 +119,12 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
             is_verified_owner: false,
             verified_at: new Date().toISOString(),
           });
-          // Load sessions and dashboard for delegated user
-          await loadSessionsAndData();
-          setVerifying(false);
+          try {
+            // Load sessions and dashboard for delegated user
+            await loadSessionsAndData();
+          } finally {
+            setVerifying(false);
+          }
           return;
         }
       }

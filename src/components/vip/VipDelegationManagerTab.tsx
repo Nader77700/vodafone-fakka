@@ -83,6 +83,7 @@ export const VipDelegationManagerTab: React.FC = () => {
   const [maxConcurrentSessions, setMaxConcurrentSessions] = useState('1');
   const [customConcurrentInput, setCustomConcurrentInput] = useState('');
   const [cooldownSeconds, setCooldownSeconds] = useState('60');
+  const [userRole, setUserRole] = useState<'delegated_user' | 'vip_operator'>('delegated_user');
   const [notes, setNotes] = useState('');
 
   const loadData = async () => {
@@ -138,6 +139,7 @@ export const VipDelegationManagerTab: React.FC = () => {
     setMaxConcurrentSessions('1');
     setCustomConcurrentInput('');
     setCooldownSeconds('60');
+    setUserRole('delegated_user');
     setNotes('');
     setModalOpen(true);
   };
@@ -170,6 +172,7 @@ export const VipDelegationManagerTab: React.FC = () => {
     }
 
     setCooldownSeconds(String(u.cooldown_seconds ?? u.min_cooldown_seconds ?? 60));
+    setUserRole((u.user_role as any) === 'vip_operator' ? 'vip_operator' : 'delegated_user');
     setNotes(u.notes || '');
     setModalOpen(true);
   };
@@ -262,6 +265,7 @@ export const VipDelegationManagerTab: React.FC = () => {
         allow_custom_amount: allowCustomAmount,
         max_concurrent_sessions: resolvedSessions,
         cooldown_seconds: parseInt(cooldownSeconds, 10) || 60,
+        user_role: userRole,
         notes: notes.trim(),
       });
 
@@ -427,6 +431,11 @@ export const VipDelegationManagerTab: React.FC = () => {
                             <div className="text-[10px] text-muted-foreground font-mono truncate" dir="ltr">
                               {u.user_email}
                             </div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Badge className="bg-sky-500/15 text-sky-400 border-sky-500/25 text-[9px] px-1 py-0">
+                                {u.user_role === 'vip_operator' ? 'مشغل باقات متقدم' : 'مستخدم مفوض VIP'}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
 
@@ -553,6 +562,11 @@ export const VipDelegationManagerTab: React.FC = () => {
                             </div>
                             <div className="text-[10px] text-muted-foreground font-mono" dir="ltr">
                               {u.user_email}
+                            </div>
+                            <div className="mt-0.5">
+                              <Badge className="bg-sky-500/15 text-sky-400 border-sky-500/25 text-[9px] px-1 py-0">
+                                {u.user_role === 'vip_operator' ? 'مشغل باقات متقدم' : 'مستخدم مفوض VIP'}
+                              </Badge>
                             </div>
                           </td>
                           <td className="py-2">
@@ -768,6 +782,53 @@ export const VipDelegationManagerTab: React.FC = () => {
                 <span className="font-bold text-foreground">{userEmail}</span>
               </div>
             )}
+
+            {/* ── تحديد رتبة ونوع الحساب في المنظومة ── */}
+            <div className="space-y-1.5 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <label className="text-[11px] font-bold text-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                  <span>رتبة الحساب ونوع الصلاحية في السيرفر:</span>
+                </span>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] px-1.5 py-0 font-bold">
+                  {userRole === 'delegated_user' ? 'مستخدم مفوض (VIP User)' : 'مشغل باقات متقدم (VIP Operator)'}
+                </Badge>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                <div
+                  onClick={() => setUserRole('delegated_user')}
+                  className={`p-2 rounded-lg border text-right cursor-pointer transition-all ${
+                    userRole === 'delegated_user'
+                      ? 'border-sky-500 bg-sky-500/10 text-foreground font-bold shadow-sm'
+                      : 'border-border bg-card/60 text-muted-foreground hover:bg-card'
+                  }`}
+                >
+                  <div className="text-[11px] flex items-center gap-1 font-bold">
+                    <User className="w-3 h-3 text-sky-400" />
+                    <span>مستخدم مفوض (VIP)</span>
+                  </div>
+                  <p className="text-[9.5px] text-muted-foreground mt-0.5 font-normal">
+                    صلاحية إنشاء وإدارة جلساته الخاصة وتنفيذ دورات الميكسات وفق الباقات المحددة
+                  </p>
+                </div>
+                <div
+                  onClick={() => setUserRole('vip_operator')}
+                  className={`p-2 rounded-lg border text-right cursor-pointer transition-all ${
+                    userRole === 'vip_operator'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-foreground font-bold shadow-sm'
+                      : 'border-border bg-card/60 text-muted-foreground hover:bg-card'
+                  }`}
+                >
+                  <div className="text-[11px] flex items-center gap-1 font-bold">
+                    <Activity className="w-3 h-3 text-emerald-400" />
+                    <span>مشغل متقدم (Operator)</span>
+                  </div>
+                  <p className="text-[9.5px] text-muted-foreground mt-0.5 font-normal">
+                    صلاحية أتمتة متقدمة ومراقبة شاملة لكافة الدورات وجدولة العمليات
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* ── عدد التفعيلات اليومية المسموحة (بديل سقف الميكسات) ── */}
             <div className="space-y-1 p-2 rounded-lg bg-background border border-border">

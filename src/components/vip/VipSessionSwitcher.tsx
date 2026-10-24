@@ -552,10 +552,16 @@ export function VipSessionSwitcher({
                       <SelectItem key={sess.id} value={sess.id} className="text-xs">
                         <div className="flex items-center justify-between gap-3 w-full">
                           <div className="flex items-center gap-1.5 truncate">
-                            {!isDelegatedUser && sess.is_delegated_session && (
-                              <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 text-[9px] px-1 py-0 font-normal">
-                                {sess.creator_user_name || 'مستخدم'}
-                              </Badge>
+                            {!isDelegatedUser && (
+                              sess.is_delegated_session ? (
+                                <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 text-[9px] px-1 py-0 font-normal">
+                                  مستخدم: {sess.creator_user_name || 'مفوض'}
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] px-1 py-0 font-normal">
+                                  👑 المالك
+                                </Badge>
+                              )
                             )}
                             <span className="font-semibold truncate">{sess.session_name}</span>
                           </div>
@@ -598,8 +604,12 @@ export function VipSessionSwitcher({
                     }}
                     className={`relative rounded-xl p-3 border transition-all text-right select-none ${
                       isSelected
-                        ? 'border-primary ring-2 ring-primary/40 bg-gradient-to-br from-primary/10 via-card to-card shadow-lg shadow-primary/10 cursor-default'
-                        : 'border-border/70 bg-card/50 hover:bg-card hover:border-primary/50 hover:shadow-md cursor-pointer'
+                        ? (sess.is_delegated_session && !isDelegatedUser)
+                          ? 'border-sky-500 ring-2 ring-sky-500/40 bg-gradient-to-br from-sky-950/25 via-card to-card shadow-lg shadow-sky-500/15 cursor-default'
+                          : 'border-primary ring-2 ring-primary/40 bg-gradient-to-br from-primary/10 via-card to-card shadow-lg shadow-primary/10 cursor-default'
+                        : (sess.is_delegated_session && !isDelegatedUser)
+                          ? 'border-sky-500/35 bg-card/60 hover:bg-card hover:border-sky-400 hover:shadow-md cursor-pointer'
+                          : 'border-amber-500/30 bg-card/50 hover:bg-card hover:border-amber-500/60 hover:shadow-md cursor-pointer'
                     }`}
                   >
                     {/* Header: Session Name + Status Badges */}
@@ -646,17 +656,29 @@ export function VipSessionSwitcher({
                       </div>
                     </div>
 
-                    {/* Delegated Session Owner Label */}
-                    {!isDelegatedUser && (sess.is_delegated_session || sess.creator_user_name) && (
-                      <div className="mb-2 px-2 py-1 rounded bg-sky-500/10 border border-sky-500/20 flex items-center justify-between text-[10.5px]">
-                        <span className="text-sky-400 font-bold flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          <span>جلسة مستخدم:</span>
-                        </span>
-                        <span className="text-foreground font-mono font-semibold truncate max-w-[140px]" dir="ltr">
-                          {sess.creator_user_name || sess.creator_user_email || 'مستخدم مفوض'}
-                        </span>
-                      </div>
+                    {/* Owner vs Delegated User Identification Banner */}
+                    {!isDelegatedUser && (
+                      sess.is_delegated_session ? (
+                        <div className="mb-2 px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-between text-[11px]">
+                          <span className="text-sky-400 font-bold flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                            <span>جلسة مستخدم مفوض:</span>
+                          </span>
+                          <span className="text-foreground font-mono font-bold truncate max-w-[160px]" dir="ltr">
+                            {sess.creator_user_name || sess.creator_user_email || 'مستخدم مسجل'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mb-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-[11px]">
+                          <span className="text-amber-400 font-bold flex items-center gap-1.5">
+                            <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span>جلسة المالك (الحساب الرئيسي)</span>
+                          </span>
+                          <span className="text-amber-300/90 font-medium text-[10.5px]">
+                            المالك: Nader Akram
+                          </span>
+                        </div>
+                      )
                     )}
 
                     {/* Body: Owner, Child, Balance */}

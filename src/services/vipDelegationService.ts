@@ -38,6 +38,7 @@ export interface DelegatedUser {
   min_cooldown_seconds: number;
   last_cycle_at?: string | null;
   assigned_by?: string;
+  user_role?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -215,6 +216,7 @@ export async function saveDelegatedUser(user: {
   max_concurrent_sessions?: number;
   cooldown_seconds?: number;
   min_cooldown_seconds?: number;
+  user_role?: string;
   notes?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
@@ -232,6 +234,7 @@ export async function saveDelegatedUser(user: {
         max_concurrent_sessions: user.max_concurrent_sessions ?? 1,
         cooldown_seconds: cooldown,
         min_cooldown_seconds: cooldown,
+        user_role: user.user_role || 'delegated_user',
         notes: user.notes,
         updated_at: new Date().toISOString(),
       },

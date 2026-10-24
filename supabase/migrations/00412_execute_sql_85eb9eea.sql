@@ -1,0 +1,1 @@
+SET LOCAL role TO authenticated; SET LOCAL "request.jwt.claims" TO '{"sub": "f62be1e3-d6a4-4903-9212-64be78dc9ea8", "email": "nader88@miaoda.com", "role": "authenticated"}';
