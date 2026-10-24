@@ -68,6 +68,7 @@ import {
   executeVipCheckStatus,
 } from '@/lib/vipApi';
 import { VipDefaultChildModal } from '@/components/vip/VipDefaultChildModal';
+import { VipDelegatedSessionsModal } from './VipDelegatedSessionsModal';
 
 interface Props {
   sessions: VipSession[];
@@ -96,6 +97,14 @@ export function VipSessionSwitcher({
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [openDefaultChildModal, setOpenDefaultChildModal] = useState(false);
   const [openEditCredsModal, setOpenEditCredsModal] = useState(false);
+  const [openDelegatedModal, setOpenDelegatedModal] = useState(false);
+  const [hideDelegatedSessions, setHideDelegatedSessions] = useState(() => {
+    try {
+      return localStorage.getItem('vip_hide_delegated_sessions') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [editSessionTarget, setEditSessionTarget] = useState<VipSession | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -116,6 +125,20 @@ export function VipSessionSwitcher({
   const [isChildPreFilled, setIsChildPreFilled] = useState(false);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
+
+  // Count delegated user sessions
+  const delegatedSessionsCount = useMemo(() => {
+    return sessions.filter((s) => s.is_delegated_session).length;
+  }, [sessions]);
+
+  // Determine sessions visible to current viewer
+  const visibleSessions = useMemo(() => {
+    if (!isDelegatedUser && hideDelegatedSessions && delegatedSessionsCount > 0) {
+      const filtered = sessions.filter((s) => !s.is_delegated_session);
+      return filtered.length > 0 ? filtered : sessions;
+    }
+    return sessions;
+  }, [sessions, isDelegatedUser, hideDelegatedSessions, delegatedSessionsCount]);
 
   // Restrict packages and cooldown if user is delegated
   const allowedPkgs: number[] = useMemo(() => {
@@ -358,7 +381,7 @@ export function VipSessionSwitcher({
                   <span className="text-xs font-mono text-primary font-bold">(Multi-Session Terminal)</span>
                 </h2>
                 <Badge className="bg-primary/15 text-primary border-primary/25 text-[11px] px-2 py-0.5 font-bold">
-                  {sessions.length} جلسة مسجلة
+                  {visibleSessions.length} جلسة {(!isDelegatedUser && hideDelegatedSessions && delegatedSessionsCount > 0) ? `(أونر فقط • ${delegatedSessionsCount} مخفية)` : 'مسجلة'}
                 </Badge>
                 {runningSessionsCount > 0 && (
                   <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[11px] px-2 py-0.5 font-bold flex items-center gap-1 animate-pulse">
@@ -378,6 +401,63 @@ export function VipSessionSwitcher({
 
           {/* Action Buttons Toolbar */}
           <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto flex-wrap">
+            {/* Owner: Delegated Sessions Monitor Modal Button */}
+            {!isDelegatedUser && delegatedSessionsCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenDelegatedModal(true)}
+                disabled={disabled}
+                className="h-8 text-xs gap-1.5 border-sky-500/40 text-sky-400 hover:bg-sky-500/10 font-bold px-2.5"
+                title="مراقبة ومتابعة جلسات المستخدمين المفوضين"
+              >
+                <Users className="w-3.5 h-3.5 text-sky-400" />
+                <span>مراقبة المستخدمين</span>
+                <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 text-[9px] px-1 py-0 font-mono">
+                  {delegatedSessionsCount}
+                </Badge>
+              </Button>
+            )}
+
+            {/* Owner: Toggle Show / Hide Delegated Sessions */}
+            {!isDelegatedUser && delegatedSessionsCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const next = !hideDelegatedSessions;
+                  setHideDelegatedSessions(next);
+                  try {
+                    localStorage.setItem('vip_hide_delegated_sessions', String(next));
+                  } catch {}
+                  // If current active session was delegated and we are hiding them, auto-switch to first owner session
+                  if (next && activeSession?.is_delegated_session) {
+                    const firstOwner = sessions.find((s) => !s.is_delegated_session);
+                    if (firstOwner) onSelectSession(firstOwner.id);
+                  }
+                }}
+                disabled={disabled}
+                className={`h-8 text-xs gap-1.5 px-2.5 font-medium transition-all ${
+                  hideDelegatedSessions
+                    ? 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
+                    : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                }`}
+                title={hideDelegatedSessions ? 'إظهار جلسات المستخدمين في القائمة' : 'إخفاء جلسات المستخدمين من القائمة'}
+              >
+                {hideDelegatedSessions ? (
+                  <>
+                    <Eye className="w-3.5 h-3.5 text-amber-400" />
+                    <span>إظهار جلسات المستخدمين ({delegatedSessionsCount})</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>إخفاء جلسات المستخدمين</span>
+                  </>
+                )}
+              </Button>
+            )}
+
             {/* 1. Default Child Credentials Button */}
             <Button
               variant="outline"
@@ -468,7 +548,7 @@ export function VipSessionSwitcher({
                     <SelectValue placeholder="اختر الجلسة" />
                   </SelectTrigger>
                   <SelectContent align="end" className="max-h-72">
-                    {sessions.map((sess) => (
+                    {visibleSessions.map((sess) => (
                       <SelectItem key={sess.id} value={sess.id} className="text-xs">
                         <div className="flex items-center justify-between gap-3 w-full">
                           <div className="flex items-center gap-1.5 truncate">
@@ -492,7 +572,7 @@ export function VipSessionSwitcher({
 
             {/* Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
-              {sessions.map((sess, idx) => {
+              {visibleSessions.map((sess, idx) => {
                 const isSelected = sess.id === activeSessionId;
                 const runnerState = vipRunnerService.getState(sess.id);
                 const isRunning = runnerState.isRunning;
@@ -1056,6 +1136,16 @@ export function VipSessionSwitcher({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Modal: Delegated Sessions Monitor ── */}
+      <VipDelegatedSessionsModal
+        open={openDelegatedModal}
+        onOpenChange={setOpenDelegatedModal}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={onSelectSession}
+        onSessionsChanged={onSessionsChanged}
+      />
 
       {/* ── Modal: Edit Session Credentials ── */}
       {editSessionTarget && (
