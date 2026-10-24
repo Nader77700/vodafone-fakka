@@ -21,6 +21,56 @@ interface Props {
   logs: VipExecutionLog[];
   onClear: () => void;
   isRunning?: boolean;
+  isDelegatedUser?: boolean;
+}
+
+// ── Sanitizer for Delegated Users (Zero-Trust Protection of Proprietary Script) ──
+export function sanitizeLogForDelegatedUser(msg: string): string | null {
+  if (!msg) return null;
+  const lower = msg.toLowerCase();
+
+  // 1. Strip sensitive internal scripts, auth tokens, headers, curls, endpoints
+  if (
+    lower.includes('bearer') ||
+    lower.includes('token') ||
+    lower.includes('auth_') ||
+    lower.includes('password') ||
+    lower.includes('curl') ||
+    lower.includes('http://') ||
+    lower.includes('https://') ||
+    lower.includes('user-agent') ||
+    lower.includes('api_key') ||
+    lower.includes('cookie') ||
+    lower.includes('session_token') ||
+    lower.includes('request_id') ||
+    lower.includes('trace_id') ||
+    lower.includes('node:') ||
+    lower.includes('python') ||
+    lower.includes('subprocess')
+  ) {
+    return null;
+  }
+
+  // 2. Hide internal seconds countdown / timer mechanics so clients don't reverse-engineer script pacing
+  if (
+    (lower.includes('متبقي') && (lower.includes('ثانية') || lower.includes('ثواني'))) ||
+    /\[\d+s\]/i.test(msg) ||
+    /waiting \d+s/i.test(msg) ||
+    /انتظار \d+\s*ث/i.test(msg) ||
+    /تأخير \d+\s*ث/i.test(msg) ||
+    /sleep\s*\(/i.test(msg)
+  ) {
+    return null;
+  }
+
+  // 3. Clean technical jargon to standard high-level business phrases
+  let cleaned = msg
+    .replace(/Hekaya_XRP_MIX_Parent_\d+/gi, 'حكاية ميكسات')
+    .replace(/XRP_MIX_\w+/gi, 'باقة ميكسات')
+    .replace(/sess_[a-f0-9]+/gi, 'جلسة VIP')
+    .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '***');
+
+  return cleaned;
 }
 
 // Helper to convert Arabic-Indic numerals to standard English numbers
@@ -116,11 +166,27 @@ function parseLogTokens(rawMsg: string): ParsedToken[] {
   return parts;
 }
 
-export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
+export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedUser = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasScrolledUp, setHasScrolledUp] = useState(false);
+
+  // Apply sanitized logs filter for delegated users (zero-trust protection)
+  const effectiveLogs = React.useMemo(() => {
+    if (!isDelegatedUser) return logs;
+    const sanitized: VipExecutionLog[] = [];
+    for (const log of logs) {
+      const sanitizedMsg = sanitizeLogForDelegatedUser(log.message);
+      if (sanitizedMsg) {
+        sanitized.push({
+          ...log,
+          message: sanitizedMsg,
+        });
+      }
+    }
+    return sanitized;
+  }, [logs, isDelegatedUser]);
 
   // Perform container-ONLY scrolling (NEVER scroll the main window/page!)
   const scrollToBottom = useCallback((smooth = true) => {
@@ -150,24 +216,24 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
     if (autoScroll && !hasScrolledUp) {
       scrollToBottom(false);
     }
-  }, [logs, autoScroll, hasScrolledUp, scrollToBottom]);
+  }, [effectiveLogs, autoScroll, hasScrolledUp, scrollToBottom]);
 
   const handleCopyLogs = () => {
-    if (logs.length === 0) {
+    if (effectiveLogs.length === 0) {
       toast.info('لا توجد سجلات لنسخها');
       return;
     }
-    const text = logs.map((l) => `[${l.time}] ${l.message}`).join('\n');
+    const text = effectiveLogs.map((l) => `[${l.time}] ${l.message}`).join('\n');
     navigator.clipboard.writeText(text);
     toast.success('تم نسخ السجلات الطرفية بنجاح');
   };
 
   const handleDownloadLogs = () => {
-    if (logs.length === 0) {
+    if (effectiveLogs.length === 0) {
       toast.info('لا توجد سجلات للتحميل');
       return;
     }
-    const text = logs.map((l) => `[${l.time}] ${l.message}`).join('\n');
+    const text = effectiveLogs.map((l) => `[${l.time}] ${l.message}`).join('\n');
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -380,7 +446,7 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
             isExpanded ? 'max-h-[580px] min-h-[380px]' : 'max-h-[300px] sm:max-h-[340px] min-h-[160px]'
           }`}
         >
-          {logs.length === 0 ? (
+          {effectiveLogs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-zinc-500 space-y-2">
               <Terminal className="w-8 h-8 opacity-40 text-emerald-400" />
               <p className="text-xs font-semibold text-zinc-400">في انتظار بدء الدورة أو تنفيذ الأوامر...</p>
@@ -389,7 +455,7 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false }: Props) {
               </p>
             </div>
           ) : (
-            logs.map((log, index) => (
+            effectiveLogs.map((log, index) => (
               <div
                 key={index}
                 className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/60 px-1 rounded transition-colors text-right"

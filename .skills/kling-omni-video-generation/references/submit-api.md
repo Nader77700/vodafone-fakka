@@ -18,16 +18,16 @@
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `model_name` | `string` | No | Only O3 / Kling V3 Omni (`kling-v3-omni`). This skill always sends this value explicitly, including when the client omits it; do not rely on the upstream default |
+| `model_name` | `string` | No | Model name; default `kling-v3-omni`; allowed value: `kling-v3-omni` |
 | `multi_shot` | `boolean` | No | Whether to generate a multi-shot video; default `false` |
 | `shot_type` | `string` | No | Storyboard type; enum value: `customize`; required when `multi_shot` is `true` |
 | `prompt` | `string` | No | Text prompt; max 2500 characters; supports template format (e.g. `<<<image_1>>>`); required when `multi_shot` is `false` |
 | `multi_prompt` | `array` | No | Array of multi-shot information containing `index`, `prompt`, and `duration` fields; max 6 shots; required when `multi_shot` is `true` |
 | `image_list` | `array` | No | Reference image list; supports Base64 or URL; formats: jpg/jpeg/png; ≤10 MB; minimum 300 px |
 | `element_list` | `array` | No | Reference element list based on element library IDs |
-| `video_list` | `array` | No | Reference video list; supports MP4/MOV; ≥3 seconds; ≤200 MB; resolution 720–2160 px |
-| `sound` | `string` | No | Whether to generate audio; enum value: `on`; default `on` |
-| `mode` | `string` | No | Output resolution: `std`=720P, `pro`=1080P (default), `4k`=4K. Availability depends on the model scenario and overseas endpoint; do not silently downgrade |
+| `video_list` | `array` | No | Reference video list; each item must be `{"video_url": "<public URL>", "refer_type": "feature"}`. `refer_type` is required and only `feature` (video reference) is supported — `base` (video editing) is rejected, and Base64 / local-file videos are not supported. MP4/MOV; ≥3 seconds; ≤200 MB; resolution 720–2160 px |
+| `sound` | `string` | No | Whether to generate audio; enum values: `on`, `off`; default `off`. Must be `off` when `video_list` is provided |
+| `mode` | `string` | No | Output resolution and price tier; enum values: `std` (720P), `pro` (1080P), `4k` (4K); default `pro`. Higher resolution costs more credits per second, so use `std` or `4k` only when the user explicitly asks for that resolution |
 | `aspect_ratio` | `string` | No | Video aspect ratio; enum values: `16:9`, `9:16`, `1:1` |
 | `duration` | `string` | No | Video duration in seconds; enum values: `3`–`15`; default `5` |
 | `watermark_info` | `object` | No | Watermark configuration containing an `enabled` boolean field |
@@ -107,16 +107,6 @@ serve(async (req: Request): Promise<Response> => {
   let requestBody: Record<string, unknown>;
   try {
     requestBody = await req.json();
-    const model = requestBody.model_name ?? "kling-v3-omni";
-    const mode = requestBody.mode ?? "pro";
-    if (model !== "kling-v3-omni") {
-      throw new Error("This skill supports only O3 / Kling V3 Omni (kling-v3-omni)");
-    }
-    if (!["std", "pro", "4k"].includes(mode as string)) {
-      throw new Error("Select 720P (std), 1080P (pro), or 4K (4k)");
-    }
-    requestBody.model_name = model;
-    requestBody.mode = mode;
     // Validate: single-shot requires prompt; multi-shot requires multi_prompt
     if (!requestBody.multi_shot && !requestBody.prompt) {
       throw new Error("Missing prompt (required for single-shot mode)");
@@ -188,10 +178,10 @@ interface OmniVideoSubmitOptions {
   shot_type?: string;
   multi_prompt?: Array<{ index: number; prompt: string; duration?: string }>;
   image_list?: Array<{ image_url?: string; image_base64?: string }>;
-  video_list?: Array<{ video_url: string }>;
+  video_list?: Array<{ video_url: string; refer_type: "feature" }>;
   aspect_ratio?: string;
   duration?: string;
-  mode?: string;
+  mode?: "std" | "pro" | "4k";
   sound?: string;
   external_task_id?: string;
 }
@@ -244,4 +234,5 @@ async function submitOmniVideo(options: OmniVideoSubmitOptions) {
 - **Note**: Each task submission is billed. After submission, always poll the query endpoint to avoid duplicate submissions that waste quota.
 - **Single-shot vs. multi-shot**: When `multi_shot: false` (default), `prompt` is required; when `multi_shot: true`, both `shot_type` and `multi_prompt` (max 6 shots) are required.
 - **Template prompts**: `prompt` supports `<<<image_1>>>` format to reference images in `image_list` for precise control.
+- **Reference video**: pass every `video_list` item as `{"video_url": "<public URL>", "refer_type": "feature"}` and keep `sound` as `off`. Omitting `refer_type`, using `base`, or sending the video as Base64 is rejected by the gateway with HTTP 400.
 - **Async nature**: This endpoint only returns a `task_id`; video content must be retrieved by polling the query endpoint (`references/query-api.md`).

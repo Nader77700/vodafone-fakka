@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { VipDashboardData, VipSession } from '@/types/vip';
+import type { VipAccessStatus } from '@/services/vipDelegationService';
 import {
   executeVipCheckStatusStream,
   executeVipAddChild,
@@ -33,12 +34,16 @@ interface Props {
   onRefresh: () => void;
   refreshing: boolean;
   onNavigateTab?: (tab: string) => void;
+  isDelegatedUser?: boolean;
+  vipAccess?: VipAccessStatus | null;
 }
 
 export function VipDashboardTab({
   activeSession,
   onRefresh,
   refreshing,
+  isDelegatedUser = false,
+  vipAccess = null,
 }: Props) {
   const session = activeSession;
 
@@ -377,6 +382,8 @@ export function VipDashboardTab({
             currentCycle={loopCycle}
             countdownSeconds={countdownSeconds}
             stepMessage={stepMessage}
+            isDelegatedUser={isDelegatedUser}
+            vipAccess={vipAccess}
           />
         </div>
 
@@ -396,6 +403,7 @@ export function VipDashboardTab({
             logs={terminalLogs}
             onClear={handleClearLogs}
             isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
+            isDelegatedUser={isDelegatedUser}
           />
         </div>
       </div>

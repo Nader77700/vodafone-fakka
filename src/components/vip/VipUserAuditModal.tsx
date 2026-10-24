@@ -23,6 +23,8 @@ import {
   Eye,
   EyeOff,
   Clock,
+  X,
+  ChevronLeft,
   ShieldCheck,
   KeyRound,
   RefreshCw,
@@ -73,11 +75,20 @@ export function VipUserAuditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-full h-full max-h-[100dvh] sm:max-w-3xl sm:max-h-[90vh] sm:rounded-2xl rounded-none inset-0 p-3 sm:p-5 flex flex-col overflow-hidden bg-card border-border shadow-2xl" dir="rtl">
-        {/* شريط رأس متكامل للهواتف والشاشات الكبيرة */}
+      <DialogContent className="fixed inset-0 left-0 top-0 translate-x-0 translate-y-0 w-full h-[100dvh] max-w-none max-h-none sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-full sm:max-w-3xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-none p-3.5 sm:p-5 flex flex-col overflow-hidden bg-card border-border shadow-2xl" dir="rtl">
+        {/* شريط رأس متكامل للهواتف والشاشات الكبيرة مع زر إغلاق صريح */}
         <DialogHeader className="pb-2.5 border-b border-border/80 text-right space-y-0 shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 sm:hidden"
+                title="رجوع وإغلاق"
+              >
+                <ChevronLeft className="w-5 h-5 rotate-180" />
+              </Button>
               <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
@@ -106,6 +117,15 @@ export function VipUserAuditModal({
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">تحديث</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hidden sm:flex shrink-0"
+                title="إغلاق"
+              >
+                <X className="w-4 h-4" />
               </Button>
             </div>
           </div>

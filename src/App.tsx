@@ -146,6 +146,7 @@ const AdminHotfixPage              = lazyImport(() => import('./pages/admin/Admi
 const AdminLineInfoDebugPage       = lazyImport(() => import('./pages/admin/AdminLineInfoDebugPage'));
 const AdminOffersCenter            = lazyImport(() => import('./pages/admin/AdminOffersCenter'));
 const AdminVipRedSettingsPage      = lazyImport(() => import('./pages/admin/AdminVipRedSettingsPage'));
+const AdminVipUserAuditPage        = lazyImport(() => import('./pages/admin/AdminVipUserAuditPage'));
 const AdminWhatsAppBusinessPage    = lazyImport(() => import('./pages/admin/AdminWhatsAppBusinessPage'));
 const VipRedCenterPage             = lazyImport(() => import('./pages/vip-red/VipRedCenterPage'));
 const VipRedMerchantsPage          = lazyImport(() => import('./pages/vip-red/VipRedMerchantsPage'));
@@ -735,6 +736,7 @@ function AppInner() {
         <Route path="/admin/line-info-debug"   element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-line-debug"><S><AdminLineInfoDebugPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/offers-center"     element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-offers-center"><S><AdminOffersCenter /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/vip-red"           element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-vip-red"><S><AdminVipRedSettingsPage /></S></PageErrorBoundary></RouteGuard>} />
+        <Route path="/admin/vip-user-audit/:userId" element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-vip-user-audit"><S><AdminVipUserAuditPage /></S></PageErrorBoundary></RouteGuard>} />
         <Route path="/admin/whatsapp"          element={<RouteGuard adminOnly><PageErrorBoundary pageName="admin-whatsapp"><S><AdminWhatsAppBusinessPage /></S></PageErrorBoundary></RouteGuard>} />
 
         <Route path="/system-logs" element={<RouteGuard adminOnly><PageErrorBoundary pageName="system-logs"><S><SystemLogsPage /></S></PageErrorBoundary></RouteGuard>} />

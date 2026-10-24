@@ -1,6 +1,6 @@
 ---
 name: kling-omni-video-generation
-description: Generate videos using Kling AI's Omni model via API gateway, supporting text-to-video, image-to-video, video editing, multi-shot storyboard, and video reference modes. Use this skill whenever the user wants to create a video from a text prompt or reference image/video — for creative content, marketing, short-video production, or any scenario involving AI video generation with Kling's omni model.
+description: Generate videos using Kling AI's Omni model via API gateway, supporting text-to-video, image-to-video, multi-shot storyboard, and video reference modes. Use this skill whenever the user wants to create a video from a text prompt or reference image/video — for creative content, marketing, short-video production, or any scenario involving AI video generation with Kling's omni model.
 license: MIT
 ---
 
@@ -8,7 +8,7 @@ license: MIT
 
 ## Overview
 
-Generate videos using only O3 / Kling V3 Omni (`kling-v3-omni`), supporting text-to-video, image-to-video, video editing, video reference, and multi-shot storyboard modes. Uses an asynchronous task pattern: submit a task to obtain a `task_id`, then poll the query endpoint until completion.
+Generate videos using the Kling AI Omni model, supporting text-to-video, image-to-video, video reference, and multi-shot storyboard modes. Uses an asynchronous task pattern: submit a task to obtain a `task_id`, then poll the query endpoint until completion.
 
 | Property | Value |
 |----------|-------|
@@ -25,10 +25,21 @@ Generate videos using only O3 / Kling V3 Omni (`kling-v3-omni`), supporting text
 |------|-------------|
 | Text-to-video | Generate video using `prompt` only |
 | Image-to-video | Generate video using `prompt` + `image_list` reference images |
-| Video editing | Modify existing video content using `prompt` + `video_list` |
-| Video reference | Generate new video by referencing the motion/cinematography of an existing video |
+| Video reference | Generate new video by referencing the motion/cinematography of an existing video: `prompt` + `video_list` items shaped `{"video_url": "<public URL>", "refer_type": "feature"}`; `sound` must be `off` |
 | First/last frame | Generate video by specifying a start frame or both start and end frames |
 | Multi-shot | Enable `multi_shot: true` + `multi_prompt` to support up to 6 storyboard shots |
+
+### Resolution (`mode`)
+
+The `mode` parameter sets the output resolution and the per-second price tier:
+
+| `mode` | Resolution | When to use |
+|--------|------------|-------------|
+| `std` | 720P | Only when the user asks for a lower resolution or a cheaper draft |
+| `pro` (default) | 1080P | Default; use it when the user does not specify a resolution |
+| `4k` | 4K | Only when the user explicitly asks for 4K |
+
+Higher resolution costs more credits per second, so never pick `4k` on your own. Pass it with `--mode` (script) or the `mode` field (API).
 
 > For full parameter details and code examples, see `references/submit-api.md` and `references/query-api.md`.
 
@@ -87,6 +98,12 @@ python3 <skill-path>/scripts/generate_omni_video.py \
   --prompt "Animate this scene" \
   --image /path/to/ref.jpg \
   --output-dir /tmp/omni_video
+
+# 4K output (only when the user explicitly asks for 4K; costs more per second)
+python3 <skill-path>/scripts/generate_omni_video.py \
+  --prompt "A futuristic city with flying cars at dusk" \
+  --mode 4k \
+  --output-dir /tmp/omni_video
 ```
 
 **Resume polling an existing task:**
@@ -118,13 +135,3 @@ curl -L -o /tmp/generated_omni_video.mp4 "<task_result.videos[0].url>"
 In the application, proxy requests through two separate Edge Functions: one for submitting tasks and one for querying status. The query Edge Function transfers the video URL to Supabase Storage once the task is complete, returning a persistent public URL to the frontend.
 
 > For complete Edge Function code and frontend call patterns, see the "Post-generation Usage" sections in `references/submit-api.md` and `references/query-api.md`.
-
-
-## Fixed Model and Resolution (Required for Generated Apps)
-
-- Expose only O3 / Kling V3 Omni. Always send `model_name: "kling-v3-omni"`; show a fixed model label instead of a model switcher.
-- The server fills the same model when omitted and rejects any other model before calling upstream. The CLI accepts only `--model kling-v3-omni` and defaults to it.
-- Offer 720P, 1080P and 4K, mapped to top-level `mode: "std"`, `"pro"` and `"4k"`. Default to `pro`; do not send the newer protocol's `settings.resolution`.
-- Show resolution and scenario limitations beside the generation controls. Report upstream rejection accurately; never silently downgrade or automatically create another billed task.
-- Verification boundary: the Beijing endpoint produced 3840×2160 for an O3 + feature-reference-video + 4K test. This is not a live verification of the Singapore endpoint or base-video editing.
-- Validate default O3/pro, all three mode mappings, invalid-model rejection and unchanged overseas endpoint IDs. A submitted task is not a successful render; confirm terminal success and the actual output dimensions.

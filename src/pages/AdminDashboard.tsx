@@ -2036,15 +2036,50 @@ function AdminDashboard() {
       ══════════════════════════════════════ */}
       <div className="flex-1 min-w-0 lg:mr-64 flex flex-col">
 
-        {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-border">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" />
-            <p className="text-sm font-black gradient-text">لوحة الإدارة</p>
+        {/* Mobile Header & Single Sticky Bar (No Overlaps, No Vertical Wrapping) */}
+        <header className="lg:hidden sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border shadow-xs">
+          <div className="flex items-center justify-between px-3.5 py-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors shrink-0"
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                title="فتح القائمة"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Shield className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-xs font-bold text-foreground truncate">
+                  {currentTabMeta?.label || 'لوحة الإدارة'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/home')}
+                className="h-7 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span>الرئيسية</span>
+              </Button>
+            </div>
           </div>
-          <button className="p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(v => !v)}>
-            <ChevronDown className={`w-5 h-5 text-primary transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} />
-          </button>
+
+          {/* مسار التنقل الأفقي المضغوط (سطر واحد لا يلتف رأسياً إطلاقاً) */}
+          <div className="px-3.5 py-1 bg-muted/20 border-t border-border/40 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <button onClick={() => navigate('/home')} className="hover:text-foreground transition-colors">الرئيسية</button>
+            <ChevronLeft className="w-2.5 h-2.5 opacity-50 shrink-0" />
+            <button onClick={() => setActiveTab('overview')} className="hover:text-foreground transition-colors">الإدارة</button>
+            {activeTab !== 'overview' && (
+              <>
+                <ChevronLeft className="w-2.5 h-2.5 opacity-50 shrink-0" />
+                <span className="text-primary font-bold truncate max-w-[200px]">{currentTabMeta?.label}</span>
+              </>
+            )}
+          </div>
         </header>
 
         {/* Mobile Menu Overlay */}
@@ -2087,15 +2122,15 @@ function AdminDashboard() {
           </div>
         )}
 
-        {/* Sticky top bar with breadcrumb */}
-        <div className="sticky top-[49px] lg:top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
+        {/* Desktop Sticky top bar with breadcrumb */}
+        <div className="hidden lg:flex sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-6 py-2.5 items-center justify-between gap-4">
           <Breadcrumb items={[
             { label: 'الرئيسية', onClick: () => navigate('/home') },
             { label: 'الإدارة', onClick: () => setActiveTab('overview') },
             ...(activeTab !== 'overview' ? [{ label: currentTabMeta.label }] : []),
           ]} />
           <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">{(profile?.username ?? 'A').charAt(0).toUpperCase()}</span>
               </div>

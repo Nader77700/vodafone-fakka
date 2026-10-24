@@ -119,6 +119,8 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
             is_verified_owner: false,
             verified_at: new Date().toISOString(),
           });
+          // Load sessions and dashboard for delegated user
+          await loadSessionsAndData();
           setVerifying(false);
           return;
         }
@@ -261,39 +263,9 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
     );
   }
 
-  // ── Render Case 2.5: Delegated Client View (Confidential & Obfuscated) ──
-  if (vipAccess?.is_delegated && !vipAccess?.is_owner) {
-    return (
-      <div className="min-h-screen bg-background pb-16" dir="rtl">
-        <div className="sticky top-0 z-20 border-b border-border/80 bg-background/95 backdrop-blur-md px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/home')}
-                className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"
-                title="العودة للرئيسية"
-              >
-                <ChevronLeft className="w-4 h-4 rotate-180" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-500" />
-                <h1 className="text-sm font-bold text-foreground">بوابة اتصالات VIP</h1>
-              </div>
-            </div>
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
-              مستخدم مفوض
-            </Badge>
-          </div>
-        </div>
+  const isDelegatedUser = Boolean(vipAccess?.is_delegated && !vipAccess?.is_owner);
 
-        <VipDelegatedClientView userId={currentUserId} userEmail={currentUserEmail} />
-      </div>
-    );
-  }
-
-  // ── Render Case 3: Authorized Owner View ──
+  // ── Render Case 3: Unified Full VIP View (Restricted & Zero-Trust Protected for Delegated Users) ──
   return (
     <div className="min-h-screen bg-background pb-16" dir="rtl">
       
@@ -321,9 +293,15 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
                   <h1 className="text-xs sm:text-sm font-black text-foreground truncate">
                     إدارة باقات VIP (الأونر والفرد)
                   </h1>
-                  <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[9px] px-1.5 py-0 font-mono">
-                    VIP Owner
-                  </Badge>
+                  {isDelegatedUser ? (
+                    <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[9px] px-1.5 py-0 font-mono">
+                      مستخدم مفوض (Zero-Trust Verified)
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[9px] px-1.5 py-0 font-mono">
+                      VIP Owner
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground hidden sm:block truncate">
                   مركز تحكم متعدد الجلسات لإدارة باقات الأونر والفرد والميكسات والرقابة الصارمة
@@ -410,25 +388,29 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
                   <span>مراقبة وتشخيص السكريبت</span>
                 </TabsTrigger>
 
-                <TabsTrigger value="script" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <Code2 className="w-3.5 h-3.5 text-primary" />
-                  <span>الاسكريبت والجسر والأجهزة</span>
-                </TabsTrigger>
+                {!isDelegatedUser && (
+                  <>
+                    <TabsTrigger value="script" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
+                      <Code2 className="w-3.5 h-3.5 text-primary" />
+                      <span>الاسكريبت والجسر والأجهزة</span>
+                    </TabsTrigger>
 
-                <TabsTrigger value="delegation" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-amber-500/10 text-amber-400">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                  <span>إدارة باقات VIP (الأونر والفرد)</span>
-                </TabsTrigger>
+                    <TabsTrigger value="delegation" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-amber-500/10 text-amber-400">
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                      <span>إدارة باقات VIP (الأونر والفرد)</span>
+                    </TabsTrigger>
 
-                <TabsTrigger value="inspector" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
-                  <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>فاحص جلسات المستخدمين</span>
-                </TabsTrigger>
+                    <TabsTrigger value="inspector" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
+                      <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>فاحص جلسات المستخدمين</span>
+                    </TabsTrigger>
 
-                <TabsTrigger value="tamper" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg text-destructive font-bold">
-                  <ShieldAlert className="w-3.5 h-3.5 text-destructive" />
-                  <span>سجل كشف التلاعب والحظر</span>
-                </TabsTrigger>
+                    <TabsTrigger value="tamper" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg text-destructive font-bold">
+                      <ShieldAlert className="w-3.5 h-3.5 text-destructive" />
+                      <span>سجل كشف التلاعب والحظر</span>
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
             </div>
 
@@ -441,6 +423,8 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
                 refreshing={refreshing}
                 onNavigateTab={handleTabChange}
+                isDelegatedUser={isDelegatedUser}
+                vipAccess={vipAccess}
               />
             </TabsContent>
 

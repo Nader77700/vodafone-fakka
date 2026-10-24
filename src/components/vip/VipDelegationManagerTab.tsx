@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ import {
   Eye,
   KeyRound,
   Check,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -51,6 +53,7 @@ const CONCURRENT_SESSION_OPTIONS = ['1', '2', '3', '5', '10'];
 const DAILY_ACTIVATION_OPTIONS = ['5', '10', '20', '50'];
 
 export const VipDelegationManagerTab: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<DelegatedUser[]>([]);
   const [analytics, setAnalytics] = useState<VipOwnerAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -172,9 +175,7 @@ export const VipDelegationManagerTab: React.FC = () => {
   };
 
   const openUserAudit = (u: DelegatedUser) => {
-    setAuditUserId(u.user_id);
-    setAuditUserEmail(u.user_email || u.user_id);
-    setAuditModalOpen(true);
+    navigate(`/admin/vip-user-audit/${u.user_id}`);
   };
 
   const handleSelectRegisteredUser = (regUser: RegisteredAppUser) => {
@@ -649,17 +650,27 @@ export const VipDelegationManagerTab: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* ── نموذج إضافة / تعديل الصلاحيات الفائق الانضغاط ── */}
+      {/* ── نموذج إضافة / تعديل الصلاحيات المتجاوب المريح ── */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-[calc(100%-1.5rem)] md:max-w-lg p-3.5 sm:p-4 bg-card border-border shadow-2xl" dir="rtl">
-          <DialogHeader className="pb-2 border-b border-border space-y-0.5">
-            <DialogTitle className="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-foreground">
-              <Sliders className="w-3.5 h-3.5 text-primary" />
-              <span>{editingUserId ? 'تعديل صلاحيات وتفعيلات المستخدم' : 'تفويض واختيار مستخدم مسجل بالمنظومة'}</span>
-            </DialogTitle>
+        <DialogContent className="fixed inset-0 left-0 top-0 translate-x-0 translate-y-0 w-full h-[100dvh] max-w-none max-h-none sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-full sm:max-w-xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-none p-3.5 sm:p-5 flex flex-col overflow-hidden bg-card border-border shadow-2xl" dir="rtl">
+          <DialogHeader className="pb-2.5 border-b border-border space-y-0 shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-foreground">
+                <Sliders className="w-4 h-4 text-primary" />
+                <span>{editingUserId ? 'تعديل صلاحيات وتفعيلات المستخدم' : 'تفويض واختيار مستخدم مسجل بالمنظومة'}</span>
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setModalOpen(false)}
+                className="w-7 h-7 rounded-lg text-muted-foreground hover:text-foreground sm:hidden"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </DialogHeader>
 
-          <form onSubmit={handleSaveUser} className="space-y-2.5 pt-1 text-xs">
+          <form onSubmit={handleSaveUser} className="flex-1 overflow-y-auto space-y-3 pt-2 text-xs pr-0.5">
             {/* اختيار المستخدم المسجل عند الإضافة */}
             {!editingUserId ? (
               <div className="space-y-1.5 p-2 rounded-lg bg-background border border-border">

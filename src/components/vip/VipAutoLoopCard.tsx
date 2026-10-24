@@ -33,8 +33,10 @@ import {
   BellRing,
   ShieldCheck,
   AlertTriangle,
+  Lock,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
+import type { VipAccessStatus } from '@/services/vipDelegationService';
 import {
   requestVipNotificationPermission,
   isVipNotificationGranted,
@@ -49,6 +51,8 @@ interface Props {
   currentCycle: number;
   countdownSeconds: number | null;
   stepMessage: string | null;
+  isDelegatedUser?: boolean;
+  vipAccess?: VipAccessStatus | null;
 }
 
 export function VipAutoLoopCard({
@@ -60,6 +64,8 @@ export function VipAutoLoopCard({
   currentCycle,
   countdownSeconds,
   stepMessage,
+  isDelegatedUser = false,
+  vipAccess = null,
 }: Props) {
   const [targetPreset, setTargetPreset] = useState<string>(
     [50000, 100000, 150000, 200000].includes(session.target_mix_balance || 50000)
@@ -279,31 +285,47 @@ export function VipAutoLoopCard({
 
         {/* Configuration Row: Target Preset & Cycle Delay */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          {/* Target Select */}
+            {/* Target Select */}
           <div className="p-2.5 rounded-lg border border-border/60 bg-card space-y-1.5">
-            <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
-              <Target className="w-3 h-3 text-primary" />
-              تحديد الهدف (Target Mix):
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                <Target className="w-3 h-3 text-primary" />
+                تحديد الهدف (Target Mix):
+              </label>
+              {isDelegatedUser && (
+                <span className="text-[10px] text-amber-500 font-medium flex items-center gap-0.5">
+                  <ShieldCheck className="w-3 h-3" />
+                  خانات مصرحة فقط
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-4 gap-1">
-              {['50000', '100000', '150000', '200000'].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  disabled={isRunning}
-                  onClick={() => setTargetPreset(val)}
-                  className={`h-7 rounded text-[10px] font-mono font-bold transition-all border ${
-                    targetPreset === val
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted'
-                  }`}
-                >
-                  {parseInt(val) / 1000}K
-                </button>
-              ))}
+              {['50000', '100000', '150000', '200000'].map((val) => {
+                const pkgNum = parseInt(val);
+                const isAllowed = !isDelegatedUser || (vipAccess?.allowed_packages ? vipAccess.allowed_packages.includes(pkgNum) : true);
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    disabled={isRunning || !isAllowed}
+                    onClick={() => setTargetPreset(val)}
+                    title={!isAllowed ? 'هذه الباقة مقيدة ومحجوبة من قبل المالك' : undefined}
+                    className={`h-7 rounded text-[10px] font-mono font-bold transition-all border flex items-center justify-center gap-0.5 ${
+                      !isAllowed
+                        ? 'opacity-40 cursor-not-allowed bg-muted/20 border-border text-muted-foreground'
+                        : targetPreset === val
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {!isAllowed && <Lock className="w-2.5 h-2.5" />}
+                    <span>{pkgNum / 1000}K</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {targetPreset === 'custom' || !['50000', '100000', '150000', '200000'].includes(targetPreset) ? (
+            {(!isDelegatedUser || vipAccess?.allow_custom_amount) && (targetPreset === 'custom' || !['50000', '100000', '150000', '200000'].includes(targetPreset)) ? (
               <Input
                 type="number"
                 disabled={isRunning}
@@ -318,24 +340,24 @@ export function VipAutoLoopCard({
 
           {/* Cycle Delay Seconds */}
           <div className="p-2.5 rounded-lg border border-border/60 bg-card space-y-1.5">
-            <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
-              <Clock className="w-3 h-3 text-amber-500" />
-              الانتظار بين الدورات (بالثواني):
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                disabled={isRunning}
-                value={cycleDelay}
-                onChange={(e) => setCycleDelay(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                className="h-7 text-xs font-mono w-24 text-center"
-                dir="ltr"
-              />
-              <span className="text-[11px] text-muted-foreground">ثانية (افتراضي السكريبت: 20 ثانية)</span>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3 text-cyan-400" />
+                الفاصل الزمني (بالثواني):
+              </label>
+              {isDelegatedUser && (
+                <span className="text-[10px] text-muted-foreground">محدد من المالك</span>
+              )}
             </div>
-            <p className="text-[10px] text-muted-foreground">
-              فحص نزول الميكسات مطبق تلقائياً كل ثانيتين كما في السكريبت.
-            </p>
+            <Input
+              type="number"
+              min={isDelegatedUser ? (vipAccess?.cooldown_seconds || 30) : 5}
+              disabled={isRunning || isDelegatedUser}
+              value={isDelegatedUser ? (vipAccess?.cooldown_seconds || cycleDelay) : cycleDelay}
+              onChange={(e) => setCycleDelay(Math.max(5, parseInt(e.target.value) || 20))}
+              className="h-7 text-xs font-mono"
+              dir="ltr"
+            />
           </div>
 
           {/* Auto-Eject Child on Complete Toggle directly in Session Auto-Loop Card */}
