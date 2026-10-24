@@ -410,7 +410,11 @@ export function VipDashboardTab({
 
       {/* Smart Release & MINION Management Card (Integrated directly inside active session details) */}
       <div className="mt-3">
-        <VipReleaseAndMinionCard activeSession={displaySession} onRefresh={onRefresh} />
+        <VipReleaseAndMinionCard
+          activeSession={displaySession}
+          onRefresh={onRefresh}
+          isDelegatedUser={isDelegatedUser}
+        />
       </div>
     </div>
   );

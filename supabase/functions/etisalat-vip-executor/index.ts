@@ -3370,7 +3370,7 @@ serve(async (req: Request) => {
     // ══════════════════════════════════════════════════════════════════
     // ACTION 12: migrate_child_to_minion (أمر تحويل الفرد لنظام MINION المنفصل)
     // ══════════════════════════════════════════════════════════════════
-    if (action === "migrate_child_to_minion") {
+    if (action === "migrate_child_to_minion" || action === "migrate_to_minion_multi") {
       const targetChild = body.child_number || session.individual_account_identifier;
       if (!targetChild) {
         return new Response(JSON.stringify({

@@ -273,10 +273,10 @@ export function VipAutoLoopCard({
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div className="space-y-0.5 text-right">
                 <span className="font-bold text-emerald-400 block">
-                  درع الأمان الذهبي: الميكسات محجوزة ومحمية بالكامل في حساب الفرد!
+                  درع الأمان: الرصيد محفوظ ومحمي في حساب الفرد
                 </span>
                 <span className="text-muted-foreground block text-[10.5px] leading-relaxed">
-                  يمنع النظام استرجاع الميكسات للأونر طالما أمر الترحيل معلق بالسيرفر لتفادي تصفيرها. ويتم تنشيط العقد تلقائياً كل دقيقة حتى يتم الترحيل ثم تُسترجع الميكسات بأمان 100%.
+                  يتم حفظ الميكسات بأمان في حساب الفرد لحين إتمام ترحيل النظام واسترجاعها تلقائياً.
                 </span>
               </div>
             </div>

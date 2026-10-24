@@ -887,7 +887,7 @@ export async function executeMigrateChildToMinion(
   childNumber?: string,
   delaySeconds = 1
 ): Promise<VipExecutionResponse> {
-  return invokeVipExecutor('migrate_to_minion_multi', {
+  return invokeVipExecutor('migrate_child_to_minion', {
     session_id: sessionId,
     count,
     child_number: childNumber,

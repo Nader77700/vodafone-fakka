@@ -38,9 +38,10 @@ import {
 interface Props {
   activeSession: VipSession;
   onRefresh?: () => void;
+  isDelegatedUser?: boolean;
 }
 
-export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
+export function VipReleaseAndMinionCard({ activeSession, onRefresh, isDelegatedUser = false }: Props) {
   const session = activeSession;
 
   // Configuration settings
@@ -378,14 +379,14 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-sm md:text-base font-bold text-foreground">
-                  إخراج الفرد وتحويله لنظام أهلا أقوى كارت (MINION)
+                  إخراج الفرد وفك التعليق
                 </CardTitle>
                 <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/40 text-[10px] px-1.5 py-0 font-medium">
-                  MAB Script
+                  {isDelegatedUser ? 'فك التعليق' : 'MAB Script'}
                 </Badge>
               </div>
               <CardDescription className="text-xs text-muted-foreground mt-0.5">
-                فك تعليق الفرد بحساب الأونر عبر تكرار الإخراج وتجديد الباقة والترحيل لنظام MINION
+                إخراج خط الفرد من عائلة الأونر وفك الارتباط بسلاسة
               </CardDescription>
             </div>
           </div>
@@ -405,14 +406,14 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
               <Label htmlFor="auto-eject-switch" className="text-xs sm:text-sm font-bold text-foreground cursor-pointer">
-                الإخراج التلقائي للفرد بعد اكتمال الجلسة (Auto-Eject on Complete)
+                الإخراج التلقائي للفرد بعد اكتمال الجلسة
               </Label>
               <Badge className={`text-[10px] px-2 py-0.5 font-semibold ${autoEjectEnabled ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-muted text-muted-foreground'}`}>
-                {autoEjectEnabled ? 'مفعّل تلقائياً ✓' : 'معطّل يدوي'}
+                {autoEjectEnabled ? 'مفعّل تلقائياً ✓' : 'معطّل'}
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              عند تفعيل هذا الخيار، فور اكتمال الجلسة أو الوصول للحد الأقصى، سينتقل النظام تلقائياً لتنفيذ تسلسل الإخراج المعتمد (تجديد باقة الأونر ➔ انتظار استقرار الميكسات للفرد ➔ 5 محاولات إخراج بفاصل 20 ثانية ➔ فحص صارم وتكرار ➔ الترحيل لـ MINION لحل التعليق 100%).
+              إخراج خط الفرد وفك ارتباطه بنظام العائلة تلقائياً فور الوصول للميكسات المستهدفة.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
@@ -425,9 +426,9 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
           </div>
         </div>
 
-        {/* Target Child Input & Parameters Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 rounded-xl border border-border/80 bg-background/50">
-          <div className="space-y-1">
+        {/* Target Child Input */}
+        <div className="p-3 rounded-xl border border-border/80 bg-background/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="space-y-1 w-full sm:max-w-sm">
             <Label className="text-[11px] font-medium text-muted-foreground">رقم هاتف الفرد المراد إخراجه</Label>
             <Input
               value={childNumber}
@@ -437,81 +438,89 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               dir="ltr"
             />
           </div>
+          {!isDelegatedUser && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="h-7 text-[11px] text-muted-foreground hover:text-foreground px-2 gap-1 self-end sm:self-auto"
+            >
+              {showAdvanced ? (
+                <>
+                  <span>إخفاء التوقيتات</span>
+                  <ChevronUp className="w-3 h-3" />
+                </>
+              ) : (
+                <>
+                  <span>تعديل التوقيتات</span>
+                  <ChevronDown className="w-3 h-3" />
+                </>
+              )}
+            </Button>
+          )}
+        </div>
 
-          <div className="space-y-1">
-            <Label className="text-[11px] font-medium text-muted-foreground">تكرار الإخراج الأولي</Label>
-            <Input
-              type="number"
-              min={1}
-              max={15}
-              value={phase1Count}
-              onChange={(e) => setPhase1Count(Number(e.target.value) || 5)}
-              className="h-8 text-xs font-mono text-center"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-[11px] font-medium text-muted-foreground">فاصل الأمان بين طلبات الإخراج</Label>
-            <div className="flex items-center gap-1.5">
+        {/* Optional timing parameters for Admin only */}
+        {!isDelegatedUser && showAdvanced && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl border border-border/60 bg-muted/30">
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-muted-foreground">تكرار الإخراج الأولي</Label>
               <Input
                 type="number"
                 min={1}
-                max={10}
-                value={removeDelaySec}
-                onChange={(e) => setRemoveDelaySec(Number(e.target.value) || 2)}
+                max={15}
+                value={phase1Count}
+                onChange={(e) => setPhase1Count(Number(e.target.value) || 5)}
                 className="h-8 text-xs font-mono text-center"
               />
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap">ثوانٍ</span>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-muted-foreground">فاصل الأمان بين الطلبات</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={removeDelaySec}
+                  onChange={(e) => setRemoveDelaySec(Number(e.target.value) || 2)}
+                  className="h-8 text-xs font-mono text-center"
+                />
+                <span className="text-[11px] text-muted-foreground">ثوانٍ</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-muted-foreground">فترة التهدئة</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={3}
+                  max={60}
+                  value={cooldownSec}
+                  onChange={(e) => setCooldownSec(Number(e.target.value) || 10)}
+                  className="h-8 text-xs font-mono text-center"
+                />
+                <span className="text-[11px] text-muted-foreground">ثوانٍ</span>
+              </div>
             </div>
           </div>
-
-          <div className="space-y-1">
-            <Label className="text-[11px] font-medium text-muted-foreground">فترة التهدئة قبل التجديد</Label>
-            <div className="flex items-center gap-1.5">
-              <Input
-                type="number"
-                min={3}
-                max={60}
-                value={cooldownSec}
-                onChange={(e) => setCooldownSec(Number(e.target.value) || 10)}
-                className="h-8 text-xs font-mono text-center"
-              />
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap">ثوانٍ</span>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Optional MINION Migration Toggle Box */}
         <div className="p-3 rounded-xl border border-border bg-card/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <Label htmlFor="include-minion-switch" className="text-xs font-semibold cursor-pointer">
-                ترحيل خط الفرد تلقائياً لنظام أهلا أقوى كارت (MINION)
+                تحويل الفرد لنظام أهلاً أقوى كارت (MINION)
               </Label>
               <Badge variant="outline" className={`text-[10px] ${includeMinion ? 'text-amber-500 border-amber-500/40 bg-amber-500/10' : 'text-muted-foreground'}`}>
-                {includeMinion ? 'مفعّل' : 'معطّل (موصى به لتفادي تعليق SDP)'}
+                {includeMinion ? 'مفعّل' : 'معطّل'}
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              {includeMinion
-                ? `سيتم إرسال ${migrateCount} طلبات تحويل لنظام MINION بفاصل ${minionDelaySec}ث بعد إخراج الفرد وتجديد الباقة.`
-                : 'يكتفي بإخراج الفرد وتجديد باقة الأونر دون محاولة تغيير خط الفرد لنظام MINION.'}
+              تحويل خط الفرد لنظام أهلاً عند الحاجة لفك التعليق بشكل نهائي.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {includeMinion && (
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={migrateCount}
-                  onChange={(e) => setMigrateCount(Number(e.target.value) || 3)}
-                  className="h-7 w-14 text-xs font-mono text-center"
-                />
-                <span className="text-[10px] text-muted-foreground">مرات</span>
-              </div>
-            )}
             <Switch
               id="include-minion-switch"
               checked={includeMinion}
@@ -527,14 +536,14 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
               <span className="text-xs md:text-sm font-bold text-foreground">
-                تسلسل الإخراج الذكي الكامل (5 خطوات معتمدة)
+                تسلسل الإخراج وفك التعليق الذكي
               </span>
               <Badge className="bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] px-1.5 py-0">
                 الحل الموصى به
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              1. تجديد باقة الأونر ➔ 2. محاولات إخراج الفرد 5 مرات بفاصل 20ث ➔ 3. فحص صارم وتكرار دورة ثانية بعد تهدئة 60ث ➔ 4. تحويل خط الفرد تلقائياً إلى باقة 270 عند تأكيد خروجه ➔ 5. زر يدوي فوري للتحويل لـ MINION في حال تعليق الخط
+              إخراج الفرد وتجديد الباقة وتحويل الخط لفك أي تعليق تلقائياً.
             </p>
           </div>
 
@@ -546,12 +555,12 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             {isRunning && currentStage === 'smart_eject' ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>جاري تسلسل الإخراج الذكي...</span>
+                <span>جاري التنفيذ...</span>
               </>
             ) : (
               <>
                 <Play className="w-3.5 h-3.5 fill-black" />
-                <span>تشغيل التسلسل الذكي الآن</span>
+                <span>تشغيل فك التعليق الذكي</span>
               </>
             )}
           </Button>
@@ -563,11 +572,11 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             <div className="flex items-center gap-2">
               <Zap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <span className="text-xs font-semibold text-foreground">
-                التشغيل المخصص: إخراج الفرد ({phase1Count}x) {includeMinion ? 'والتحويل لـ MINION' : 'وتجديد الباقة'}
+                إخراج الفرد وتجديد الباقة يدوياً
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              ينفذ: {phase1Count}x إخراج للفرد (بفاصل {removeDelaySec}ث) ➔ انتظار {cooldownSec}ث ➔ تجديد باقة الأونر{includeMinion ? ` ➔ ${migrateCount}x ترحيل لـ MINION (بفاصل ${minionDelaySec}ث)` : ' (تخطي MINION)'}
+              إرسال أوامر إخراج الفرد وتجديد باقة الأونر مباشرة.
             </p>
           </div>
 
@@ -585,7 +594,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
             ) : (
               <>
                 <Play className="w-3 h-3" />
-                <span>تشغيل مخصص</span>
+                <span>تنفيذ الإخراج الآن</span>
               </>
             )}
           </Button>
@@ -609,29 +618,11 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">
-              الأوامر المنفصلة (تشغيل خطوة بخطوة عند الحاجة):
+              أوامر سريعة منفصلة عند الحاجة:
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="h-6 text-[11px] text-muted-foreground hover:text-foreground px-2 gap-1"
-            >
-              {showAdvanced ? (
-                <>
-                  <span>إخفاء التفاصيل</span>
-                  <ChevronUp className="w-3 h-3" />
-                </>
-              ) : (
-                <>
-                  <span>عرض التفاصيل</span>
-                  <ChevronDown className="w-3 h-3" />
-                </>
-              )}
-            </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {/* Step 1: Renew Bundle */}
             <Button
               variant="outline"
@@ -641,7 +632,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               className="h-8 text-xs border-primary/30 hover:border-primary/60 hover:bg-primary/5 justify-start gap-2"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-primary ${isRenewing ? 'animate-spin' : ''}`} />
-              <span className="truncate">1. تجديد باقة الأونر</span>
+              <span className="truncate">تجديد باقة الأونر</span>
             </Button>
 
             {/* Step 2: Remove child multi */}
@@ -653,7 +644,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               className="h-8 text-xs border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/5 justify-start gap-2"
             >
               <UserMinus className={`w-3.5 h-3.5 text-amber-500 ${isRemoving ? 'animate-spin' : ''}`} />
-              <span className="truncate">2. إخراج الفرد (5x بـ 20ث)</span>
+              <span className="truncate">إخراج خط الفرد</span>
             </Button>
 
             {/* Step 3: Strict Server Family Check */}
@@ -665,7 +656,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               className="h-8 text-xs border-blue-500/30 hover:border-blue-500/60 hover:bg-blue-500/5 justify-start gap-2"
             >
               <ShieldCheck className={`w-3.5 h-3.5 text-blue-400 ${isCheckingStrict ? 'animate-spin' : ''}`} />
-              <span className="truncate">3. فحص الخادم الصارم</span>
+              <span className="truncate">فحص حالة الخط بالسيرفر</span>
             </Button>
 
             {/* Step 4: Migrate to MINION */}
@@ -677,7 +668,7 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               className="h-8 text-xs border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/5 justify-start gap-2"
             >
               <Zap className={`w-3.5 h-3.5 text-emerald-500 ${isMigrating ? 'animate-spin' : ''}`} />
-              <span className="truncate">4. تحويل لـ MINION (4x)</span>
+              <span className="truncate">تحويل لنظام أهلاً أقوى كارت</span>
             </Button>
 
             {/* Step 5: Migrate Child to Plan 270 */}
@@ -686,25 +677,25 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               size="sm"
               onClick={handleMigrateChildPlan270}
               disabled={isRunning || isRemoving || isRenewing || isMigrating || isCheckingStrict || isChangingPlan270}
-              className="h-8 text-xs border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/5 justify-start gap-2 col-span-1 sm:col-span-2 lg:col-span-4"
+              className="h-8 text-xs border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/5 justify-start gap-2 col-span-1 sm:col-span-2 lg:col-span-3"
             >
               <Sparkles className={`w-3.5 h-3.5 text-purple-400 ${isChangingPlan270 ? 'animate-spin' : ''}`} />
-              <span className="truncate">5. تحويل خط الفرد إلى باقة 270 (Hekaya_XRP_MIX_Parent_7) يدوياً</span>
+              <span className="truncate">تحويل خط الفرد إلى باقة 270</span>
             </Button>
           </div>
         </div>
 
         {/* Stuck Child MINION Action Prompt Banner */}
         {canMigrateMinionManually && (
-          <div className="p-4 rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-500/20 via-card to-red-500/10 space-y-3 shadow-lg">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5 animate-pulse" />
-              <div className="space-y-1">
+          <div className="p-3.5 rounded-xl border border-red-500/50 bg-gradient-to-r from-red-500/15 via-card to-red-500/10 space-y-2 shadow-md">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5 animate-pulse" />
+              <div className="space-y-0.5">
                 <h4 className="text-xs sm:text-sm font-bold text-red-400">
-                  ⚠️ حان الآن تحويل الفرد لنظام أهلاً أقوى كارت (MINION) لفك التعليق يدوياً
+                  ⚠️ فك تعليق خط الفرد
                 </h4>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  لم يخرج الفرد تلقائياً بعد محاولات الإخراج المكررة وجولات التهدئة (60 ثانية). يرجى الضغط على الزر أدناه لتحويل خط الفرد فوراً لنظام MINION لفك ارتباطه الإجباري بنظام اتصالات.
+                  الخط معلق في نظام العائلة، اضغط الزر لتحويله لنظام أهلاً أقوى كارت لفك التعليق فوراً.
                 </p>
               </div>
             </div>
@@ -712,17 +703,17 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh }: Props) {
               <Button
                 onClick={handleMigrateMinionOnly}
                 disabled={isRunning || isMigrating}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-9 px-5 gap-2 shadow-md"
+                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-8 px-4 gap-2 shadow-sm"
               >
                 {isMigrating ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>جاري تحويل خط الفرد إلى MINION...</span>
+                    <span>جاري التحويل لأهلاً أقوى كارت...</span>
                   </>
                 ) : (
                   <>
                     <Zap className="w-3.5 h-3.5 fill-white" />
-                    <span>تحويل خط الفرد إلى أهلاً أقوى كارت الآن (MINION)</span>
+                    <span>تحويل خط الفرد لأهلاً أقوى كارت لفك التعليق</span>
                   </>
                 )}
               </Button>
@@ -812,15 +803,15 @@ function targetChildDisplay(dial?: string | null): string {
 function getStageLabel(stage: string): string {
   switch (stage) {
     case 'phase1':
-      return 'المرحلة 1: إرسال أوامر الإخراج المتكررة لفك التعليق بالسيرفر...';
+      return 'المرحلة 1: إرسال أوامر الإخراج...';
     case 'cooldown':
-      return 'المرحلة 2: فترة التهدئة والانتظار...';
+      return 'المرحلة 2: فترة التهدئة...';
     case 'renew':
       return 'المرحلة 3: تجديد باقة الأونر...';
     case 'phase2':
-      return 'المرحلة 4: إرسال أوامر الإخراج التأكيدية...';
+      return 'المرحلة 4: تأكيد إخراج الفرد...';
     case 'minion':
-      return 'المرحلة 5: تحويل خط الفرد لنظام أهلا أقوى كارت (MINION)...';
+      return 'المرحلة 5: تحويل خط الفرد لنظام أهلاً أقوى كارت...';
     case 'completed':
       return 'اكتملت جميع المراحل بنجاح!';
     case 'error':
