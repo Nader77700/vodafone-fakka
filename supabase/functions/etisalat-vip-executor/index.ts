@@ -654,82 +654,51 @@ class EtisalatEngine {
 
     this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${receiverDisplay} [المرسل: ${senderDisplay} | الباقة: ${productName}]...`, "info");
 
-    // Clean 10-digit number is the native format required by Etisalat MAB gateway for zero-403 transfer success
-    const targetVariants = [target10, targetIntl, targetLocal, toDial].filter((v, i, a) => v && a.indexOf(v) === i);
-    const senderVariants = [sender10, this.currentDial, senderIntl, senderLocal].filter((v, i, a) => v && a.indexOf(v) === i);
+    // Clean 10-digit number is the native format required by Etisalat MAB gateway for genuine family unit transfer
+    // Strictly execute ONLY genuine family transfer endpoint (/Saytar/rest/services/newTransfer/v2)
+    // One clean request using the standard 10-digit MSISDN to avoid 403 rate-limiting
+    const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${sender10}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target10}</receiverMsisdn><senderMsisdn>${sender10}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
+    const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      for (const tgt of targetVariants) {
-        for (const snd of senderVariants) {
-          // 1. Primary: Python bot endpoint (/Saytar/rest/services/newTransfer/v2)
-          const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${snd}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${tgt}</receiverMsisdn><senderMsisdn>${snd}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
-          const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
-
-          try {
-            const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
-            const headers = {
-              ...this.getBaseHeaders(),
-              "auth": `Bearer ${this.authToken}`,
-              "headerSignature": headerSig,
-              "urlSignature": urlSig,
-              "bodySignature": bodySig,
-            };
-            const targetUrl = this.getRequestUrl(urlPathV2);
-            const res = await fetch(targetUrl, {
-              method: "POST",
-              headers,
-              body: xmlBodyV2,
-            });
-            const text = await res.text();
-            if (res.status === 200 && text.includes("<status>true</status>")) {
-              const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
-              const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-              this.log(`[+] تم قبول أمر التحويل بسيرفر اتصالات (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
-              return true;
-            }
-          } catch (_) {
-            // fallback to next
-          }
-
-          // 2. Fallback: submitOrder
-          const xmlBodyOrder = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><generalSubmitOrderRequest><msisdn>${snd}</msisdn><operation>CONSUME_SERVICE</operation><parameters><parameter><name>TRANSFERED_MSISDN</name><value>${tgt}</value></parameter><parameter><name>RENEW_FLAG</name><value>0</value></parameter><parameter><name>TRANSFERED_AMOUNT</name><value>${quota}</value></parameter></parameters><productName>${productName}</productName><requestId>TRANSFER_METER</requestId></generalSubmitOrderRequest>`;
-          const urlPathOrder = "/Saytar/rest/General/submitOrder";
-          try {
-            const sigOrder = await this.generateSignatures(urlPathOrder, xmlBodyOrder);
-            const headersOrder = {
-              ...this.getBaseHeaders(),
-              "auth": `Bearer ${this.authToken}`,
-              "headerSignature": sigOrder.headerSig,
-              "urlSignature": sigOrder.urlSig,
-              "bodySignature": sigOrder.bodySig,
-            };
-            const targetUrl = this.getRequestUrl(urlPathOrder);
-            const res = await fetch(targetUrl, {
-              method: "POST",
-              headers: headersOrder,
-              body: xmlBodyOrder,
-            });
-            const text = await res.text();
-            if (res.status === 200 && text.includes("<status>true</status>")) {
-              const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
-              const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-              this.log(`[+] تم قبول أمر التحويل بالسيرفر (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
-              return true;
-            }
-          } catch (_) {
-            // continue
-          }
-          break; // break inner sender loop after trying primary target
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
+        const headers = {
+          ...this.getBaseHeaders(),
+          "auth": `Bearer ${this.authToken}`,
+          "headerSignature": headerSig,
+          "urlSignature": urlSig,
+          "bodySignature": bodySig,
+        };
+        const targetUrl = this.getRequestUrl(urlPathV2);
+        const res = await fetch(targetUrl, {
+          method: "POST",
+          headers,
+          body: xmlBodyV2,
+        });
+        const text = await res.text();
+        if (res.status === 200 && text.includes("<status>true</status>")) {
+          const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+          const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
+          this.log(`[+] تم قبول وتنفيذ أمر التحويل الفعلي بسيرفر اتصالات (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
+          return true;
+        } else {
+          // Extract genuine Etisalat telecom error message to diagnose and avoid silent failures
+          const errMatch = text.match(/<(?:errorMessage|message|errorDesc|description)>([^<]+)<\//i);
+          const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
+          this.log(`[!] استجابة سيرفر اتصالات لأمر التحويل (${sender10} -> ${target10}): ${errMsg}`, "warn");
         }
+      } catch (fetchErr: any) {
+        this.log(`[!] خطأ في الاتصال ببوابة التحويل: ${fetchErr?.message || fetchErr}`, "warn");
       }
 
-      if (attempt < 3) {
-        this.log(`[!] محاولة تحويل إضافية (${attempt}/3) بعد انتظار 2 ثانية لمزامنة بوابة اتصالات...`, "warn");
+      if (attempt < 2) {
+        this.log(`[!] انتظار ثانيتين قبل إعادة محاولة التحويل لمزامنة بوابة اتصالات...`, "warn");
         await sleep(2000);
       }
     }
 
-    this.log(`[-] تعذر إتمام تحويل الميكسات بعد 3 محاولات عبر بوابة اتصالات.`, "warn");
+    this.log(`[-] تعذر إتمام أمر تحويل الميكسات الفعلي بعد محاولتين عبر بوابة اتصالات الرسمية.`, "error");
     return false;
   }
 
@@ -1236,6 +1205,15 @@ async function handleSingleCycleInternal(
     }
   }
 
+  // ── الخطوة 1: تجديد باقة الأونر في بداية الدورة ثم الانتظار 5 ثوانٍ وفحص الرصيد ──
+  const initialCost = isSeven ? "270" : "180";
+  engine.log(`[⚡] تجديد باقة الأونر (${engine.getPlanName(ownerPlanName)}) في بداية الدورة لتنشيط الرصيد...`, "info");
+  await engine.renewBundleAction(ownerPlanName, initialCost);
+  engine.log(`[*] انتظار 5 ثوانٍ لتسوية ونزول ميكسات التجديد في شبكة اتصالات...`, "info");
+  await sleep(5000);
+  status = await engine.getStatusAndChild(true);
+  engine.log(`[+] فحص رصيد الأونر بعد التجديد: (${(status.remainingMix || 0).toLocaleString('en-US')}) ميكس`, "info");
+
   // ── PRE-FLIGHT LIVE CHECK OF BOTH ACCOUNTS (فحص استباقي شامل للأونر والفرد) ──
   // طالما حدث انقطاع أو قبل بدء أي دورة، نتحقق مباشرة من رصيد الأونر ورصيد الفرد بالسيرفر
   let childHoldsMissing = false;
@@ -1664,6 +1642,11 @@ async function handleSingleCycleInternal(
     ratePlanId = "";
   }
 
+  // ── تجديد باقة الأونر ثانياً قبل تغيير النظام لتثبيت العقد ومنع فقدان الميكسات ──
+  engine.log(`[⚡] تجديد باقة الأونر ثانياً (${engine.getPlanName(ownerPlanName)}) قبل تغيير النظام لتثبيت العقد...`, "info");
+  await engine.renewBundleAction(ownerPlanName, initialCost);
+  await sleep(2000);
+
   await sendStep("migrating", 2, "ترحيل النظام", `جاري تغيير النظام إلى: ${targetPlanDisplay}`);
   let changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   if (!changePlanSubmitted) {
@@ -1709,30 +1692,23 @@ async function handleSingleCycleInternal(
   const maxAttempts = 240;
   const currentPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
   const currentCost = isSeven ? "270" : "180";
-  const minExpectedBundle = targetPlanId.includes("Parent_7") ? 4000 : 2000;
 
-  // Initial telecom settling period (giving OMS billing nodes 5s breathing space before first check)
-  await sleep(5000);
-
+  // Fast direct polling like original Python script (no 5s dead sleep, 1.5s interval, immediate break on confirmation)
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await sleep(3500);
+    await sleep(1500);
     const currentCheck = await engine.getStatusAndChild(true);
     const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
                         (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
 
-    // Server confirmed the new plan AND bundle quota has actually landed!
-    if (planMatches && currentCheck.remainingMix >= minExpectedBundle) {
+    // Millisecond break when plan switches - DO NOT wait for remainingMix > 0!
+    // Breaking instantly ensures child mixes are pulled back before telecom resets or locks them!
+    if (planMatches) {
       serverConfirmed = true;
       confirmedPlanId = currentCheck.planId;
       confirmedNewMix = currentCheck.remainingMix;
-      engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد (${targetPlanDisplay}) ونزول رصيد الباقة بنجاح: (${confirmedNewMix.toLocaleString('en-US')} ميكس)!`, "success");
-      engine.log(`[⚡] تم التحقق القطعي من استقرار رصيد الأونر. جاري سحب ميكسات الفرد المركونة للأونر فوراً بأمان...`, "info");
+      engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد بالملي ثانية (${targetPlanDisplay})!`, "success");
+      engine.log(`[⚡] جاري استرجاع وتحويل كافة ميكسات الفرد للأونر فوراً بالملي ثانية...`, "info");
       break;
-    }
-
-    // Plan name changed, but telecom billing OMS is still provisioning the initial mixes quota
-    if (planMatches && currentCheck.remainingMix < minExpectedBundle) {
-      engine.log(`[*] تم اعتماد بروفايل النظام (${targetPlanDisplay}) بالسيرفر - في انتظار نزول ميكسات الباقة الجديدة للأونر (المقروء حالياً: ${currentCheck.remainingMix.toLocaleString('en-US')} ميكس)...`, "info");
     }
 
     // PERIODIC NUDGE & ACTIVATION LOOP (تنشيط الخط والعقد كل دقيقة إلى دقيقة ونصف):
@@ -1945,17 +1921,39 @@ async function handleSingleCycleInternal(
       } catch (_) {}
     }
 
-    // ADOPTION PRINCIPLE (اعتماد الرصيد الفعلي دون توقف):
-    // بعد انتهاء الفحوصات (3 مرات كحد أقصى) وفحص الفرد، إذا لم يعد الرصيد المتوقع، يتم اعتماد الرصيد الفعلي الحالي
-    // الموجود في السيرفر وتحديث قاعدة البيانات والاستمرار في الأتمتة دون تجميد أو إيقاف!
+    // ── STRICT ZERO-RISK SHIELD (درع الأمان التلقائي الصارم 100% لمنع التصفير) ──
+    // إذا لم يصل الرصيد المتوقع بالكامل إلى الأونر بعد المحاولات، يُحظر تماماً الانتقال لدورة جديدة!
+    // يتم إيقاف الدورة التلقائية فوراً لحفظ الرصيد وحمايته من التصفير
     if (finalStatus.remainingMix < expectedMinBalance) {
-      engine.log(`[✓] اعتماد الرصيد الفعلي المقروء للأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) كنقطة انطلاق جديدة وتحديث السيرفر واستمرار الأتمتة فوراً دون توقف!`, "success");
+      engine.log(`[🛡️ درع الأمان الصارم - منع التصفير 100%] تنبيه طارئ: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المحمي المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس).`, "error");
+      engine.log(`[🛡️] تم إيقاف الدورة التلقائية فوراً لحماية الرصيد ومنع بدء دورة جديدة أو تجديد قد يؤدي للتصفير نهائياً! الرصيد محفوظ بأمان.`, "error");
+
+      const stillAtChild = childStillHolds > 0;
       try {
         await supabase.from("vip_sessions").update({
           owner_mix_balance: finalStatus.remainingMix,
+          individual_mix_balance: childStillHolds,
+          mixes_parked_at_child: stillAtChild,
+          parked_mix_amount: stillAtChild ? childStillHolds : 0,
+          is_active: false,
+          is_paused: true,
+          status: "paused",
+          stop_reason: `توقف أمان لحماية الرصيد ومنع التصفير (رصيد الأونر ${finalStatus.remainingMix} أقل من المتوقع ${expectedMinBalance})`,
           updated_at: new Date().toISOString(),
         }).eq("id", session_id);
       } catch (_) {}
+
+      await persistServerLogs();
+
+      return {
+        success: false,
+        safety_stop: true,
+        error: "تم تفعيل درع الأمان التلقائي 100% وإيقاف الدورة فوراً لمنع التصفير",
+        message: "تم تفعيل درع الأمان التلقائي 100% وإيقاف الدورة فوراً لمنع التصفير",
+        owner_mix_balance: finalStatus.remainingMix,
+        child_mix_balance: childStillHolds,
+        logs: engine.logs,
+      };
     }
   }
 
@@ -1979,10 +1977,19 @@ async function handleSingleCycleInternal(
     } catch (_) {}
   }
 
+  // ── تجديد باقة الأونر قبل إنهاء الدورية لتثبيت الميكسات وضمان استمراريتها ──
+  const targetCost = targetPlanId.includes("7") ? "270" : "180";
+  engine.log(`[⚡] تجديد باقة الأونر (${targetPlanDisplay}) قبل إنهاء الدورية لتثبيت الميكسات وضمان استمراريتها...`, "info");
+  await engine.renewBundleAction(targetPlanId, targetCost);
+  await sleep(3000);
+  const postRenewStatus = await engine.getStatusAndChild(true);
+  const effectiveFinalMix = (postRenewStatus.remainingMix && postRenewStatus.remainingMix > 0) ? postRenewStatus.remainingMix : finalMix;
+  engine.log(`[🎉] اكتمال الدورة بنجاح تام! رصيد الأونر النهائي المعتمد: (${effectiveFinalMix.toLocaleString('en-US')} ميكس)`, "success");
+
   // Since serverConfirmed is guaranteed to be true here, proceed to cycle completion
   const newCycleCount = (session.current_cycle || 0) + 1;
   const targetMix = session.target_mix_balance || 50000;
-  const targetReached = finalMix >= targetMix;
+  const targetReached = effectiveFinalMix >= targetMix;
   const cooldownSec = session.cycle_delay_seconds !== undefined ? session.cycle_delay_seconds : 20;
 
   // ── AUTOMATIC CHILD EJECTION ON COMPLETION (الإخراج التلقائي للفرد عند بلوغ الهدف) ──
@@ -2052,7 +2059,7 @@ async function handleSingleCycleInternal(
   await supabase
     .from("vip_sessions")
     .update({
-      owner_mix_balance: finalMix,
+      owner_mix_balance: effectiveFinalMix,
       owner_current_plan: finalPlan,
       current_cycle: newCycleCount,
       current_step: targetReached ? "completed" : "idle",
@@ -2064,7 +2071,7 @@ async function handleSingleCycleInternal(
         latest_logs: engine.logs.slice(-25),
         cycle_number: newCycleCount,
         timestamp: Date.now(),
-        final_mix: finalMix,
+        final_mix: effectiveFinalMix,
         auto_ejected_child: autoEjectedChild,
       },
       last_successful_op_at: new Date().toISOString(),
