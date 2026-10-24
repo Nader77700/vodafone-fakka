@@ -351,6 +351,26 @@ public class VodafoneDetectorPlugin extends Plugin {
                         }
                     }
                 }
+
+                // ── فحص عميق للواجهات الشبكية (NetworkInterface Inspection) ──
+                if (!isVpnActive) {
+                    try {
+                        java.util.Enumeration<java.net.NetworkInterface> interfaces = java.net.NetworkInterface.getNetworkInterfaces();
+                        if (interfaces != null) {
+                            while (interfaces.hasMoreElements()) {
+                                java.net.NetworkInterface iface = interfaces.nextElement();
+                                if (iface.isUp()) {
+                                    String name = iface.getName().toLowerCase();
+                                    if (name.contains("tun") || name.contains("ppp") || name.contains("p2p") || name.contains("tap") || name.contains("ipsec")) {
+                                        isVpnActive = true;
+                                        Log.i(TAG, "VPN detected via NetworkInterface: " + name);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
             } catch (Exception e) {
                 Log.w(TAG, "ConnectivityManager error: " + e.getMessage());
             }

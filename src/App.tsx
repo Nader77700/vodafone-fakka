@@ -29,6 +29,7 @@ import { insertOperation } from '@/lib/api';
 import { checkDeviceBan, registerDeviceInRegistry } from '@/lib/api';
 import { supabase } from '@/db/supabase';
 import { BUILD_INFO } from '@/lib/buildInfo';
+import VpnBlockerGate from '@/components/common/VpnBlockerGate';
 import SplashScreen, { SplashOverlay } from './pages/SplashScreen';
 import UpdateBanner from '@/components/common/UpdateBanner';
 
@@ -589,6 +590,7 @@ function AppInner() {
 
   return (
     <>
+      <VpnBlockerGate />
       <WhatsAppPopup />
 
       {/* ── إخلاء المسؤولية الإجباري — يظهر فوق كل شيء بعد تسجيل الدخول ── */}

@@ -29,6 +29,8 @@ type Mode = 'login' | 'register';
 
 import { getStableDeviceIdentity } from '@/lib/deviceFingerprint';
 import { BUILD_INFO } from '@/lib/buildInfo';
+import { VodafoneDetector } from '@/lib/vodafoneDetector';
+import { Capacitor } from '@capacitor/core';
 
 // الـ headers الأمنية المطلوبة لطلبات check_device_ban
 const SECURITY_HEADERS = {
@@ -124,6 +126,17 @@ export default function LoginPage() {
       return;
     }
 
+    // ── فحص كشف VPN المشدد قبل تسجيل الدخول ──
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const netInfo = await VodafoneDetector.getNetworkInfo();
+        if (netInfo.isVpnActive) {
+          toast.error('يرجى إغلاق الـ VPN والمحاولة مرة أخرى');
+          return;
+        }
+      }
+    } catch (e) { /* ignore */ }
+
     // ── فحص حظر الجهاز قبل الدخول ──
     const { device_fp, hardware_hash, device_id: native_id } = getStableDeviceIdentity();
     const deviceId = getDeviceId();
@@ -168,6 +181,18 @@ export default function LoginPage() {
       toast.error('يرجى ملء جميع الحقول (اسم المستخدم، رقم الهاتف، وكلمتي المرور)');
       return;
     }
+
+    // ── فحص كشف VPN المشدد قبل التسجيل ──
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const netInfo = await VodafoneDetector.getNetworkInfo();
+        if (netInfo.isVpnActive) {
+          toast.error('يرجى إغلاق الـ VPN والمحاولة مرة أخرى');
+          return;
+        }
+      }
+    } catch (e) { /* ignore */ }
+
     // ── فحص حظر الجهاز قبل التسجيل ──
     const { device_fp, hardware_hash, device_id: native_id } = getStableDeviceIdentity();
     const deviceId = getDeviceId();

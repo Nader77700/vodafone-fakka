@@ -30,7 +30,7 @@ import {
   executeVipRenewBundle,
   executeSmartEjectionSequence,
   updateVipAutoEjectSetting,
-  executeVipCheckStatusStream,
+  executeVipCheckStatus,
   executeChangeChildPlan,
   type VipExecutionLog,
 } from '@/lib/vipApi';
@@ -340,22 +340,26 @@ export function VipReleaseAndMinionCard({ activeSession, onRefresh, isDelegatedU
     setIsCheckingStrict(true);
     addLocalLog(`[*] بدء الفحص الصارم المباشر من سيرفر اتصالات لعائلة الأونر والتأكد من وجود الفرد...`, 'info');
     try {
-      const res = await executeVipCheckStatusStream(session.id);
+      const res = await executeVipCheckStatus(session.id);
       if (res.logs && res.logs.length > 0) {
         setLogs(res.logs);
       }
       if (res.success) {
         const found = (res as any).owner?.has_child_in_family;
         if (found) {
+          addLocalLog(`[✓] نتيجة الفحص: الفرد مضاف حالياً داخل عائلة الأونر (${(res as any).owner?.child_number_found || ''})`, 'success');
           toast.success(`تأكيد السيرفر: الفرد مضاف داخل العائلة (${(res as any).owner?.child_number_found || ''})`);
         } else {
+          addLocalLog(`[✓] نتيجة الفحص: لا يوجد أي فرد مسجل داخل عائلة الأونر (الفرد خارج العائلة ومفكوك بنجاح).`, 'success');
           toast.info('تأكيد السيرفر: لا يوجد أي فرد مسجل داخل عائلة الأونر حالياً (الفرد خارج العائلة).');
         }
         onRefresh?.();
       } else {
+        addLocalLog(`[-] تعذر استكمال الفحص: ${res.error || 'رد غير متوقع من السيرفر'}`, 'error');
         toast.error(res.error || 'تعذر استكمال الفحص');
       }
     } catch (err: any) {
+      addLocalLog(`[-] خطأ اتصال: ${err?.message || 'تعذر الوصول للسيرفر'}`, 'error');
       toast.error('خطأ: ' + (err?.message || 'تعذر الاتصال'));
     } finally {
       setIsCheckingStrict(false);

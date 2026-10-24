@@ -471,7 +471,14 @@ export function VipSessionSwitcher({
                     {sessions.map((sess) => (
                       <SelectItem key={sess.id} value={sess.id} className="text-xs">
                         <div className="flex items-center justify-between gap-3 w-full">
-                          <span className="font-semibold truncate">{sess.session_name}</span>
+                          <div className="flex items-center gap-1.5 truncate">
+                            {!isDelegatedUser && sess.is_delegated_session && (
+                              <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 text-[9px] px-1 py-0 font-normal">
+                                {sess.creator_user_name || 'مستخدم'}
+                              </Badge>
+                            )}
+                            <span className="font-semibold truncate">{sess.session_name}</span>
+                          </div>
                           <span className="text-[10px] text-muted-foreground font-mono">
                             {sess.owner_account_identifier || sess.owner_email || 'جديدة'}
                           </span>
@@ -558,6 +565,19 @@ export function VipSessionSwitcher({
                         )}
                       </div>
                     </div>
+
+                    {/* Delegated Session Owner Label */}
+                    {!isDelegatedUser && (sess.is_delegated_session || sess.creator_user_name) && (
+                      <div className="mb-2 px-2 py-1 rounded bg-sky-500/10 border border-sky-500/20 flex items-center justify-between text-[10.5px]">
+                        <span className="text-sky-400 font-bold flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>جلسة مستخدم:</span>
+                        </span>
+                        <span className="text-foreground font-mono font-semibold truncate max-w-[140px]" dir="ltr">
+                          {sess.creator_user_name || sess.creator_user_email || 'مستخدم مفوض'}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Body: Owner, Child, Balance */}
                     <div className="space-y-1.5 text-xs">

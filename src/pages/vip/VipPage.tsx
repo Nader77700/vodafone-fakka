@@ -209,8 +209,8 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
           <Crown className="w-7 h-7 text-primary" />
         </div>
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">جاري التحقق من هوية المالك عبر السيرفر...</p>
-          <p className="text-xs text-muted-foreground">تأمين الجلسة ومطابقة الصلاحيات المشددة</p>
+          <p className="text-sm font-semibold text-foreground">جاري التحقق من صلاحيات المستخدم على السيرفر...</p>
+          <p className="text-xs text-muted-foreground">فحص وتأمين رتبة الحساب ومطابقة الصلاحيات السحابية</p>
         </div>
       </div>
     );

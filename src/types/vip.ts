@@ -98,6 +98,12 @@ export interface VipSession {
   mixes_parked_at_child?: boolean;
   parked_amount?: number | null;
 
+  // Creator info & delegation tracking
+  created_by_user_id?: string | null;
+  creator_user_name?: string | null;
+  creator_user_email?: string | null;
+  is_delegated_session?: boolean;
+
   created_at: string;
   updated_at: string;
 }

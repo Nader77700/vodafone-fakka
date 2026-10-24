@@ -2000,18 +2000,16 @@ async function handleSingleCycleInternal(
     console.warn("Failed to insert into vip_operation_history:", dbE);
   }
 
-  // ── SERVER-SIDE CLOUD RUNNER CHAINING (الاستمرار السحابي بالخلفية بدون هاتف) ──
+  // ── SERVER-SIDE CLOUD RUNNER CHAINING (الاستمرار السحابي بالخلفية بدون هاتف 24/7) ──
   // Check fresh session status from DB to ensure it's still running
   const { data: freshSessState } = await supabase
     .from("vip_sessions")
-    .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance, cycle_delay_seconds")
+    .select("operation_state, automation_enabled, target_mix_balance, owner_mix_balance, cycle_delay_seconds, auto_eject_child_on_complete")
     .eq("id", session_id)
     .maybeSingle();
 
   const isServerLoopActive =
     !targetReached &&
-    !sendEvent && // Never self-chain on server if streaming to client! The client controls its own cycle sequence
-    options?.is_server_background === true &&
     freshSessState &&
     freshSessState.automation_enabled &&
     (freshSessState.operation_state === "running" || freshSessState.operation_state === "active") &&
@@ -2039,7 +2037,7 @@ async function handleSingleCycleInternal(
             checkSess.automation_enabled &&
             (checkSess.owner_mix_balance || 0) < (checkSess.target_mix_balance || 50000)
           ) {
-            console.log(`[CloudRunner] Chaining cycle #${newCycleCount + 1} on server for session ${session_id}...`);
+            console.log(`[CloudRunner] Chaining cycle #${newCycleCount + 1} on server 24/7 for session ${session_id}...`);
             await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
               method: "POST",
               headers: {
@@ -2063,6 +2061,45 @@ async function handleSingleCycleInternal(
         (globalThis as any).EdgeRuntime.waitUntil(triggerNext());
       } else {
         triggerNext();
+      }
+    }
+  } else if (targetReached) {
+    await supabase.from("vip_sessions").update({
+      operation_state: "completed",
+      automation_enabled: false,
+      current_step: "completed",
+      updated_at: new Date().toISOString(),
+    }).eq("id", session_id);
+
+    if (freshSessState?.auto_eject_child_on_complete) {
+      console.log(`[CloudRunner] Target reached! Auto-ejecting child on cloud server...`);
+      const ejectChild = async () => {
+        try {
+          const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+          if (serviceRoleKey && supabaseUrl) {
+            await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${serviceRoleKey}`,
+                "X-VIP-Secret-Key": "VFP_VIP_NADER_AKRAM_MASTER_2026",
+              },
+              body: JSON.stringify({
+                action: "run_smart_ejection_sequence",
+                session_id: session_id,
+                is_automatic: true,
+              }),
+            });
+          }
+        } catch (e) {
+          console.warn("[CloudRunner] Auto-eject error:", e);
+        }
+      };
+      if (typeof (globalThis as any).EdgeRuntime?.waitUntil === "function") {
+        (globalThis as any).EdgeRuntime.waitUntil(ejectChild());
+      } else {
+        ejectChild();
       }
     }
   }
@@ -2109,7 +2146,12 @@ serve(async (req: Request) => {
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
   let isAuthorized = false;
+  let isOwner = false;
+  let isDelegated = false;
   let callerEmail = "";
+  let callerUserId = "";
+  let delegatedMaxTargetMix = 100000;
+  let delegatedUserName = "";
 
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -2117,18 +2159,38 @@ serve(async (req: Request) => {
 
   if (secretHeader === masterSecret) {
     isAuthorized = true;
+    isOwner = true;
     callerEmail = "master_secret_authenticated";
   } else if (serviceRoleKey && token === serviceRoleKey) {
     isAuthorized = true;
+    isOwner = true;
     callerEmail = "service_role";
   } else if (token && token !== anonKey) {
     try {
       const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
       if (user && !userErr) {
         callerEmail = user.email || "";
+        callerUserId = user.id;
         const emailLower = callerEmail.toLowerCase();
         if (emailLower === "nader77@miaoda.com" || emailLower.includes("nader")) {
           isAuthorized = true;
+          isOwner = true;
+          delegatedMaxTargetMix = 999999999;
+        } else {
+          // Check if this user has active delegated access
+          const { data: delUser } = await supabase
+            .from("vip_delegated_users")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .maybeSingle();
+
+          if (delUser) {
+            isAuthorized = true;
+            isDelegated = true;
+            delegatedUserName = delUser.name || callerEmail;
+            delegatedMaxTargetMix = delUser.max_target_mix_balance || 100000;
+          }
         }
       }
     } catch (authErr) {
@@ -2146,7 +2208,7 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({
           success: false,
           authorized: false,
-          error: "تم حظر الوصول: الحساب غير مصرح له بالدخول لقسم VIP (Access Denied - Unauthorized Owner)",
+          error: "تم حظر الوصول: الحساب غير مصرح له بالدخول لقسم VIP (Access Denied - Unauthorized Account)",
           code: "UNAUTHORIZED_VIP_ACCESS",
         }), {
           status: 403,
@@ -2157,10 +2219,16 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({
         success: true,
         authorized: true,
+        is_owner: isOwner,
+        is_delegated: isDelegated,
+        role: isOwner ? "owner" : "delegated_user",
         owner_email: callerEmail,
-        owner_name: "Nader Akram",
-        message: "تم التحقق السيرفري بنجاح. الصلاحيات معتمدة ومحمية بنظام Zero-Trust.",
-        blueprint_version: "v3.9.12-64cycles-hardened",
+        owner_name: isOwner ? "Nader Akram (المالك)" : delegatedUserName,
+        max_target_mix_balance: delegatedMaxTargetMix,
+        message: isOwner 
+          ? "تم التحقق السيرفري بنجاح. صلاحيات المالك معتمدة بنظام Zero-Trust."
+          : "تم التحقق من صلاحيات المستخدم على السيرفر بنجاح.",
+        blueprint_version: "v3.9.30-cloud-isolated",
         timestamp: Date.now(),
       }), {
         status: 200,
@@ -2389,6 +2457,18 @@ serve(async (req: Request) => {
       });
     }
 
+    // ── STRICT SESSION OWNERSHIP & ACCESS CONTROL ──
+    // Delegated users CAN NEVER operate on Owner's sessions or other users' sessions!
+    if (isDelegated && callerUserId && session.created_by_user_id !== callerUserId) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "غير مصرح لك بالتحكم في هذه الجلسة (جلسة خاصة بالمالك أو بمستخدم آخر).",
+      }), {
+        status: 403,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch Bridge & Device Config
     const { data: bridgeRow } = await supabase
       .from("vip_bridge_config")
@@ -2399,9 +2479,23 @@ serve(async (req: Request) => {
     const bridgeConfig = (bridgeRow as BridgeConfig) || DEFAULT_BRIDGE_CONFIG;
 
     const ownerEmail = body.owner_email || session.owner_email;
-    const ownerPass = body.owner_password || session.owner_password_enc;
-    const childEmail = body.individual_email || session.individual_email;
-    const childPass = body.individual_password || session.individual_password_enc;
+    const rawOwnerPass = body.owner_password || session.owner_password_enc;
+    let childEmail = body.individual_email || session.individual_email;
+    let rawChildPass = body.individual_password || session.individual_password_enc;
+
+    // Fallback to default child credentials if missing in session
+    if (!childEmail || !rawChildPass) {
+      try {
+        const { data: defChild } = await supabase.rpc("vip_get_default_child_credentials");
+        if (defChild && defChild.child_email) {
+          childEmail = childEmail || defChild.child_email;
+          rawChildPass = rawChildPass || defChild.child_password;
+        }
+      } catch (_) {}
+    }
+
+    const ownerPass = decodeStoredPassword(rawOwnerPass);
+    const childPass = rawChildPass ? decodeStoredPassword(rawChildPass) : "";
 
     if (!ownerEmail || !ownerPass) {
       return new Response(JSON.stringify({
