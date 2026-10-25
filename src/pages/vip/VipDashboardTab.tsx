@@ -187,7 +187,7 @@ export function VipDashboardTab({
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Heartbeat sync interval when session is running outside active local runner
+    // Heartbeat sync interval when session is running to stream server cloud execution updates
     const syncInterval = setInterval(() => {
       const isActuallyRunning =
         session?.id &&
@@ -195,18 +195,24 @@ export function VipDashboardTab({
         session.operation_state !== 'completed' &&
         session.operation_state !== 'paused' &&
         (session.operation_state === 'running' ||
-          session.automation_enabled === true);
+          session.automation_enabled === true ||
+          vipRunnerService.isRunning(session.id));
 
-      // Only poll DB if the in-app local runner is not actively streaming
-      if (isActuallyRunning && !vipRunnerService.isRunning(session.id)) {
+      if (isActuallyRunning) {
         onRefresh();
         fetchVipSessionServerLogs(session.id).then((serverLogs) => {
           if (serverLogs && serverLogs.length > 0) {
-            setTerminalLogs(serverLogs);
+            setTerminalLogs((prev) => {
+              const currentRunner = vipRunnerService.getState(session.id);
+              if (currentRunner.isRunning && currentRunner.logs && currentRunner.logs.length > 0) {
+                return currentRunner.logs;
+              }
+              return serverLogs;
+            });
           }
         }).catch(() => {});
       }
-    }, 10000);
+    }, 6000);
 
     return () => {
       unsubscribe();
@@ -399,9 +405,12 @@ export function VipDashboardTab({
   const handleStartAutoLoop = async (targetMix: number, delaySeconds: number) => {
     if (!session) return;
     try {
+      setLoopRunning(true);
+      setStepMessage('جاري تشغيل دورة اتصالات VIP التلقائية في الخلفية...');
       await vipRunnerService.startLoop(session.id, targetMix, delaySeconds);
       toast.success('تم تشغيل دورة اتصالات VIP التلقائية في الخلفية!');
     } catch (err: any) {
+      setLoopRunning(false);
       toast.error('تعذر تشغيل الدورة: ' + (err?.message || ''));
     }
   };
@@ -468,6 +477,13 @@ export function VipDashboardTab({
                 displaySession.operation_state === 'running' ||
                 displaySession.automation_enabled === true ||
                 vipRunnerService.isRunning(session.id))
+            }
+            isServerRunning={
+              displaySession.operation_state !== 'stopped' &&
+              displaySession.operation_state !== 'completed' &&
+              displaySession.operation_state !== 'paused' &&
+              (displaySession.operation_state === 'running' ||
+                displaySession.automation_enabled === true)
             }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}

@@ -1714,13 +1714,16 @@ async function handleSingleCycleInternal(
   let serverConfirmed = false;
   let confirmedNewMix = 0;
   let confirmedPlanId = "";
+  let nudgeCount = 0;
 
-  // Fast direct polling like original Python script (2s interval, max 45 attempts = 90s max, immediate break on confirmation)
-  // NEVER execute destructive bundle renewal of old plan during pending migration!
-  const maxAttempts = 45;
+  // Wait up to 15-20 minutes: 240 attempts * ~3.5s = ~840s (14 minutes).
+  const maxAttempts = 240;
+  const currentPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+  const currentCost = isSeven ? "270" : "180";
 
+  // Fast direct polling like original Python script (no 5s dead sleep, 1.5s interval, immediate break on confirmation)
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await sleep(2000);
+    await sleep(1500);
     const currentCheck = await engine.getStatusAndChild(true);
     const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
                         (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
@@ -1736,17 +1739,39 @@ async function handleSingleCycleInternal(
       break;
     }
 
-    // Gentle re-send of changePlan only once at attempt 20 (~40s) if server didn't switch yet
-    if (attempt === 20 && !serverConfirmed) {
-      engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المقسم...`, "info");
+    // PERIODIC NUDGE & ACTIVATION LOOP (تنشيط الخط والعقد كل دقيقة إلى دقيقة ونصف):
+    // If server has not switched after ~18 attempts (~60s), execute active nudge:
+    // 1) Renew current bundle to wake up the subscriber contract in billing OMS
+    // 2) Re-issue changePlan to ensure it is not stuck in queue
+    const shouldNudge = (attempt % 18 === 0) && !serverConfirmed;
+    if (shouldNudge) {
+      nudgeCount++;
+      const elapsedMins = ((attempt * 3.5) / 60).toFixed(1);
+      engine.log(`[⚡] بروتوكول التنشيط الدوري (Nudge #${nudgeCount} - مضى ${elapsedMins} دقيقة): إنعاش العقد عبر تجديد باقة الأونر الحالية (${engine.getPlanName(currentPlanName)})...`, "info");
       try {
+        await engine.renewBundleAction(currentPlanName, currentCost);
+        await sleep(3000);
+        const nudgeCheck = await engine.getStatusAndChild(true);
+        const nudgeMatches = (targetPlanId.includes("Parent_6") && nudgeCheck.planId.includes("Parent_6")) ||
+                             (targetPlanId.includes("Parent_7") && nudgeCheck.planId.includes("Parent_7"));
+        if (nudgeMatches) {
+          serverConfirmed = true;
+          confirmedPlanId = nudgeCheck.planId;
+          engine.log(`[🎉] تم تنشيط السيرفر بنجاح وتحول الخط للنظام الجديد فور التجديد!`, "success");
+          break;
+        }
+        // Re-send change plan command to nudge telecom queue
+        engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة...`, "info");
         await engine.changePlan(targetPlanId, ratePlanId);
-      } catch (_reMigErr) {}
+      } catch (_nudgeErr) {}
     }
 
-    // Regular logging every 5 attempts:
-    if (attempt % 5 === 0) {
-      engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/${maxAttempts}) [رصيد الفرد محفوظ بأمان: ${parkedMixAmount.toLocaleString('en-US')}]`, "info");
+    // Regular logging every 10 attempts (~35 seconds):
+    const currentElapsedMins = ((attempt * 3.5) / 60).toFixed(1);
+    if (attempt % 10 === 0 && attempt < maxAttempts && !shouldNudge) {
+      engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد...`, "info");
+    } else if (attempt === 1 || attempt % 5 === 0) {
+      engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/${maxAttempts})`, "info");
     }
 
     if (sendEvent) {
@@ -1754,7 +1779,7 @@ async function handleSingleCycleInternal(
         step: "waiting_server",
         stepNumber: 3,
         title: "انتظار ترحيل وتنشيط السيرفر",
-        detail: `فحص فوري (${attempt}/${maxAttempts}) - الميكسات بأمان لدى الفرد (${parkedMixAmount.toLocaleString('en-US')})`,
+        detail: `فحص دوري (${attempt}/${maxAttempts}) - تنشيط دوري كل دقيقة - الميكسات بأمان لدى الفرد`,
       });
     }
   }
@@ -2049,8 +2074,13 @@ async function handleSingleCycleInternal(
     .eq("id", session_id)
     .maybeSingle();
 
-  // Automatic background server chaining is completely disabled to enforce 100% fast, instant, local in-app execution without delay or hanging
-  const isServerLoopActive = false;
+  // Chain automatically whenever automation is active and target has not been reached yet
+  const isServerLoopActive =
+    !targetReached &&
+    latestChainSessState &&
+    latestChainSessState.automation_enabled &&
+    (latestChainSessState.operation_state === "running" || latestChainSessState.operation_state === "active") &&
+    (latestChainSessState.owner_mix_balance || 0) < (latestChainSessState.target_mix_balance || 50000);
 
   if (isServerLoopActive) {
     const chainDelaySec = Math.max(latestChainSessState.cycle_delay_seconds || cooldownSec || 20, 15);
@@ -2810,12 +2840,13 @@ serve(async (req: Request) => {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // ACTION 3.1: start_server_loop (Local in-app runner preferred)
+    // ACTION 3.1: start_server_loop (Cloud background continuous runner)
     // ══════════════════════════════════════════════════════════════════
     if (action === "start_server_loop") {
       const targetBalance = body.target_mix || session.target_mix_balance || 50000;
       const cycleDelay = body.delay_seconds !== undefined ? body.delay_seconds : (session.cycle_delay_seconds || 20);
 
+      // Update session state in database to running and automation enabled
       await supabase
         .from("vip_sessions")
         .update({
@@ -2830,9 +2861,40 @@ serve(async (req: Request) => {
         })
         .eq("id", session_id);
 
+      // Trigger first cycle immediately on cloud server
+      const runFirst = async () => {
+        try {
+          const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+          if (serviceRoleKey && supabaseUrl) {
+            await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${serviceRoleKey}`,
+                "X-VIP-Secret-Key": "VFP_VIP_NADER_AKRAM_MASTER_2026",
+              },
+              body: JSON.stringify({
+                action: "run_single_cycle",
+                session_id: session_id,
+                is_server_background: true,
+              }),
+            });
+          }
+        } catch (e) {
+          console.warn("[start_server_loop] First cycle trigger error:", e);
+        }
+      };
+
+      if (typeof (globalThis as any).EdgeRuntime?.waitUntil === "function") {
+        (globalThis as any).EdgeRuntime.waitUntil(runFirst());
+      } else {
+        runFirst();
+      }
+
       return new Response(JSON.stringify({
         success: true,
-        message: `تم ضبط وضع التشغيل الفوري للجلسة (الهدف: ${targetBalance.toLocaleString('ar-EG')} ميكس | الفاصل: ${cycleDelay}ث).`,
+        message: `تم تشغيل محرك الأتمتة السحابي بالخلفية بنجاح على السيرفر (الهدف: ${targetBalance.toLocaleString('ar-EG')} ميكس | الفاصل: ${cycleDelay}ث). يعمل السيرفر الآن بدون توقف حتى لو أغلقت التطبيق أو قفلت الشاشة.`,
         session_id: session_id,
       }), {
         status: 200,

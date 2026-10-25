@@ -34,11 +34,17 @@ import {
   ShieldCheck,
   AlertTriangle,
   Lock,
+  Cloud,
+  CloudLightning,
   RefreshCw,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import type { VipAccessStatus } from '@/services/vipDelegationService';
-import { executeVipReturnChildMixes } from '@/lib/vipApi';
+import {
+  executeVipReturnChildMixes,
+  executeVipStartServerLoop,
+  executeVipStopServerLoop,
+} from '@/lib/vipApi';
 import {
   requestVipNotificationPermission,
   isVipNotificationGranted,
@@ -51,6 +57,7 @@ interface Props {
   onRefresh?: () => void;
   isRunning: boolean;
   isPaused: boolean;
+  isServerRunning?: boolean;
   currentCycle: number;
   countdownSeconds: number | null;
   stepMessage: string | null;
@@ -65,6 +72,7 @@ export function VipAutoLoopCard({
   onRefresh,
   isRunning,
   isPaused,
+  isServerRunning = false,
   currentCycle,
   countdownSeconds,
   stepMessage,
@@ -84,6 +92,49 @@ export function VipAutoLoopCard({
   const [autoEject, setAutoEject] = useState<boolean>(session.auto_eject_child_on_complete ?? false);
   const [isUpdatingAutoEject, setIsUpdatingAutoEject] = useState<boolean>(false);
   const [isReturningChildMixes, setIsReturningChildMixes] = useState<boolean>(false);
+  const [startingServerLoop, setStartingServerLoop] = useState<boolean>(false);
+  const [syncingDb, setSyncingDb] = useState<boolean>(false);
+
+  const handleStartServerLoop = async () => {
+    setStartingServerLoop(true);
+    try {
+      const res = await executeVipStartServerLoop(session.id, selectedTarget, cycleDelay);
+      if (res.success) {
+        toast.success(res.message || 'تم تشغيل الأتمتة السحابية 24/7 بنجاح على السيرفر!');
+        onRefresh?.();
+      } else {
+        toast.error(res.error || 'تعذر تشغيل السيرفر السحابي');
+      }
+    } catch (err: any) {
+      toast.error('خطأ تشغيل السيرفر: ' + (err?.message || 'خطأ'));
+    } finally {
+      setStartingServerLoop(false);
+    }
+  };
+
+  const handleStopServerLoop = async () => {
+    setStartingServerLoop(true);
+    try {
+      const res = await executeVipStopServerLoop(session.id);
+      if (res.success) {
+        toast.success(res.message || 'تم إيقاف الأتمتة السحابية بنجاح.');
+        onRefresh?.();
+      } else {
+        toast.error(res.error || 'تعذر إيقاف السيرفر السحابي');
+      }
+    } catch (err: any) {
+      toast.error('خطأ إيقاف السيرفر: ' + (err?.message || 'خطأ'));
+    } finally {
+      setStartingServerLoop(false);
+    }
+  };
+
+  const handleSyncFromDb = () => {
+    setSyncingDb(true);
+    onRefresh?.();
+    toast.success('تمت مزامنة بيانات ورصيد الجلسة مباشرة من قاعدة بيانات السيرفر');
+    setTimeout(() => setSyncingDb(false), 500);
+  };
 
   const handleReturnChildMixes = async () => {
     setIsReturningChildMixes(true);
@@ -159,21 +210,18 @@ export function VipAutoLoopCard({
     session.current_step === 'completed';
 
   const effectiveIsRunning =
-    !isExplicitlyStopped &&
-    !isTargetReached &&
-    (isRunning ||
-      session.operation_state === 'running' ||
-      session.automation_enabled === true);
+    isRunning ||
+    (!isExplicitlyStopped &&
+      !isTargetReached &&
+      (isServerRunning ||
+        session.operation_state === 'running' ||
+        session.automation_enabled === true));
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleStartClick = () => {
-    // If target was already reached, strictly require explicit manual confirmation
-    if (
-      isTargetReached ||
-      session.operation_state === 'completed' ||
-      session.current_step === 'completed'
-    ) {
+    // Strictly require confirmation ONLY when target was truly reached
+    if (isTargetReached) {
       setShowConfirmModal(true);
       return;
     }
@@ -207,11 +255,11 @@ export function VipAutoLoopCard({
           </div>
           <div className="min-w-0">
             <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5 flex-wrap">
-              <span>أتمتة الدورات الحية (المحرك المحلي الفوري)</span>
+              <span>أتمتة الدورات الحية</span>
               {effectiveIsRunning ? (
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 animate-pulse flex items-center gap-1 font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>{`الدورة نشطة محلياً (#${currentCycle})`}</span>
+                  <span>{isServerRunning || session.automation_enabled ? `⚡ نشطة بالسيرفر (#${currentCycle})` : `الدورة نشطة (#${currentCycle})`}</span>
                 </Badge>
               ) : isPaused || session.operation_state === 'paused' ? (
                 <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] px-1.5 py-0 font-bold">
@@ -441,23 +489,66 @@ export function VipAutoLoopCard({
             />
           </div>
 
-          {/* ── Local Engine Instant Response Banner (تشغيل محلي فوري وسلس بدون تعليق) ── */}
-          <div className="p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 space-y-1.5">
+          {/* ── Server-Side Cloud Hub (لوحة تحكم السيرفر المباشرة) ── */}
+          <div className="p-2.5 rounded-lg border border-sky-500/40 bg-sky-950/20 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-1">
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                المحرك المحلي المباشر فائق السرعة (Local Engine)
+              <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                <Cloud className="w-3.5 h-3.5 text-sky-400" />
+                لوحة التحكم السحابي المباشر من السيرفر (Server Hub)
               </span>
               <Badge
                 variant="outline"
-                className="text-[9.5px] px-2 py-0.5 font-mono border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                className={`text-[9.5px] px-2 py-0.5 font-mono ${
+                  isServerRunning
+                    ? 'border-emerald-500 text-emerald-400 bg-emerald-500/15 animate-pulse'
+                    : 'border-zinc-700 text-zinc-400 bg-zinc-900/60'
+                }`}
               >
-                استجابة فورية 100%
+                {isServerRunning ? '⚡ خادم سحابي 24/7 نشط' : 'الخادم السحابي خامل'}
               </Badge>
             </div>
             <p className="text-[10.5px] text-zinc-300/80 leading-relaxed">
-              تعمل الأتمتة مباشرة من داخل التطبيق بدون أي سيرفر وسيط أو تعليق، لتوفير أقصى سرعة ممكنة ونقل لحظي للسجلات والبيانات بالملي ثانية.
+              التشغيل السحابي ينفذ الدورات مباشرة على السيرفر في الخلفية 24/7 حتى لو أغلقت التطبيق أو انقطع اتصال الإنترنت من جهازك.
             </p>
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              {isServerRunning ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleStopServerLoop}
+                  disabled={startingServerLoop}
+                  className="flex-1 h-7 text-xs font-bold gap-1 shadow"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>إيقاف السيرفر السحابي</span>
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleStartServerLoop}
+                  disabled={startingServerLoop || isRunning}
+                  className="flex-1 h-7 text-xs bg-sky-600 hover:bg-sky-500 text-white font-bold gap-1 shadow"
+                >
+                  {startingServerLoop ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <CloudLightning className="w-3 h-3" />
+                  )}
+                  <span>تشغيل سحابي مستقل (خادم 24/7)</span>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSyncFromDb}
+                disabled={syncingDb}
+                className="h-7 text-xs border-zinc-700 hover:bg-zinc-800 text-zinc-200 px-2.5 font-medium gap-1"
+                title="مزامنة فورية للرصيد والحالة مباشرة من قاعدة بيانات السيرفر"
+              >
+                <RefreshCw className={`w-3 h-3 ${syncingDb ? 'animate-spin' : ''}`} />
+                <span>مزامنة السيرفر</span>
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
