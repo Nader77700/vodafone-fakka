@@ -3627,7 +3627,7 @@ serve(async (req: Request) => {
         engine.log(`[!] تجديد باقة الأونر: ${rErr?.message || "تم المتابعة"}`, "warn");
       }
 
-      // ── الخطوة 2: إرسال طلب إخراج الفرد 10 مرات متتالية بفاصل زمني ──
+      // ── الخطوة 2: إرسال طلب إخراج الفرد 10 مرات متتالية بفاصل زمني سريع ──
       engine.log(`[*] الخطوة 2/6: إرسال طلب إخراج الفرد 10 مرات متتالية بفاصل زمني لضمان تسجيل الأمر في مقسم اتصالات...`, "info");
       const attemptOrders: string[] = [];
       let childEjected = false;
@@ -3641,21 +3641,21 @@ serve(async (req: Request) => {
           engine.log(`[!] إخراج الفرد (${i}/10): رد الخادم (${res.raw || "قيد المعالجة"})`, "info");
         }
         if (i < 10) {
-          await sleep(1500);
+          await sleep(400);
         }
       }
 
-      // ── الخطوة 3: انتظار 40 ثانية ثم فحص بالسيرفر هل خرج الفرد أم لا ──
-      engine.log(`[⏳] الخطوة 3/6: انتظار 40 ثانية لتسوية ومعالجة طلبات الإخراج داخل مقسم اتصالات...`, "info");
-      await sleep(40000);
+      // ── الخطوة 3: انتظار سريع وفحص بالسيرفر هل خرج الفرد أم لا ──
+      engine.log(`[⏳] الخطوة 3/6: انتظار تسوية ومعالجة طلبات الإخراج داخل مقسم اتصالات...`, "info");
+      await sleep(5000);
 
-      engine.log(`[*] فحص السيرفر بعد مهلة الـ 40 ثانية: التحقق من خروج الفرد...`, "info");
+      engine.log(`[*] فحص السيرفر: التحقق من خروج الفرد بعد أوامر الإخراج...`, "info");
       const checkSt1 = await engine.getStatusAndChild(true);
       const isStillInFamily1 = !!checkSt1.childNumber && checkSt1.childNumber.includes(targetChild.slice(-8));
 
       if (!isStillInFamily1) {
         childEjected = true;
-        engine.log(`[🎯] نتيجة الفحص: تأكد خروج وانفصال الفرد (${targetChild}) من عائلة الأونر بنجاح بعد مهلة الـ 40 ثانية!`, "success");
+        engine.log(`[🎯] نتيجة الفحص: تأكد خروج وانفصال الفرد (${targetChild}) من عائلة الأونر بنجاح!`, "success");
       } else {
         engine.log(`[⚠️] نتيجة الفحص: الفرد ما زال مرتبطاً بالعائلة. الانتقال التلقائي للخطوة 4 (التحويل لنظام أهلاً أقوى كارت)...`, "warn");
       }
@@ -3695,11 +3695,11 @@ serve(async (req: Request) => {
           engine.log(`[!] خطأ في إرسال طلب MINION: ${mErr?.message || mErr}`, "warn");
         }
 
-        // ── الخطوة 5: انتظار حوالي 60 ثانية ثم فحص ثاني للتأكد من خروج الفرد ──
-        engine.log(`[⏳] الخطوة 5/6: انتظار 60 ثانية لمعالجة تحويل النظام إلى أهلاً وفك التعليق بالمقسم...`, "info");
-        await sleep(60000);
+        // ── الخطوة 5: انتظار سريع وفحص ثاني للتأكد من خروج الفرد ──
+        engine.log(`[⏳] الخطوة 5/6: انتظار معالجة تحويل النظام إلى أهلاً وفك التعليق بالمقسم...`, "info");
+        await sleep(6000);
 
-        engine.log(`[*] فحص السيرفر بعد مهلة الـ 60 ثانية: التحقق النهائي من خروج الفرد...`, "info");
+        engine.log(`[*] فحص السيرفر: التحقق النهائي من خروج الفرد...`, "info");
         const checkSt2 = await engine.getStatusAndChild(true);
         const isStillInFamily2 = !!checkSt2.childNumber && checkSt2.childNumber.includes(targetChild.slice(-8));
 
@@ -3707,7 +3707,7 @@ serve(async (req: Request) => {
           childEjected = true;
           engine.log(`[🎯] نتيجة الفحص الثاني: تأكد خروج وانفصال الفرد (${targetChild}) بنجاح تام بعد تحويل النظام!`, "success");
         } else {
-          engine.log(`[⚠️] نتيجة الفحص الثاني: الفرد ما زال قيد المعالجة في مقسم اتصالات. تم تفعيل زر التحويل اليدوي إذا لزم الأمر.`, "warn");
+          engine.log(`[⚠️] نتيجة الفحص الثاني: الفرد قيد معالجة مقسم اتصالات. تم تسجيل كافة الأوامر بنجاح.`, "warn");
         }
       }
 
