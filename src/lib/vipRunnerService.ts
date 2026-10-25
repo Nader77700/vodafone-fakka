@@ -36,56 +36,74 @@ export function parseBalancesFromLog(message: string): {
   // Remove commas for clean integer parsing: "66,100" -> "66100"
   const clean = message.replace(/,/g, '');
 
-  // 1. "رجعنا للأونر | رصيده الآن: 66100 ميكس"
-  const returnMatch = clean.match(/رجعنا للأونر\s*\|\s*رصيده الآن:\s*(\d+)\s*ميكس/);
+  // 1. "رجعنا للأونر | رصيده الفعلي الآن: 8825 ميكس" or "رصيده الآن: 66100 ميكس"
+  const returnMatch = clean.match(/رجعنا للأونر\s*\|\s*رصيده\s*(?:الفعلي\s*)?الآن:\s*(\d+)\s*ميكس/);
   if (returnMatch) {
     res.ownerMix = parseInt(returnMatch[1], 10);
     res.childMix = 0; // After recovery, child is cleared
   }
 
-  // 2. "رصيده الآن: 66100 ميكس"
-  const ownerNowMatch = clean.match(/رصيده الآن:\s*(\d+)\s*ميكس/);
+  // 2. "رصيده الآن: 66100 ميكس" or "رصيده الفعلي الآن: 8825 ميكس"
+  const ownerNowMatch = clean.match(/رصيده\s*(?:الفعلي\s*)?الآن:\s*(\d+)\s*ميكس/);
   if (ownerNowMatch) {
     res.ownerMix = parseInt(ownerNowMatch[1], 10);
   }
 
-  // 3. "الفرد جاهز ولديه (66100) ميكس مركونة بأمان"
+  // 3. "فحص الأونر: ... | الميكسات: 13575"
+  const ownerCheckMatch = clean.match(/فحص الأونر:[^|]*\|\s*الميكسات:\s*(\d+)/);
+  if (ownerCheckMatch) {
+    res.ownerMix = parseInt(ownerCheckMatch[1], 10);
+  }
+
+  // 4. "حساب الفرد جاهز ... | الميكسات الحالية: 1300"
+  const childReadyMatch = clean.match(/حساب الفرد جاهز[^|]*\|\s*الميكسات الحالية:\s*(\d+)/);
+  if (childReadyMatch) {
+    res.childMix = parseInt(childReadyMatch[1], 10);
+  }
+
+  // 5. "الفرد جاهز ولديه (66100) ميكس مركونة بأمان"
   const childParkedMatch = clean.match(/الفرد جاهز ولديه\s*\(?(\d+)\)?\s*ميكس/);
   if (childParkedMatch) {
     res.childMix = parseInt(childParkedMatch[1], 10);
-    // STRICT ZERO-LOSS PROTECTION: NEVER reset ownerMix to 0 while parked!
-    // The user's mixes are preserved in transit, not wiped.
   }
 
-  // 4. "جاري تحويل (66100) ميكس إلى الرقم"
+  // 6. "جاري تحويل (66100) ميكس إلى الرقم"
   const transferMatch = clean.match(/جاري تحويل\s*\(?(\d+)\)?\s*ميكس إلى الرقم/);
   if (transferMatch) {
     res.childMix = parseInt(transferMatch[1], 10);
   }
 
-  // 5. "تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (6000)"
+  // 7. "الميكسات (38575) محفوظة بأمان لدى الفرد"
+  const safeChildMatch = clean.match(/الميكسات\s*\(?(\d+)\)?\s*محفوظة بأمان لدى الفرد/);
+  if (safeChildMatch) {
+    res.childMix = parseInt(safeChildMatch[1], 10);
+  }
+
+  // 8. "تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (6000)"
   const dropMatch = clean.match(/تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح:\s*\(?(\d+)\)?/);
   if (dropMatch) {
-    // Only adopt if it represents an increase or valid baseline
     const droppedVal = parseInt(dropMatch[1], 10);
     if (droppedVal > 0) {
       res.ownerMix = droppedVal;
     }
   }
 
-  // 6. "فحص رصيد الفرد الفعلي بالسيرفر: 0 ميكس متبقية"
-  const childServerMatch = clean.match(/فحص رصيد الفرد الفعلي بالسيرفر:\s*(\d+)\s*ميكس/);
+  // 9. "فحص رصيد الفرد الفعلي بالسيرفر: 0 ميكس متبقية" or "رصيد الفرد الحالي: (ميكس 0)"
+  const childServerMatch = clean.match(/(?:فحص رصيد الفرد الفعلي بالسيرفر:\s*(\d+)\s*ميكس|رصيد الفرد الحالي:\s*\(?(?:ميكس\s*)?(\d+)\)?)/);
   if (childServerMatch) {
-    res.childMix = parseInt(childServerMatch[1], 10);
+    const val = childServerMatch[1] || childServerMatch[2];
+    if (val !== undefined) {
+      res.childMix = parseInt(val, 10);
+    }
   }
 
-  // 7. "نجح استرجاع (66100) ميكس من الفرد إلى الأونر"
-  const recoveredMatch = clean.match(/نجح استرجاع\s*\(?(\d+)\)?\s*ميكس من الفرد إلى الأونر/);
+  // 10. "نجح استرجاع (66100) ميكس من الفرد إلى الأونر" or "تم الاسترجاع اللحظي بنجاح! (66100) ميكس"
+  const recoveredMatch = clean.match(/(?:نجح استرجاع|تم الاسترجاع اللحظي بنجاح!)\s*\(?(\d+)\)?\s*ميكس/);
   if (recoveredMatch) {
     res.childMix = 0;
   }
 
-  // 8. Plan extraction: "النظام: حكاية ميكسات 180" or "حالة النظام المعتمد: حكاية ميكسات 180"
+  // 11. Plan extraction: "النظام: حكاية ميكسات 180" or "حالة النظام المعتمد: حكاية ميكسات 180"
   const planMatch = message.match(/(?:النظام:\s*|حالة النظام المعتمد:\s*|ترحيل النظام إلى:\s*)(حكاية ميكسات\s*\d+)/);
   if (planMatch) {
     res.ownerPlan = planMatch[1].trim();
@@ -304,23 +322,16 @@ class VipRunnerService {
       console.warn('[VipRunnerService] DB update warning:', e);
     }
 
-    // ── TRIGGER 24/7 CLOUD SERVER ENGINE ──
-    // Ensures cycles continue non-stop on Supabase Edge Functions even if the app is killed or phone is locked
-    invokeVipExecutor('start_server_loop', {
-      session_id: sessionId,
-      target_mix: targetMix,
-      delay_seconds: delaySeconds,
-    }).catch((e) => console.warn('[VipRunnerService] Server background loop start trigger error:', e));
-
+    // Local in-app runner executes directly via SSE stream for instant millisecond response
     this.addLog(sessionId, `==================================================`, 'info');
     this.addLog(
       sessionId,
-      `[🚀] تم تشغيل محرك الأتمتة التلقائية (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث).`,
+      `[🚀] تم تشغيل المحرك المحلي المباشر فائق السرعة (الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الانتظار: ${delaySeconds}ث).`,
       'success'
     );
     this.addLog(
       sessionId,
-      `[🛡️] نظام حماية الميكسات نشط: مراقبة فورية لعدم فقدان أي ميكس والتحقق القطعي من استقرار الرصيد.`,
+      `[🛡️] نظام حماية الميكسات نشط: استجابة فورية لحظية بدون أي وسيط سحابي أو تأخير.`,
       'info'
     );
 
@@ -375,10 +386,7 @@ class VipRunnerService {
       console.warn('[VipRunnerService] DB stop error:', e);
     }
 
-    // Stop server-side persistent cloud runner
-    invokeVipExecutor('stop_server_loop', {
-      session_id: sessionId,
-    }).catch((e) => console.warn('[VipRunnerService] Server background loop stop trigger error:', e));
+    // Stop persistent notification and background locks
 
     sendVipRemotePushNotification(
       '⏹️ تم إيقاف دورة اتصالات VIP',

@@ -187,7 +187,7 @@ export function VipDashboardTab({
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Heartbeat sync interval when session is running to stream server cloud execution updates
+    // Heartbeat sync interval when session is running outside active local runner
     const syncInterval = setInterval(() => {
       const isActuallyRunning =
         session?.id &&
@@ -195,24 +195,18 @@ export function VipDashboardTab({
         session.operation_state !== 'completed' &&
         session.operation_state !== 'paused' &&
         (session.operation_state === 'running' ||
-          session.automation_enabled === true ||
-          vipRunnerService.isRunning(session.id));
+          session.automation_enabled === true);
 
-      if (isActuallyRunning) {
+      // Only poll DB if the in-app local runner is not actively streaming
+      if (isActuallyRunning && !vipRunnerService.isRunning(session.id)) {
         onRefresh();
         fetchVipSessionServerLogs(session.id).then((serverLogs) => {
           if (serverLogs && serverLogs.length > 0) {
-            setTerminalLogs((prev) => {
-              const currentRunner = vipRunnerService.getState(session.id);
-              if (currentRunner.isRunning && currentRunner.logs && currentRunner.logs.length > 0) {
-                return currentRunner.logs;
-              }
-              return serverLogs;
-            });
+            setTerminalLogs(serverLogs);
           }
         }).catch(() => {});
       }
-    }, 6000);
+    }, 10000);
 
     return () => {
       unsubscribe();
@@ -474,13 +468,6 @@ export function VipDashboardTab({
                 displaySession.operation_state === 'running' ||
                 displaySession.automation_enabled === true ||
                 vipRunnerService.isRunning(session.id))
-            }
-            isServerRunning={
-              displaySession.operation_state !== 'stopped' &&
-              displaySession.operation_state !== 'completed' &&
-              displaySession.operation_state !== 'paused' &&
-              (displaySession.operation_state === 'running' ||
-                displaySession.automation_enabled === true)
             }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}

@@ -257,26 +257,22 @@ export function VipUnifiedMasterCard({
                 </span>
               </div>
 
-              {/* Current Mix Balance */}
-              <div className="flex flex-col justify-center p-1.5 sm:p-2 rounded bg-card/60 border border-border/40">
-                <span className="text-[10px] text-muted-foreground font-sans flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-emerald-400" />
-                    || رصيد الأونر:
-                  </span>
-                  {totalFamilyMixes > 0 && (
-                    <span className="text-[10px] text-sky-400 font-sans">
-                      العائلة: {totalFamilyMixes.toLocaleString('en-US')}
-                    </span>
-                  )}
+            {/* Current Mix Balance */}
+            <div className="flex flex-col justify-center p-1.5 sm:p-2 rounded bg-card/60 border border-border/40">
+              <span className="text-[10px] text-muted-foreground font-sans flex items-center justify-between">
+                <span className="flex items-center gap-1 font-bold text-emerald-400">
+                  <Sparkles className="w-3 h-3 text-emerald-400" />
+                  || إجمالي الميكسات:
                 </span>
-                <span className="text-xs sm:text-sm font-extrabold text-emerald-400 mt-0.5">
-                  {session.owner_mix_balance !== null && session.owner_mix_balance !== undefined
-                    ? Number(session.owner_mix_balance).toLocaleString('en-US')
-                    : 'بانتظار الفحص'}{' '}
-                  <span className="text-[11px] font-normal text-muted-foreground font-sans">ميكس</span>
+                <span className="text-[10px] text-sky-400 font-sans font-medium">
+                  أونر: {Number(session.owner_mix_balance || 0).toLocaleString('en-US')} | فرد: {Number(session.individual_mix_balance || 0).toLocaleString('en-US')}
                 </span>
-              </div>
+              </span>
+              <span className="text-xs sm:text-sm font-extrabold text-emerald-400 mt-0.5">
+                {totalFamilyMixes.toLocaleString('en-US')}{' '}
+                <span className="text-[11px] font-normal text-muted-foreground font-sans">ميكس</span>
+              </span>
+            </div>
             </div>
           </div>
         </div>
