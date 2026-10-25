@@ -138,6 +138,26 @@ class VipRunnerService {
   private listeners = new Map<string, Set<RunnerListener>>();
   private loopPromises = new Map<string, Promise<void>>();
   private lastResumeAttempt = new Map<string, number>();
+  private saveTimers = new Map<string, any>();
+  private notifyTimers = new Map<string, any>();
+
+  private saveToLocalStorageDebounced(sessionId: string, state: VipRunnerState) {
+    if (this.saveTimers.has(sessionId)) return;
+    const timer = setTimeout(() => {
+      this.saveTimers.delete(sessionId);
+      this.saveToLocalStorage(sessionId, state);
+    }, 500);
+    this.saveTimers.set(sessionId, timer);
+  }
+
+  private notifyThrottled(sessionId: string) {
+    if (this.notifyTimers.has(sessionId)) return;
+    const timer = setTimeout(() => {
+      this.notifyTimers.delete(sessionId);
+      this.notify(sessionId);
+    }, 60);
+    this.notifyTimers.set(sessionId, timer);
+  }
 
   constructor() {
     // Restore or sync when initialized
@@ -267,8 +287,8 @@ class VipRunnerService {
     if (parsed.childMix !== undefined) state.latestChildMix = parsed.childMix;
     if (parsed.ownerPlan) state.latestOwnerPlan = parsed.ownerPlan;
 
-    this.saveToLocalStorage(sessionId, state);
-    this.notify(sessionId);
+    this.saveToLocalStorageDebounced(sessionId, state);
+    this.notifyThrottled(sessionId);
   }
 
   /**
@@ -571,8 +591,8 @@ class VipRunnerService {
                 st.latestOwnerPlan = parsed.ownerPlan;
               }
 
-              this.saveToLocalStorage(sessionId, st);
-              this.notify(sessionId);
+              this.saveToLocalStorageDebounced(sessionId, st);
+              this.notifyThrottled(sessionId);
             }
           },
           onStep: (stepInfo) => {

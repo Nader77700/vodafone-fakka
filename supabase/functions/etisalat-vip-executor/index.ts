@@ -52,6 +52,20 @@ const DEFAULT_BRIDGE_CONFIG: BridgeConfig = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// ── Global Concurrency Mutex for Etisalat Auth Gateway ──
+// When multiple sessions run in parallel, simultaneous logins from same IP cause Etisalat 429 / lockouts.
+// This sequential queue guarantees login requests are spaced out cleanly with a safe delay!
+let loginMutexChain = Promise.resolve();
+function acquireLoginSlot(): Promise<() => void> {
+  let release: () => void = () => {};
+  const currentSlot = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const waitTurn = loginMutexChain.then(() => sleep(300));
+  loginMutexChain = loginMutexChain.then(() => currentSlot).then(() => sleep(600));
+  return waitTurn.then(() => release);
+}
+
 async function sha256Hex(str: string): Promise<string> {
   const buf = new TextEncoder().encode(str);
   const hash = await crypto.subtle.digest("SHA-256", buf);
@@ -347,96 +361,112 @@ class EtisalatEngine {
       headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
     }
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const targetUrl = this.getRequestUrl(urlPath);
-        const res = await this.fetchWithTimeout(targetUrl, {
-          method: "POST",
-          headers,
-          body: loginXml,
-        }, 7000);
+    const releaseSlot = await acquireLoginSlot();
+    try {
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+          const targetUrl = this.getRequestUrl(urlPath);
+          const res = await this.fetchWithTimeout(targetUrl, {
+            method: "POST",
+            headers,
+            body: loginXml,
+          }, 8000);
 
-        const text = await res.text();
-        if (res.status === 200 && text.includes("<status>true</status>")) {
-          // 1. Capture session cookies (JSESSIONID)
-          const setCookieHdr = res.headers.get("set-cookie");
-          const getSetCookieFn = (res.headers as any).getSetCookie;
-          const cookiesList: string[] = typeof getSetCookieFn === "function"
-            ? getSetCookieFn.call(res.headers)
-            : (setCookieHdr ? [setCookieHdr] : []);
+          const text = await res.text();
+          if (res.status === 200 && text.includes("<status>true</status>")) {
+            // 1. Capture session cookies (JSESSIONID)
+            const setCookieHdr = res.headers.get("set-cookie");
+            const getSetCookieFn = (res.headers as any).getSetCookie;
+            const cookiesList: string[] = typeof getSetCookieFn === "function"
+              ? getSetCookieFn.call(res.headers)
+              : (setCookieHdr ? [setCookieHdr] : []);
 
-          const cookiePairs: string[] = [];
-          for (const item of cookiesList) {
-            if (item) {
-              const pair = item.split(";")[0].trim();
-              if (pair && !cookiePairs.includes(pair)) {
-                cookiePairs.push(pair);
+            const cookiePairs: string[] = [];
+            for (const item of cookiesList) {
+              if (item) {
+                const pair = item.split(";")[0].trim();
+                if (pair && !cookiePairs.includes(pair)) {
+                  cookiePairs.push(pair);
+                }
               }
             }
-          }
-          if (cookiePairs.length > 0) {
-            this.cookieHeader = cookiePairs.join("; ");
-          }
-
-          // 2. Auth token and customer details from JWT
-          const auth = res.headers.get("auth");
-          if (auth) {
-            this.authToken = auth;
-            try {
-              const tokenPayload = auth.split(".")[1];
-              const base64 = tokenPayload.replace(/-/g, "+").replace(/_/g, "/");
-              const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-              const binary = atob(padded);
-              const bytes = new Uint8Array(binary.length);
-              for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i);
-              }
-              const jsonStr = new TextDecoder().decode(bytes);
-              const decoded = JSON.parse(jsonStr);
-              this.currentDial = decoded.selectedDial || null;
-              const rawName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
-              this.customerName = (!rawName || rawName.toLowerCase().includes("dummy")) ? "" : rawName;
-              this.shortCode = decoded.selectedDialShortCode || "";
-            } catch {
-              // fallback
+            if (cookiePairs.length > 0) {
+              this.cookieHeader = cookiePairs.join("; ");
             }
 
-            // Extract Arabic customer name directly from login response XML if available
-            if (!this.customerName || this.customerName.toLowerCase().includes("dummy")) {
-              const nameMatch = text.match(/<(?:customerName|subscriberName|fullName|name|accountName)>([^<]+)<\//i);
-              if (nameMatch && nameMatch[1].trim() && !nameMatch[1].toLowerCase().includes("dummy")) {
-                this.customerName = nameMatch[1].trim();
-              }
-            }
-
-            if (!this.customerName && this.knownName) {
-              this.customerName = this.knownName;
-            }
-
-            if (isOwner) {
-              this.ownerDial = this.currentDial;
-            } else {
-              this.childDial = this.currentDial;
-            }
-            if (this.onNewAuthToken) {
+            // 2. Auth token and customer details from JWT
+            const auth = res.headers.get("auth");
+            if (auth) {
+              this.authToken = auth;
               try {
-                this.onNewAuthToken(this.authToken, this.cookieHeader, isOwner);
-              } catch (_) {}
+                const tokenPayload = auth.split(".")[1];
+                const base64 = tokenPayload.replace(/-/g, "+").replace(/_/g, "/");
+                const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+                const binary = atob(padded);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                  bytes[i] = binary.charCodeAt(i);
+                }
+                const jsonStr = new TextDecoder().decode(bytes);
+                const decoded = JSON.parse(jsonStr);
+                this.currentDial = decoded.selectedDial || null;
+                const rawName = `${decoded.firstname || ""} ${decoded.lastname || ""}`.trim();
+                this.customerName = (!rawName || rawName.toLowerCase().includes("dummy")) ? "" : rawName;
+                this.shortCode = decoded.selectedDialShortCode || "";
+              } catch {
+                // fallback
+              }
+
+              // Extract Arabic customer name directly from login response XML if available
+              if (!this.customerName || this.customerName.toLowerCase().includes("dummy")) {
+                const nameMatch = text.match(/<(?:customerName|subscriberName|fullName|name|accountName)>([^<]+)<\//i);
+                if (nameMatch && nameMatch[1].trim() && !nameMatch[1].toLowerCase().includes("dummy")) {
+                  this.customerName = nameMatch[1].trim();
+                }
+              }
+
+              if (!this.customerName && this.knownName) {
+                this.customerName = this.knownName;
+              }
+
+              if (isOwner) {
+                this.ownerDial = this.currentDial;
+              } else {
+                this.childDial = this.currentDial;
+              }
+              if (this.onNewAuthToken) {
+                try {
+                  this.onNewAuthToken(this.authToken, this.cookieHeader, isOwner);
+                } catch (_) {}
+              }
+              if (!silent) {
+                const displayName = this.customerName || this.knownName || (isOwner ? "الأونر" : "الفرد");
+                this.log(`[+] تم تسجيل الدخول بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) | بصمة الجهاز: ${this.device.modelType}`, "success");
+              }
+              return true;
             }
-            if (!silent) {
-              const displayName = this.customerName || this.knownName || (isOwner ? "الأونر" : "الفرد");
-              this.log(`[+] تم تسجيل الدخول بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) | بصمة الجهاز: ${this.device.modelType}`, "success");
+          } else {
+            // Extract error message from XML if returned by telecom gateway
+            const errMatch = text.match(/<(?:errorMessage|description|message)>([^<]+)<\//i);
+            const errDetail = errMatch ? errMatch[1].trim() : (res.status !== 200 ? `كود ${res.status}` : "");
+            if (errDetail && !silent) {
+              this.log(`[!] رد بوابة اتصالات (محاولة ${attempt}/4): ${errDetail}`, "warn");
             }
-            return true;
+            await sleep(attempt * 1500);
           }
+        } catch (netErr: any) {
+          if (!silent) {
+            this.log(`[!] تعذر الاتصال ببوابة الدخول (محاولة ${attempt}/4): ${netErr?.message || netErr}`, "warn");
+          }
+          await sleep(attempt * 2000);
         }
-      } catch {
-        await sleep(2000);
       }
+    } finally {
+      releaseSlot();
     }
 
     if (!silent) {
-      this.log(`[-] فشل تسجيل الدخول للحساب (${masked}) بعد 3 محاولات.`, "error");
+      this.log(`[-] فشل تسجيل الدخول للحساب (${masked}) بعد 4 محاولات.`, "error");
     }
     return false;
   }
@@ -1724,20 +1754,34 @@ async function handleSingleCycleInternal(
   engine.log(`[*] في انتظار تحديث السيرفر واعتماد النظام الجديد (${targetPlanDisplay})...`, "info");
   engine.log(`[🛡️] درع الأمان الذهبي: كافة الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محجوزة ومحمية بالكامل في حساب الفرد، ويُحظر استرجاعها للأونر نهائياً حتى يتم التأكد القطعي 100% من نجاح الترحيل لتجنب التصفير!`, "info");
 
+  // ── تسليح محرك الفرد مسبقاً (Pre-Arming Child Transfer) ──
+  // استجابة لتوجيه الأونر الدقيق: أثناء إرسال أمر الترحيل وانتظار استجابة السيرفر،
+  // نقوم فوراً بتسليح وتجهيز محرك الفرد وفحص رصيده وتجهيز أمر النقل للأونر في الذاكرة مسبقاً
+  let armedMixToTransfer = parkedMixAmount;
+  if (prewarmedChildEngine) {
+    try {
+      const childSt = await prewarmedChildEngine.getStatusAndChild(true);
+      if (childSt && childSt.remainingMix > 0) {
+        armedMixToTransfer = childSt.remainingMix;
+        engine.log(`[🎯 تسليح مسبق] تم فحص وتأمين رصيد الفرد (${armedMixToTransfer.toLocaleString('en-US')} ميكس) وتجهيز أمر النقل للأونر (${engine.ownerDial}) في الذاكرة بنجاح!`, "info");
+      }
+    } catch (_) {}
+  }
+
   let serverConfirmed = false;
   let confirmedNewMix = 0;
   let confirmedPlanId = "";
   let nudgeCount = 0;
 
-  // Wait up to 15-20 minutes: 240 attempts * ~3.5s = ~840s (14 minutes).
-  const maxAttempts = 240;
+  // Wait up to 15-20 minutes: 600 attempts * 600ms = 360s (6 mins active fast loop)
+  const maxAttempts = 600;
   const currentPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
   const currentCost = isSeven ? "270" : "180";
 
-  // Fast direct polling like original Python script (no 5s dead sleep, 1.5s interval, immediate break on confirmation)
+  // Fast reactive polling (600ms interval for sub-second switch detection)
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      await sleep(1500);
+      await sleep(600);
       const currentCheck = await engine.getStatusAndChild(true);
       const planMatches =
         (targetPlanId.includes("Parent_6") && (currentCheck.planId.includes("Parent_6") || currentCheck.planId.includes("180") || (currentCheck.planId !== ownerPlanPre && currentCheck.planId !== "غير معروف"))) ||
@@ -1760,23 +1804,28 @@ async function handleSingleCycleInternal(
           }).eq("id", session_id);
         } catch (_) {}
         engine.log(`[⚡] تحديث العدادات اللحظية: نزول ميكسات الباقة الجديدة للأونر (${confirmedNewMix.toLocaleString('en-US')} ميكس) | رصيد الفرد المركون: (${parkedMixAmount.toLocaleString('en-US')} ميكس) | الإجمالي الفعلي: (${(confirmedNewMix + parkedMixAmount).toLocaleString('en-US')} ميكس)`, "info");
-        engine.log(`[⚡] جاري استرجاع وتحويل كافة ميكسات الفرد للأونر فوراً بالملي ثانية...`, "info");
+        
+        // إطلاق فوري ومباشر لنقل الميكسات المسلحة مسبقاً (0ms تأخير)
+        if (prewarmedChildEngine && armedMixToTransfer > 0) {
+          engine.log(`[⚡ إطلاق فوري] تحويل مباشر وفوري لـ (${armedMixToTransfer.toLocaleString('en-US')} ميكس) المسلحة مسبقاً من الفرد للأونر فور التحول...`, "info");
+          prewarmedChildEngine.transferMix(engine.ownerDial, armedMixToTransfer, "Hekaya_XRP_MIX_Child_1").catch(() => {});
+        }
         break;
       }
 
-      // If server has not switched after 25 attempts (~50s), re-send changePlan command to maintain telecom queue priority
-      if (attempt % 25 === 0 && !serverConfirmed) {
-        engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة بالسيرفر...`, "info");
+      // If server has not switched after 50 attempts (~30s), re-send changePlan command to maintain telecom queue priority
+      if (attempt % 50 === 0 && !serverConfirmed) {
+        engine.log(`[⚡] تنشيط طابور المعالجة بالسيرفر وإعادة إرسال طلب ترحيل النظام (${targetPlanDisplay})...`, "info");
         try {
           await engine.changePlan(targetPlanId, ratePlanId);
         } catch (_reErr) {}
       }
 
-      // Regular logging every 10 attempts (~35 seconds):
-      const currentElapsedMins = ((attempt * 3.5) / 60).toFixed(1);
-      if (attempt % 10 === 0 && attempt < maxAttempts) {
-        engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد...`, "info");
-      } else if (attempt === 1 || attempt % 5 === 0) {
+      // Regular logging every 20 attempts (~12 seconds):
+      const currentElapsedMins = ((attempt * 0.6) / 60).toFixed(1);
+      if (attempt % 20 === 0 && attempt < maxAttempts) {
+        engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) مسلحة ومحفوظة لدى الفرد...`, "info");
+      } else if (attempt === 1 || attempt % 10 === 0) {
         engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/${maxAttempts})`, "info");
       }
 
@@ -1980,14 +2029,13 @@ async function handleSingleCycleInternal(
     } catch (_) {}
   }
 
-  // ── تجديد باقة الأونر قبل إنهاء الدورية لتثبيت الميكسات وضمان استمراريتها ──
-  const targetCost = targetPlanId.includes("7") ? "270" : "180";
-  engine.log(`[⚡] تجديد باقة الأونر (${targetPlanDisplay}) قبل إنهاء الدورية لتثبيت الميكسات وضمان استمراريتها...`, "info");
-  await engine.renewBundleAction(targetPlanId, targetCost);
-  await sleep(3000);
-  const postRenewStatus = await engine.getStatusAndChild(true);
-  const effectiveFinalMix = (postRenewStatus.remainingMix && postRenewStatus.remainingMix > 0) ? postRenewStatus.remainingMix : finalMix;
-  engine.log(`[🎉] اكتمال الدورة بنجاح تام! رصيد الأونر النهائي المعتمد: (${effectiveFinalMix.toLocaleString('en-US')} ميكس)`, "success");
+  // ── اعتماد رصيد الأونر التراكمي الفعلي الموثق بعد استرجاع ميكسات الفرد (حظر التصفير نهائياً) ──
+  // ملاحظة أمان صارمة: إلغاء أمر renewBundleAction هنا نهائياً؛ لأن تجديد الباقة في هذه اللحظة يقوم بمسح
+  // الميكسات المتراكمة المكتسبة (مثل 75,800 ميكس) وإعادتها لكوتة الباقة الأساسية (6,450 ميكس) في المقسم!
+  const effectiveFinalMix = (finalMix && finalMix > 0)
+    ? finalMix
+    : Math.max(confirmedNewMix + recoveredMixAmount, session.owner_mix_balance || 0);
+  engine.log(`[🎉] اكتمال الدورة بنجاح تام! رصيد الأونر التراكمي النهائي المعتمد: (${effectiveFinalMix.toLocaleString('en-US')} ميكس)`, "success");
 
   // Since serverConfirmed is guaranteed to be true here, proceed to cycle completion
   const newCycleCount = (session.current_cycle || 0) + 1;
