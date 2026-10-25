@@ -16,6 +16,7 @@ import {
   enableVipBackgroundExecution,
   disableVipBackgroundExecution,
   showVipNotification,
+  showVipPersistentNotification,
   sendVipRemotePushNotification,
   requestVipNotificationPermission,
 } from '@/lib/vipBackgroundManager';
@@ -171,6 +172,17 @@ export function VipDashboardTab({
             setTerminalLogs(serverLogs);
           }
         }).catch(() => {});
+
+        // Immediately update curtain sticky notification with latest balance and cycle
+        const curCycle = Math.max(loopCycle, session.current_cycle || 0);
+        const curMix = Number(session.owner_mix_balance) || 0;
+        const curTarget = Number(session.target_mix_balance) || 100000;
+        if (session.operation_state === 'running' || session.automation_enabled) {
+          showVipPersistentNotification(
+            session.id,
+            `الدورة #${curCycle} ناجحة | الرصيد: ${curMix.toLocaleString('ar-EG')} ميكس | الهدف: ${curTarget.toLocaleString('ar-EG')}`
+          ).catch(() => {});
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -228,6 +240,33 @@ export function VipDashboardTab({
       automation_enabled: isCompleted ? false : session.automation_enabled,
     };
   }, [session, liveOwnerMix, liveChildMix, livePlan, loopCycle, currentStep]);
+
+  // Auto-sync persistent curtain notification on device when live cycle or balance advances
+  useEffect(() => {
+    if (
+      session?.id &&
+      (loopRunning || session.automation_enabled || session.operation_state === 'running') &&
+      displaySession.operation_state !== 'completed'
+    ) {
+      const curCycle = displaySession.current_cycle || 0;
+      const curMix = Number(displaySession.owner_mix_balance) || 0;
+      const curTarget = Number(displaySession.target_mix_balance) || 100000;
+      if (curCycle > 0 || curMix > 0) {
+        showVipPersistentNotification(
+          session.id,
+          `الدورة #${curCycle} ناجحة | الرصيد: ${curMix.toLocaleString('ar-EG')} ميكس | الهدف: ${curTarget.toLocaleString('ar-EG')}`
+        ).catch(() => {});
+      }
+    }
+  }, [
+    session?.id,
+    displaySession.current_cycle,
+    displaySession.owner_mix_balance,
+    loopRunning,
+    session?.automation_enabled,
+    session?.operation_state,
+    displaySession.operation_state,
+  ]);
 
   const appendLogs = (newLogs?: VipExecutionLog[]) => {
     if (!newLogs || newLogs.length === 0) return;

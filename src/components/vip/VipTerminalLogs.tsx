@@ -247,6 +247,9 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
     return sanitized;
   }, [logs, isDelegatedUser]);
 
+  // Track whether user intentionally scrolled up using touch or wheel
+  const isUserTouchingOrWheelingRef = useRef(false);
+
   // Perform container-ONLY scrolling (NEVER scroll the main window/page!)
   const scrollToBottom = useCallback((smooth = true) => {
     if (!containerRef.current) return;
@@ -256,6 +259,7 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
       behavior: smooth ? 'smooth' : 'auto',
     });
     setHasScrolledUp(false);
+    isUserTouchingOrWheelingRef.current = false;
   }, []);
 
   // When a run starts (isRunning becomes true), automatically scroll to bottom and resume follow
@@ -272,19 +276,29 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 60;
-    if (!isNearBottom) {
-      setHasScrolledUp(true);
-    } else {
+    if (isNearBottom) {
       setHasScrolledUp(false);
+      isUserTouchingOrWheelingRef.current = false;
+    } else if (isUserTouchingOrWheelingRef.current) {
+      setHasScrolledUp(true);
     }
   };
 
-  // Only auto-scroll when new logs arrive IF autoScroll is active and user hasn't scrolled up
+  // Auto-scroll when new logs arrive: if autoScroll is active and user didn't intentionally scroll up
   useEffect(() => {
     if (autoScroll && !hasScrolledUp) {
+      // Force instant scroll to bottom so newly arrived logs are immediately visible
       scrollToBottom(false);
     }
-  }, [effectiveLogs, autoScroll, hasScrolledUp, scrollToBottom]);
+  }, [effectiveLogs.length, autoScroll, hasScrolledUp, scrollToBottom]);
+
+  // When component mounts or comes into view, ensure it points to the latest log
+  useEffect(() => {
+    if (effectiveLogs.length > 0) {
+      const timer = setTimeout(() => scrollToBottom(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollToBottom]);
 
   const handleCopyLogs = () => {
     if (effectiveLogs.length === 0) {
@@ -510,6 +524,8 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
         <div
           ref={containerRef}
           onScroll={handleScroll}
+          onTouchStart={() => { isUserTouchingOrWheelingRef.current = true; }}
+          onWheel={() => { isUserTouchingOrWheelingRef.current = true; }}
           className={`font-mono text-xs sm:text-[12.5px] leading-relaxed overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-zinc-700 bg-zinc-950 p-2 sm:p-2.5 rounded-lg border border-zinc-900 transition-all duration-200 ${
             isExpanded ? 'max-h-[580px] min-h-[380px]' : 'max-h-[300px] sm:max-h-[340px] min-h-[160px]'
           }`}
