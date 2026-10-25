@@ -587,6 +587,34 @@ class VipRunnerService {
       }
 
       if (!cycleResult.success) {
+        // CRITICAL RECOVERY GUARD: If error happened during migration / while mixes were parked
+        // NEVER ABORT! Auto-rescue child mixes and maintain the loop!
+        const hasParkedMixes =
+          (st.latestChildMix && st.latestChildMix > 0) ||
+          st.currentStep === 'waiting_server' ||
+          st.currentStep === 'parking';
+
+        if (hasParkedMixes) {
+          this.addLog(
+            sessionId,
+            `[🛡️ درع الحماية الفولاذي] حدث انقطاع أثناء مرحلة الترحيل/الركن (${cycleResult.error || 'تعذر استجابة السيرفر'}). لا يمكن التوقف طالما أمر الترحيل مرسل! جاري الاستمرار وفحص الرصيد واسترجاعه فوراً...`,
+            'warn'
+          );
+          await new Promise((r) => setTimeout(r, 3000));
+          try {
+            const rescueCheck = (await executeVipCheckStatus(sessionId)) as any;
+            if (rescueCheck?.child?.mix_balance && rescueCheck.child.mix_balance > 0) {
+              this.addLog(
+                sessionId,
+                `[🔄 استرجاع إنقاذ] رصد ميكسات لدى الفرد (${rescueCheck.child.mix_balance.toLocaleString('ar-EG')} ميكس). جاري استرجاعها للأونر...`,
+                'info'
+              );
+              await executeVipReturnChildMixes(sessionId);
+            }
+          } catch (_) {}
+          continue;
+        }
+
         const canRetryError =
           this.isNetworkGlitch(cycleResult.error) ||
           cycleResult.can_retry === true ||

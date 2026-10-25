@@ -1723,45 +1723,52 @@ async function handleSingleCycleInternal(
 
   // Fast direct polling like original Python script (no 5s dead sleep, 1.5s interval, immediate break on confirmation)
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await sleep(1500);
-    const currentCheck = await engine.getStatusAndChild(true);
-    const planMatches = (targetPlanId.includes("Parent_6") && currentCheck.planId.includes("Parent_6")) ||
-                        (targetPlanId.includes("Parent_7") && currentCheck.planId.includes("Parent_7"));
+    try {
+      await sleep(1500);
+      const currentCheck = await engine.getStatusAndChild(true);
+      const planMatches =
+        (targetPlanId.includes("Parent_6") && (currentCheck.planId.includes("Parent_6") || currentCheck.planId.includes("180") || (currentCheck.planId !== ownerPlanPre && currentCheck.planId !== "غير معروف"))) ||
+        (targetPlanId.includes("Parent_7") && (currentCheck.planId.includes("Parent_7") || currentCheck.planId.includes("270") || (currentCheck.planId !== ownerPlanPre && currentCheck.planId !== "غير معروف")));
 
-    // Millisecond break when plan switches - DO NOT wait for remainingMix > 0!
-    // Breaking instantly ensures child mixes are pulled back before telecom resets or locks them!
-    if (planMatches) {
-      serverConfirmed = true;
-      confirmedPlanId = currentCheck.planId;
-      confirmedNewMix = currentCheck.remainingMix;
-      engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد بالملي ثانية (${targetPlanDisplay})!`, "success");
-      engine.log(`[⚡] جاري استرجاع وتحويل كافة ميكسات الفرد للأونر فوراً بالملي ثانية...`, "info");
-      break;
-    }
+      // Millisecond break when plan switches - DO NOT wait for remainingMix > 0!
+      // Breaking instantly ensures child mixes are pulled back before telecom resets or locks them!
+      if (planMatches) {
+        serverConfirmed = true;
+        confirmedPlanId = currentCheck.planId;
+        confirmedNewMix = currentCheck.remainingMix;
+        engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد بالملي ثانية (${targetPlanDisplay})!`, "success");
+        engine.log(`[⚡] جاري استرجاع وتحويل كافة ميكسات الفرد للأونر فوراً بالملي ثانية...`, "info");
+        break;
+      }
 
-    // If server has not switched after 20 attempts (~40s), re-send changePlan command to maintain telecom queue priority
-    if (attempt % 25 === 0 && !serverConfirmed) {
-      engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة بالسيرفر...`, "info");
-      try {
-        await engine.changePlan(targetPlanId, ratePlanId);
-      } catch (_reErr) {}
-    }
+      // If server has not switched after 25 attempts (~50s), re-send changePlan command to maintain telecom queue priority
+      if (attempt % 25 === 0 && !serverConfirmed) {
+        engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة بالسيرفر...`, "info");
+        try {
+          await engine.changePlan(targetPlanId, ratePlanId);
+        } catch (_reErr) {}
+      }
 
-    // Regular logging every 10 attempts (~35 seconds):
-    const currentElapsedMins = ((attempt * 3.5) / 60).toFixed(1);
-    if (attempt % 10 === 0 && attempt < maxAttempts && !shouldNudge) {
-      engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد...`, "info");
-    } else if (attempt === 1 || attempt % 5 === 0) {
-      engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/${maxAttempts})`, "info");
-    }
+      // Regular logging every 10 attempts (~35 seconds):
+      const currentElapsedMins = ((attempt * 3.5) / 60).toFixed(1);
+      if (attempt % 10 === 0 && attempt < maxAttempts) {
+        engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد...`, "info");
+      } else if (attempt === 1 || attempt % 5 === 0) {
+        engine.log(`[*] جاري فحص استجابة السيرفر للنظام الجديد... (محاولة ${attempt}/${maxAttempts})`, "info");
+      }
 
-    if (sendEvent) {
-      await sendEvent("step", {
-        step: "waiting_server",
-        stepNumber: 3,
-        title: "انتظار ترحيل وتنشيط السيرفر",
-        detail: `فحص دوري (${attempt}/${maxAttempts}) - تنشيط دوري كل دقيقة - الميكسات بأمان لدى الفرد`,
-      });
+      if (sendEvent) {
+        await sendEvent("step", {
+          step: "waiting_server",
+          stepNumber: 3,
+          title: "انتظار ترحيل وتنشيط السيرفر",
+          detail: `فحص دوري (${attempt}/${maxAttempts}) - الميكسات بأمان لدى الفرد`,
+        });
+      }
+    } catch (pollErr: any) {
+      // CRITICAL BULLETPROOF GUARD: NEVER DIE IN STEP 3!
+      // Once plan migration is sent, any network glitch or variable issue MUST be caught and polling MUST CONTINUE!
+      engine.log(`[!] تنبيه عابر أثناء فحص السيرفر (${pollErr?.message || pollErr}) - جاري مواصلة الفحص لحماية الرصيد...`, "warn");
     }
   }
 
