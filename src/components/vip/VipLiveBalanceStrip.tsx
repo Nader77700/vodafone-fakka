@@ -23,9 +23,31 @@ export function VipLiveBalanceStrip({
   isRunning,
 }: Props) {
   // Determine real-time balances: prioritize live stream parsed balance, fall back to session
-  const ownerMix = liveOwnerMix !== null && liveOwnerMix !== undefined ? liveOwnerMix : (session.owner_mix_balance || 0);
-  const childMix = liveChildMix !== null && liveChildMix !== undefined ? liveChildMix : (session.individual_mix_balance || 0);
-  const totalCombined = ownerMix + childMix;
+  const rawOwnerMix = liveOwnerMix !== null && liveOwnerMix !== undefined ? liveOwnerMix : (session.owner_mix_balance || 0);
+  const rawChildMix = liveChildMix !== null && liveChildMix !== undefined ? liveChildMix : (session.individual_mix_balance || 0);
+
+  // DYNAMIC BALANCE DE-DUPLICATION (منع التكرار الوهمي للرصيد وضبط دقة العدادات):
+  // During parking/migrating/checking_drop, if the mixes were transferred to child:
+  // The child now holds the parked quota. If rawOwnerMix still reflects the pre-transfer snapshot,
+  // adjust owner balance to reflect what actually remains at the owner, so totalCombined is 100% accurate!
+  let displayOwnerMix = rawOwnerMix;
+  let displayChildMix = rawChildMix;
+  const isParkedStep = ['parking', 'migrating', 'checking_drop'].includes(currentStep);
+
+  if (isParkedStep && rawChildMix > 0) {
+    if (rawOwnerMix >= rawChildMix * 0.85) {
+      displayOwnerMix = Math.max(0, rawOwnerMix - rawChildMix);
+    }
+  } else if (currentStep === 'recovering' || currentStep === 'cooldown' || currentStep === 'verifying') {
+    // Recovering or completed recovery: child is zeroed, all quota is at owner
+    displayChildMix = 0;
+  }
+
+  const ownerMix = displayOwnerMix;
+  const childMix = displayChildMix;
+  const totalCombined = isParkedStep && rawChildMix > 0 && rawOwnerMix >= rawChildMix * 0.85
+    ? rawOwnerMix // Total is the original balance safely preserved at the child + owner remaining
+    : (ownerMix + childMix);
   const activePlan = livePlan || session.owner_current_plan || 'حكاية ميكسات 180';
 
   // Step label & color badge

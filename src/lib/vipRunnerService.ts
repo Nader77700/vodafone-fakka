@@ -37,10 +37,31 @@ export function parseBalancesFromLog(message: string): {
   const clean = message.replace(/,/g, '');
 
   // 1. "رجعنا للأونر | رصيده الآن: 66100 ميكس"
-  const returnMatch = clean.match(/رجعنا للأونر\s*\|\s*رصيده الآن:\s*(\d+)\s*ميكس/);
+  const returnMatch = clean.match(/رجعنا للأونر\s*\|\s*رصيده(?: الفعلي)? الآن:\s*(\d+)\s*ميكس/);
   if (returnMatch) {
     res.ownerMix = parseInt(returnMatch[1], 10);
     res.childMix = 0; // After recovery, child is cleared
+  }
+
+  // 1.1 "تحديث العدادات اللحظية: الميكسات (70300) أصبحت لدى الفرد (مركونة) | رصيد الأونر الحالي: (800) ميكس"
+  const liveSyncMatch = clean.match(/تحديث العدادات اللحظية:\s*الميكسات\s*\(?(\d+)\)?\s*أصبحت لدى الفرد.*?رصيد الأونر الحالي:\s*\(?(\d+)\)?\s*ميكس/);
+  if (liveSyncMatch) {
+    res.childMix = parseInt(liveSyncMatch[1], 10);
+    res.ownerMix = parseInt(liveSyncMatch[2], 10);
+  }
+
+  // 1.2 "تحديث العدادات اللحظية: تم استرجاع ميكسات الفرد بالكامل للأونر | رصيد الأونر الآن: (85700) ميكس"
+  const liveRecoverMatch = clean.match(/تحديث العدادات اللحظية:\s*تم استرجاع ميكسات الفرد.*?رصيد الأونر الآن:\s*\(?(\d+)\)?\s*ميكس/);
+  if (liveRecoverMatch) {
+    res.ownerMix = parseInt(liveRecoverMatch[1], 10);
+    res.childMix = 0;
+  }
+
+  // 1.3 "تأكيد استقرار الميكسات: وصلت (70300) ميكس لحساب الفرد"
+  const childArriveMatch = clean.match(/تأكيد استقرار الميكسات:\s*وصلت\s*\(?(\d+)\)?\s*ميكس لحساب الفرد/);
+  if (childArriveMatch) {
+    res.childMix = parseInt(childArriveMatch[1], 10);
+    res.ownerMix = 0; // Transferred away to child
   }
 
   // 2. "رصيده الآن: 66100 ميكس"
@@ -53,8 +74,7 @@ export function parseBalancesFromLog(message: string): {
   const childParkedMatch = clean.match(/الفرد جاهز ولديه\s*\(?(\d+)\)?\s*ميكس/);
   if (childParkedMatch) {
     res.childMix = parseInt(childParkedMatch[1], 10);
-    // STRICT ZERO-LOSS PROTECTION: NEVER reset ownerMix to 0 while parked!
-    // The user's mixes are preserved in transit, not wiped.
+    res.ownerMix = 0; // Transferred to child
   }
 
   // 4. "جاري تحويل (66100) ميكس إلى الرقم"
@@ -66,7 +86,6 @@ export function parseBalancesFromLog(message: string): {
   // 5. "تم تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح: (6000)"
   const dropMatch = clean.match(/تأكيد نزول ميكسات الباقة الجديدة للأونر بنجاح:\s*\(?(\d+)\)?/);
   if (dropMatch) {
-    // Only adopt if it represents an increase or valid baseline
     const droppedVal = parseInt(dropMatch[1], 10);
     if (droppedVal > 0) {
       res.ownerMix = droppedVal;
@@ -79,8 +98,8 @@ export function parseBalancesFromLog(message: string): {
     res.childMix = parseInt(childServerMatch[1], 10);
   }
 
-  // 7. "نجح استرجاع (66100) ميكس من الفرد إلى الأونر"
-  const recoveredMatch = clean.match(/نجح استرجاع\s*\(?(\d+)\)?\s*ميكس من الفرد إلى الأونر/);
+  // 7. "نجح استرجاع (66100) ميكس من الفرد إلى الأونر" أو "تم الاسترجاع اللحظي بنجاح! (66100) ميكس"
+  const recoveredMatch = clean.match(/(?:نجح استرجاع|تم الاسترجاع اللحظي بنجاح!)\s*\(?(\d+)\)?\s*ميكس/);
   if (recoveredMatch) {
     res.childMix = 0;
   }

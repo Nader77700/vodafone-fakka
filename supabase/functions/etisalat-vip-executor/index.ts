@@ -1540,6 +1540,19 @@ async function handleSingleCycleInternal(
               } catch (_) {}
             }
 
+            if (childArrived && parkedMixAmount > 0) {
+              const remainingOwnerBal = Math.max(0, status.remainingMix - parkedMixAmount);
+              try {
+                await supabase.from("vip_sessions").update({
+                  owner_mix_balance: remainingOwnerBal,
+                  individual_mix_balance: parkedMixAmount,
+                  total_system_mix: remainingOwnerBal + parkedMixAmount,
+                  updated_at: new Date().toISOString(),
+                }).eq("id", session_id);
+              } catch (_) {}
+              engine.log(`[⚡] تحديث العدادات اللحظية: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) أصبحت لدى الفرد (مركونة) | رصيد الأونر الحالي: (${remainingOwnerBal.toLocaleString('en-US')}) ميكس`, "info");
+            }
+
             if (!childArrived) {
               const safeMsg = ownerHoldsMixes
                 ? `توقف أمان لحفظ الميكسات: سيرفر اتصالات لم يُنفذ نقل الميكسات وبقيت الميكسات كاملة بحساب الأونر (${currentOwnerMix.toLocaleString('en-US')} ميكس). تم منع ترحيل الباقة لحفظ رصيدك من الضياع بنسبة 100%.`
@@ -1737,6 +1750,16 @@ async function handleSingleCycleInternal(
         confirmedPlanId = currentCheck.planId;
         confirmedNewMix = currentCheck.remainingMix;
         engine.log(`[🎉] السيرفر استجاب وتأكد التحول للنظام الجديد بالملي ثانية (${targetPlanDisplay})!`, "success");
+        try {
+          await supabase.from("vip_sessions").update({
+            owner_mix_balance: confirmedNewMix,
+            individual_mix_balance: parkedMixAmount,
+            total_system_mix: confirmedNewMix + parkedMixAmount,
+            owner_current_plan: targetPlanDisplay,
+            updated_at: new Date().toISOString(),
+          }).eq("id", session_id);
+        } catch (_) {}
+        engine.log(`[⚡] تحديث العدادات اللحظية: نزول ميكسات الباقة الجديدة للأونر (${confirmedNewMix.toLocaleString('en-US')} ميكس) | رصيد الفرد المركون: (${parkedMixAmount.toLocaleString('en-US')} ميكس) | الإجمالي الفعلي: (${(confirmedNewMix + parkedMixAmount).toLocaleString('en-US')} ميكس)`, "info");
         engine.log(`[⚡] جاري استرجاع وتحويل كافة ميكسات الفرد للأونر فوراً بالملي ثانية...`, "info");
         break;
       }
@@ -1836,12 +1859,17 @@ async function handleSingleCycleInternal(
       childRemainingMix = childSt.remainingMix;
     } catch (_) {}
 
-    // حلقة أمان بايثون الأصلية: إذا كان رصيد الفرد المسجل أقل من المحول له، انتظار استقرار شبكة اتصالات
+    // حلقة أمان ذكية متقدمة: انتظار استقرار شبكة اتصالات حتى 15 محاولة لحماية الرصيد
     if (parkedMixAmount > 0 && childRemainingMix < Math.round(parkedMixAmount * 0.85)) {
       engine.log(`[*] فحص رصيد الفرد (${childRemainingMix.toLocaleString('en-US')} ميكس)... في انتظار اكتمال نزول الميكسات من شبكة اتصالات...`, "info");
-      for (let pAtt = 1; pAtt <= 4; pAtt++) {
-        await sleep(2500);
+      for (let pAtt = 1; pAtt <= 15; pAtt++) {
+        const waitTime = pAtt <= 4 ? 2500 : (pAtt <= 8 ? 3000 : 3500);
+        await sleep(waitTime);
         try {
+          if (pAtt === 6 && childRemainingMix === 0) {
+            engine.log(`[*] تجديد توكن الفرد لتحديث كاش المقسم وضمان دقة قراءة الرصيد...`, "info");
+            await activeChildEngine.login(childEmail, childPass, true, true);
+          }
           const recheck = await activeChildEngine.getStatusAndChild(true);
           if (recheck.remainingMix >= Math.round(parkedMixAmount * 0.85) || recheck.remainingMix > childRemainingMix) {
             childRemainingMix = recheck.remainingMix;
@@ -1852,11 +1880,25 @@ async function handleSingleCycleInternal(
       }
     }
 
+    // فحص ذكي للأونر في حال لم تظهر الميكسات عند الفرد (هل تم دمجها للأونر بالمقسم؟)
+    let ownerAlreadyHoldsMixes = false;
+    if (parkedMixAmount > 5000 && childRemainingMix < Math.round(parkedMixAmount * 0.5)) {
+      try {
+        const ownerCheckMerged = await engine.getStatusAndChild(true);
+        const ownerMergedBal = ownerCheckMerged.remainingMix || 0;
+        if (ownerMergedBal >= Math.round(parkedMixAmount * 0.70)) {
+          ownerAlreadyHoldsMixes = true;
+          recoveredMixAmount = ownerMergedBal;
+          engine.log(`[✓] تأكيد مقسم اتصالات: تم دمج الميكسات (${ownerMergedBal.toLocaleString('en-US')} ميكس) تلقائياً بحساب الأونر!`, "success");
+        }
+      } catch (_) {}
+    }
+
     // استرجاع رصيد الفرد الفعلي للأونر
-    if (childRemainingMix > 0) {
+    if (childRemainingMix > 0 && !ownerAlreadyHoldsMixes) {
       engine.log(`[⚡] جاري استرجاع فوري لـ (${childRemainingMix.toLocaleString('en-US')} ميكس) من الفرد إلى الأونر (${engine.ownerDial})...`, "info");
       let recoveredOk = false;
-      for (let tAtt = 1; tAtt <= 3; tAtt++) {
+      for (let tAtt = 1; tAtt <= 4; tAtt++) {
         const ok = await activeChildEngine.transferMix(engine.ownerDial, childRemainingMix, "Hekaya_XRP_MIX_Child_1");
         if (ok) {
           recoveredOk = true;
@@ -1869,9 +1911,46 @@ async function handleSingleCycleInternal(
       if (!recoveredOk) {
         engine.log(`[ℹ️] استجابة سيرفر اتصالات: قد يكون رصيد الفرد مدمجاً بالفعل بالمقسم مع الأونر - جاري التحقق النهائي من خط الأونر...`, "info");
       }
-    } else {
+    } else if (!ownerAlreadyHoldsMixes) {
+      // ── ANTI-DROP SAFETY LOCK (درع حظر تصفير الدورة الصارم) ──
+      // إذا كان هناك رصيد مركون ضخم (> 5,000 ميكس) ولم يظهر عند الفرد ولا عند الأونر:
+      // يُمنع منعاً باتاً تجديد الباقة أو إنهاء الدورة لتجنب تصفير الرصيد!
+      if (parkedMixAmount > 5000) {
+        const dropErrMsg = `توقف أمان حماية الميكسات: الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس) لم يستقر بعد بالفرد ولا بالأونر في مقسم اتصالات. تم حظر تجديد الباقة ومنع التصفير لحفظ رصيدك بالكامل.`;
+        engine.log(`[🛡️ قفل طوارئ لمنع التصفير] ${dropErrMsg}`, "error");
+        await sendStep("safety_stop", 4, "حظر التصفير - حماية الرصيد", dropErrMsg);
+        
+        try {
+          await supabase.from("vip_sessions").update({
+            operation_state: "paused",
+            pause_reason: dropErrMsg,
+            automation_enabled: false,
+            worker_status: "stopped",
+            updated_at: new Date().toISOString(),
+          }).eq("id", session_id);
+        } catch (_) {}
+
+        return {
+          success: false,
+          safety_stop: true,
+          error: dropErrMsg,
+          logs: engine.logs,
+        };
+      }
       engine.log(`[ℹ️] رصيد الفرد الحالي: (0 ميكس). الرصيد مستقر أو مدمج بالفعل في باقة الأونر.`, "info");
     }
+
+    // تحديث فوري للعدادات بعد الاسترجاع
+    try {
+      const livePostRecTotal = confirmedNewMix + recoveredMixAmount;
+      await supabase.from("vip_sessions").update({
+        owner_mix_balance: livePostRecTotal,
+        individual_mix_balance: 0,
+        total_system_mix: livePostRecTotal,
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+      engine.log(`[⚡] تحديث العدادات اللحظية: تم استرجاع ميكسات الفرد بالكامل للأونر | رصيد الأونر الآن: (${livePostRecTotal.toLocaleString('en-US')} ميكس) | رصيد الفرد: (0) ميكس`, "success");
+    } catch (_) {}
   }
 
   // 7. STEP 5: Return to Owner & verify final balance (الرجوع للأونر وتأكيد الرصيد الفعلي المقروء مباشرة مثل بايثون)
