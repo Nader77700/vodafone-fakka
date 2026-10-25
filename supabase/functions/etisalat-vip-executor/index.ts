@@ -1832,7 +1832,7 @@ async function handleSingleCycleInternal(
 
   // 6. STEP 4: Transfer Child to Owner (مطابقة تامة لسكريبت بايثون الأصلي وبدون معادلات وهمية)
   await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات من الفرد إلى الأونر فوراً");
-  let recoveredMixAmount = 0;
+  recoveredMixAmount = 0;
   if (childEmail && childPass && engine.ownerDial) {
     let activeChildEngine = prewarmedChildEngine;
     if (!activeChildEngine || !activeChildEngine.authToken) {
