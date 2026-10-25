@@ -211,6 +211,24 @@ export async function hardDeleteVipSession(
 }
 
 /**
+ * Permanently hard-delete all archived VIP sessions.
+ */
+export async function hardDeleteAllArchivedVipSessions(): Promise<{
+  success: boolean;
+  deleted_count: number;
+  message: string;
+}> {
+  try {
+    const { data, error } = await supabase.rpc('vip_hard_delete_all_archived_sessions');
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[vipApi] hardDeleteAllArchivedVipSessions error:', err);
+    throw err;
+  }
+}
+
+/**
  * Delete / Archive a VIP session (backwards compatibility).
  */
 export async function deleteVipSession(
@@ -460,7 +478,8 @@ export interface VipExecutionResponse {
  */
 export async function invokeVipExecutor(
   action: string,
-  payload: Record<string, any> = {}
+  payload: Record<string, any> = {},
+  retries = 2
 ): Promise<VipExecutionResponse> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vchmsnavyhripakyvzom.supabase.co';
   const anonKey =
@@ -477,30 +496,56 @@ export async function invokeVipExecutor(
     // fallback to anonKey
   }
 
-  try {
-    const res = await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ action, ...payload }),
-    });
+  let lastError: any = null;
 
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(json.error || json.message || `خطأ استجابة الخادم (${res.status})`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s resilient timeout
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action, ...payload }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.error || json.message || `خطأ استجابة الخادم (${res.status})`);
+      }
+      return json as VipExecutionResponse;
+    } catch (err: any) {
+      lastError = err;
+      const msg = err?.message || '';
+      const isNetworkErr =
+        msg.includes('Failed to fetch') ||
+        msg.includes('NetworkError') ||
+        msg.includes('Load failed') ||
+        msg.includes('aborted') ||
+        err?.name === 'AbortError';
+
+      if (isNetworkErr && attempt < retries) {
+        // Wait 1.2s before auto-retrying
+        await new Promise((r) => setTimeout(r, 1200));
+        continue;
+      }
+      break;
     }
-    return json as VipExecutionResponse;
-  } catch (err: any) {
-    console.error('[vipApi] invokeVipExecutor error:', err);
-    const msg = err?.message || '';
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
-      throw new Error('انقطاع مؤقت في الاتصال بالإنترنت أو الخادم (Failed to fetch). جاري المحاولة مرة أخرى...');
-    }
-    throw new Error(err?.message || 'حدث خطأ أثناء الاتصال بمحرك اتصالات المباشر');
   }
+
+  console.error('[vipApi] invokeVipExecutor error after retries:', lastError);
+  const msg = lastError?.message || '';
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed') || msg.includes('aborted')) {
+    throw new Error('تعذر الاتصال المباشر بالخادم. يرجى التحقق من اتصال الشبكة أو استخدام لوحة التحكم السحابية المباشرة.');
+  }
+  throw new Error(lastError?.message || 'حدث خطأ أثناء الاتصال بمحرك اتصالات المباشر');
 }
 
 /**
@@ -825,12 +870,63 @@ export async function invokeVipExecutorStream(
   } catch (err: any) {
     console.error('[vipApi] invokeVipExecutorStream error:', err);
     let msg = err?.message || 'خطأ اتصال';
+
+    // Auto-fallback to standard POST if streaming encounters network issue or browser blocks SSE
+    const isNetworkErr =
+      msg.includes('Failed to fetch') ||
+      msg.includes('NetworkError') ||
+      msg.includes('Load failed') ||
+      msg.includes('aborted');
+
+    if (isNetworkErr) {
+      try {
+        console.warn('[vipApi] Stream failed with network issue, attempting resilient POST fallback...');
+        const fallbackRes = await invokeVipExecutor(action, payload, 2);
+        if (fallbackRes.logs) {
+          for (const l of fallbackRes.logs) {
+            callbacks?.onLog?.(l);
+          }
+        }
+        callbacks?.onComplete?.(fallbackRes);
+        return fallbackRes;
+      } catch (fbErr: any) {
+        console.error('[vipApi] Fallback also failed:', fbErr);
+        msg = fbErr?.message || msg;
+      }
+    }
+
     if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
-      msg = 'انقطاع مؤقت في الاتصال بالإنترنت أو الخادم (Failed to fetch). يرجى التحقق من اتصال الشبكة.';
+      msg = 'انقطاع مؤقت في الاتصال بالإنترنت أو الخادم. يرجى التحقق من اتصال الشبكة أو استخدام التشغيل السحابي.';
     }
     callbacks?.onError?.(msg);
     throw new Error(msg);
   }
+}
+
+/**
+ * Start autonomous cloud background loop directly on the server.
+ */
+export async function executeVipStartServerLoop(
+  sessionId: string,
+  targetMix?: number,
+  delaySeconds?: number
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('start_server_loop', {
+    session_id: sessionId,
+    target_mix: targetMix,
+    delay_seconds: delaySeconds,
+  });
+}
+
+/**
+ * Stop autonomous cloud background loop directly on the server.
+ */
+export async function executeVipStopServerLoop(
+  sessionId: string
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('stop_server_loop', {
+    session_id: sessionId,
+  });
 }
 
 /**

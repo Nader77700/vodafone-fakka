@@ -271,31 +271,31 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
     }
   }, [isRunning, scrollToBottom]);
 
-  // Listen to inner container scroll to detect if user is inspecting older logs
+  // Listen to inner container scroll to detect if user manually scrolled up
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 60;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
     if (isNearBottom) {
       setHasScrolledUp(false);
       isUserTouchingOrWheelingRef.current = false;
-    } else if (isUserTouchingOrWheelingRef.current) {
+    } else if (isUserTouchingOrWheelingRef.current && !autoScroll) {
       setHasScrolledUp(true);
     }
   };
 
-  // Auto-scroll when new logs arrive: if autoScroll is active and user didn't intentionally scroll up
+  // Auto-scroll when new logs arrive: if autoScroll is active, ALWAYS snap to bottom instantly
   useEffect(() => {
-    if (autoScroll && !hasScrolledUp) {
-      // Force instant scroll to bottom so newly arrived logs are immediately visible
+    if (autoScroll) {
+      // Force instant scroll to bottom so newly arrived logs are immediately visible without any lag
       scrollToBottom(false);
     }
-  }, [effectiveLogs.length, autoScroll, hasScrolledUp, scrollToBottom]);
+  }, [effectiveLogs.length, autoScroll, scrollToBottom]);
 
   // When component mounts or comes into view, ensure it points to the latest log
   useEffect(() => {
     if (effectiveLogs.length > 0) {
-      const timer = setTimeout(() => scrollToBottom(false), 100);
+      const timer = setTimeout(() => scrollToBottom(false), 50);
       return () => clearTimeout(timer);
     }
   }, [scrollToBottom]);
@@ -562,14 +562,17 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
           )}
         </div>
 
-        {/* Floating Indicator when user scrolled up and new logs are waiting */}
-        {hasScrolledUp && logs.length > 0 && (
+        {/* Floating Indicator ONLY when user explicitly turned off autoScroll and scrolled up */}
+        {!autoScroll && hasScrolledUp && logs.length > 0 && (
           <button
-            onClick={() => scrollToBottom(true)}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-full shadow-lg border border-primary/50 animate-bounce cursor-pointer hover:bg-primary/90"
+            onClick={() => {
+              setAutoScroll(true);
+              scrollToBottom(true);
+            }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-full shadow-lg border border-emerald-400/50 cursor-pointer transition-all"
           >
             <ArrowDownCircle className="w-3.5 h-3.5" />
-            <span>سجلات جديدة بالأسفل (انقر للمتابعة)</span>
+            <span>استئناف المتابعة التلقائية (أحدث السجلات)</span>
           </button>
         )}
       </CardContent>

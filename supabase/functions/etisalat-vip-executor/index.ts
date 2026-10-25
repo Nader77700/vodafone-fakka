@@ -1830,20 +1830,16 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 6. STEP 4: Instant Zero-Delay Recovery from Child to Owner (استرجاع فوري بالمللي ثانية وبدون تأخير)
-  await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً وبأقصى سرعة");
-  if (childEmail && childPass) {
-    engine.log(`[⚡] بدء الاسترجاع اللحظي الفوري للميكسات من الفرد للأونر ...`, "info");
+  // 6. STEP 4: Transfer Child to Owner (مطابقة تامة لسكريبت بايثون الأصلي وبدون معادلات وهمية)
+  await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات من الفرد إلى الأونر فوراً");
+  let recoveredMixAmount = 0;
+  if (childEmail && childPass && engine.ownerDial) {
     let activeChildEngine = prewarmedChildEngine;
     if (!activeChildEngine || !activeChildEngine.authToken) {
       activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
       activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
-
-    // ── SMART ADAPTIVE RECOVERY PROTOCOL (استرجاع ذكي فوري ومطابقة رصيد الفرد والأونر) ──
-    let recoveredMixAmount = 0;
-    let initialTransferOk = false;
 
     // استعلام فوري سريع عن الرصيد الفعلي المتبقي بالفرد
     let childRemainingMix = 0;
@@ -1852,121 +1848,54 @@ async function handleSingleCycleInternal(
       childRemainingMix = childSt.remainingMix;
     } catch (_) {}
 
-    if (childRemainingMix > 0 && engine.ownerDial) {
-      engine.log(`[⚡] بدء الاسترجاع المباشر: تحويل رصيد الفرد الفعلي (${childRemainingMix.toLocaleString('en-US')} ميكس) إلى رقم الأونر (${engine.ownerDial})...`, "info");
-      initialTransferOk = await activeChildEngine.transferMix(engine.ownerDial, childRemainingMix, "Hekaya_XRP_MIX_Child_1");
-      if (initialTransferOk) {
-        recoveredMixAmount = childRemainingMix;
-        engine.log(`[✓] تم استرجاع ميكسات الفرد (${childRemainingMix.toLocaleString('en-US')} ميكس) إلى الأونر بنجاح!`, "success");
-      }
-    } else if (parkedMixAmount > 0 && engine.ownerDial) {
-      // إذا كان رصيد الفرد 0 أو لم يُقرأ، فحص الأونر أولاً لمعرفة إذا كان المقسم قد دمج الوحدات تلقائياً بالأونر
-      try {
-        const ownerMidCheck = await engine.getStatusAndChild(true);
-        if (ownerMidCheck.remainingMix >= Math.round(parkedMixAmount * 0.70)) {
-          engine.log(`[✓] تأكيد أمان: رصيد الأونر (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) مستقر ومحمي بالأونر بالفعل عبر دمج المقسم التلقائي!`, "success");
-          initialTransferOk = true;
-        } else {
-          // محاولة تحويل احتياطية بالرصيد المركون
-          engine.log(`[⚡] محاولة استرجاع احتياطية بالرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس)...`, "info");
-          initialTransferOk = await activeChildEngine.transferMix(engine.ownerDial, parkedMixAmount, "Hekaya_XRP_MIX_Child_1");
-          if (initialTransferOk) {
-            recoveredMixAmount = parkedMixAmount;
-            engine.log(`[✓] تم استرجاع الرصيد المركون بنجاح!`, "success");
+    // حلقة أمان بايثون الأصلية: إذا كان رصيد الفرد المسجل أقل من المحول له، انتظار استقرار شبكة اتصالات
+    if (parkedMixAmount > 0 && childRemainingMix < Math.round(parkedMixAmount * 0.85)) {
+      engine.log(`[*] فحص رصيد الفرد (${childRemainingMix.toLocaleString('en-US')} ميكس)... في انتظار اكتمال نزول الميكسات من شبكة اتصالات...`, "info");
+      for (let pAtt = 1; pAtt <= 4; pAtt++) {
+        await sleep(2500);
+        try {
+          const recheck = await activeChildEngine.getStatusAndChild(true);
+          if (recheck.remainingMix >= Math.round(parkedMixAmount * 0.85) || recheck.remainingMix > childRemainingMix) {
+            childRemainingMix = recheck.remainingMix;
+            engine.log(`[+] تم تأكيد رصيد الفرد بالسيرفر: (${childRemainingMix.toLocaleString('en-US')} ميكس)`, "success");
+            break;
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
     }
-  }
 
-  // 7. STEP 5: Read Final Mixes & Cooldown (اكتمال الدورة واستراحة)
-  await sendStep("cooldown", 5, "اكتمال الدورة واستراحة", "تحديث البيانات وفترة الاستراحة");
-  
-  // Dedicated settling window for Etisalat billing nodes to reflect transferred quota
-  await sleep(5000);
-  let finalStatus = await engine.getStatusAndChild(true);
-
-  // POST-RECOVERY BALANCE VERIFICATION (التحقق المرن بحد أقصى 3 فحوصات واعتماد الرصيد الفعلي):
-  const expectedMinBalance = parkedMixAmount > 2000 ? Math.round(parkedMixAmount * 0.70) : 0;
-
-  if (expectedMinBalance > 0 && finalStatus.remainingMix < expectedMinBalance) {
-    engine.log(`[*] فحص رصيد الأونر بالسيرفر (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس). جاري المزامنة مع اتصالات (حد أقصى 3 محاولات)...`, "info");
-    
-    // Max 3 sync attempts as instructed
-    for (let syncAttempt = 1; syncAttempt <= 3; syncAttempt++) {
-      await sleep(3000);
-      try {
-        if (syncAttempt === 2) {
-          await engine.login(ownerEmail, ownerPass, true, true);
-        }
-        const recheckStatus = await engine.getStatusAndChild(true);
-        engine.log(`[*] فحص تسوية رصيد الأونر بالسيرفر (${syncAttempt}/3): الرصيد المقروء (${recheckStatus.remainingMix.toLocaleString('en-US')} ميكس) مقابل المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس)...`, "info");
-        if (recheckStatus.remainingMix >= expectedMinBalance || recheckStatus.remainingMix > finalStatus.remainingMix) {
-          finalStatus = recheckStatus;
-          engine.log(`[+] تم تحديث واعتماد رصيد الأونر بالسيرفر بنجاح: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
+    // استرجاع رصيد الفرد الفعلي للأونر
+    if (childRemainingMix > 0) {
+      engine.log(`[⚡] جاري استرجاع فوري لـ (${childRemainingMix.toLocaleString('en-US')} ميكس) من الفرد إلى الأونر (${engine.ownerDial})...`, "info");
+      let recoveredOk = false;
+      for (let tAtt = 1; tAtt <= 3; tAtt++) {
+        const ok = await activeChildEngine.transferMix(engine.ownerDial, childRemainingMix, "Hekaya_XRP_MIX_Child_1");
+        if (ok) {
+          recoveredOk = true;
+          recoveredMixAmount = childRemainingMix;
+          engine.log(`[+] تم الاسترجاع اللحظي بنجاح! (${childRemainingMix.toLocaleString('en-US')} ميكس)`, "success");
           break;
         }
-      } catch (_recheck) {}
-    }
-
-    // If still below expected, check if Child STILL holds the missing balance
-    let childStillHolds = 0;
-    if (finalStatus.remainingMix < expectedMinBalance && prewarmedChildEngine) {
-      try {
-        const cSt = await prewarmedChildEngine.getStatusAndChild(true);
-        childStillHolds = cSt.remainingMix || 0;
-        if (childStillHolds >= expectedMinBalance * 0.65 && childStillHolds > 1500) {
-          engine.log(`[🛡️] فحص الأمان: الميكسات (${childStillHolds.toLocaleString('en-US')} ميكس) ما زالت بحساب الفرد. جاري إعادة تحويلها للأونر...`, "info");
-          await prewarmedChildEngine.transferMix(engine.ownerDial, childStillHolds, "Hekaya_XRP_MIX_Child_1");
-          await sleep(4000);
-          const postRecoveryStatus = await engine.getStatusAndChild(true);
-          if (postRecoveryStatus.remainingMix > finalStatus.remainingMix) {
-            finalStatus = postRecoveryStatus;
-            engine.log(`[✓] تم استرجاع الميكسات وتأكيد رصيد الأونر: ${finalStatus.remainingMix.toLocaleString('en-US')} ميكس!`, "success");
-          }
-        }
-      } catch (_) {}
-    }
-
-    // ── STRICT ZERO-RISK SHIELD (درع الأمان التلقائي الصارم 100% لمنع التصفير) ──
-    // إذا لم يصل الرصيد المتوقع بالكامل إلى الأونر بعد المحاولات، يُحظر تماماً الانتقال لدورة جديدة!
-    // يتم إيقاف الدورة التلقائية فوراً لحفظ الرصيد وحمايته من التصفير
-    if (finalStatus.remainingMix < expectedMinBalance) {
-      engine.log(`[🛡️ درع الأمان الصارم - منع التصفير 100%] تنبيه طارئ: رصيد الأونر المقروء (${finalStatus.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المحمي المتوقع (${expectedMinBalance.toLocaleString('en-US')} ميكس).`, "error");
-      engine.log(`[🛡️] تم إيقاف الدورة التلقائية فوراً لحماية الرصيد ومنع بدء دورة جديدة أو تجديد قد يؤدي للتصفير نهائياً! الرصيد محفوظ بأمان.`, "error");
-
-      const stillAtChild = childStillHolds > 0;
-      try {
-        await supabase.from("vip_sessions").update({
-          owner_mix_balance: finalStatus.remainingMix,
-          individual_mix_balance: childStillHolds,
-          mixes_parked_at_child: stillAtChild,
-          parked_mix_amount: stillAtChild ? childStillHolds : 0,
-          is_active: false,
-          is_paused: true,
-          status: "paused",
-          stop_reason: `توقف أمان لحماية الرصيد ومنع التصفير (رصيد الأونر ${finalStatus.remainingMix} أقل من المتوقع ${expectedMinBalance})`,
-          updated_at: new Date().toISOString(),
-        }).eq("id", session_id);
-      } catch (_) {}
-
-      await persistServerLogs();
-
-      return {
-        success: false,
-        safety_stop: true,
-        error: "تم تفعيل درع الأمان التلقائي 100% وإيقاف الدورة فوراً لمنع التصفير",
-        message: "تم تفعيل درع الأمان التلقائي 100% وإيقاف الدورة فوراً لمنع التصفير",
-        owner_mix_balance: finalStatus.remainingMix,
-        child_mix_balance: childStillHolds,
-        logs: engine.logs,
-      };
+        await sleep(1500);
+      }
+      if (!recoveredOk) {
+        engine.log(`[ℹ️] استجابة سيرفر اتصالات: قد يكون رصيد الفرد مدمجاً بالفعل بالمقسم مع الأونر - جاري التحقق النهائي من خط الأونر...`, "info");
+      }
+    } else {
+      engine.log(`[ℹ️] رصيد الفرد الحالي: (0 ميكس). الرصيد مستقر أو مدمج بالفعل في باقة الأونر.`, "info");
     }
   }
 
+  // 7. STEP 5: Return to Owner & verify final balance (الرجوع للأونر وتأكيد الرصيد الفعلي المقروء مباشرة مثل بايثون)
+  await sendStep("cooldown", 5, "اكتمال الدورة واستراحة", "تحديث البيانات وفترة الاستراحة");
+  await sleep(4000);
+
+  // إعادة دخول وتحديث رصيد الأونر الحقيقي المقروء من السيرفر
+  await engine.login(ownerEmail, ownerPass, true, true);
+  const finalStatus = await engine.getStatusAndChild(true);
   const finalMix = finalStatus.remainingMix;
   const finalPlan = engine.getPlanName(finalStatus.planId);
-  engine.log(`[+] رجعنا للأونر | رصيده الآن: ${finalMix.toLocaleString('en-US')} ميكس (النظام: ${finalPlan})`, "success");
+  engine.log(`[+] رجعنا للأونر | رصيده الفعلي الآن: ${finalMix.toLocaleString('en-US')} ميكس | النظام: ${finalPlan}`, "success");
 
   // Dynamic quota verification based on system: 270 gives 1,300 to child, 180 gives 800 to child
   const isSevenFinal = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");

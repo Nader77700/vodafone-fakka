@@ -63,6 +63,7 @@ import {
   unarchiveVipSession,
   listArchivedVipSessions,
   hardDeleteVipSession,
+  hardDeleteAllArchivedVipSessions,
   deleteAllVipSessions,
   getVipDefaultChildCredentials,
   executeVipCheckStatus,
@@ -350,7 +351,7 @@ export function VipSessionSwitcher({
   };
 
   const handleHardDeleteSession = async (sessionId: string) => {
-    if (!confirm('تحذير: هل أنت متأكد من الحذف النهائي؟ سيتم مسح بيانات الجلسة وسجل دوراتها نهائياً.')) {
+    if (!confirm('تحذير: هل أنت متأكد من الحذف النهائي؟ سيتم مسح بيانات الجلسة وسجل دوراتها نهائياً من قاعدة البيانات.')) {
       return;
     }
     setSubmitting(true);
@@ -358,11 +359,34 @@ export function VipSessionSwitcher({
       const res = await hardDeleteVipSession(sessionId);
       if (res.success) {
         toast.success('تم الحذف النهائي للجلسة بنجاح.');
+        if (activeSessionId === sessionId) {
+          onSelectSession('');
+        }
         await loadArchivedSessions();
         onSessionsChanged();
       }
     } catch (err: any) {
       toast.error('فشل الحذف النهائي: ' + (err?.message || 'خطأ'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleHardDeleteAllArchived = async () => {
+    if (archivedSessions.length === 0) return;
+    if (!confirm(`تحذير نهائي: هل أنت متأكد من حذف كافة الجلسات المؤرشفة (${archivedSessions.length} جلسة) نهائياً من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await hardDeleteAllArchivedVipSessions();
+      if (res.success) {
+        toast.success(res.message || 'تم حذف كافة الجلسات المؤرشفة نهائياً');
+        await loadArchivedSessions();
+        onSessionsChanged();
+      }
+    } catch (err: any) {
+      toast.error('فشل حذف الجلسات المؤرشفة: ' + (err?.message || 'خطأ'));
     } finally {
       setSubmitting(false);
     }
@@ -505,6 +529,21 @@ export function VipSessionSwitcher({
               >
                 <Archive className="w-3.5 h-3.5 text-amber-400" />
                 <span>أرشفة</span>
+              </Button>
+            )}
+
+            {/* 2.5 Direct Delete Active Session Button */}
+            {activeSession && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleHardDeleteSession(activeSession.id)}
+                disabled={disabled || submitting}
+                className="h-8 text-xs gap-1.5 border-rose-500/40 text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 px-2.5 font-semibold"
+                title="حذف هذه الجلسة وسجلاتها نهائياً"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <span>حذف الجلسة</span>
               </Button>
             )}
 
@@ -671,6 +710,18 @@ export function VipSessionSwitcher({
                           title="تعديل بيانات الجلسة (البريد وكلمة المرور)"
                         >
                           <Edit2 className="w-2.5 h-2.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleHardDeleteSession(sess.id);
+                          }}
+                          className="h-5 w-5 p-0 text-muted-foreground hover:text-rose-400"
+                          title="حذف الجلسة نهائياً"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" />
                         </Button>
                         {isRunning ? (
                           <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10.5px] px-2 py-0.5 flex items-center gap-1 font-bold animate-pulse shadow-sm shadow-emerald-500/20">
@@ -1128,7 +1179,23 @@ export function VipSessionSwitcher({
                 <p className="text-[10px] text-zinc-500">الجلسات التي تقوم بأرشفتها ستظهر هنا للاسترجاع.</p>
               </div>
             ) : (
-              archivedSessions.map((arch) => (
+              <>
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800">
+                  <span className="text-xs text-zinc-400 font-medium">
+                    إجمالي الجلسات المؤرشفة: {archivedSessions.length}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleHardDeleteAllArchived}
+                    disabled={submitting}
+                    className="h-7 text-xs gap-1.5 bg-rose-600/90 hover:bg-rose-600 text-white font-bold px-3"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>مسح كافة المؤرشفات نهائياً</span>
+                  </Button>
+                </div>
+                {archivedSessions.map((arch) => (
                 <div
                   key={arch.id}
                   className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 flex items-center justify-between gap-2 flex-wrap"
@@ -1168,9 +1235,10 @@ export function VipSessionSwitcher({
                     </Button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </>
+          )}
+        </div>
 
           <DialogFooter>
             <Button
