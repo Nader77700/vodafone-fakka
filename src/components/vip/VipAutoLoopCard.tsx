@@ -135,10 +135,12 @@ export function VipAutoLoopCard({
   const isExplicitlyStopped =
     session.operation_state === 'stopped' ||
     session.operation_state === 'completed' ||
-    session.operation_state === 'paused';
+    session.operation_state === 'paused' ||
+    session.current_step === 'completed';
 
   const effectiveIsRunning =
     !isExplicitlyStopped &&
+    !isTargetReached &&
     (isRunning ||
       isServerRunning ||
       session.operation_state === 'running' ||

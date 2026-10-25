@@ -212,14 +212,22 @@ export function VipDashboardTab({
   // Unified Session with Live Real-time Statistics
   const displaySession = useMemo(() => {
     if (!session) return session;
+    const effectiveOwnerMix = liveOwnerMix !== null ? liveOwnerMix : session.owner_mix_balance;
+    const effectiveChildMix = liveChildMix !== null ? liveChildMix : session.individual_mix_balance;
+    const targetMix = session.target_mix_balance || 50000;
+    const isTargetReached = targetMix > 0 && (Number(effectiveOwnerMix) || 0) >= targetMix;
+    const isCompleted = isTargetReached || currentStep === 'completed' || session.operation_state === 'completed';
+
     return {
       ...session,
-      owner_mix_balance: liveOwnerMix !== null ? liveOwnerMix : session.owner_mix_balance,
-      individual_mix_balance: liveChildMix !== null ? liveChildMix : session.individual_mix_balance,
+      owner_mix_balance: effectiveOwnerMix,
+      individual_mix_balance: effectiveChildMix,
       owner_current_plan: livePlan || session.owner_current_plan,
       current_cycle: Math.max(loopCycle, session.current_cycle || 0),
+      operation_state: isCompleted ? 'completed' : session.operation_state,
+      automation_enabled: isCompleted ? false : session.automation_enabled,
     };
-  }, [session, liveOwnerMix, liveChildMix, livePlan, loopCycle]);
+  }, [session, liveOwnerMix, liveChildMix, livePlan, loopCycle, currentStep]);
 
   const appendLogs = (newLogs?: VipExecutionLog[]) => {
     if (!newLogs || newLogs.length === 0) return;

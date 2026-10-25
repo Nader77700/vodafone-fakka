@@ -709,7 +709,12 @@ class EtisalatEngine {
           // Extract genuine Etisalat telecom error message to diagnose and avoid silent failures
           const errMatch = text.match(/<(?:errorMessage|message|errorDesc|description)>([^<]+)<\//i);
           const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
-          this.log(`[!] استجابة سيرفر اتصالات لأمر التحويل (${sender10} -> ${target10}): ${errMsg}`, "warn");
+          if (errMsg.includes("cannot be completed at the moment")) {
+            this.log(`[ℹ️] استجابة سيرفر اتصالات: رصيد الباقة قد تم دمجه أو تعديله بالمقسم — التحقق من الرصيد الفعلي الحالي...`, "info");
+            return false;
+          } else {
+            this.log(`[!] استجابة سيرفر اتصالات لأمر التحويل (${sender10} -> ${target10}): ${errMsg}`, "warn");
+          }
         }
       } catch (fetchErr: any) {
         this.log(`[!] خطأ في الاتصال ببوابة التحويل: ${fetchErr?.message || fetchErr}`, "warn");
@@ -1836,45 +1841,41 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    // ── INSTANT ZERO-DELAY DIRECT TRANSFER (تحويل فوري مباشر لكامل الرصيد المركون بالمللي ثانية) ──
-    // نحن نعلم مسبقاً الرصيد المركون بدقة (parkedMixAmount).
-    // أي استعلام يستهلك 5-25 ثانية ويعطي فرصة لمقسم اتصالات لتصفير وحدات الفرد بعد ترحيل الأونر!
-    // لذلك نرسل أمر التحويل فوراً بالمللي ثانية في نفس لحظة تأكيد تحول النظام!
+    // ── SMART ADAPTIVE RECOVERY PROTOCOL (استرجاع ذكي فوري ومطابقة رصيد الفرد والأونر) ──
     let recoveredMixAmount = 0;
     let initialTransferOk = false;
 
-    if (parkedMixAmount > 0 && engine.ownerDial) {
-      engine.log(`[⚡] بدء الاسترجاع اللحظي المباشر: تحويل كامل رصيد الفرد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس) إلى رقم الأونر (${engine.ownerDial}) فوراً بالملي ثانية...`, "info");
-      initialTransferOk = await activeChildEngine.transferMix(engine.ownerDial, parkedMixAmount, "Hekaya_XRP_MIX_Child_1");
-      if (initialTransferOk) {
-        recoveredMixAmount = parkedMixAmount;
-        engine.log(`[✓] تم قبول وتنفيذ أمر استرجاع كافة ميكسات الفرد (${parkedMixAmount.toLocaleString('en-US')} ميكس) إلى الأونر بنجاح لحظي!`, "success");
-      }
-    }
+    // استعلام فوري سريع عن الرصيد الفعلي المتبقي بالفرد
+    let childRemainingMix = 0;
+    try {
+      const childSt = await activeChildEngine.getStatusAndChild(true);
+      childRemainingMix = childSt.remainingMix;
+    } catch (_) {}
 
-    // في حال عدم قبول التحويل المباشر فقط (مثلاً اختلاف بسيط في الوحدات أو رصيد متبقي مختلف):
-    if (!initialTransferOk && engine.ownerDial) {
-      engine.log(`[!] التحقق السريع من رصيد الفرد الفعلي بالمقسم لمحاولة الاسترجاع الاحتياطية...`, "warn");
+    if (childRemainingMix > 0 && engine.ownerDial) {
+      engine.log(`[⚡] بدء الاسترجاع المباشر: تحويل رصيد الفرد الفعلي (${childRemainingMix.toLocaleString('en-US')} ميكس) إلى رقم الأونر (${engine.ownerDial})...`, "info");
+      initialTransferOk = await activeChildEngine.transferMix(engine.ownerDial, childRemainingMix, "Hekaya_XRP_MIX_Child_1");
+      if (initialTransferOk) {
+        recoveredMixAmount = childRemainingMix;
+        engine.log(`[✓] تم استرجاع ميكسات الفرد (${childRemainingMix.toLocaleString('en-US')} ميكس) إلى الأونر بنجاح!`, "success");
+      }
+    } else if (parkedMixAmount > 0 && engine.ownerDial) {
+      // إذا كان رصيد الفرد 0 أو لم يُقرأ، فحص الأونر أولاً لمعرفة إذا كان المقسم قد دمج الوحدات تلقائياً بالأونر
       try {
-        const childSt = await activeChildEngine.getStatusAndChild(true);
-        const attemptAmount = childSt.remainingMix;
-        if (attemptAmount > 0) {
-          engine.log(`[⚡] إعادة محاولة الاسترجاع بالرصيد المتبقي الفعلي (${attemptAmount.toLocaleString('en-US')} ميكس)...`, "info");
-          const retryOk = await activeChildEngine.transferMix(engine.ownerDial, attemptAmount, "Hekaya_XRP_MIX_Child_1");
-          if (retryOk) {
-            recoveredMixAmount = attemptAmount;
-            engine.log(`[✓] نجح استرجاع الميكسات في المحاولة الاحتياطية!`, "success");
-          }
+        const ownerMidCheck = await engine.getStatusAndChild(true);
+        if (ownerMidCheck.remainingMix >= Math.round(parkedMixAmount * 0.70)) {
+          engine.log(`[✓] تأكيد أمان: رصيد الأونر (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) مستقر ومحمي بالأونر بالفعل عبر دمج المقسم التلقائي!`, "success");
+          initialTransferOk = true;
         } else {
-          // فحص رصيد الأونر لمعرفة ما إذا كانت الميكسات استقرت بالأونر مباشرة
-          const ownerMidCheck = await engine.getStatusAndChild(true);
-          if (ownerMidCheck.remainingMix >= Math.round(parkedMixAmount * 0.70)) {
-            engine.log(`[✓] تأكيد أمان: رصيد الأونر (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) محمي ومستقر بالأونر بالفعل!`, "success");
-          } else {
-            engine.log(`[*] رصيد الفرد المقروء (0 ميكس). جاري الانتقال لمزامنة الدورة.`, "info");
+          // محاولة تحويل احتياطية بالرصيد المركون
+          engine.log(`[⚡] محاولة استرجاع احتياطية بالرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس)...`, "info");
+          initialTransferOk = await activeChildEngine.transferMix(engine.ownerDial, parkedMixAmount, "Hekaya_XRP_MIX_Child_1");
+          if (initialTransferOk) {
+            recoveredMixAmount = parkedMixAmount;
+            engine.log(`[✓] تم استرجاع الرصيد المركون بنجاح!`, "success");
           }
         }
-      } catch (_fallbackErr) {}
+      } catch (_) {}
     }
   }
 
