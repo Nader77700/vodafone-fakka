@@ -258,11 +258,20 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
     setHasScrolledUp(false);
   }, []);
 
+  // When a run starts (isRunning becomes true), automatically scroll to bottom and resume follow
+  useEffect(() => {
+    if (isRunning) {
+      setHasScrolledUp(false);
+      setAutoScroll(true);
+      scrollToBottom(false);
+    }
+  }, [isRunning, scrollToBottom]);
+
   // Listen to inner container scroll to detect if user is inspecting older logs
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 40;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 60;
     if (!isNearBottom) {
       setHasScrolledUp(true);
     } else {

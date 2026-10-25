@@ -283,21 +283,44 @@ class EtisalatEngine {
     return `${BASE_URL}${urlPath}`;
   }
 
+  private async fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 7000): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+      });
+      return res;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async login(email: string, rawPassword: string, isOwner = false, silent = false): Promise<boolean> {
-    // 0. Token reuse optimization: Check if existing cached token is still valid
+    // 0. Token reuse optimization: In-memory JWT payload validation (0ms, 0 network overhead)
     // Avoids redundant logins and prevents Etisalat rate-limit / temporary lockout bans!
     if (this.authToken && this.currentDial) {
       try {
-        const testStatus = await this.getStatusAndChild(true);
-        if (testStatus && testStatus.planId && testStatus.planId !== "غير معروف") {
-          if (!silent) {
-            const displayName = this.customerName || this.knownName || (this.role === "owner" ? "الأونر" : "الفرد");
-            this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) وتخطي الدخول لتسريع الأتمتة.`, "success");
+        const parts = this.authToken.split(".");
+        if (parts.length >= 2) {
+          const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+          const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+          const binary = atob(padded);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          const decoded = JSON.parse(new TextDecoder().decode(bytes));
+          // Check if token has at least 2 minutes valid lifetime remaining
+          if (decoded.exp && (decoded.exp * 1000) > (Date.now() + 120000)) {
+            if (!silent) {
+              const displayName = this.customerName || this.knownName || (this.role === "owner" ? "الأونر" : "الفرد");
+              this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) وتخطي الدخول لتسريع الأتمتة.`, "success");
+            }
+            return true;
           }
-          return true;
         }
       } catch (_) {
-        // Expired, proceed to fresh login
+        // Expired or invalid, proceed to fresh login
       }
     }
 
@@ -327,11 +350,11 @@ class EtisalatEngine {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const targetUrl = this.getRequestUrl(urlPath);
-        const res = await fetch(targetUrl, {
+        const res = await this.fetchWithTimeout(targetUrl, {
           method: "POST",
           headers,
           body: loginXml,
-        });
+        }, 7000);
 
         const text = await res.text();
         if (res.status === 200 && text.includes("<status>true</status>")) {
@@ -447,10 +470,10 @@ class EtisalatEngine {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const targetUrl = this.getRequestUrl(urlPath);
-        const res = await fetch(targetUrl, {
+        const res = await this.fetchWithTimeout(targetUrl, {
           method: "GET",
           headers,
-        });
+        }, 7000);
 
         if (res.status === 200) {
         const text = await res.text();
@@ -616,11 +639,11 @@ class EtisalatEngine {
 
     try {
       const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const res = await this.fetchWithTimeout(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
-      });
+      }, 7000);
       const text = await res.text();
       const ok = res.status === 200 && text.includes("<status>true</status>");
       if (ok) {
@@ -671,11 +694,11 @@ class EtisalatEngine {
           "bodySignature": bodySig,
         };
         const targetUrl = this.getRequestUrl(urlPathV2);
-        const res = await fetch(targetUrl, {
+        const res = await this.fetchWithTimeout(targetUrl, {
           method: "POST",
           headers,
           body: xmlBodyV2,
-        });
+        }, 7000);
         const text = await res.text();
         if (res.status === 200 && text.includes("<status>true</status>")) {
           const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
@@ -720,11 +743,11 @@ class EtisalatEngine {
 
     try {
       const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const res = await this.fetchWithTimeout(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
-      });
+      }, 7000);
       const text = await res.text();
       const isSuccess = res.status === 200 && (
         text.includes("<status>true</status>") ||
@@ -760,11 +783,11 @@ class EtisalatEngine {
 
     try {
       const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const res = await this.fetchWithTimeout(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
-      });
+      }, 7000);
       const text = await res.text();
       return res.status === 200 && text.includes("<status>true</status>");
     } catch {
@@ -797,11 +820,11 @@ class EtisalatEngine {
 
     try {
       const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const res = await this.fetchWithTimeout(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
-      });
+      }, 7000);
       const text = await res.text();
       const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
       const orderId = orderIdMatch ? orderIdMatch[1] : undefined;
@@ -834,11 +857,11 @@ class EtisalatEngine {
 
     try {
       const targetUrl = this.getRequestUrl(urlPath);
-      const res = await fetch(targetUrl, {
+      const res = await this.fetchWithTimeout(targetUrl, {
         method: "POST",
         headers,
         body: xmlBody,
-      });
+      }, 7000);
       const text = await res.text();
       const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
       const orderId = orderIdMatch ? orderIdMatch[1] : undefined;
@@ -1802,7 +1825,7 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 6. STEP 4: Instant Zero-Delay Recovery from Child to Owner (استرجاع فوري بالمللي ثانية)
+  // 6. STEP 4: Instant Zero-Delay Recovery from Child to Owner (استرجاع فوري بالمللي ثانية وبدون تأخير)
   await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات المركونة من الفرد إلى الأونر فوراً وبأقصى سرعة");
   if (childEmail && childPass) {
     engine.log(`[⚡] بدء الاسترجاع اللحظي الفوري للميكسات من الفرد للأونر ...`, "info");
@@ -1813,62 +1836,45 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    // Read child status with synchronization check
-    let childSt = await activeChildEngine.getStatusAndChild(true);
+    // ── INSTANT ZERO-DELAY DIRECT TRANSFER (تحويل فوري مباشر لكامل الرصيد المركون بالمللي ثانية) ──
+    // نحن نعلم مسبقاً الرصيد المركون بدقة (parkedMixAmount).
+    // أي استعلام يستهلك 5-25 ثانية ويعطي فرصة لمقسم اتصالات لتصفير وحدات الفرد بعد ترحيل الأونر!
+    // لذلك نرسل أمر التحويل فوراً بالمللي ثانية في نفس لحظة تأكيد تحول النظام!
+    let recoveredMixAmount = 0;
+    let initialTransferOk = false;
 
-    // If telecom sync is still propagating and child temporarily shows small amount (e.g. residual 20 units):
-    if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
-      // First check if Owner already holds the balance (e.g. previous cycle already recovered it or billing settled instantly)
-      let ownerAlreadyHolds = false;
-      try {
-        const ownerMidCheck = await engine.getStatusAndChild(true);
-        if (ownerMidCheck.remainingMix >= Math.round(parkedMixAmount * 0.70)) {
-          ownerAlreadyHolds = true;
-          engine.log(`[✓] تأكيد أمان: رصيد الأونر (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) محمي ومعتمد بالفعل بالسيرفر!`, "success");
-        }
-      } catch (_) {}
-
-      if (!ownerAlreadyHolds) {
-        engine.log(`[*] رصيد الفرد المقروء (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')}). جاري التحقق السريع من الفرد بالسيرفر...`, "info");
-        await sleep(1500);
-        try {
-          const syncSt = await activeChildEngine.getStatusAndChild(true);
-          if (syncSt.remainingMix > childSt.remainingMix) {
-            childSt = syncSt;
-          }
-        } catch (_sErr) {}
+    if (parkedMixAmount > 0 && engine.ownerDial) {
+      engine.log(`[⚡] بدء الاسترجاع اللحظي المباشر: تحويل كامل رصيد الفرد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس) إلى رقم الأونر (${engine.ownerDial}) فوراً بالملي ثانية...`, "info");
+      initialTransferOk = await activeChildEngine.transferMix(engine.ownerDial, parkedMixAmount, "Hekaya_XRP_MIX_Child_1");
+      if (initialTransferOk) {
+        recoveredMixAmount = parkedMixAmount;
+        engine.log(`[✓] تم قبول وتنفيذ أمر استرجاع كافة ميكسات الفرد (${parkedMixAmount.toLocaleString('en-US')} ميكس) إلى الأونر بنجاح لحظي!`, "success");
       }
     }
 
-    // Determine the verified transferable amount:
-    let attemptAmount = childSt.remainingMix;
-    if (parkedMixAmount > 1000 && childSt.remainingMix < parkedMixAmount * 0.5) {
-      engine.log(`[!] تنبيه أمان: رصيد الفرد الفعلي المقروء بالسيرفر (${childSt.remainingMix.toLocaleString('en-US')}) ميكس أقل من المركون (${parkedMixAmount.toLocaleString('en-US')}) ميكس.`, "warn");
-    }
-
-    engine.log(`[+] رصيد الفرد الفعلي المستهدف للاسترجاع: (${attemptAmount.toLocaleString('en-US')}) ميكس.`, "info");
-
-    if (attemptAmount > 0 && engine.ownerDial) {
-      // ── SINGLE DIRECT IMMEDIATE TRANSFER (تحويل لحظي مباشر وفوري بدون تكرار أو تأخير) ──
-      // تحويل لحظي واحد ومباشر لكامل ميكسات الفرد إلى الأونر بدون أي كشف وهمي خاطئ أو أوامر مكررة
-      engine.log(`[⚡] بدء الاسترجاع اللحظي المباشر: تحويل كامل رصيد الفرد (${attemptAmount.toLocaleString('en-US')} ميكس) إلى رقم الأونر (${engine.ownerDial})...`, "info");
-      const retOk = await activeChildEngine.transferMix(engine.ownerDial, attemptAmount, "Hekaya_XRP_MIX_Child_1");
-      if (retOk) {
-        engine.log(`[✓] تم قبول وتنفيذ أمر استرجاع كافة ميكسات الفرد (${attemptAmount.toLocaleString('en-US')} ميكس) إلى الأونر بنجاح!`, "success");
-        recoveredMixAmount = attemptAmount;
-      } else {
-        engine.log(`[!] تنبيه: تعذر قبول أمر الاسترجاع الأول. جاري محاولة سريعة ثانية بعد ثانية ونصف...`, "warn");
-        await sleep(1500);
-        try {
+    // في حال عدم قبول التحويل المباشر فقط (مثلاً اختلاف بسيط في الوحدات أو رصيد متبقي مختلف):
+    if (!initialTransferOk && engine.ownerDial) {
+      engine.log(`[!] التحقق السريع من رصيد الفرد الفعلي بالمقسم لمحاولة الاسترجاع الاحتياطية...`, "warn");
+      try {
+        const childSt = await activeChildEngine.getStatusAndChild(true);
+        const attemptAmount = childSt.remainingMix;
+        if (attemptAmount > 0) {
+          engine.log(`[⚡] إعادة محاولة الاسترجاع بالرصيد المتبقي الفعلي (${attemptAmount.toLocaleString('en-US')} ميكس)...`, "info");
           const retryOk = await activeChildEngine.transferMix(engine.ownerDial, attemptAmount, "Hekaya_XRP_MIX_Child_1");
           if (retryOk) {
-            engine.log(`[✓] نجح تنفيذ أمر الاسترجاع في المحاولة الثانية!`, "success");
             recoveredMixAmount = attemptAmount;
+            engine.log(`[✓] نجح استرجاع الميكسات في المحاولة الاحتياطية!`, "success");
           }
-        } catch (_) {}
-      }
-    } else if (attemptAmount === 0) {
-      engine.log(`[*] رصيد الفرد 0 ميكس (الميكسات مستقرة بالأونر أو تم استرجاعها).`, "info");
+        } else {
+          // فحص رصيد الأونر لمعرفة ما إذا كانت الميكسات استقرت بالأونر مباشرة
+          const ownerMidCheck = await engine.getStatusAndChild(true);
+          if (ownerMidCheck.remainingMix >= Math.round(parkedMixAmount * 0.70)) {
+            engine.log(`[✓] تأكيد أمان: رصيد الأونر (${ownerMidCheck.remainingMix.toLocaleString('en-US')} ميكس) محمي ومستقر بالأونر بالفعل!`, "success");
+          } else {
+            engine.log(`[*] رصيد الفرد المقروء (0 ميكس). جاري الانتقال لمزامنة الدورة.`, "info");
+          }
+        }
+      } catch (_fallbackErr) {}
     }
   }
 
