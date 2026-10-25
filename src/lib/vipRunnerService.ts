@@ -303,14 +303,6 @@ class VipRunnerService {
       console.warn('[VipRunnerService] DB update warning:', e);
     }
 
-    // ── TRIGGER 24/7 CLOUD SERVER ENGINE ──
-    // Ensures cycles continue non-stop on Supabase Edge Functions even if the app is killed or phone is locked
-    invokeVipExecutor('start_server_loop', {
-      session_id: sessionId,
-      target_mix: targetMix,
-      delay_seconds: delaySeconds,
-    }).catch((e) => console.warn('[VipRunnerService] Server background loop start trigger error:', e));
-
     this.addLog(sessionId, `==================================================`, 'info');
     this.addLog(
       sessionId,
@@ -373,11 +365,6 @@ class VipRunnerService {
     } catch (e) {
       console.warn('[VipRunnerService] DB stop error:', e);
     }
-
-    // Stop server-side persistent cloud runner
-    invokeVipExecutor('stop_server_loop', {
-      session_id: sessionId,
-    }).catch((e) => console.warn('[VipRunnerService] Server background loop stop trigger error:', e));
 
     sendVipRemotePushNotification(
       '⏹️ تم إيقاف دورة اتصالات VIP',

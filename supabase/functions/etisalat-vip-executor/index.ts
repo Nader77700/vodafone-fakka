@@ -1739,31 +1739,12 @@ async function handleSingleCycleInternal(
       break;
     }
 
-    // PERIODIC NUDGE & ACTIVATION LOOP (تنشيط الخط والعقد كل دقيقة إلى دقيقة ونصف):
-    // If server has not switched after ~18 attempts (~60s), execute active nudge:
-    // 1) Renew current bundle to wake up the subscriber contract in billing OMS
-    // 2) Re-issue changePlan to ensure it is not stuck in queue
-    const shouldNudge = (attempt % 18 === 0) && !serverConfirmed;
-    if (shouldNudge) {
-      nudgeCount++;
-      const elapsedMins = ((attempt * 3.5) / 60).toFixed(1);
-      engine.log(`[⚡] بروتوكول التنشيط الدوري (Nudge #${nudgeCount} - مضى ${elapsedMins} دقيقة): إنعاش العقد عبر تجديد باقة الأونر الحالية (${engine.getPlanName(currentPlanName)})...`, "info");
+    // If server has not switched after 20 attempts (~40s), re-send changePlan command to maintain telecom queue priority
+    if (attempt % 25 === 0 && !serverConfirmed) {
+      engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة بالسيرفر...`, "info");
       try {
-        await engine.renewBundleAction(currentPlanName, currentCost);
-        await sleep(3000);
-        const nudgeCheck = await engine.getStatusAndChild(true);
-        const nudgeMatches = (targetPlanId.includes("Parent_6") && nudgeCheck.planId.includes("Parent_6")) ||
-                             (targetPlanId.includes("Parent_7") && nudgeCheck.planId.includes("Parent_7"));
-        if (nudgeMatches) {
-          serverConfirmed = true;
-          confirmedPlanId = nudgeCheck.planId;
-          engine.log(`[🎉] تم تنشيط السيرفر بنجاح وتحول الخط للنظام الجديد فور التجديد!`, "success");
-          break;
-        }
-        // Re-send change plan command to nudge telecom queue
-        engine.log(`[⚡] إعادة إرسال أمر ترحيل النظام (${targetPlanDisplay}) لتنشيط طابور المعالجة...`, "info");
         await engine.changePlan(targetPlanId, ratePlanId);
-      } catch (_nudgeErr) {}
+      } catch (_reErr) {}
     }
 
     // Regular logging every 10 attempts (~35 seconds):
@@ -2074,13 +2055,8 @@ async function handleSingleCycleInternal(
     .eq("id", session_id)
     .maybeSingle();
 
-  // Chain automatically whenever automation is active and target has not been reached yet
-  const isServerLoopActive =
-    !targetReached &&
-    latestChainSessState &&
-    latestChainSessState.automation_enabled &&
-    (latestChainSessState.operation_state === "running" || latestChainSessState.operation_state === "active") &&
-    (latestChainSessState.owner_mix_balance || 0) < (latestChainSessState.target_mix_balance || 50000);
+  // Server-side background chaining is completely disabled per user requirement to keep execution local, fast, and stable
+  const isServerLoopActive = false;
 
   if (isServerLoopActive) {
     const chainDelaySec = Math.max(latestChainSessState.cycle_delay_seconds || cooldownSec || 20, 15);

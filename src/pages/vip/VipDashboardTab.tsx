@@ -138,85 +138,17 @@ export function VipDashboardTab({
       }
     });
 
-    // Check and resume active loop if running in cloud or saved in storage
-    vipRunnerService.resumeLoopIfActive(session.id, session.target_mix_balance, session.cycle_delay_seconds)
-      .then((resumed) => {
-        if (resumed) {
-          setLoopRunning(true);
-        }
-      })
-      .catch(() => {});
-
-    // Initial server logs fetch: If client runner logs are empty, load complete persisted audit logs from server DB
-    const runnerState = vipRunnerService.getState(session.id);
-    if (!runnerState.logs || runnerState.logs.length === 0) {
-      fetchVipSessionServerLogs(session.id).then((serverLogs) => {
-        if (serverLogs && serverLogs.length > 0) {
-          setTerminalLogs(serverLogs);
-        }
-      }).catch((err) => console.warn('[VipDashboardTab] Fetch server logs error:', err));
-    }
-
     // Handle return from background (e.g., coming back from WhatsApp or unlocking screen)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && session?.id) {
-        // Silently fetch the latest server-side database state and cycle updates
+        // Silently refresh current session data from database without disturbing terminal logs or auto-starting
         onRefresh();
-        vipRunnerService.resumeLoopIfActive(session.id, session.target_mix_balance, session.cycle_delay_seconds)
-          .then((resumed) => {
-            if (resumed) setLoopRunning(true);
-          })
-          .catch(() => {});
-        fetchVipSessionServerLogs(session.id).then((serverLogs) => {
-          if (serverLogs && serverLogs.length > 0) {
-            setTerminalLogs(serverLogs);
-          }
-        }).catch(() => {});
-
-        // Immediately update curtain sticky notification with latest balance and cycle
-        const curCycle = Math.max(loopCycle, session.current_cycle || 0);
-        const curMix = Number(session.owner_mix_balance) || 0;
-        const curTarget = Number(session.target_mix_balance) || 100000;
-        if (session.operation_state === 'running' || session.automation_enabled) {
-          showVipPersistentNotification(
-            session.id,
-            `الدورة #${curCycle} ناجحة | الرصيد: ${curMix.toLocaleString('ar-EG')} ميكس | الهدف: ${curTarget.toLocaleString('ar-EG')}`
-          ).catch(() => {});
-        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Heartbeat sync interval when session is running to stream server cloud execution updates
-    const syncInterval = setInterval(() => {
-      const isActuallyRunning =
-        session?.id &&
-        session.operation_state !== 'stopped' &&
-        session.operation_state !== 'completed' &&
-        session.operation_state !== 'paused' &&
-        (session.operation_state === 'running' ||
-          session.automation_enabled === true ||
-          vipRunnerService.isRunning(session.id));
-
-      if (isActuallyRunning) {
-        onRefresh();
-        fetchVipSessionServerLogs(session.id).then((serverLogs) => {
-          if (serverLogs && serverLogs.length > 0) {
-            setTerminalLogs((prev) => {
-              const currentRunner = vipRunnerService.getState(session.id);
-              if (currentRunner.isRunning && currentRunner.logs && currentRunner.logs.length > 0) {
-                return currentRunner.logs;
-              }
-              return serverLogs;
-            });
-          }
-        }).catch(() => {});
-      }
-    }, 6000);
-
     return () => {
       unsubscribe();
-      clearInterval(syncInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [session?.id, onRefresh]);
@@ -470,20 +402,9 @@ export function VipDashboardTab({
             onStopLoop={handleStopAutoLoop}
             onRefresh={onRefresh}
             isRunning={
-              displaySession.operation_state !== 'stopped' &&
-              displaySession.operation_state !== 'completed' &&
-              displaySession.operation_state !== 'paused' &&
-              (loopRunning ||
-                displaySession.operation_state === 'running' ||
-                displaySession.automation_enabled === true ||
-                vipRunnerService.isRunning(session.id))
-            }
-            isServerRunning={
-              displaySession.operation_state !== 'stopped' &&
-              displaySession.operation_state !== 'completed' &&
-              displaySession.operation_state !== 'paused' &&
-              (displaySession.operation_state === 'running' ||
-                displaySession.automation_enabled === true)
+              loopRunning ||
+              vipRunnerService.isRunning(session.id) ||
+              displaySession.operation_state === 'running'
             }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}

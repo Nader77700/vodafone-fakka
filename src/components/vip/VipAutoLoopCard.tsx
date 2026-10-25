@@ -34,16 +34,11 @@ import {
   ShieldCheck,
   AlertTriangle,
   Lock,
-  Cloud,
-  CloudLightning,
-  RefreshCw,
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import type { VipAccessStatus } from '@/services/vipDelegationService';
 import {
   executeVipReturnChildMixes,
-  executeVipStartServerLoop,
-  executeVipStopServerLoop,
 } from '@/lib/vipApi';
 import {
   requestVipNotificationPermission,
@@ -57,7 +52,6 @@ interface Props {
   onRefresh?: () => void;
   isRunning: boolean;
   isPaused: boolean;
-  isServerRunning?: boolean;
   currentCycle: number;
   countdownSeconds: number | null;
   stepMessage: string | null;
@@ -72,7 +66,6 @@ export function VipAutoLoopCard({
   onRefresh,
   isRunning,
   isPaused,
-  isServerRunning = false,
   currentCycle,
   countdownSeconds,
   stepMessage,
@@ -92,49 +85,6 @@ export function VipAutoLoopCard({
   const [autoEject, setAutoEject] = useState<boolean>(session.auto_eject_child_on_complete ?? false);
   const [isUpdatingAutoEject, setIsUpdatingAutoEject] = useState<boolean>(false);
   const [isReturningChildMixes, setIsReturningChildMixes] = useState<boolean>(false);
-  const [startingServerLoop, setStartingServerLoop] = useState<boolean>(false);
-  const [syncingDb, setSyncingDb] = useState<boolean>(false);
-
-  const handleStartServerLoop = async () => {
-    setStartingServerLoop(true);
-    try {
-      const res = await executeVipStartServerLoop(session.id, selectedTarget, cycleDelay);
-      if (res.success) {
-        toast.success(res.message || 'تم تشغيل الأتمتة السحابية 24/7 بنجاح على السيرفر!');
-        onRefresh?.();
-      } else {
-        toast.error(res.error || 'تعذر تشغيل السيرفر السحابي');
-      }
-    } catch (err: any) {
-      toast.error('خطأ تشغيل السيرفر: ' + (err?.message || 'خطأ'));
-    } finally {
-      setStartingServerLoop(false);
-    }
-  };
-
-  const handleStopServerLoop = async () => {
-    setStartingServerLoop(true);
-    try {
-      const res = await executeVipStopServerLoop(session.id);
-      if (res.success) {
-        toast.success(res.message || 'تم إيقاف الأتمتة السحابية بنجاح.');
-        onRefresh?.();
-      } else {
-        toast.error(res.error || 'تعذر إيقاف السيرفر السحابي');
-      }
-    } catch (err: any) {
-      toast.error('خطأ إيقاف السيرفر: ' + (err?.message || 'خطأ'));
-    } finally {
-      setStartingServerLoop(false);
-    }
-  };
-
-  const handleSyncFromDb = () => {
-    setSyncingDb(true);
-    onRefresh?.();
-    toast.success('تمت مزامنة بيانات ورصيد الجلسة مباشرة من قاعدة بيانات السيرفر');
-    setTimeout(() => setSyncingDb(false), 500);
-  };
 
   const handleReturnChildMixes = async () => {
     setIsReturningChildMixes(true);
@@ -203,19 +153,8 @@ export function VipAutoLoopCard({
   const progressPercent = selectedTarget > 0 ? Math.min(100, Math.round((currentMix / selectedTarget) * 100)) : 0;
   const isTargetReached = currentMix >= selectedTarget && currentMix > 0;
 
-  const isExplicitlyStopped =
-    session.operation_state === 'stopped' ||
-    session.operation_state === 'completed' ||
-    session.operation_state === 'paused' ||
-    session.current_step === 'completed';
-
-  const effectiveIsRunning =
-    isRunning ||
-    (!isExplicitlyStopped &&
-      !isTargetReached &&
-      (isServerRunning ||
-        session.operation_state === 'running' ||
-        session.automation_enabled === true));
+  // Direct, unblocked running state strictly driven by execution
+  const effectiveIsRunning = Boolean(isRunning);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -259,7 +198,7 @@ export function VipAutoLoopCard({
               {effectiveIsRunning ? (
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 animate-pulse flex items-center gap-1 font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>{isServerRunning || session.automation_enabled ? `⚡ نشطة بالسيرفر (#${currentCycle})` : `الدورة نشطة (#${currentCycle})`}</span>
+                  <span>الدورة نشطة (#{currentCycle})</span>
                 </Badge>
               ) : isPaused || session.operation_state === 'paused' ? (
                 <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] px-1.5 py-0 font-bold">
@@ -487,68 +426,6 @@ export function VipAutoLoopCard({
               disabled={isUpdatingAutoEject}
               onCheckedChange={handleToggleAutoEject}
             />
-          </div>
-
-          {/* ── Server-Side Cloud Hub (لوحة تحكم السيرفر المباشرة) ── */}
-          <div className="p-2.5 rounded-lg border border-sky-500/40 bg-sky-950/20 space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-1">
-              <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
-                <Cloud className="w-3.5 h-3.5 text-sky-400" />
-                لوحة التحكم السحابي المباشر من السيرفر (Server Hub)
-              </span>
-              <Badge
-                variant="outline"
-                className={`text-[9.5px] px-2 py-0.5 font-mono ${
-                  isServerRunning
-                    ? 'border-emerald-500 text-emerald-400 bg-emerald-500/15 animate-pulse'
-                    : 'border-zinc-700 text-zinc-400 bg-zinc-900/60'
-                }`}
-              >
-                {isServerRunning ? '⚡ خادم سحابي 24/7 نشط' : 'الخادم السحابي خامل'}
-              </Badge>
-            </div>
-            <p className="text-[10.5px] text-zinc-300/80 leading-relaxed">
-              التشغيل السحابي ينفذ الدورات مباشرة على السيرفر في الخلفية 24/7 حتى لو أغلقت التطبيق أو انقطع اتصال الإنترنت من جهازك.
-            </p>
-            <div className="flex items-center gap-2 pt-1 flex-wrap">
-              {isServerRunning ? (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={handleStopServerLoop}
-                  disabled={startingServerLoop}
-                  className="flex-1 h-7 text-xs font-bold gap-1 shadow"
-                >
-                  <Square className="w-3 h-3 fill-current" />
-                  <span>إيقاف السيرفر السحابي</span>
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleStartServerLoop}
-                  disabled={startingServerLoop || isRunning}
-                  className="flex-1 h-7 text-xs bg-sky-600 hover:bg-sky-500 text-white font-bold gap-1 shadow"
-                >
-                  {startingServerLoop ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <CloudLightning className="w-3 h-3" />
-                  )}
-                  <span>تشغيل سحابي مستقل (خادم 24/7)</span>
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSyncFromDb}
-                disabled={syncingDb}
-                className="h-7 text-xs border-zinc-700 hover:bg-zinc-800 text-zinc-200 px-2.5 font-medium gap-1"
-                title="مزامنة فورية للرصيد والحالة مباشرة من قاعدة بيانات السيرفر"
-              >
-                <RefreshCw className={`w-3 h-3 ${syncingDb ? 'animate-spin' : ''}`} />
-                <span>مزامنة السيرفر</span>
-              </Button>
-            </div>
           </div>
         </div>
       </CardContent>
