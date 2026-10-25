@@ -7,6 +7,7 @@ import { supabase } from '@/db/supabase';
 import {
   executeVipRunSingleCycleStream,
   executeVipCheckStatus,
+  executeVipReturnChildMixes,
   updateVipAutomationSettings,
   invokeVipExecutor,
   executeSmartEjectionSequence,
@@ -706,6 +707,27 @@ class VipRunnerService {
 
       // Check Target Reached
       if (st.targetMix > 0 && totalMix >= st.targetMix) {
+        // Automatically recover any remaining parked child mixes back to owner before final stop
+        if (st.latestChildMix && st.latestChildMix > 0) {
+          this.addLog(
+            sessionId,
+            `[🔄 استرجاع تلقائي نهائي] الهدف مكتمل! جاري إعادة تحويل الرصيد المركون (${st.latestChildMix.toLocaleString('ar-EG')} ميكس) من الفرد للأونر...`,
+            'info'
+          );
+          try {
+            const retRes = await executeVipReturnChildMixes(sessionId);
+            if (retRes.success) {
+              this.addLog(sessionId, `[✓] تم استرجاع ميكسات الفرد للأونر بنجاح! الرصيد مستقر بالكامل في الأونر.`, 'success');
+              st.latestOwnerMix = (st.latestOwnerMix || 0) + st.latestChildMix;
+              st.latestChildMix = 0;
+            } else {
+              this.addLog(sessionId, `[!] تعذر الاسترجاع التلقائي لميكسات الفرد: ${retRes.error || 'يرجى النقر على زر الاسترجاع اليدوي'}.`, 'warn');
+            }
+          } catch (retErr: any) {
+            this.addLog(sessionId, `[!] استرجاع الميكسات: ${retErr?.message || 'متاح عبر زر الاسترجاع بكارت درع الأمان'}`, 'warn');
+          }
+        }
+
         this.addLog(
           sessionId,
           `🎯 مبروك! تم اكتمال العملية والوصول إلى الحد الأقصى للميكسات المستهدفة (${totalMix.toLocaleString('ar-EG')} >= ${st.targetMix.toLocaleString('ar-EG')})!`,

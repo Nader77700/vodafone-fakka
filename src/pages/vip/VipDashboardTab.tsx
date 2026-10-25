@@ -465,6 +465,7 @@ export function VipDashboardTab({
             session={displaySession}
             onStartLoop={handleStartAutoLoop}
             onStopLoop={handleStopAutoLoop}
+            onRefresh={onRefresh}
             isRunning={
               displaySession.operation_state !== 'stopped' &&
               displaySession.operation_state !== 'completed' &&

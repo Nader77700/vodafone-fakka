@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import type { VipSession } from '@/types/vip';
 import type { VipAccessStatus } from '@/services/vipDelegationService';
+import { executeVipReturnChildMixes } from '@/lib/vipApi';
 import {
   requestVipNotificationPermission,
   isVipNotificationGranted,
@@ -46,6 +47,7 @@ interface Props {
   session: VipSession;
   onStartLoop: (targetMix: number, delaySeconds: number) => void;
   onStopLoop: () => void;
+  onRefresh?: () => void;
   isRunning: boolean;
   isPaused: boolean;
   isServerRunning?: boolean;
@@ -60,6 +62,7 @@ export function VipAutoLoopCard({
   session,
   onStartLoop,
   onStopLoop,
+  onRefresh,
   isRunning,
   isPaused,
   isServerRunning = false,
@@ -81,6 +84,24 @@ export function VipAutoLoopCard({
   const [hasNotifPerm, setHasNotifPerm] = useState(false);
   const [autoEject, setAutoEject] = useState<boolean>(session.auto_eject_child_on_complete ?? false);
   const [isUpdatingAutoEject, setIsUpdatingAutoEject] = useState<boolean>(false);
+  const [isReturningChildMixes, setIsReturningChildMixes] = useState<boolean>(false);
+
+  const handleReturnChildMixes = async () => {
+    setIsReturningChildMixes(true);
+    try {
+      const res = await executeVipReturnChildMixes(session.id);
+      if (res.success) {
+        toast.success('تم استرجاع الميكسات من الفرد إلى الأونر بنجاح!');
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error('تعذر استرجاع الميكسات: ' + (res.error || ''));
+      }
+    } catch (e: any) {
+      toast.error('خطأ في استرجاع الميكسات: ' + (e?.message || ''));
+    } finally {
+      setIsReturningChildMixes(false);
+    }
+  };
 
   useEffect(() => {
     setHasNotifPerm(isVipNotificationGranted());
@@ -290,16 +311,34 @@ export function VipAutoLoopCard({
 
           {/* Parked Mixes Golden Shield Safety Banner */}
           {((session.individual_mix_balance || 0) > 0 || session.stop_reason?.includes('الفرد')) && (
-            <div className="mt-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2 text-[11px]">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-0.5 text-right">
-                <span className="font-bold text-emerald-400 block">
-                  درع الأمان: الرصيد محفوظ ومحمي في حساب الفرد
-                </span>
-                <span className="text-muted-foreground block text-[10.5px] leading-relaxed">
-                  يتم حفظ الميكسات بأمان في حساب الفرد لحين إتمام ترحيل النظام واسترجاعها تلقائياً.
-                </span>
+            <div className="mt-2 p-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 space-y-2 text-[11px]">
+              <div className="flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-right flex-1">
+                  <span className="font-bold text-emerald-400 block">
+                    درع الأمان: الرصيد محفوظ ومحمي في حساب الفرد ({(session.individual_mix_balance || 0).toLocaleString('ar-EG')} ميكس)
+                  </span>
+                  <span className="text-muted-foreground block text-[10.5px] leading-relaxed">
+                    تم ركن الميكسات بأمان في خط الفرد لحمايتها من التصفير. يمكنك استرجاعها فوراً للأونر في أي وقت بضغطة واحدة أدناه:
+                  </span>
+                </div>
               </div>
+
+              {!isRunning && (session.individual_mix_balance || 0) > 0 && (
+                <Button
+                  size="sm"
+                  onClick={handleReturnChildMixes}
+                  disabled={isReturningChildMixes}
+                  className="w-full h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow"
+                >
+                  {isReturningChildMixes ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  <span>استرجاع الميكسات المركونة للأونر الآن ({(session.individual_mix_balance || 0).toLocaleString('ar-EG')} ميكس)</span>
+                </Button>
+              )}
             </div>
           )}
         </div>
