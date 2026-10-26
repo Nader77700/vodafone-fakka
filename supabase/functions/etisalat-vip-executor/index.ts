@@ -55,7 +55,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // ── Global Concurrency Mutex for Etisalat Auth Gateway ──
 // When multiple sessions run in parallel, simultaneous logins from same IP cause Etisalat 429 / lockouts.
 // This sequential queue guarantees login requests are spaced out cleanly with a safe delay!
-let loginMutexChain = Promise.resolve();
+let loginMutexChain: Promise<any> = Promise.resolve();
 function acquireLoginSlot(): Promise<() => void> {
   let release: () => void = () => {};
   const currentSlot = new Promise<void>((resolve) => {
@@ -173,7 +173,7 @@ function generateSessionDeviceProfile(role: 'owner' | 'child', sessionId?: strin
 class EtisalatEngine {
   public device: DeviceProfile;
   public bridgeConfig: BridgeConfig;
-  private authToken: string | null = null;
+  public authToken: string | null = null;
   public cookieHeader: string = "";
   public customerName: string = "";
   public knownName: string = "";
@@ -371,7 +371,7 @@ class EtisalatEngine {
     const urlPath = "/Saytar/rest/authentication/loginWithPlan";
 
     const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPath, loginXml);
-    const headers = {
+    const headers: Record<string, string> = {
       ...this.getBaseHeaders(),
       "Authorization": `Basic ${authB64}`,
       "headerSignature": headerSig,
@@ -514,7 +514,7 @@ class EtisalatEngine {
     const urlPath = `/Saytar/rest/servicemanagement/getGenericConsumptionsV2?requestParam=${encodedReq}`;
 
     const { headerSig, urlSig } = await this.generateSignatures(urlPath, "");
-    const headers = {
+    const headers: Record<string, string> = {
       ...this.getBaseHeaders(),
       "auth": `Bearer ${this.authToken}`,
       "headerSignature": headerSig,
@@ -539,24 +539,26 @@ class EtisalatEngine {
 
         // 1. Accurate Plan Detection from Etisalat response XML
         let planId = "غير معروف";
-        if (/Parent_7|ميكسات\s*270|حكاية\s*270|باقة\s*حكاية\s*ميكسات\s*270/i.test(text)) {
+        const rateMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i);
+        const rateBlock = text.match(/<ratePlanConsumption>[\s\S]*?<\/ratePlanConsumption>/i)?.[0] || text;
+
+        if (rateMatch && rateMatch[1] && (rateMatch[1].includes("Parent") || rateMatch[1].includes("Child"))) {
+          planId = rateMatch[1].trim();
+        } else if (/Parent_7|XRPM7|ميكسات\s*270/i.test(rateBlock)) {
           planId = "Hekaya_XRP_MIX_Parent_7";
-        } else if (/Parent_6|ميكسات\s*180|حكاية\s*180|باقة\s*حكاية\s*ميكسات\s*180/i.test(text)) {
+        } else if (/Parent_6|XRPM6|ميكسات\s*180/i.test(rateBlock)) {
           planId = "Hekaya_XRP_MIX_Parent_6";
-        } else if (/Parent_5|ميكسات\s*120|حكاية\s*120/i.test(text)) {
+        } else if (/Parent_5|XRPM5|ميكسات\s*120/i.test(rateBlock)) {
           planId = "Hekaya_XRP_MIX_Parent_5";
-        } else if (/Child_1/i.test(text)) {
+        } else if (/Child_1|XRPC1/i.test(rateBlock)) {
           planId = "Hekaya_XRP_MIX_Child_1";
-        } else {
-          const rateMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i);
-          if (rateMatch && rateMatch[1].includes("Parent")) {
-            planId = rateMatch[1].trim();
-          } else if (this.shortCode) {
-            if (this.shortCode.includes("M7")) planId = "Hekaya_XRP_MIX_Parent_7";
-            else if (this.shortCode.includes("M6")) planId = "Hekaya_XRP_MIX_Parent_6";
-            else if (this.shortCode.includes("M5")) planId = "Hekaya_XRP_MIX_Parent_5";
-            else if (this.shortCode.includes("C1")) planId = "Hekaya_XRP_MIX_Child_1";
-          }
+        } else if (/Child_2|XRPC2/i.test(rateBlock)) {
+          planId = "Hekaya_XRP_MIX_Child_2";
+        } else if (this.shortCode) {
+          if (this.shortCode.includes("M7")) planId = "Hekaya_XRP_MIX_Parent_7";
+          else if (this.shortCode.includes("M6")) planId = "Hekaya_XRP_MIX_Parent_6";
+          else if (this.shortCode.includes("M5")) planId = "Hekaya_XRP_MIX_Parent_5";
+          else if (this.shortCode.includes("C1")) planId = "Hekaya_XRP_MIX_Child_1";
         }
 
         // 2. Comprehensive Mixes Detection across all consumption meters & buckets
@@ -1620,7 +1622,7 @@ async function handleSingleCycleInternal(
               if (latestChildReadMix > 0) {
                 try {
                   engine.log(`[🛡️ استرجاع فوري لحماية الرصيد] جاري إعادة تحويل الميكسات المركونة (${latestChildReadMix.toLocaleString('en-US')} ميكس) من الفرد للأونر فوراً لمنع ضياعها...`, "warn");
-                  const rolledBack = await prewarmedChildEngine.transferMix(engine.ownerDial, latestChildReadMix, "Hekaya_XRP_MIX_Child_1");
+                  const rolledBack = await prewarmedChildEngine.transferMix(engine.ownerDial || "", latestChildReadMix, "Hekaya_XRP_MIX_Child_1");
                   if (rolledBack) {
                     engine.log(`[✓] تم استرجاع (${latestChildReadMix.toLocaleString('en-US')}) ميكس من الفرد للأونر بأمان تام!`, "success");
                   }
@@ -1713,7 +1715,7 @@ async function handleSingleCycleInternal(
         try {
           const childStStop = await prewarmedChildEngine.getStatusAndChild(true);
           if (childStStop.remainingMix > 0) {
-            await prewarmedChildEngine.transferMix(engine.ownerDial, childStStop.remainingMix, "Hekaya_XRP_MIX_Child_1");
+            await prewarmedChildEngine.transferMix(engine.ownerDial || "", childStStop.remainingMix, "Hekaya_XRP_MIX_Child_1");
             engine.log(`[✓] تم استرجاع (${childStStop.remainingMix.toLocaleString('en-US')}) ميكس للأونر بأمان!`, "success");
           }
         } catch (_) {}
@@ -1800,7 +1802,7 @@ async function handleSingleCycleInternal(
       try {
         const childStBeforeAbort = await prewarmedChildEngine.getStatusAndChild(true);
         if (childStBeforeAbort.remainingMix > 0) {
-          await prewarmedChildEngine.transferMix(engine.ownerDial, childStBeforeAbort.remainingMix, "Hekaya_XRP_MIX_Child_1");
+          await prewarmedChildEngine.transferMix(engine.ownerDial || "", childStBeforeAbort.remainingMix, "Hekaya_XRP_MIX_Child_1");
           engine.log(`[+] تم استرجاع (${childStBeforeAbort.remainingMix.toLocaleString('en-US')}) ميكس للأونر بأمان وإلغاء الدورة دون أي فقدان.`, "success");
         }
       } catch (_recErr) {}
@@ -1975,16 +1977,25 @@ async function handleSingleCycleInternal(
     }
 
     // تحديد كمية الميكسات المسترجعة بدقة من الرصيد الفعلي الموجود فعلياً على شريحة الفرد
-    let amountToTransfer = childRealMix > 0 ? childRealMix : Math.min(armedMixToTransfer || 0, parkedMixAmount || 0);
+    let amountToTransfer = childRealMix > 0 ? childRealMix : Math.max(armedMixToTransfer || 0, parkedMixAmount || 0);
+
+    // تحديد الحد الأدنى للرصيد المتوقع بعد دمج الكوتة الجديدة مع الميكسات المركونة
+    const expectedCombinedMin = (parkedMixAmount > 0)
+      ? Math.round((confirmedNewMix + parkedMixAmount) * 0.85)
+      : confirmedNewMix;
 
     let recoveredOk = false;
+    const childPlanForTransfer = (childLiveStatus.planId && childLiveStatus.planId.includes("Child"))
+      ? childLiveStatus.planId
+      : "Hekaya_XRP_MIX_Child_1";
+
     if (amountToTransfer > 0) {
       engine.log(`[⚡] إرسال أمر الاسترجاع الفعلي المباشر بسيرفر اتصالات: (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر (${engine.ownerDial})...`, "info");
       // إرسال أمر التحويل الحقيقي إلى بوابة اتصالات الرسمية فوراً
-      recoveredOk = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+      recoveredOk = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, childPlanForTransfer);
       if (recoveredOk) {
         recoveredMixAmount = amountToTransfer;
-        engine.log(`[+] تم قبول وتنفيذ أمر الاسترجاع اللحظي بنجاح! (${amountToTransfer.toLocaleString('en-US')} ميكس)`, "success");
+        engine.log(`[+] تم قبول أمر الاسترجاع من الفرد بنجاح! جاري فحص تأكيد نزولها بحساب الأونر...`, "success");
       }
     } else {
       // رصيد الفرد 0 ميكس: نتحقق فوراً مما إذا كان رصيد الأونر يحمل الميكسات بالفعل
@@ -1999,85 +2010,103 @@ async function handleSingleCycleInternal(
       } catch (_) {}
     }
 
-    // في حال عدم نجاح أمر التحويل من المحاولة الأولى، فحص خط الأونر أو إعادة المحاولة فوراً
-    if (!recoveredOk && amountToTransfer > 0) {
-      await sleep(1500);
+    // ── حلقة التحقق الذكية متكررة الفحص لاستقرار التحويل بالمقسم (حتى 4 محاولات) ──
+    for (let pollTry = 1; pollTry <= 4; pollTry++) {
+      await sleep(2000);
       try {
-        const ownerSt = await engine.getStatusAndChild(true);
-        if (ownerSt.remainingMix > confirmedNewMix) {
+        const ownerProbe = await engine.getStatusAndChild(true);
+        const ownerMixNow = ownerProbe.remainingMix || 0;
+
+        // إذا وصل رصيد الأونر للحد المتوقع المدمج أو زاد بشكل ملحوظ عن الكوتة الأساسية
+        if (ownerMixNow >= expectedCombinedMin || (parkedMixAmount > 0 && ownerMixNow > confirmedNewMix + 1000)) {
           recoveredOk = true;
-          recoveredMixAmount = ownerSt.remainingMix;
-          engine.log(`[✓] تأكيد فوري من مقسم اتصالات: تم دمج واستقرار الميكسات (${ownerSt.remainingMix.toLocaleString('en-US')} ميكس) بخط الأونر!`, "success");
-        } else {
-          // إعادة فحص رصيد الفرد الفعلي قبل المحاولة الثانية
-          const recheckChildSt = await activeChildEngine.getStatusAndChild(true);
-          const recheckMix = recheckChildSt.remainingMix || amountToTransfer;
-          if (recheckMix > 0) {
-            engine.log(`[*] إعادة محاولة أمر التحويل عبر بوابة اتصالات (${recheckMix.toLocaleString('en-US')} ميكس)...`, "info");
-            recoveredOk = await activeChildEngine.transferMix(engine.ownerDial, recheckMix, "Hekaya_XRP_MIX_Child_1");
-            if (recoveredOk) {
-              recoveredMixAmount = recheckMix;
-              engine.log(`[+] تم تأكيد الاسترجاع في المحاولة الثانية! (${recheckMix.toLocaleString('en-US')} ميكس)`, "success");
-            }
+          recoveredMixAmount = Math.max(recoveredMixAmount, ownerMixNow - confirmedNewMix, parkedMixAmount);
+          engine.log(`[✓] تأكيد مقسم اتصالات الموثق: تم دمج واستقرار الميكسات بالكامل (${ownerMixNow.toLocaleString('en-US')} ميكس) بخط الأونر!`, "success");
+          break;
+        }
+
+        // إذا لم يستقر بعد وكان الفرد لا يزال يحمل ميكسات، أعد محاولة التحويل
+        const childProbe = await activeChildEngine.getStatusAndChild(true);
+        const childMixRemaining = childProbe.remainingMix || 0;
+        if (childMixRemaining > 1000) {
+          engine.log(`[*] رصيد الفرد لا يزال (${childMixRemaining.toLocaleString('en-US')} ميكس) - إعادة إرسال أمر التحويل (محاولة ${pollTry}/4)...`, "info");
+          const retryOk = await activeChildEngine.transferMix(engine.ownerDial, childMixRemaining, childPlanForTransfer);
+          if (retryOk) {
+            recoveredMixAmount = childMixRemaining;
           }
         }
-      } catch (_) {}
-    }
-
-    // ── ANTI-DROP SAFETY LOCK (درع حظر تصفير الدورة الصارم) ──
-    // إذا لم يؤكد الاسترجاع ولا يزال الفرد يحمل رصيداً (> 0 ميكس):
-    if (!recoveredOk) {
-      // فحص أخير لرصيد الفرد ورصيد الأونر لمعرفة مكان الميكسات بدقة
-      let childHasRemaining = false;
-      let finalChildBal = 0;
-      try {
-        const checkChildFinal = await activeChildEngine.getStatusAndChild(true);
-        finalChildBal = checkChildFinal.remainingMix || 0;
-        childHasRemaining = finalChildBal > 0;
-      } catch (_) {}
-
-      let checkOwnerNow = null;
-      try {
-        checkOwnerNow = await engine.getStatusAndChild(true);
-      } catch (_) {}
-      const ownerHasUnits = (checkOwnerNow?.remainingMix || 0) > 0;
-
-      if (!childHasRemaining && ownerHasUnits) {
-        // الفرد لا يحمل أي ميكسات، ورصيد الأونر مستقر بالفعل
-        recoveredOk = true;
-        recoveredMixAmount = checkOwnerNow!.remainingMix;
-        engine.log(`[✓] التحقق النهائي: رصيد الفرد (0 ميكس) ورصيد الأونر الفعلي (${checkOwnerNow!.remainingMix.toLocaleString('en-US')} ميكس) مستقر وآمن بحسابه. المتابعة بنجاح!`, "success");
-      } else if (childHasRemaining) {
-        // الفرد لا يزال يحمل الميكسات ولم تصل للأونر
-        const dropErrMsg = `توقف أمان حماية الميكسات: رصيد الفرد (${finalChildBal.toLocaleString('en-US')} ميكس) لم يستقر بعد بالأونر. تم حظر تجديد الباقة لحفظ رصيدك من التصفير.`;
-        engine.log(`[🛡️ قفل طوارئ لحماية رصيد الفرد] ${dropErrMsg}`, "error");
-        await sendStep("safety_stop", 4, "حظر التصفير - رصيد بالفرد", dropErrMsg);
-        
-        try {
-          await supabase.from("vip_sessions").update({
-            operation_state: "paused",
-            pause_reason: dropErrMsg,
-            individual_mix_balance: finalChildBal,
-            automation_enabled: false,
-            worker_status: "stopped",
-            updated_at: new Date().toISOString(),
-          }).eq("id", session_id);
-        } catch (_) {}
-
-        return {
-          success: false,
-          safety_stop: true,
-          error: dropErrMsg,
-          logs: engine.logs,
-        };
-      } else {
-        // كلا الحسابين يقرأ 0 مؤقتاً في المقسم
-        recoveredOk = true;
-        engine.log(`[ℹ️] جاري استكمال الدورة واعتماد تحديث المقسم تلقائياً.`, "info");
+      } catch (pollErr) {
+        console.warn("Poll verification retry error:", pollErr);
       }
-    } else if (recoveredOk) {
-      engine.log(`[✓] اكتمل استرجاع الميكسات للأونر بنجاح وبأمان تام.`, "success");
     }
+
+    // ── ANTI-DROP SAFETY LOCK (درع حظر تصفير الدورة الصارم المطور) ──
+    // التحقق النهائي الصارم: هل حققت الدورة زيادة حقيقية، أم هناك تراجع في الرصيد؟
+    let finalChildBal = 0;
+    try {
+      const checkChildFinal = await activeChildEngine.getStatusAndChild(true);
+      finalChildBal = checkChildFinal.remainingMix || 0;
+    } catch (_) {}
+
+    let checkOwnerNow = null;
+    try {
+      checkOwnerNow = await engine.getStatusAndChild(true);
+    } catch (_) {}
+    const ownerFinalBal = checkOwnerNow?.remainingMix || 0;
+
+    // إذا كان الفرد لا يزال يحمل الميكسات (توقف أمان فوري لحفظ الميكسات وعدم إكمال الدورة على نقص)
+    if (finalChildBal > 1000) {
+      const dropErrMsg = `توقف أمان حماية الميكسات: رصيد الفرد (${finalChildBal.toLocaleString('en-US')} ميكس) لم يستقر بعد بالأونر. تم إيقاف الدورة لحفظ رصيدك بالفرد وتجنب التصفير.`;
+      engine.log(`[🛡️ قفل طوارئ لحماية رصيد الفرد] ${dropErrMsg}`, "error");
+      await sendStep("safety_stop", 4, "حظر التصفير - رصيد بالفرد", dropErrMsg);
+      
+      try {
+        await supabase.from("vip_sessions").update({
+          operation_state: "paused",
+          pause_reason: dropErrMsg,
+          individual_mix_balance: finalChildBal,
+          automation_enabled: false,
+          worker_status: "stopped",
+          updated_at: new Date().toISOString(),
+        }).eq("id", session_id);
+      } catch (_) {}
+
+      return {
+        success: false,
+        safety_stop: true,
+        error: dropErrMsg,
+        logs: engine.logs,
+      };
+    }
+
+    // إذا كان رصيد الأونر أقل من رصيد البداية أو يمثل الكوتة الأساسية فقط مع فقدان الرصيد المركون:
+    if (parkedMixAmount > 2000 && ownerFinalBal < ownerStartMix && ownerFinalBal <= confirmedNewMix + 500) {
+      const balanceDropMsg = `تنبيه حرج: رصيد الأونر (${ownerFinalBal.toLocaleString('en-US')} ميكس) يمثل كوتة الباقة الأساسية فقط ولم تُدمج معه الميكسات السابقة (${parkedMixAmount.toLocaleString('en-US')} ميكس). إيقاف الدورة تلقائياً لحماية الحساب ومنع التكرار على 9350.`;
+      engine.log(`[⚠️ تنبيه انخفاض الرصيد] ${balanceDropMsg}`, "error");
+      await sendStep("safety_stop", 4, "تنبيه انخفاض الرصيد", balanceDropMsg);
+
+      try {
+        await supabase.from("vip_sessions").update({
+          operation_state: "paused",
+          pause_reason: balanceDropMsg,
+          owner_mix_balance: ownerFinalBal,
+          individual_mix_balance: finalChildBal,
+          automation_enabled: false,
+          worker_status: "stopped",
+          updated_at: new Date().toISOString(),
+        }).eq("id", session_id);
+      } catch (_) {}
+
+      return {
+        success: false,
+        safety_stop: true,
+        error: balanceDropMsg,
+        logs: engine.logs,
+      };
+    }
+
+    recoveredOk = true;
+    engine.log(`[✓] اكتمل استرجاع الميكسات للأونر بنجاح وبأمان تام. الرصيد الإجمالي المستقر: (${ownerFinalBal.toLocaleString('en-US')} ميكس).`, "success");
 
     // تحديث فوري للعدادات بعد الاسترجاع
     try {
@@ -2160,7 +2189,7 @@ async function handleSingleCycleInternal(
       const isSevenFinalAuto = finalStatus.planId.includes("7") || finalStatus.planId.includes("Parent_7");
       const currentPlanAuto = isSevenFinalAuto ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
       const planCostAuto = isSevenFinalAuto ? 270 : 180;
-      await engine.renewBundleAction(currentPlanAuto, planCostAuto);
+      await engine.renewBundleAction(currentPlanAuto, String(planCostAuto));
       await sleep(2000);
 
       // Step B: Send rapid removeChild requests with instant check
@@ -2198,17 +2227,23 @@ async function handleSingleCycleInternal(
     freshSessState &&
     (freshSessState.operation_state === "stopped" || freshSessState.automation_enabled === false);
 
-  const finalOpState = targetReached
-    ? "completed"
-    : isExplicitlyStoppedByClient
-    ? "stopped"
-    : (freshSessState?.operation_state || "idle");
-
-  const finalAutoEnabled = targetReached
+  const isLoss = (ownerStartMix > 2000 && effectiveFinalMix < ownerStartMix);
+  const finalAutoEnabled = (targetReached || isLoss)
     ? false
     : isExplicitlyStoppedByClient
     ? false
     : (freshSessState?.automation_enabled ?? false);
+  const finalOpState = targetReached
+    ? "completed"
+    : isLoss
+    ? "paused"
+    : isExplicitlyStoppedByClient
+    ? "stopped"
+    : "active";
+
+  const lossPauseReason = isLoss
+    ? `توقف أمان تلقائي لحفظ الميكسات: رصيد نهاية الدورة (${effectiveFinalMix.toLocaleString('en-US')}) أقل من رصيد البداية (${ownerStartMix.toLocaleString('en-US')}).`
+    : null;
 
   // Update session in database with latest mixes, steps, and real-time logs
   await supabase
@@ -2219,8 +2254,9 @@ async function handleSingleCycleInternal(
       current_cycle: newCycleCount,
       current_step: targetReached ? "completed" : "idle",
       operation_state: finalOpState,
+      pause_reason: lossPauseReason,
       automation_enabled: finalAutoEnabled,
-      worker_status: isExplicitlyStoppedByClient ? "stopped" : "idle",
+      worker_status: (isExplicitlyStoppedByClient || isLoss) ? "stopped" : "idle",
       relationship_status: autoEjectedChild ? "none" : session.relationship_status,
       current_cycle_details: {
         latest_logs: engine.logs.slice(-25),
@@ -2777,13 +2813,13 @@ serve(async (req: Request) => {
     const engine = new EtisalatEngine("owner", bridgeConfig, session_id, session.owner_name || "");
     engine.setAuthSession(session.cached_owner_token, session.cached_owner_cookie);
     engine.onNewAuthToken = (token, cookie, isOwner) => {
-      supabase.from("vip_sessions").update(isOwner ? {
+      void supabase.from("vip_sessions").update(isOwner ? {
         cached_owner_token: token,
         cached_owner_cookie: cookie,
       } : {
         cached_child_token: token,
         cached_child_cookie: cookie,
-      }).eq("id", session_id).catch(() => {});
+      }).eq("id", session_id);
     };
 
     // ══════════════════════════════════════════════════════════════════
@@ -3848,7 +3884,7 @@ serve(async (req: Request) => {
       // ── الخطوة 1: تجديد باقة الأونر ──
       engine.log(`[*] الخطوة 1/6: تجديد باقة الأونر (${engine.getPlanName(st.planId)}) لتحديث العقد وتثبيت الحالة...`, "info");
       try {
-        const renewOk = await engine.renewBundleAction(ownerPlanName, planCost);
+        const renewOk = await engine.renewBundleAction(ownerPlanName, String(planCost));
         if (renewOk) {
           engine.log(`[✓] تم إرسال أمر تجديد باقة الأونر بنجاح!`, "success");
         } else {
