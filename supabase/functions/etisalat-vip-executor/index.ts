@@ -1947,7 +1947,7 @@ async function handleSingleCycleInternal(
     if (childRemainingMix > 0 && !ownerAlreadyHoldsMixes) {
       engine.log(`[⚡] جاري استرجاع فوري لـ (${childRemainingMix.toLocaleString('en-US')} ميكس) من الفرد إلى الأونر (${engine.ownerDial})...`, "info");
       let recoveredOk = false;
-      for (let tAtt = 1; tAtt <= 4; tAtt++) {
+      for (let tAtt = 1; tAtt <= 3; tAtt++) {
         const ok = await activeChildEngine.transferMix(engine.ownerDial, childRemainingMix, "Hekaya_XRP_MIX_Child_1");
         if (ok) {
           recoveredOk = true;
@@ -1955,7 +1955,23 @@ async function handleSingleCycleInternal(
           engine.log(`[+] تم الاسترجاع اللحظي بنجاح! (${childRemainingMix.toLocaleString('en-US')} ميكس)`, "success");
           break;
         }
-        await sleep(1500);
+
+        // فحص فوري وذكي لخط الأونر بالمقسم (انتظار ثانيتين للتحقق من الدمج التلقائي)
+        await sleep(2000);
+        try {
+          const ownerDirectCheck = await engine.getStatusAndChild(true);
+          const currentOwnerBal = ownerDirectCheck.remainingMix || 0;
+          if (currentOwnerBal > 0 && currentOwnerBal >= Math.round(parkedMixAmount * 0.70)) {
+            recoveredOk = true;
+            recoveredMixAmount = currentOwnerBal;
+            engine.log(`[✓] تأكيد فوري من مقسم اتصالات: تم دمج الميكسات (${currentOwnerBal.toLocaleString('en-US')} ميكس) تلقائياً بخط الأونر!`, "success");
+            break;
+          }
+        } catch (_) {}
+
+        if (tAtt < 3) {
+          await sleep(1500);
+        }
       }
       if (!recoveredOk) {
         engine.log(`[ℹ️] استجابة سيرفر اتصالات: قد يكون رصيد الفرد مدمجاً بالفعل بالمقسم مع الأونر - جاري التحقق النهائي من خط الأونر...`, "info");
@@ -1991,7 +2007,21 @@ async function handleSingleCycleInternal(
 
     // تحديث فوري للعدادات بعد الاسترجاع
     try {
-      const livePostRecTotal = confirmedNewMix + recoveredMixAmount;
+      let livePostRecTotal = Math.max(
+        recoveredMixAmount,
+        confirmedNewMix,
+        ownerStartMix,
+        session.owner_mix_balance || 0
+      );
+
+      // فحص تأكيدي مباشر لخط الأونر لمنع عرض أي قيمة صفرية
+      try {
+        const fastLiveCheck = await engine.getStatusAndChild(true);
+        if (fastLiveCheck.remainingMix && fastLiveCheck.remainingMix > 0) {
+          livePostRecTotal = fastLiveCheck.remainingMix;
+        }
+      } catch (_) {}
+
       await supabase.from("vip_sessions").update({
         owner_mix_balance: livePostRecTotal,
         individual_mix_balance: 0,
