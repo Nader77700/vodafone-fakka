@@ -273,6 +273,7 @@ class EtisalatEngine {
       "Is-Corporate": "false",
       "User-Agent": this.device.userAgent,
       "Content-Type": "text/xml; charset=UTF-8",
+      "Connection": "close",
       // Egyptian Telecom Geo-IP Simulation Headers (Passes local ISP routing)
       "X-Forwarded-For": this.device.simulatedIp,
       "X-Real-IP": this.device.simulatedIp,
@@ -297,38 +298,59 @@ class EtisalatEngine {
     return `${BASE_URL}${urlPath}`;
   }
 
-  private async fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 7000): Promise<Response> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, {
-        ...init,
-        signal: controller.signal,
-      });
-      return res;
-    } finally {
-      clearTimeout(timer);
+  private async fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000): Promise<Response> {
+    let lastErr: any = null;
+    for (let tryIdx = 1; tryIdx <= 3; tryIdx++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, {
+          ...init,
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        return res;
+      } catch (err: any) {
+        clearTimeout(timer);
+        lastErr = err;
+        const msg = String(err?.message || err);
+        // If peer closed connection / TLS unexpected-eof or abort, wait briefly and retry cleanly
+        if (msg.includes("unexpected-eof") || msg.includes("peer closed") || msg.includes("connection error") || msg.includes("aborted")) {
+          if (tryIdx < 3) {
+            await sleep(1200 * tryIdx);
+            continue;
+          }
+        }
+        throw err;
+      }
     }
+    throw lastErr;
   }
 
   async login(email: string, rawPassword: string, isOwner = false, silent = false): Promise<boolean> {
     // 0. Token reuse optimization: In-memory JWT payload validation (0ms, 0 network overhead)
     // Avoids redundant logins and prevents Etisalat rate-limit / temporary lockout bans!
-    if (this.authToken && this.currentDial) {
+    if (this.authToken) {
       try {
         const parts = this.authToken.split(".");
         if (parts.length >= 2) {
           const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-          const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+          const padLength = (4 - (b64.length % 4)) % 4;
+          const padded = b64 + "=".repeat(padLength);
           const binary = atob(padded);
           const bytes = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
           const decoded = JSON.parse(new TextDecoder().decode(bytes));
-          // Check if token has at least 2 minutes valid lifetime remaining
-          if (decoded.exp && (decoded.exp * 1000) > (Date.now() + 120000)) {
+          if (!this.currentDial && decoded.selectedDial) {
+            this.currentDial = decoded.selectedDial;
+            if (this.role === "owner") this.ownerDial = this.currentDial;
+            else this.childDial = this.currentDial;
+          }
+          // Check if token has at least 1 minute valid lifetime remaining
+          if (decoded.exp && (decoded.exp * 1000) > (Date.now() + 60000)) {
             if (!silent) {
               const displayName = this.customerName || this.knownName || (this.role === "owner" ? "الأونر" : "الفرد");
-              this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح باسم: ${displayName} (الرقم: ${this.currentDial}) وتخطي الدخول لتسريع الأتمتة.`, "success");
+              this.log(`[⚡] استخدام جلسة التوكن المحفوظة بنجاح باسم: ${displayName} (الرقم: ${this.currentDial || "مؤكد"}) وتخطي الدخول لتسريع الأتمتة.`, "success");
             }
             return true;
           }
@@ -455,10 +477,16 @@ class EtisalatEngine {
             await sleep(attempt * 1500);
           }
         } catch (netErr: any) {
+          const netMsg = String(netErr?.message || netErr);
+          const isTlsReset = netMsg.includes("unexpected-eof") || netMsg.includes("peer closed") || netMsg.includes("connection error");
           if (!silent) {
-            this.log(`[!] تعذر الاتصال ببوابة الدخول (محاولة ${attempt}/4): ${netErr?.message || netErr}`, "warn");
+            if (isTlsReset) {
+              this.log(`[!] ضغط مؤقت على بوابة اتصالات (محاولة ${attempt}/4): جارٍ إعادة الاتصال التلقائي النظيف...`, "warn");
+            } else {
+              this.log(`[!] تعذر الاتصال ببوابة الدخول (محاولة ${attempt}/4): ${netMsg}`, "warn");
+            }
           }
-          await sleep(attempt * 2000);
+          await sleep(attempt * 2500);
         }
       }
     } finally {
