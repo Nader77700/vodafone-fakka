@@ -509,15 +509,26 @@ class EtisalatEngine {
         const text = await res.text();
         console.log(`[getStatusAndChild] Raw XML (${this.currentDial}):`, text);
 
-        // 1. Plan productId (ratePlanConsumption/productId)
-        const planMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i) ||
-                          text.match(/<productId>([^<]+)<\/productId>/i);
-        let planId = planMatch ? planMatch[1].trim() : "غير معروف";
-        if (planId === "غير معروف" && this.shortCode) {
-          if (this.shortCode.includes("M7")) planId = "Hekaya_XRP_MIX_Parent_7";
-          else if (this.shortCode.includes("M6")) planId = "Hekaya_XRP_MIX_Parent_6";
-          else if (this.shortCode.includes("M5")) planId = "Hekaya_XRP_MIX_Parent_5";
-          else if (this.shortCode.includes("C1")) planId = "Hekaya_XRP_MIX_Child_1";
+        // 1. Accurate Plan Detection from Etisalat response XML
+        let planId = "غير معروف";
+        if (/Parent_7|ميكسات\s*270|حكاية\s*270|باقة\s*حكاية\s*ميكسات\s*270/i.test(text)) {
+          planId = "Hekaya_XRP_MIX_Parent_7";
+        } else if (/Parent_6|ميكسات\s*180|حكاية\s*180|باقة\s*حكاية\s*ميكسات\s*180/i.test(text)) {
+          planId = "Hekaya_XRP_MIX_Parent_6";
+        } else if (/Parent_5|ميكسات\s*120|حكاية\s*120/i.test(text)) {
+          planId = "Hekaya_XRP_MIX_Parent_5";
+        } else if (/Child_1/i.test(text)) {
+          planId = "Hekaya_XRP_MIX_Child_1";
+        } else {
+          const rateMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i);
+          if (rateMatch && rateMatch[1].includes("Parent")) {
+            planId = rateMatch[1].trim();
+          } else if (this.shortCode) {
+            if (this.shortCode.includes("M7")) planId = "Hekaya_XRP_MIX_Parent_7";
+            else if (this.shortCode.includes("M6")) planId = "Hekaya_XRP_MIX_Parent_6";
+            else if (this.shortCode.includes("M5")) planId = "Hekaya_XRP_MIX_Parent_5";
+            else if (this.shortCode.includes("C1")) planId = "Hekaya_XRP_MIX_Child_1";
+          }
         }
 
         // 2. Comprehensive Mixes Detection across all consumption meters & buckets
@@ -1263,14 +1274,20 @@ async function handleSingleCycleInternal(
     }
   }
 
-  // ── الخطوة 1: تجديد باقة الأونر في بداية الدورة ثم الانتظار 5 ثوانٍ وفحص الرصيد ──
-  const initialCost = isSeven ? "270" : "180";
-  engine.log(`[⚡] تجديد باقة الأونر (${engine.getPlanName(ownerPlanName)}) في بداية الدورة لتنشيط الرصيد...`, "info");
-  await engine.renewBundleAction(ownerPlanName, initialCost);
-  engine.log(`[*] انتظار 5 ثوانٍ لتسوية ونزول ميكسات التجديد في شبكة اتصالات...`, "info");
-  await sleep(5000);
-  status = await engine.getStatusAndChild(true);
-  engine.log(`[+] فحص رصيد الأونر بعد التجديد: (${(status.remainingMix || 0).toLocaleString('en-US')}) ميكس`, "info");
+  // ── الخطوة 1: تنشيط رصيد الأونر في بداية الدورة الأولى فقط إذا كان الرصيد فارغاً (< 5000 ميكس) ──
+  // ملاحظة أمان صارمة: إذا كان الأونر يمتلك رصيداً متراكماً بالفعل (> 5000 ميكس)، يحظر التجديد منعاً باتاً
+  // لأن تجديد باقة الأونر والرصيد متراكم في حسابه يؤدي إلى قيام مقسم اتصالات بإعادة تعيين الرصيد لكوتة الباقة الأساسية!
+  if ((status.remainingMix || 0) < 5000) {
+    const initialCost = isSeven ? "270" : "180";
+    engine.log(`[⚡] رصيد الأونر منخفض (${(status.remainingMix || 0).toLocaleString('en-US')} ميكس) - تجديد باقة الأونر (${engine.getPlanName(ownerPlanName)}) لتنشيط الرصيد الأولي...`, "info");
+    await engine.renewBundleAction(ownerPlanName, initialCost);
+    engine.log(`[*] انتظار 5 ثوانٍ لتسوية ونزول ميكسات التجديد في شبكة اتصالات...`, "info");
+    await sleep(5000);
+    status = await engine.getStatusAndChild(true);
+    engine.log(`[+] فحص رصيد الأونر بعد التجديد: (${(status.remainingMix || 0).toLocaleString('en-US')}) ميكس`, "info");
+  } else {
+    engine.log(`[🛡️ حماية الرصيد المتراكم] الأونر يمتلك رصيداً متراكماً بالفعل (${(status.remainingMix || 0).toLocaleString('en-US')} ميكس) - تم تخطي التجديد الأولي لحماية الميكسات من التصفير!`, "success");
+  }
 
   // ── PRE-FLIGHT LIVE CHECK OF BOTH ACCOUNTS (فحص استباقي شامل للأونر والفرد) ──
   // طالما حدث انقطاع أو قبل بدء أي دورة، نتحقق مباشرة من رصيد الأونر ورصيد الفرد بالسيرفر
@@ -1908,11 +1925,23 @@ async function handleSingleCycleInternal(
           }
         }
       } catch (_) {}
-    } else if (!ownerAlreadyHoldsMixes) {
-      // ── ANTI-DROP SAFETY LOCK (درع حظر تصفير الدورة الصارم) ──
-      // إذا كان هناك رصيد مركون ضخم (> 5,000 ميكس) ولم يظهر عند الفرد ولا عند الأونر:
-      // يُمنع منعاً باتاً تجديد الباقة أو إنهاء الدورة لتجنب تصفير الرصيد!
-      if (parkedMixAmount > 5000) {
+    }
+
+    // ── ANTI-DROP SAFETY LOCK (درع حظر تصفير الدورة الصارم) ──
+    // إذا كان هناك رصيد مركون ضخم (> 5,000 ميكس) ولم يؤكد الاسترجاع بعد:
+    if (!recoveredOk && parkedMixAmount > 5000) {
+      let ownerHasMixesAlready = false;
+      try {
+        const checkOwnerNow = await engine.getStatusAndChild(true);
+        if (checkOwnerNow.remainingMix >= parkedMixAmount) {
+          ownerHasMixesAlready = true;
+          recoveredMixAmount = checkOwnerNow.remainingMix;
+          recoveredOk = true;
+          engine.log(`[✓] فحص الأمان: الميكسات (${checkOwnerNow.remainingMix.toLocaleString('en-US')} ميكس) موجودة بالفعل لدى الأونر.`, "success");
+        }
+      } catch (_) {}
+
+      if (!ownerHasMixesAlready) {
         const dropErrMsg = `توقف أمان حماية الميكسات: الرصيد المركون (${parkedMixAmount.toLocaleString('en-US')} ميكس) لم يستقر بعد بالفرد ولا بالأونر في مقسم اتصالات. تم حظر تجديد الباقة ومنع التصفير لحفظ رصيدك بالكامل.`;
         engine.log(`[🛡️ قفل طوارئ لمنع التصفير] ${dropErrMsg}`, "error");
         await sendStep("safety_stop", 4, "حظر التصفير - حماية الرصيد", dropErrMsg);
@@ -1934,7 +1963,8 @@ async function handleSingleCycleInternal(
           logs: engine.logs,
         };
       }
-      engine.log(`[ℹ️] رصيد الفرد الحالي: (0 ميكس). الرصيد مستقر أو مدمج بالفعل في باقة الأونر.`, "info");
+    } else if (recoveredOk) {
+      engine.log(`[✓] اكتمل استرجاع الميكسات للأونر بنجاح وبأمان تام.`, "success");
     }
 
     // تحديث فوري للعدادات بعد الاسترجاع
