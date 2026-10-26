@@ -1324,24 +1324,35 @@ async function handleSingleCycleInternal(
       childDetectedMix = liveChildCheck.remainingMix || 0;
       engine.log(`[*] فحص رصيد البداية المباشر: الأونر (${status.remainingMix.toLocaleString('en-US')} ميكس) | الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس).`, "info");
       
-      // إذا كان الفرد يحمل رصيداً كبيراً من دورة سابقة ورصيد الأونر منخفض (حالة تعليق سابقة)
-      if (childDetectedMix > 1000 && status.remainingMix < 3000) {
-        engine.log(`[🛡️ إنقاذ رصيد سابق] تم رصد ميكسات مركونة مسبقاً لدى الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس) من دورة سابقة! جاري سحبها فوراً للأونر لتوحيد الرصيد وضمان عدم ضياع أي ميكس...`, "warn");
-        const recovered = await prewarmedChildEngine.transferMix(engine.ownerDial, childDetectedMix, "Hekaya_XRP_MIX_Child_1");
-        if (recovered) {
-          await sleep(2500);
-          const postRecoveryCheck = await engine.getStatusAndChild(true);
-          status.remainingMix = postRecoveryCheck.remainingMix || (status.remainingMix + childDetectedMix);
-          engine.log(`[✓] تم استرجاع وإنقاذ الرصيد بنجاح! رصيد الأونر المحدث الآن: (${status.remainingMix.toLocaleString('en-US')} ميكس).`, "success");
-        } else {
-          // If transfer back couldn't complete, count it as parkedMixAmount
+      // ── منطق الموازنة والتوحيد الذكي الخارق (Smart Balance Unification) ──
+      // الحالة 1: كلا الطرفين لديهما رصيد (مثلاً الأونر 15,400 والفرد 74,250):
+      // يجب تفريغ رصيد الأونر بالكامل إلى الفرد لتوحيد الرصيد أولاً، لأن أي تغيير لنظام الأونر سيصفر رصيده!
+      if (childDetectedMix > 0 && status.remainingMix > 1000) {
+        engine.log(`[🛡️ دمج وتوحيد الرصيد الذكي] كلا الطرفين يمتلكان رصيداً: الأونر (${status.remainingMix.toLocaleString('en-US')} ميكس) والفرد (${childDetectedMix.toLocaleString('en-US')} ميكس).`, "info");
+        engine.log(`[*] جاري تحويل رصيد الأونر بالكامل (${status.remainingMix.toLocaleString('en-US')} ميكس) إلى الفرد لتوحيد الرصيد وتفريغ الأونر لحمايته من التصفير...`, "info");
+        const extraTransferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
+        if (extraTransferred) {
+          parkedMixAmount = childDetectedMix + status.remainingMix;
           childHoldsMissing = true;
-          parkedMixAmount = childDetectedMix;
+          status.remainingMix = 0;
+          engine.log(`[✓] تم ضم رصيد الأونر بنجاح! إجمالي الميكسات المحمية بحساب الفرد الآن: (${parkedMixAmount.toLocaleString('en-US')} ميكس). الأونر أصبح مفرغاً وجاهزاً للترحيل بأمان تام!`, "success");
+        } else {
+          // If transfer failed, check if owner still holds the mixes
+          await sleep(2000);
+          const recheckOwnerSt = await engine.getStatusAndChild(true);
+          status.remainingMix = recheckOwnerSt.remainingMix || status.remainingMix;
+          childHoldsMissing = false;
         }
-      } else if (childDetectedMix > 2000 && (childDetectedMix >= status.remainingMix || status.remainingMix < 3000)) {
+      }
+      // الحالة 2: الفرد يحمل رصيداً كبيراً مسبقاً والأونر مفرغ بالفعل (أقل من 1000 ميكس)
+      else if (childDetectedMix > 1000 && status.remainingMix <= 1000) {
         childHoldsMissing = true;
         parkedMixAmount = childDetectedMix;
-        engine.log(`[🛡️] تم رصد ميكسات مركونة مسبقاً لدى الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس)! لن يتم إعادة التحويل من الأونر. استكمال الدورة فوراً بأمان.`, "success");
+        engine.log(`[🛡️] تم تأكيد رصد الميكسات المركونة مسبقاً لدى الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس) والأونر مفرغ بأمان (${status.remainingMix} ميكس). استكمال الدورة فوراً بأمان.`, "success");
+      }
+      // الحالة 3: الأونر يحمل الرصيد كاملاً والفرد فارغ (أو العكس)
+      else {
+        childHoldsMissing = false;
       }
     } catch (_) {}
   }
@@ -1715,6 +1726,51 @@ async function handleSingleCycleInternal(
       };
     }
   } catch (_) {}
+
+  // ── UNBREAKABLE OWNER ZERO-LOSS GATE BEFORE CHANGE PLAN ──
+  // Check live owner balance right before changing plan contract!
+  // If owner line holds mixes (> 1,000 mixes), CHANGING PLAN WOULD ERASE THEM!
+  let preMigrationOwnerCheck = await engine.getStatusAndChild(true);
+  let liveOwnerBeforeMigrate = preMigrationOwnerCheck.remainingMix || 0;
+
+  if (liveOwnerBeforeMigrate > 1000) {
+    engine.log(`[🛡️ درع حماية الأونر الذكي] تم رصد رصيد متبقي بحساب الأونر (${liveOwnerBeforeMigrate.toLocaleString('en-US')} ميكس) قبل ترحيل الباقة!`, "warn");
+    engine.log(`[*] جاري تفريغ وتحويل رصيد الأونر بالكامل إلى الفرد لحمايته من التصفير قبل تغيير النظام...`, "info");
+    
+    // Transfer from owner to child
+    const transferOk = await engine.transferMix(childNum, liveOwnerBeforeMigrate, ownerPlanName);
+    if (transferOk) {
+      parkedMixAmount += liveOwnerBeforeMigrate;
+      await sleep(2500);
+      preMigrationOwnerCheck = await engine.getStatusAndChild(true);
+      liveOwnerBeforeMigrate = preMigrationOwnerCheck.remainingMix || 0;
+      engine.log(`[✓] تم تفريغ رصيد الأونر بنجاح! رصيد الأونر الآن: (${liveOwnerBeforeMigrate.toLocaleString('en-US')} ميكس) | إجمالي المحفوظ بالفرد: (${parkedMixAmount.toLocaleString('en-US')} ميكس).`, "success");
+    }
+    
+    // If owner STILL holds substantial mixes (> 2000), STOP! DO NOT CHANGE PLAN!
+    if (liveOwnerBeforeMigrate > 2000) {
+      const lockMsg = `حظر ترحيل الباقة التلقائي: رصيد الأونر (${liveOwnerBeforeMigrate.toLocaleString('en-US')} ميكس) لم يُفرغ بالكامل إلى الفرد. تم منع تغيير النظام فوراً لحماية رصيدك من المسح والتصفير.`;
+      engine.log(`[⛔ توقف أمان قطعي] ${lockMsg}`, "error");
+      await sendStep("safety_stop", 1, "حظر ترحيل الباقة لحماية الرصيد", lockMsg);
+      
+      try {
+        await supabase.from("vip_sessions").update({
+          owner_mix_balance: liveOwnerBeforeMigrate,
+          operation_state: "paused",
+          automation_enabled: false,
+          pause_reason: lockMsg,
+          updated_at: new Date().toISOString(),
+        }).eq("id", session_id);
+      } catch (_) {}
+
+      return {
+        success: false,
+        safety_stop: true,
+        error: lockMsg,
+        logs: engine.logs,
+      };
+    }
+  }
 
   // 4. STEP 2: Switch Plan (ترحيل النظام مباشرة كما في سكريبت بايثون الأصلي)
   let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
