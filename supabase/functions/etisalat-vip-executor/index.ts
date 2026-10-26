@@ -1675,7 +1675,7 @@ async function handleSingleCycleInternal(
     }
   } catch (_) {}
 
-  // 4. STEP 2: Switch Plan (ترحيل النظام مع إعادة المحاولة والتنشيط)
+  // 4. STEP 2: Switch Plan (ترحيل النظام مباشرة كما في سكريبت بايثون الأصلي)
   let targetPlanId = "Hekaya_XRP_MIX_Parent_6";
   let targetPlanDisplay = "حكاية ميكسات 180";
   let ratePlanId = "951";
@@ -1685,11 +1685,6 @@ async function handleSingleCycleInternal(
     targetPlanDisplay = "حكاية ميكسات 270";
     ratePlanId = "";
   }
-
-  // ── تجديد باقة الأونر ثانياً قبل تغيير النظام لتثبيت العقد ومنع فقدان الميكسات ──
-  engine.log(`[⚡] تجديد باقة الأونر ثانياً (${engine.getPlanName(ownerPlanName)}) قبل تغيير النظام لتثبيت العقد...`, "info");
-  await engine.renewBundleAction(ownerPlanName, initialCost);
-  await sleep(2000);
 
   await sendStep("migrating", 2, "ترحيل النظام", `جاري تغيير النظام إلى: ${targetPlanDisplay}`);
   let changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
@@ -1860,7 +1855,7 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 6. STEP 4: Transfer Child to Owner (مطابقة تامة لسكريبت بايثون الأصلي وبدون معادلات وهمية)
+  // 6. STEP 4: Transfer Child to Owner (استرجاع فوري حقيقي مباشر دون أي تأخير أو لوبات وهمية)
   await sendStep("recovering", 4, "استرجاع لحظي فوري", "إعادة الميكسات من الفرد إلى الأونر فوراً");
   recoveredMixAmount = 0;
   if (childEmail && childPass && engine.ownerDial) {
@@ -1871,81 +1866,48 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    // استعلام فوري سريع عن الرصيد الفعلي المتبقي بالفرد
-    let childRemainingMix = 0;
-    try {
-      const childSt = await activeChildEngine.getStatusAndChild(true);
-      childRemainingMix = childSt.remainingMix;
-    } catch (_) {}
+    // تحديد كمية الميكسات المسترجعة بدقة من التسليح المسبق أو الرصيد المركون
+    let amountToTransfer = Math.max(armedMixToTransfer || 0, parkedMixAmount || 0);
 
-    // حلقة أمان ذكية متقدمة: انتظار استقرار شبكة اتصالات حتى 15 محاولة لحماية الرصيد
-    if (parkedMixAmount > 0 && childRemainingMix < Math.round(parkedMixAmount * 0.85)) {
-      engine.log(`[*] فحص رصيد الفرد (${childRemainingMix.toLocaleString('en-US')} ميكس)... في انتظار اكتمال نزول الميكسات من شبكة اتصالات...`, "info");
-      for (let pAtt = 1; pAtt <= 15; pAtt++) {
-        const waitTime = pAtt <= 4 ? 2500 : (pAtt <= 8 ? 3000 : 3500);
-        await sleep(waitTime);
-        try {
-          if (pAtt === 6 && childRemainingMix === 0) {
-            engine.log(`[*] تجديد توكن الفرد لتحديث كاش المقسم وضمان دقة قراءة الرصيد...`, "info");
-            await activeChildEngine.login(childEmail, childPass, true, true);
-          }
-          const recheck = await activeChildEngine.getStatusAndChild(true);
-          if (recheck.remainingMix >= Math.round(parkedMixAmount * 0.85) || recheck.remainingMix > childRemainingMix) {
-            childRemainingMix = recheck.remainingMix;
-            engine.log(`[+] تم تأكيد رصيد الفرد بالسيرفر: (${childRemainingMix.toLocaleString('en-US')} ميكس)`, "success");
-            break;
-          }
-        } catch (_) {}
-      }
-    }
-
-    // فحص ذكي للأونر في حال لم تظهر الميكسات عند الفرد (هل تم دمجها للأونر بالمقسم؟)
-    let ownerAlreadyHoldsMixes = false;
-    if (parkedMixAmount > 5000 && childRemainingMix < Math.round(parkedMixAmount * 0.5)) {
+    // إذا لم تكن محددة مسبقاً، استعلام فوري سريع
+    if (amountToTransfer <= 0) {
       try {
-        const ownerCheckMerged = await engine.getStatusAndChild(true);
-        const ownerMergedBal = ownerCheckMerged.remainingMix || 0;
-        if (ownerMergedBal >= Math.round(parkedMixAmount * 0.70)) {
-          ownerAlreadyHoldsMixes = true;
-          recoveredMixAmount = ownerMergedBal;
-          engine.log(`[✓] تأكيد مقسم اتصالات: تم دمج الميكسات (${ownerMergedBal.toLocaleString('en-US')} ميكس) تلقائياً بحساب الأونر!`, "success");
-        }
+        const quickChildSt = await activeChildEngine.getStatusAndChild(true);
+        amountToTransfer = quickChildSt.remainingMix || 0;
       } catch (_) {}
     }
 
-    // استرجاع رصيد الفرد الفعلي للأونر
-    if (childRemainingMix > 0 && !ownerAlreadyHoldsMixes) {
-      engine.log(`[⚡] جاري استرجاع فوري لـ (${childRemainingMix.toLocaleString('en-US')} ميكس) من الفرد إلى الأونر (${engine.ownerDial})...`, "info");
-      let recoveredOk = false;
-      for (let tAtt = 1; tAtt <= 3; tAtt++) {
-        const ok = await activeChildEngine.transferMix(engine.ownerDial, childRemainingMix, "Hekaya_XRP_MIX_Child_1");
-        if (ok) {
+    engine.log(`[⚡] إرسال أمر الاسترجاع الفعلي المباشر بسيرفر اتصالات: (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر (${engine.ownerDial})...`, "info");
+    
+    let recoveredOk = false;
+    if (amountToTransfer > 0) {
+      // إرسال أمر التحويل الحقيقي إلى بوابة اتصالات الرسمية فوراً
+      recoveredOk = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+      if (recoveredOk) {
+        recoveredMixAmount = amountToTransfer;
+        engine.log(`[+] تم قبول وتنفيذ أمر الاسترجاع اللحظي بنجاح! (${amountToTransfer.toLocaleString('en-US')} ميكس)`, "success");
+      }
+    }
+
+    // في حال عدم نجاح أمر التحويل من المحاولة الأولى، فحص خط الأونر أو إعادة المحاولة فوراً
+    if (!recoveredOk && amountToTransfer > 0) {
+      await sleep(1500);
+      try {
+        const ownerSt = await engine.getStatusAndChild(true);
+        if (ownerSt.remainingMix > confirmedNewMix) {
           recoveredOk = true;
-          recoveredMixAmount = childRemainingMix;
-          engine.log(`[+] تم الاسترجاع اللحظي بنجاح! (${childRemainingMix.toLocaleString('en-US')} ميكس)`, "success");
-          break;
-        }
-
-        // فحص فوري وذكي لخط الأونر بالمقسم (انتظار ثانيتين للتحقق من الدمج التلقائي)
-        await sleep(2000);
-        try {
-          const ownerDirectCheck = await engine.getStatusAndChild(true);
-          const currentOwnerBal = ownerDirectCheck.remainingMix || 0;
-          if (currentOwnerBal > 0 && currentOwnerBal >= Math.round(parkedMixAmount * 0.70)) {
-            recoveredOk = true;
-            recoveredMixAmount = currentOwnerBal;
-            engine.log(`[✓] تأكيد فوري من مقسم اتصالات: تم دمج الميكسات (${currentOwnerBal.toLocaleString('en-US')} ميكس) تلقائياً بخط الأونر!`, "success");
-            break;
+          recoveredMixAmount = ownerSt.remainingMix;
+          engine.log(`[✓] تأكيد فوري من مقسم اتصالات: تم دمج واستقرار الميكسات (${ownerSt.remainingMix.toLocaleString('en-US')} ميكس) بخط الأونر!`, "success");
+        } else {
+          // إعادة إرسال أمر التحويل لضمان الوصول
+          engine.log(`[*] إعادة محاولة أمر التحويل عبر بوابة اتصالات...`, "info");
+          recoveredOk = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+          if (recoveredOk) {
+            recoveredMixAmount = amountToTransfer;
+            engine.log(`[+] تم تأكيد الاسترجاع في المحاولة الثانية! (${amountToTransfer.toLocaleString('en-US')} ميكس)`, "success");
           }
-        } catch (_) {}
-
-        if (tAtt < 3) {
-          await sleep(1500);
         }
-      }
-      if (!recoveredOk) {
-        engine.log(`[ℹ️] استجابة سيرفر اتصالات: قد يكون رصيد الفرد مدمجاً بالفعل بالمقسم مع الأونر - جاري التحقق النهائي من خط الأونر...`, "info");
-      }
+      } catch (_) {}
     } else if (!ownerAlreadyHoldsMixes) {
       // ── ANTI-DROP SAFETY LOCK (درع حظر تصفير الدورة الصارم) ──
       // إذا كان هناك رصيد مركون ضخم (> 5,000 ميكس) ولم يظهر عند الفرد ولا عند الأونر:
