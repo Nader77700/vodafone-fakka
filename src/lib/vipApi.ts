@@ -502,9 +502,11 @@ export async function invokeVipExecutor(
     try {
       const controller = new AbortController();
       const timeoutMs =
-        action === 'run_smart_ejection_sequence' || action === 'run_full_release_and_minion'
-          ? 120000
-          : 50000;
+        action === 'run_single_cycle'
+          ? 360000
+          : action === 'run_smart_ejection_sequence' || action === 'run_full_release_and_minion'
+          ? 180000
+          : 60000;
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const res = await fetch(`${supabaseUrl}/functions/v1/etisalat-vip-executor`, {

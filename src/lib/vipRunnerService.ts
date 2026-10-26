@@ -636,19 +636,32 @@ class VipRunnerService {
         if (hasParkedMixes) {
           this.addLog(
             sessionId,
-            `[🛡️ درع الحماية الفولاذي] حدث انقطاع أثناء مرحلة الترحيل/الركن (${cycleResult.error || 'تعذر استجابة السيرفر'}). لا يمكن التوقف طالما أمر الترحيل مرسل! جاري الاستمرار وفحص الرصيد واسترجاعه فوراً...`,
+            `[🛡️ درع الحماية الصارم] حدث انقطاع أثناء مرحلة الترحيل/الركن (${cycleResult.error || 'تعذر استجابة السيرفر'}). جاري فحص استقرار نظام الأونر بالسيرفر قبل أي تصرف...`,
             'warn'
           );
-          await new Promise((r) => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, 4000));
           try {
             const rescueCheck = (await executeVipCheckStatus(sessionId)) as any;
-            if (rescueCheck?.child?.mix_balance && rescueCheck.child.mix_balance > 0) {
+            const currentPlan = rescueCheck?.owner?.plan || rescueCheck?.owner_plan || '';
+            const previousPlan = st.latestOwnerPlan || '';
+            const hasPlanSwitched = currentPlan && previousPlan && currentPlan !== previousPlan;
+
+            // قاعدة الحماية الفولاذية الصارمة: ممنوع نهائياً إرجاع الميكسات للأونر إلا بعد تأكيد تحول النظام!
+            if (hasPlanSwitched) {
+              if (rescueCheck?.child?.mix_balance && rescueCheck.child.mix_balance > 0) {
+                this.addLog(
+                  sessionId,
+                  `[✓ تأكيد ترحيل النظام] تأكد تحول نظام الأونر إلى (${currentPlan}). جاري استرجاع الميكسات (${rescueCheck.child.mix_balance.toLocaleString('ar-EG')} ميكس) بأمان تام للأونر...`,
+                  'success'
+                );
+                await executeVipReturnChildMixes(sessionId);
+              }
+            } else {
               this.addLog(
                 sessionId,
-                `[🔄 استرجاع إنقاذ] رصد ميكسات لدى الفرد (${rescueCheck.child.mix_balance.toLocaleString('ar-EG')} ميكس). جاري استرجاعها للأونر...`,
-                'info'
+                `[🔒 حماية الرصيد من التصفير] نظام الأونر (${currentPlan || 'قيد الانتظار بالمقسم'}) لم يتغير بعد. الميكسات تظل محجوزة ومحمية بالكامل لدى الفرد لمنع مسحها عند استجابة السيرفر!`,
+                'warn'
               );
-              await executeVipReturnChildMixes(sessionId);
             }
           } catch (_) {}
           continue;

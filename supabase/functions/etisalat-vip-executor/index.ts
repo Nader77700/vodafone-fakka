@@ -1805,11 +1805,8 @@ async function handleSingleCycleInternal(
         } catch (_) {}
         engine.log(`[⚡] تحديث العدادات اللحظية: نزول ميكسات الباقة الجديدة للأونر (${confirmedNewMix.toLocaleString('en-US')} ميكس) | رصيد الفرد المركون: (${parkedMixAmount.toLocaleString('en-US')} ميكس) | الإجمالي الفعلي: (${(confirmedNewMix + parkedMixAmount).toLocaleString('en-US')} ميكس)`, "info");
         
-        // إطلاق فوري ومباشر لنقل الميكسات المسلحة مسبقاً (0ms تأخير)
-        if (prewarmedChildEngine && armedMixToTransfer > 0) {
-          engine.log(`[⚡ إطلاق فوري] تحويل مباشر وفوري لـ (${armedMixToTransfer.toLocaleString('en-US')} ميكس) المسلحة مسبقاً من الفرد للأونر فور التحول...`, "info");
-          prewarmedChildEngine.transferMix(engine.ownerDial, armedMixToTransfer, "Hekaya_XRP_MIX_Child_1").catch(() => {});
-        }
+        // انتظار استقرار المقسم ثانيتين بعد التحول ثم الانتقال لخطوة الاسترجاع النظيفة
+        await sleep(2000);
         break;
       }
 
