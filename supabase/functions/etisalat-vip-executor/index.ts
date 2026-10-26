@@ -1504,53 +1504,26 @@ async function handleSingleCycleInternal(
             } catch (_) {}
 
             if (ownerHoldsMixes) {
-              engine.log(`[🛡️] فحص تأكيدي: تم استعلام رصيد الأونر مباشرة (${currentOwnerMix.toLocaleString('en-US')} ميكس) محجوزة بالكامل بأمان بحساب الأونر ولم تُخصم.`, "info");
-              engine.log(`[⚡] رصد تحويل وهمي: الميكسات ما زالت بالأونر. جاري تنشيط ومزامنة العقد فوراً بتجديد باقة الأونر (${engine.getPlanName(ownerPlanName)}) لفك تعليق سيرفر اتصالات...`, "info");
+              const safeOwnerMsg = `توقف أمان حماية الميكسات: الميكسات (${currentOwnerMix.toLocaleString('en-US')} ميكس) ما زالت كاملة بحساب الأونر ولم تُخصم للفرد. تم إيقاف الدورة فوراً وحظر تجديد أو ترحيل الباقة لحماية رصيدك من أي مسح بنسبة 100%.`;
+              engine.log(`[🛡️ حظر تجديد الباقة] ${safeOwnerMsg}`, "warn");
+              await sendStep("safety_stop", 1, "حماية الرصيد بالأونر", safeOwnerMsg);
               
-              // Renew current owner bundle to unstick telecom switch as per verified protocol
               try {
-                const renewCost = isSeven ? "270" : "180";
-                await engine.renewBundleAction(ownerPlanName, renewCost);
+                await supabase.from("vip_sessions").update({
+                  owner_mix_balance: currentOwnerMix,
+                  operation_state: "paused",
+                  automation_enabled: false,
+                  pause_reason: safeOwnerMsg,
+                  updated_at: new Date().toISOString(),
+                }).eq("id", session_id);
               } catch (_) {}
 
-              await sleep(3000);
-
-              // Fresh login to refresh session tokens and clear any stale billing cache
-              try {
-                await engine.login(ownerEmail, ownerPass, true, true);
-              } catch (_) {}
-
-              let amountToRetry = currentOwnerMix;
-              try {
-                const refreshedOwnerSt = await engine.getStatusAndChild(true);
-                if (refreshedOwnerSt.remainingMix > 0) {
-                  amountToRetry = refreshedOwnerSt.remainingMix;
-                }
-              } catch (_) {}
-
-              engine.log(`[*] جاري إعادة إرسال أمر نقل الميكسات (${amountToRetry.toLocaleString('en-US')} ميكس) إلى الفرد بعد تجديد باقة الأونر وتنشيط الخط...`, "info");
-
-              // Retry transfer from Owner to Child
-              const retryTransferred = await engine.transferMix(childNum, amountToRetry, ownerPlanName);
-              if (retryTransferred) {
-                engine.log(`[+] تم قبول أمر إعادة النقل بالسيرفر! جاري تأكيد وصول واستقرار الميكسات بالفرد...`, "info");
-                await sleep(2500);
-                for (let retryAttempt = 1; retryAttempt <= 3; retryAttempt++) {
-                  try {
-                    const retryChildVerify = await prewarmedChildEngine.getStatusAndChild(true);
-                    latestChildReadMix = retryChildVerify.remainingMix || 0;
-                    if (latestChildReadMix >= expectedMinChildMix || latestChildReadMix >= amountToRetry * 0.5) {
-                      engine.log(`[✓] تأكيد قطعي: وصلت الميكسات (${latestChildReadMix.toLocaleString('en-US')} ميكس) لحساب الفرد بنجاح تام بعد تنشيط باقة الأونر!`, "success");
-                      childArrived = true;
-                      parkedMixAmount = amountToRetry;
-                      break;
-                    } else {
-                      engine.log(`[*] فحص رصيد الفرد بعد التجديد وإعادة النقل (${retryAttempt}/3): الرصيد (${latestChildReadMix.toLocaleString('en-US')} ميكس)...`, "info");
-                    }
-                  } catch (_) {}
-                  if (retryAttempt < 3) await sleep(2000);
-                }
-              }
+              return {
+                success: false,
+                safety_stop: true,
+                error: safeOwnerMsg,
+                logs: engine.logs,
+              };
             }
 
             if (!childArrived) {
