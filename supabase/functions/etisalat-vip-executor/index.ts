@@ -1535,9 +1535,10 @@ async function handleSingleCycleInternal(
   // Normal flow if not low or child not already holding missing
   if (!childHoldsMissing) {
     if (status.remainingMix > 0) {
+      const initialOwnerMixToPark = status.remainingMix;
       let transferred = false;
       for (let fTry = 1; fTry <= 2; fTry++) {
-        transferred = await engine.transferMix(childNum, status.remainingMix, ownerPlanName);
+        transferred = await engine.transferMix(childNum, initialOwnerMixToPark, ownerPlanName);
         await sleep(2500);
 
         // فحص تأكيدي فوري لرصيد الفرد والأونر بالسيرفر لتجاوز أي رد سيرفر وهمي
@@ -1554,7 +1555,7 @@ async function handleSingleCycleInternal(
           owMix = oCheck.remainingMix || 0;
         } catch (_) {}
 
-        if (chMix >= (status.remainingMix * 0.7) || owMix <= 1000) {
+        if (chMix >= (initialOwnerMixToPark * 0.7) || owMix <= 1000) {
           transferred = true;
           status.remainingMix = owMix;
           break;
@@ -1566,7 +1567,15 @@ async function handleSingleCycleInternal(
       }
 
       if (transferred) {
-        parkedMixAmount = status.remainingMix;
+        // تأكيد كمية الرصيد المركون لدى الفرد بناءً على الرصيد المحول الفعلي أو قراءة الفرد المباشرة
+        let liveChildMix = 0;
+        if (prewarmedChildEngine) {
+          try {
+            const cCheck = await prewarmedChildEngine.getStatusAndChild(true);
+            liveChildMix = cCheck.remainingMix || 0;
+          } catch (_) {}
+        }
+        parkedMixAmount = liveChildMix > 0 ? liveChildMix : initialOwnerMixToPark;
         
         // ── SMART INSTANT TELECOM ZERO-LOSS VERIFICATION ──
         // Transferred mixes in Etisalat settle into child line within 3 to 7 seconds.
@@ -1666,7 +1675,7 @@ async function handleSingleCycleInternal(
             }
 
             if (childArrived && parkedMixAmount > 0) {
-              const remainingOwnerBal = Math.max(0, status.remainingMix - parkedMixAmount);
+              const remainingOwnerBal = status.remainingMix;
               try {
                 await supabase.from("vip_sessions").update({
                   owner_mix_balance: remainingOwnerBal,
@@ -2078,26 +2087,29 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    // تحديد كمية الميكسات المراد تحويلها (رصيد الفرد الجاهز والمسلح مسبقاً)
-    let amountToTransfer = parkedMixAmount || armedMixToTransfer || 0;
-    if (amountToTransfer <= 0) {
+    // الاستعلام الحي الحقيقي لرصيد الفرد الحالي بالسيرفر لضمان تحويل كامل الرصيد دفعة واحدة في معاملة واحدة
+    let liveChildMix = 0;
+    try {
       const childLiveCheck = await activeChildEngine.getStatusAndChild(true);
-      amountToTransfer = childLiveCheck.remainingMix || 0;
-    }
+      liveChildMix = childLiveCheck.remainingMix || 0;
+    } catch (_) {}
+
+    // تحديد كمية الميكسات المراد تحويلها (رصيد الفرد الحي بالسيرفر أولاً، أو الرصيد المركون/المسلح)
+    let amountToTransfer = liveChildMix > 0 ? liveChildMix : (parkedMixAmount || armedMixToTransfer || 0);
 
     if (amountToTransfer > 0) {
-      // أمر واحد مباشر وسريع لتحويل الميكسات من الفرد للأونر
-      engine.log(`[⚡] تحويل فوري للميكسات (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر...`, "info");
-      await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+      // أمر واحد مباشر وسريع لتحويل الميكسات كاملة دفعة واحدة من الفرد للأونر
+      engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر...`, "info");
+      const transferSuccess = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
 
       // نظام تأكيدي سريع لحظي: فحص رصيد الفرد بعد التحويل فوراً للتأكد هل خرج الرصيد للأونر أم لا
       await sleep(1500);
       let childStAfter = await activeChildEngine.getStatusAndChild(true);
       finalChildBal = childStAfter.remainingMix || 0;
 
-      // إذا تبيّن أن الرصيد ما زال لدى الفرد (أكبر من 1000 ميكس)، إعادة محاولة سريعة فورية
-      if (finalChildBal > 1000) {
-        engine.log(`[*] فحص تأكيدي: الرصيد ما زال لدى الفرد (${finalChildBal.toLocaleString('en-US')} ميكس) - إعادة المحاولة السريعة فوراً...`, "warn");
+      // في حال فشل أمر التحويل الأول فقط أو بقاء كامل الرصيد دون خصم نهائياً
+      if (!transferSuccess && finalChildBal >= amountToTransfer * 0.9 && finalChildBal > 1000) {
+        engine.log(`[*] فحص تأكيدي: فشل التحويل الأول والرصيد ما زال لدى الفرد (${finalChildBal.toLocaleString('en-US')} ميكس) - إعادة المحاولة لكامل الرصيد...`, "warn");
         await activeChildEngine.transferMix(engine.ownerDial, finalChildBal, "Hekaya_XRP_MIX_Child_1");
         await sleep(1500);
         childStAfter = await activeChildEngine.getStatusAndChild(true);
@@ -2108,6 +2120,11 @@ async function handleSingleCycleInternal(
         recoveredOk = true;
         recoveredMixAmount = amountToTransfer;
         engine.log(`[✓] تأكيد استقرار الرصيد: تم تفريغ ميكسات الفرد للأونر بنجاح!`, "success");
+      } else {
+        recoveredMixAmount = Math.max(0, amountToTransfer - finalChildBal);
+        if (recoveredMixAmount > 0) {
+          recoveredOk = true;
+        }
       }
     } else {
       // رصيد الفرد 0 ميكس: التحقق من استقرار الرصيد لدى الأونر

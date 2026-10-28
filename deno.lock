@@ -50,7 +50,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:@biomejs/biome@2.4.5",
+        "npm:@biomejs/biome@2.5.12",
         "npm:@capacitor-community/play-integrity@8",
         "npm:@capacitor/android@^8.4.1",
         "npm:@capacitor/app@^8.1.0",
@@ -124,8 +124,8 @@
         "npm:jsdom@^29.1.1",
         "npm:ky@^1.13.0",
         "npm:lucide-react@0.576",
-        "npm:miaoda-react-devkit@0.1.1-beta.21",
-        "npm:miaoda-sc-plugin@1.0.71",
+        "npm:miaoda-react-devkit@0.1.1-beta.22",
+        "npm:miaoda-sc-plugin@1.0.73",
         "npm:motion@^12.23.25",
         "npm:next-themes@~0.4.6",
         "npm:playwright@^1.62.1",
