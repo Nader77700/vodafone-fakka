@@ -741,8 +741,25 @@ export async function executeVipChangePlan(
 /**
  * Action 6: Return Child Mixes to Owner
  */
-export async function executeVipReturnChildMixes(sessionId: string): Promise<VipExecutionResponse> {
-  return invokeVipExecutor('return_child_mixes', { session_id: sessionId });
+export async function executeVipReturnChildMixes(sessionId: string, amount?: number): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('return_child_mixes', { session_id: sessionId, amount });
+}
+
+/**
+ * Action 6c: Bidirectional Transfer between Owner & Child via Owner Master Authority
+ */
+export async function executeVipTransferBetween(
+  sessionId: string,
+  fromDial: string,
+  toDial: string,
+  amount: number
+): Promise<VipExecutionResponse> {
+  return invokeVipExecutor('transfer_between', {
+    session_id: sessionId,
+    from_dial: fromDial,
+    to_dial: toDial,
+    amount,
+  });
 }
 
 /**

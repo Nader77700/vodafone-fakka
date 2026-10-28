@@ -33,6 +33,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Smartphone,
+  Repeat,
+  Sparkles,
 } from 'lucide-react';
 import type { VipDashboardData, VipSupportedSystem, VipSession } from '@/types/vip';
 import { VipReleaseAndMinionCard } from '@/components/vip/VipReleaseAndMinionCard';
@@ -389,29 +391,72 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
       <Dialog open={activeModal === 'transfer_to_individual'} onOpenChange={(open) => !open && setActiveModal(null)}>
         <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md" dir="rtl">
           <DialogHeader className="text-right">
-            <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <ArrowDownLeft className="w-4 h-4 text-amber-500" />
-              تأكيد تحويل ميكسات إلى الفرد
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                <ArrowDownLeft className="w-4 h-4 text-amber-500" />
+                تحويل الميكسات (من الأونر إلى الفرد)
+              </DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveModal('transfer_to_owner')}
+                className="h-7 text-[11px] gap-1 px-2 border-primary/30 text-primary hover:bg-primary/10"
+                title="تبديل الاتجاه ليكون من الفرد للأونر"
+              >
+                <Repeat className="w-3 h-3" />
+                تبديل الاتجاه للعكس
+              </Button>
+            </div>
             <DialogDescription className="text-xs text-muted-foreground">
-              تحديد كمية الميكسات المراد نقلها من الأونر إلى خط الفرد المربوط.
+              يتم إرسال أمر التحويل مباشرة عبر جلسة الأونر الرئيسية بمقسم عائلة اتصالات.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-xs">
-            <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">من (الأونر):</span>
-                <span className="font-mono text-foreground dir-ltr">{session.owner_account_identifier || 'غير محدد'}</span>
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-2">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-background/60 border border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">من</div>
+                  <div>
+                    <span className="font-bold text-foreground">خط الأونر (المرسل):</span>
+                    <div className="font-mono text-muted-foreground text-[11px]">{session.owner_account_identifier || 'غير محدد'}</div>
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono text-[10px] bg-primary/5 text-primary border-primary/20">
+                  {Number(session.owner_mix_balance || 0).toLocaleString('ar-EG')} متبقية
+                </Badge>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">إلى (الفرد):</span>
-                <span className="font-mono text-foreground dir-ltr">{session.individual_account_identifier || 'غير محدد'}</span>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-background/60 border border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold text-[10px]">إلى</div>
+                  <div>
+                    <span className="font-bold text-foreground">خط الفرد (المستلم):</span>
+                    <div className="font-mono text-muted-foreground text-[11px]">{session.individual_account_identifier || 'غير محدد'}</div>
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono text-[10px] bg-amber-500/5 text-amber-600 border-amber-500/20">
+                  {Number(session.individual_mix_balance || 0).toLocaleString('ar-EG')} متبقية
+                </Badge>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">كمية الميكسات المراد تحويلها</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">كمية الميكسات المراد تحويلها</Label>
+                <div className="flex gap-1">
+                  {[1000, 2000, 5000, 10000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTransferAmount(amt.toString())}
+                      className="px-1.5 py-0.5 rounded text-[10px] bg-muted hover:bg-muted/80 text-foreground font-mono transition-colors"
+                    >
+                      {amt.toLocaleString('en-US')}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Input
                 type="number"
                 min={100}
@@ -421,6 +466,11 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
                 placeholder="5000"
                 className="font-mono text-xs h-9"
               />
+            </div>
+
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span>يتم التنفيذ بصلاحية Master Family عبر جلسة الأونر مباشرة.</span>
             </div>
           </div>
 
@@ -441,7 +491,7 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
               }
               className="text-xs h-8 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
             >
-              {submitting ? 'جاري التسجيل...' : 'تأكيد طلب التحويل'}
+              {submitting ? 'جاري التحويل...' : 'تأكيد أمر التحويل الآن'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -451,29 +501,81 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
       <Dialog open={activeModal === 'transfer_to_owner'} onOpenChange={(open) => !open && setActiveModal(null)}>
         <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md" dir="rtl">
           <DialogHeader className="text-right">
-            <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <ArrowUpRight className="w-4 h-4 text-emerald-500" />
-              تأكيد تحويل ميكسات إلى الأونر
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                تحويل الميكسات (من الفرد إلى الأونر)
+              </DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveModal('transfer_to_individual')}
+                className="h-7 text-[11px] gap-1 px-2 border-primary/30 text-primary hover:bg-primary/10"
+                title="تبديل الاتجاه ليكون من الأونر للفرد"
+              >
+                <Repeat className="w-3 h-3" />
+                تبديل الاتجاه للعكس
+              </Button>
+            </div>
             <DialogDescription className="text-xs text-muted-foreground">
-              سحب الميكسات من خط الفرد وإرجاعها لحساب الأونر.
+              سحب الميكسات من الفرد وإرجاعها للأونر عبر جلسة الأونر أو جلسة الفرد.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-xs">
-            <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">من (الفرد):</span>
-                <span className="font-mono text-foreground dir-ltr">{session.individual_account_identifier || 'غير محدد'}</span>
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-2">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-background/60 border border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold text-[10px]">من</div>
+                  <div>
+                    <span className="font-bold text-foreground">خط الفرد (المرسل):</span>
+                    <div className="font-mono text-muted-foreground text-[11px]">{session.individual_account_identifier || 'غير محدد'}</div>
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono text-[10px] bg-amber-500/5 text-amber-600 border-amber-500/20">
+                  {Number(session.individual_mix_balance || 0).toLocaleString('ar-EG')} متبقية
+                </Badge>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">إلى (الأونر):</span>
-                <span className="font-mono text-foreground dir-ltr">{session.owner_account_identifier || 'غير محدد'}</span>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-background/60 border border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 font-bold text-[10px]">إلى</div>
+                  <div>
+                    <span className="font-bold text-foreground">خط الأونر (المستلم):</span>
+                    <div className="font-mono text-muted-foreground text-[11px]">{session.owner_account_identifier || 'غير محدد'}</div>
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono text-[10px] bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
+                  {Number(session.owner_mix_balance || 0).toLocaleString('ar-EG')} متبقية
+                </Badge>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">كمية الميكسات المسترجعة</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">كمية الميكسات المراد استرجاعها</Label>
+                <div className="flex gap-1">
+                  {[1000, 1300, 5000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTransferAmount(amt.toString())}
+                      className="px-1.5 py-0.5 rounded text-[10px] bg-muted hover:bg-muted/80 text-foreground font-mono transition-colors"
+                    >
+                      {amt.toLocaleString('en-US')}
+                    </button>
+                  ))}
+                  {Number(session.individual_mix_balance || 0) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setTransferAmount(String(session.individual_mix_balance))}
+                      className="px-1.5 py-0.5 rounded text-[10px] bg-primary/20 text-primary font-bold hover:bg-primary/30 transition-colors"
+                    >
+                      كامل الرصيد
+                    </button>
+                  )}
+                </div>
+              </div>
               <Input
                 type="number"
                 min={100}
@@ -483,6 +585,11 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
                 placeholder="5000"
                 className="font-mono text-xs h-9"
               />
+            </div>
+
+            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-primary flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>يدعم التحويل التبادلي المباشر من جلسة الأونر كحل بديل فوري في حال تعذر توكن الفرد.</span>
             </div>
           </div>
 
@@ -503,7 +610,7 @@ export function VipManualControlsTab({ data, activeSession, onRefresh }: Props) 
               }
               className="text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
             >
-              {submitting ? 'جاري التسجيل...' : 'تأكيد طلب السحب'}
+              {submitting ? 'جاري الاسترجاع...' : 'تأكيد طلب السحب الآن'}
             </Button>
           </DialogFooter>
         </DialogContent>
