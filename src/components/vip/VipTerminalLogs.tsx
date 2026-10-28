@@ -117,108 +117,31 @@ function toEnglishDigits(str: string): string {
   return str.replace(/[٠-٩]/g, (d) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
 }
 
-interface ParsedToken {
-  type:
-    | 'phantom_alert'
-    | 'double_check_confirm'
-    | 'hekaya_270'
-    | 'hekaya_180'
-    | 'transfer_owner'
-    | 'transfer_child'
-    | 'phone'
-    | 'mix_balance'
-    | 'owner_ref'
-    | 'child_ref'
-    | 'text';
-  content: string;
-}
-
-function parseLogTokens(rawMsg: string): ParsedToken[] {
-  const msg = toEnglishDigits(rawMsg);
-
-  const tokenRegex = new RegExp(
-    [
-      '(فحص تأكيدي(?: مزدوج)?[^\\n!]+!?)', // 0. Double-check confirmation
-      '(تنشيط ومزامنة العقد|تجديد باقة الأونر|رصد تحويل وهمي(?:\\/معلق)?|رصد عدم تحرك الميكسات[^\\n!]+!?)', // 1. Contract sync / renewal
-      '(حكاية ميكسات 270|Hekaya_XRP_MIX_Parent_7|باقة 270|نظام 270)', // 2. Hekaya 270
-      '(حكاية ميكسات 180|Hekaya_XRP_MIX_Parent_6|باقة 180|نظام 180|170)', // 3. Hekaya 180
-      '(رجعنا للأونر|استرجاع الميكسات للأونر|تم استرجاع)', // 4. Return to owner
-      '(تم تحويل|جاري تحويل|أمر النقل|نقل الميكسات للفرد)', // 5. Transfer to child
-      '(\\b(?:011|11)\\d{8}\\b)', // 6. Phone numbers
-      '(\\(\\d{1,3}(?:,\\d{3})*(?:\\s*ميكس)?\\))', // 7. (88,600) or (88,600 ميكس)
-      '(\\b\\d{1,3}(?:,\\d{3})+(?:\\s*ميكس)?\\b)', // 8. 88,600 ميكس
-      '(الأونر|حساب الأونر|باقة الأونر)', // 9. Owner
-      '(الفرد|حساب الفرد|باقة الفرد)', // 10. Child
-    ].join('|'),
-    'gi'
-  );
-
-  const parts: ParsedToken[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = tokenRegex.exec(msg)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({
-        type: 'text',
-        content: msg.substring(lastIndex, match.index),
-      });
-    }
-
-    const matchedText = match[0];
-
-    if (/فحص تأكيدي مزدوج/i.test(matchedText)) {
-      parts.push({ type: 'double_check_confirm', content: matchedText });
-    } else if (/تحويل وهمي/i.test(matchedText)) {
-      parts.push({ type: 'phantom_alert', content: matchedText });
-    } else if (/270|Parent_7/i.test(matchedText)) {
-      parts.push({ type: 'hekaya_270', content: matchedText });
-    } else if (/180|170|Parent_6/i.test(matchedText)) {
-      parts.push({ type: 'hekaya_180', content: matchedText });
-    } else if (/رجعنا للأونر|استرجاع/i.test(matchedText)) {
-      parts.push({ type: 'transfer_owner', content: matchedText });
-    } else if (/تحويل|أمر النقل/i.test(matchedText)) {
-      parts.push({ type: 'transfer_child', content: matchedText });
-    } else if (/^(?:011|11)\d{8}$/.test(matchedText)) {
-      parts.push({ type: 'phone', content: matchedText });
-    } else if (/\d/.test(matchedText)) {
-      parts.push({ type: 'mix_balance', content: matchedText });
-    } else if (/الأونر/i.test(matchedText)) {
-      parts.push({ type: 'owner_ref', content: matchedText });
-    } else if (/الفرد/i.test(matchedText)) {
-      parts.push({ type: 'child_ref', content: matchedText });
-    } else {
-      parts.push({ type: 'text', content: matchedText });
-    }
-
-    lastIndex = tokenRegex.lastIndex;
+// Pure fast lightweight row renderer with zero heavy regex or DOM explosion
+const LogLineRow = React.memo(function LogLineRow({ log }: { log: VipExecutionLog }) {
+  const msg = log.message || '';
+  let colorClass = 'text-zinc-300';
+  if (log.level === 'success' || msg.startsWith('[+]') || msg.startsWith('[✓]')) {
+    colorClass = 'text-emerald-400 font-medium';
+  } else if (log.level === 'error' || msg.startsWith('[-]')) {
+    colorClass = 'text-rose-400 font-medium';
+  } else if (log.level === 'warn' || msg.startsWith('[!]') || msg.startsWith('[⚠️]')) {
+    colorClass = 'text-amber-400 font-medium';
+  } else if (msg.startsWith('[*]')) {
+    colorClass = 'text-sky-400';
+  } else if (msg.startsWith('[⚡]')) {
+    colorClass = 'text-yellow-300';
+  } else if (msg.startsWith('[🛡️]')) {
+    colorClass = 'text-cyan-300';
   }
 
-  if (lastIndex < msg.length) {
-    parts.push({
-      type: 'text',
-      content: msg.substring(lastIndex),
-    });
-  }
-
-  return parts;
-}
-
-// Memoized individual log row to eliminate re-renders and CPU heat
-const LogLineRow = React.memo(function LogLineRow({
-  log,
-  renderColoredMessage,
-}: {
-  log: VipExecutionLog;
-  renderColoredMessage: (msg: string) => React.ReactNode;
-}) {
   return (
     <div className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/60 px-1 rounded transition-colors text-right">
-      <span className="text-zinc-500 text-[10.5px] shrink-0 select-none pt-0.5 font-mono" dir="ltr">
+      <span className="text-zinc-500 text-[10px] shrink-0 select-none pt-0.5 font-mono" dir="ltr">
         {log.time}
       </span>
-      <div className="flex-1 min-w-0 break-words font-mono text-zinc-200 text-right leading-snug">
-        {renderColoredMessage(log.message)}
+      <div className={`flex-1 min-w-0 break-words font-mono text-[11.5px] leading-snug text-right ${colorClass}`}>
+        {msg}
       </div>
     </div>
   );
@@ -330,112 +253,6 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
     a.click();
     URL.revokeObjectURL(url);
     toast.success('تم تصدير ملف السجلات بنجاح');
-  };
-
-  const renderColoredMessage = (msg: string) => {
-    if (msg.startsWith('---') || msg.startsWith('===')) {
-      return <span className="text-purple-300 font-mono font-bold">{toEnglishDigits(msg)}</span>;
-    }
-
-    let baseTextColor = 'text-zinc-300';
-    let prefixIcon = '';
-    if (msg.startsWith('[*]')) baseTextColor = 'text-sky-400';
-    else if (msg.startsWith('[+]')) baseTextColor = 'text-emerald-400';
-    else if (msg.startsWith('[-]')) baseTextColor = 'text-rose-400';
-    else if (msg.startsWith('[!]')) baseTextColor = 'text-amber-400';
-    else if (msg.startsWith('[⚠️]')) baseTextColor = 'text-amber-300';
-    else if (msg.startsWith('[✓]')) baseTextColor = 'text-emerald-300';
-    else if (msg.startsWith('[🎉]')) baseTextColor = 'text-amber-300';
-    else if (msg.startsWith('[⚡]')) baseTextColor = 'text-yellow-300';
-    else if (msg.startsWith('[🛡️]') || msg.startsWith('[🌐]')) baseTextColor = 'text-cyan-300';
-    else if (msg.startsWith('[🚀]')) baseTextColor = 'text-purple-300';
-    else if (msg.startsWith('[☁️]')) baseTextColor = 'text-sky-300';
-
-    const isFinalBalanceLine = msg.includes('رصيده الآن') || msg.includes('الرصيد الإجمالي') || msg.includes('الرصيد النهائي');
-    const tokens = parseLogTokens(msg);
-
-    return (
-      <span className="leading-relaxed">
-        {tokens.map((token, i) => {
-          switch (token.type) {
-            case 'double_check_confirm':
-              return (
-                <span key={i} className="font-bold text-emerald-400">
-                  {token.content}
-                </span>
-              );
-            case 'phantom_alert':
-              return (
-                <span key={i} className="font-bold text-amber-400">
-                  {token.content}
-                </span>
-              );
-            case 'hekaya_270':
-              return (
-                <span key={i} className="font-semibold text-sky-400">
-                  {token.content}
-                </span>
-              );
-            case 'hekaya_180':
-              return (
-                <span key={i} className="font-semibold text-amber-300">
-                  {token.content}
-                </span>
-              );
-            case 'transfer_owner':
-              return (
-                <span key={i} className="font-semibold text-emerald-300">
-                  {token.content}
-                </span>
-              );
-            case 'transfer_child':
-              return (
-                <span key={i} className="font-semibold text-purple-300">
-                  {token.content}
-                </span>
-              );
-            case 'phone':
-              return (
-                <span key={i} className="font-mono font-medium text-yellow-300" dir="ltr">
-                  {token.content}
-                </span>
-              );
-            case 'mix_balance':
-              if (isFinalBalanceLine) {
-                return (
-                  <span key={i} className="font-mono font-bold text-emerald-300" dir="ltr">
-                    {token.content}
-                  </span>
-                );
-              }
-              return (
-                <span key={i} className="font-mono font-semibold text-cyan-300" dir="ltr">
-                  {token.content}
-                </span>
-              );
-            case 'owner_ref':
-              return (
-                <span key={i} className="font-medium text-amber-200">
-                  {token.content}
-                </span>
-              );
-            case 'child_ref':
-              return (
-                <span key={i} className="font-medium text-purple-300">
-                  {token.content}
-                </span>
-              );
-            case 'text':
-            default:
-              return (
-                <span key={i} className={baseTextColor}>
-                  {token.content}
-                </span>
-              );
-          }
-        })}
-      </span>
-    );
   };
 
   return (
@@ -557,11 +374,10 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
                   </button>
                 </div>
               )}
-              {(showAllLogs ? effectiveLogs : effectiveLogs.slice(-200)).map((log, index) => (
+              {(showAllLogs ? effectiveLogs : effectiveLogs.slice(-120)).map((log, index) => (
                 <LogLineRow
                   key={`${log.time}_${index}`}
                   log={log}
-                  renderColoredMessage={renderColoredMessage}
                 />
               ))}
             </>
