@@ -283,7 +283,6 @@ export async function showVipPersistentNotification(
               channelId: VIP_NOTIFICATION_CHANNEL_ID,
               ongoing: true, // Pinned permanently in the Android curtain! Cannot be swiped away.
               autoCancel: false,
-              schedule: { at: new Date(Date.now() + 50) },
               extra: { sessionId },
             },
           ],
