@@ -741,10 +741,6 @@ class EtisalatEngine {
     if (quota <= 0) return true;
     const target10 = clean10DigitDial(toDial);
     const sender10 = clean10DigitDial(this.currentDial || '');
-    const targetIntl = normalizeEgyptianNumber(toDial, 'intl');
-    const targetLocal = normalizeEgyptianNumber(toDial, 'local');
-    const senderIntl = normalizeEgyptianNumber(this.currentDial || '', 'intl');
-    const senderLocal = normalizeEgyptianNumber(this.currentDial || '', 'local');
     const receiverDisplay = normalizeEgyptianNumber(toDial, 'local') || toDial;
     const senderDisplay = normalizeEgyptianNumber(this.currentDial || '', 'local') || this.currentDial;
 
@@ -752,60 +748,85 @@ class EtisalatEngine {
 
     // Clean 10-digit number is the native format required by Etisalat MAB gateway for genuine family unit transfer
     // Strictly execute ONLY genuine family transfer endpoint (/Saytar/rest/services/newTransfer/v2)
-    // One clean request using the standard 10-digit MSISDN to avoid 403 rate-limiting
+    // One clean single request with no internal retry loop to prevent duplicate transfer attempts / monthly limit lock (BE_SDP_361)
     const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${sender10}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target10}</receiverMsisdn><senderMsisdn>${sender10}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
     const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
-        const headers = {
-          ...this.getBaseHeaders(),
-          "auth": `Bearer ${this.authToken}`,
-          "headerSignature": headerSig,
-          "urlSignature": urlSig,
-          "bodySignature": bodySig,
-        };
-        const targetUrl = this.getRequestUrl(urlPathV2);
-        const res = await this.fetchWithTimeout(targetUrl, {
-          method: "POST",
-          headers,
-          body: xmlBodyV2,
-        }, 7000);
-        const text = await res.text();
-        if (res.status === 200 && text.includes("<status>true</status>")) {
-          const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
-          const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-          this.log(`[+] تم قبول وتنفيذ أمر التحويل الفعلي بسيرفر اتصالات (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
-          return true;
-        } else {
-          // Extract genuine Etisalat telecom error message to diagnose and avoid silent failures
-          const errCodeMatch = text.match(/<errorCode>([^<]+)<\/errorCode>/i);
-          const errCode = errCodeMatch ? errCodeMatch[1].trim() : "";
-          const userArMatch = text.match(/<userMessageAr>([^<]+)<\/userMessageAr>/i);
-          const userAr = userArMatch ? userArMatch[1].trim() : "";
-          const errMatch = text.match(/<(?:errorMessage|message|errorDesc|description)>([^<]+)<\//i);
-          const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
-          
-          if (errCode === "BE_SDP_361" || text.includes("BE_SDP_361") || errMsg.includes("cannot be completed")) {
-            this.log(`[!] استجابة مقسم اتصالات كود [BE_SDP_361]: "${userAr || errMsg}". (تنبيه ذكي: هذا الرد الشائع يعني أن طلب التحويل قيد المعالجة بالسيرفر أو تم تنفيذه بالفعل، سيتم التحقق الفوري من الأرصدة الحية لاعتماد وصول الميكسات)`, "warn");
-          } else {
-            this.log(`[!] استجابة سيرفر اتصالات لأمر التحويل (${sender10} -> ${target10}): [${errCode || res.status}] ${userAr || errMsg}`, "warn");
-          }
-          return false;
+    try {
+      const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
+      const headers = {
+        ...this.getBaseHeaders(),
+        "auth": `Bearer ${this.authToken}`,
+        "headerSignature": headerSig,
+        "urlSignature": urlSig,
+        "bodySignature": bodySig,
+      };
+      const targetUrl = this.getRequestUrl(urlPathV2);
+      const res = await this.fetchWithTimeout(targetUrl, {
+        method: "POST",
+        headers,
+        body: xmlBodyV2,
+      }, 7000);
+      const text = await res.text();
+      const isSuccess = res.status === 200 && text.includes("<status>true</status>");
+      const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
+      const errCodeMatch = text.match(/<errorCode>([^<]+)<\/errorCode>/i);
+      const errCode = errCodeMatch ? errCodeMatch[1].trim() : "";
+      const userArMatch = text.match(/<userMessageAr>([^<]+)<\/userMessageAr>/i);
+      const userAr = userArMatch ? userArMatch[1].trim() : "";
+      const errMatch = text.match(/<(?:errorMessage|message|errorDesc|description)>([^<]+)<\//i);
+      const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
+
+      // تسجيل فوري وشفاف لكل تفاصيل المعاملة (الطلب والرد الفعلي) في قاعدة البيانات للمراقبة الحية
+      if (this.sessionId) {
+        try {
+          await supabase.from("vip_operation_history").insert({
+            session_id: this.sessionId,
+            operation_type: this.role === 'child' ? 'transfer_to_owner' : 'transfer_to_child',
+            owner_account_ref: this.ownerDial || (this.role === 'owner' ? senderDisplay : receiverDisplay),
+            individual_account_ref: this.childDial || (this.role === 'child' ? senderDisplay : receiverDisplay),
+            requested_action: this.role === 'child'
+              ? `استرجاع ${quota.toLocaleString('en-US')} ميكس من الفرد للأونر`
+              : `تحويل ${quota.toLocaleString('en-US')} ميكس من الأونر للفرد`,
+            requested_amount: quota,
+            status: isSuccess ? 'succeeded' : 'failed',
+            failure_reason: isSuccess ? null : (userAr || errMsg || `كود ${res.status}`),
+            is_automatic: true,
+            result: {
+              url: targetUrl,
+              xml_payload: xmlBodyV2,
+              response_status: res.status,
+              response_body: text.slice(0, 2000),
+              order_id: orderIdMatch?.[1] || null,
+              error_code: errCode || null,
+              user_message_ar: userAr || null,
+              direction: this.role === 'child' ? 'child_to_owner' : 'owner_to_child',
+              sender: senderDisplay,
+              receiver: receiverDisplay,
+              product_name: productName,
+            },
+          });
+        } catch (_dbE) {
+          console.warn("Failed to log transfer into vip_operation_history:", _dbE);
         }
-      } catch (fetchErr: any) {
-        this.log(`[!] خطأ في الاتصال ببوابة التحويل: ${fetchErr?.message || fetchErr}`, "warn");
       }
 
-      if (attempt < 2) {
-        this.log(`[!] انتظار ثانيتين قبل إعادة محاولة التحويل لمزامنة بوابة اتصالات...`, "warn");
-        await sleep(2000);
+      if (isSuccess) {
+        const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
+        this.log(`[+] تم قبول وتنفيذ أمر التحويل الفعلي بسيرفر اتصالات (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
+        return true;
+      } else {
+        if (errCode === "BE_SDP_361" || text.includes("BE_SDP_361") || errMsg.includes("cannot be completed")) {
+          this.log(`[!] استجابة مقسم اتصالات كود [BE_SDP_361]: "${userAr || errMsg}". (تنبيه ذكي: هذا الرد الشائع يعني أن طلب التحويل قيد المعالجة بالسيرفر أو تم تنفيذه بالفعل، سيتم التحقق الفوري من الأرصدة الحية لاعتماد وصول الميكسات)`, "warn");
+        } else {
+          this.log(`[!] استجابة سيرفر اتصالات لأمر التحويل (${sender10} -> ${target10}): [${errCode || res.status}] ${userAr || errMsg}`, "warn");
+        }
+        return false;
       }
+    } catch (fetchErr: any) {
+      this.log(`[!] خطأ في الاتصال ببوابة التحويل: ${fetchErr?.message || fetchErr}`, "warn");
+      return false;
     }
-
-    this.log(`[-] تعذر إتمام أمر تحويل الميكسات الفعلي بعد محاولتين عبر بوابة اتصالات الرسمية.`, "error");
-    return false;
   }
 
   async changePlan(planName: string, planId = ""): Promise<boolean> {
@@ -2107,28 +2128,30 @@ async function handleSingleCycleInternal(
       engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر...`, "info");
       const transferSuccess = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
 
-      // نظام تأكيدي سريع لحظي: فحص رصيد الفرد بعد التحويل فوراً للتأكد هل خرج الرصيد للأونر أم لا
-      await sleep(1500);
+      // نظام تأكيدي سريع لحظي: فحص رصيد الفرد ورصيد الأونر بعد التحويل فوراً للتأكد هل خرج الرصيد للأونر أم لا
+      await sleep(2500);
       let childStAfter = await activeChildEngine.getStatusAndChild(true);
       finalChildBal = childStAfter.remainingMix || 0;
 
-      // في حال فشل أمر التحويل الأول فقط أو بقاء كامل الرصيد دون خصم نهائياً
-      if (!transferSuccess && finalChildBal >= amountToTransfer * 0.9 && finalChildBal > 1000) {
-        engine.log(`[*] فحص تأكيدي: فشل التحويل الأول والرصيد ما زال لدى الفرد (${finalChildBal.toLocaleString('en-US')} ميكس) - إعادة المحاولة لكامل الرصيد...`, "warn");
-        await activeChildEngine.transferMix(engine.ownerDial, finalChildBal, "Hekaya_XRP_MIX_Child_1");
-        await sleep(1500);
-        childStAfter = await activeChildEngine.getStatusAndChild(true);
-        finalChildBal = childStAfter.remainingMix || 0;
-      }
+      // التحقق المباشر من رصيد الأونر لضمان عدم إرسال طلب مكرر إذا كانت الميكسات قد وصلت بالفعل
+      let ownerCheckAfter = null;
+      try {
+        ownerCheckAfter = await engine.getStatusAndChild(true);
+      } catch (_) {}
 
-      if (finalChildBal <= 1000) {
+      const ownerReceived = ownerCheckAfter && (ownerCheckAfter.remainingMix >= confirmedNewMix + (amountToTransfer * 0.7) || ownerCheckAfter.remainingMix >= amountToTransfer * 0.7);
+
+      if (ownerReceived || finalChildBal <= 1000) {
         recoveredOk = true;
         recoveredMixAmount = amountToTransfer;
         engine.log(`[✓] تأكيد استقرار الرصيد: تم تفريغ ميكسات الفرد للأونر بنجاح!`, "success");
       } else {
+        // إذا لم تصل الميكسات وبقي الرصيد كاملاً لدى الفرد ولم يتم الخصم نهائياً
         recoveredMixAmount = Math.max(0, amountToTransfer - finalChildBal);
         if (recoveredMixAmount > 0) {
           recoveredOk = true;
+        } else {
+          engine.log(`[!] تنبيه: لم يتم خصم الرصيد من الفرد بعد الطلب الأول. سيتم تجنب إرسال طلبات مكررة لتفادي حظر الحد الشهري.`, "warn");
         }
       }
     } else {

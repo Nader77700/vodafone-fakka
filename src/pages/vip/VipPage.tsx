@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   Code2,
   Activity,
+  Radar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -47,6 +48,7 @@ import { VipSystemEligibilityTab } from './VipSystemEligibilityTab';
 import { VipOperationHistoryTab } from './VipOperationHistoryTab';
 import { VipBotScriptTab } from './VipBotScriptTab';
 import { VipDiagnosticsTab } from './VipDiagnosticsTab';
+import { VipTransferMonitorTab } from './VipTransferMonitorTab';
 import { VipDelegatedClientView } from '@/components/vip/VipDelegatedClientView';
 import { VipDelegationManagerTab } from '@/components/vip/VipDelegationManagerTab';
 import { VipSessionInspectorTab } from '@/components/vip/VipSessionInspectorTab';
@@ -377,6 +379,11 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
                   <span>لوحة الجلسة النشطة والأتمتة</span>
                 </TabsTrigger>
 
+                <TabsTrigger value="transfer-monitor" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-primary/10 text-primary border border-primary/20">
+                  <Radar className="w-3.5 h-3.5 text-primary animate-pulse" />
+                  <span>مراقبة السكريبت والتحويل</span>
+                </TabsTrigger>
+
                 <TabsTrigger value="cycles" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>سجل الدورات المكتملة</span>
@@ -434,6 +441,16 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
                 onNavigateTab={handleTabChange}
                 isDelegatedUser={isDelegatedUser}
                 vipAccess={vipAccess}
+              />
+            </TabsContent>
+
+            {/* Tab 1b: Dedicated Realtime Script & Transfer Monitor */}
+            <TabsContent value="transfer-monitor" className="space-y-4 focus-visible:outline-none">
+              <VipTransferMonitorTab
+                key={activeSession?.id || 'empty-transfer-monitor'}
+                activeSession={activeSession}
+                allSessions={sessions}
+                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
               />
             </TabsContent>
 
