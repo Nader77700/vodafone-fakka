@@ -13,6 +13,7 @@ import {
   PauseCircle,
   PlayCircle,
   Download,
+  Radar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { VipExecutionLog } from '@/lib/vipApi';
@@ -22,6 +23,7 @@ interface Props {
   onClear: () => void;
   isRunning?: boolean;
   isDelegatedUser?: boolean;
+  onOpenTransferMonitor?: () => void;
 }
 
 // ── Sanitizer for Delegated Users (Zero-Trust Protection of Proprietary Script) ──
@@ -147,7 +149,13 @@ const LogLineRow = React.memo(function LogLineRow({ log }: { log: VipExecutionLo
   );
 });
 
-export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedUser = false }: Props) {
+export function VipTerminalLogs({
+  logs,
+  onClear,
+  isRunning = false,
+  isDelegatedUser = false,
+  onOpenTransferMonitor,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -344,6 +352,23 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
       </CardHeader>
 
       <CardContent className="p-2 sm:p-2.5 relative">
+        {onOpenTransferMonitor && (
+          <div className="flex items-center justify-between p-2 mb-2 bg-primary/10 border border-primary/20 rounded-lg text-xs gap-2">
+            <div className="flex items-center gap-1.5 text-primary font-bold min-w-0">
+              <Radar className="w-4 h-4 animate-pulse shrink-0" />
+              <span className="truncate">ترغب في مراقبة كل ريكوست وتحويل XML مع اتصالات لحظة بلحظة؟</span>
+            </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onOpenTransferMonitor}
+              className="h-6 text-[11px] px-2.5 font-bold gap-1 shrink-0 shadow-sm"
+            >
+              <span>فتح شاشة المراقبة</span>
+              <span dir="ltr">→</span>
+            </Button>
+          </div>
+        )}
         <div
           ref={containerRef}
           onScroll={handleScroll}

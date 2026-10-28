@@ -371,17 +371,17 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
         ) : dashboardData && activeSession ? (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-2.5">
             
-            {/* Streamlined Clean Tabs */}
-            <div className="overflow-x-auto pb-1 scrollbar-none">
-              <TabsList className="bg-muted/50 p-1 rounded-xl h-auto border border-border inline-flex min-w-full sm:min-w-0">
+            {/* Streamlined Clean Tabs (Sticky on scroll for instant accessibility) */}
+            <div className="sticky top-11 sm:top-14 z-20 py-1.5 backdrop-blur-md bg-background/85 overflow-x-auto scrollbar-none border-b border-border/50">
+              <TabsList className="bg-muted/70 p-1 rounded-xl h-auto border border-border inline-flex min-w-full sm:min-w-0 shadow-sm">
                 <TabsTrigger value="dashboard" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
                   <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
                   <span>لوحة الجلسة النشطة والأتمتة</span>
                 </TabsTrigger>
 
-                <TabsTrigger value="transfer-monitor" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-primary/10 text-primary border border-primary/20">
+                <TabsTrigger value="transfer-monitor" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-primary/15 text-primary border border-primary/30 shadow-xs">
                   <Radar className="w-3.5 h-3.5 text-primary animate-pulse" />
-                  <span>مراقبة السكريبت والتحويل</span>
+                  <span>مراقبة السكريبت والتحويل 🛰️</span>
                 </TabsTrigger>
 
                 <TabsTrigger value="cycles" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">

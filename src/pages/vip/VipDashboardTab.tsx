@@ -44,6 +44,7 @@ export function VipDashboardTab({
   activeSession,
   onRefresh,
   refreshing,
+  onNavigateTab,
   isDelegatedUser = false,
   vipAccess = null,
 }: Props) {
@@ -432,6 +433,7 @@ export function VipDashboardTab({
             onClear={handleClearLogs}
             isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
             isDelegatedUser={isDelegatedUser}
+            onOpenTransferMonitor={onNavigateTab ? () => onNavigateTab('transfer-monitor') : undefined}
           />
         </div>
       </div>
