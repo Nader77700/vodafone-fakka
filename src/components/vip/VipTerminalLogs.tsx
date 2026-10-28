@@ -149,7 +149,7 @@ const LogLineRow = React.memo(function LogLineRow({ log }: { log: VipExecutionLo
   );
 });
 
-export function VipTerminalLogs({
+export const VipTerminalLogs = React.memo(function VipTerminalLogs({
   logs,
   onClear,
   isRunning = false,
@@ -178,22 +178,27 @@ export function VipTerminalLogs({
     return sanitized;
   }, [logs, isDelegatedUser]);
 
+  // Windowed visible logs to keep DOM node count capped at 80 items during live updates
+  const visibleLogs = React.useMemo(() => {
+    if (showAllLogs) return effectiveLogs;
+    if (effectiveLogs.length <= 80) return effectiveLogs;
+    return effectiveLogs.slice(-80);
+  }, [effectiveLogs, showAllLogs]);
+
   // Track whether user intentionally scrolled up using touch or wheel
   const isUserTouchingOrWheelingRef = useRef(false);
 
   // Perform container-ONLY scrolling with requestAnimationFrame for 60fps silky smooth rendering
   const scrollRafRef = useRef<number | null>(null);
-  const scrollToBottom = useCallback((smooth = true) => {
+  const scrollToBottom = useCallback(() => {
     if (!containerRef.current) return;
     if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
 
     scrollRafRef.current = requestAnimationFrame(() => {
       if (!containerRef.current) return;
       const { scrollHeight, clientHeight } = containerRef.current;
-      containerRef.current.scrollTo({
-        top: scrollHeight - clientHeight,
-        behavior: smooth ? 'smooth' : 'auto',
-      });
+      // Instant auto-scroll without smooth animation overhead preventing main thread queuing
+      containerRef.current.scrollTop = scrollHeight - clientHeight;
       setHasScrolledUp(false);
       isUserTouchingOrWheelingRef.current = false;
     });
@@ -204,12 +209,12 @@ export function VipTerminalLogs({
     if (isRunning) {
       setHasScrolledUp(false);
       setAutoScroll(true);
-      scrollToBottom(false);
+      scrollToBottom();
     }
   }, [isRunning, scrollToBottom]);
 
   // Listen to inner container scroll to detect if user manually scrolled up
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
@@ -219,20 +224,19 @@ export function VipTerminalLogs({
     } else if (isUserTouchingOrWheelingRef.current && !autoScroll) {
       setHasScrolledUp(true);
     }
-  };
+  }, [autoScroll]);
 
-  // Auto-scroll when new logs arrive: if autoScroll is active, ALWAYS snap to bottom instantly
+  // Auto-scroll when new logs arrive: if autoScroll is active, snap to bottom instantly via rAF
   useEffect(() => {
     if (autoScroll) {
-      // Force instant scroll to bottom so newly arrived logs are immediately visible without any lag
-      scrollToBottom(false);
+      scrollToBottom();
     }
   }, [effectiveLogs.length, autoScroll, scrollToBottom]);
 
   // When component mounts or comes into view, ensure it points to the latest log
   useEffect(() => {
     if (effectiveLogs.length > 0) {
-      const timer = setTimeout(() => scrollToBottom(false), 50);
+      const timer = setTimeout(() => scrollToBottom(), 50);
       return () => clearTimeout(timer);
     }
   }, [scrollToBottom]);
@@ -388,9 +392,9 @@ export function VipTerminalLogs({
             </div>
           ) : (
             <>
-              {!showAllLogs && effectiveLogs.length > 200 && (
+              {!showAllLogs && effectiveLogs.length > 80 && (
                 <div className="flex items-center justify-between p-1.5 mb-1 bg-zinc-900/80 rounded border border-zinc-800 text-[11px] text-zinc-400">
-                  <span>تم تفعيل العرض الدائري فائق السلاسة (أحدث 200 سجل) لمنع أي تعليق أو سخونة.</span>
+                  <span>تم تفعيل العرض الدائري فائق السلاسة (أحدث 80 سجل) لمنع أي تعليق أو سخونة.</span>
                   <button
                     onClick={() => setShowAllLogs(true)}
                     className="text-primary hover:underline font-bold px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px]"
@@ -399,9 +403,9 @@ export function VipTerminalLogs({
                   </button>
                 </div>
               )}
-              {(showAllLogs ? effectiveLogs : effectiveLogs.slice(-120)).map((log, index) => (
+              {visibleLogs.map((log, index) => (
                 <LogLineRow
-                  key={`${log.time}_${index}`}
+                  key={`${log.time}_${index}_${log.message.slice(0, 10)}`}
                   log={log}
                 />
               ))}
@@ -414,7 +418,7 @@ export function VipTerminalLogs({
           <button
             onClick={() => {
               setAutoScroll(true);
-              scrollToBottom(true);
+              scrollToBottom();
             }}
             className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-full shadow-lg border border-emerald-400/50 cursor-pointer transition-all"
           >
@@ -425,4 +429,4 @@ export function VipTerminalLogs({
       </CardContent>
     </Card>
   );
-}
+});

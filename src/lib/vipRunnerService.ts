@@ -156,7 +156,7 @@ class VipRunnerService {
     const timer = setTimeout(() => {
       this.notifyTimers.delete(sessionId);
       this.notify(sessionId);
-    }, 60);
+    }, 150);
     this.notifyTimers.set(sessionId, timer);
   }
 

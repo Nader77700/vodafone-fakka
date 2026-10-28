@@ -222,15 +222,37 @@ export function VipDashboardTab({
       addSingleLog(`[*] بدء فحص شامل وتسجيل دخول للجلسة «${session.session_name}»...`, 'info');
     }
     try {
+      let streamLogBuffer: VipExecutionLog[] = [];
+      let streamFlushTimer: any = null;
+
+      const flushBuffer = () => {
+        if (streamLogBuffer.length > 0) {
+          const toAdd = streamLogBuffer;
+          streamLogBuffer = [];
+          setTerminalLogs((prev) => [...prev, ...toAdd].slice(-300));
+        }
+      };
+
       const res = await executeVipCheckStatusStream(session.id, undefined, {
         onLog: (liveLog) => {
-          setTerminalLogs((prev) => [...prev, liveLog].slice(-300));
+          streamLogBuffer.push(liveLog);
+          if (!streamFlushTimer) {
+            streamFlushTimer = setTimeout(() => {
+              streamFlushTimer = null;
+              flushBuffer();
+            }, 100);
+          }
           const parsed = parseBalancesFromLog(liveLog.message);
           if (parsed.ownerMix !== undefined) setLiveOwnerMix(parsed.ownerMix);
           if (parsed.childMix !== undefined) setLiveChildMix(parsed.childMix);
           if (parsed.ownerPlan) setLivePlan(parsed.ownerPlan);
         },
       });
+
+      if (streamFlushTimer) {
+        clearTimeout(streamFlushTimer);
+      }
+      flushBuffer();
 
       if (res.success) {
         if (!silent) toast.success('تم فحص الحالة وتحديث البيانات بنجاح!');
