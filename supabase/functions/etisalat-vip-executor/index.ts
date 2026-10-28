@@ -2095,12 +2095,11 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 6. STEP 4: أمر استرجاع فوري ومباشر واحد من الفرد للأونر فور استجابة السيرفر
-  await sendStep("recovering", 4, "تحويل فوري للأونر", "أمر تحويل مباشر من الفرد للأونر");
+  // 6. STEP 4: أمر استرجاع فوري ومباشر بلحظة واحدة (0ms) من الفرد للأونر فور استجابة السيرفر
+  await sendStep("recovering", 4, "تحويل فوري للأونر", "أمر تحويل مباشر ولحظي من الفرد للأونر");
   
-  // فترة انتظار واستقرار (2.5 ثانية) لمقسم اتصالات بعد تأكيد ترحيل النظام لضمان استقرار الباقة ومنع ضغط وتصادم الأوامر
-  engine.log(`[*] انتظار ثانيتين ونصف (2.5 ثانية) لتهدئة واستقرار مقسم اتصالات بعد ترحيل النظام واعتماد الباقة قبل إرسال أمر التحويل...`, "info");
-  await sleep(2500);
+  // إلغاء أي تأخير أو انتظار (0 ثانية) - استجابة فورية لحظية بمجرد اعتماد النظام الجديد كما طلب المالك
+  engine.log(`[⚡] تنفيذ فوري بلحظة واحدة (0ms): استرجاع ميكسات الفرد للأونر فور تأكيد تحول النظام مباشرة...`, "info");
 
   recoveredMixAmount = 0;
   let recoveredOk = false;
@@ -2113,23 +2112,16 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    // الاستعلام الحي الحقيقي لرصيد الفرد الحالي بالسيرفر لضمان تحويل كامل الرصيد دفعة واحدة في معاملة واحدة
-    let liveChildMix = 0;
-    try {
-      const childLiveCheck = await activeChildEngine.getStatusAndChild(true);
-      liveChildMix = childLiveCheck.remainingMix || 0;
-    } catch (_) {}
-
-    // تحديد كمية الميكسات المراد تحويلها (رصيد الفرد الحي بالسيرفر أولاً، أو الرصيد المركون/المسلح)
-    let amountToTransfer = liveChildMix > 0 ? liveChildMix : (parkedMixAmount || armedMixToTransfer || 0);
+    // تحديد كمية الميكسات المراد استرجاعها فورياً من الرصيد المركون والمؤكد بالذاكرة لتفادي أي بطء شبكة أو تأخير
+    const amountToTransfer = parkedMixAmount || armedMixToTransfer || 0;
 
     if (amountToTransfer > 0) {
-      // أمر واحد مباشر وسريع لتحويل الميكسات كاملة دفعة واحدة من الفرد للأونر
+      // أمر واحد مباشر وسريع لتحويل الميكسات كاملة دفعة واحدة من الفرد للأونر بدون أي تأخير
       engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر...`, "info");
       const transferSuccess = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
 
-      // نظام تأكيدي سريع لحظي: فحص رصيد الفرد ورصيد الأونر بعد التحويل فوراً للتأكد هل خرج الرصيد للأونر أم لا
-      await sleep(2500);
+      // نظام تأكيدي سريع لحظي: فحص رصيد الفرد ورصيد الأونر بعد التحويل للتأكد هل خرج الرصيد للأونر أم لا
+      await sleep(1500);
       let childStAfter = await activeChildEngine.getStatusAndChild(true);
       finalChildBal = childStAfter.remainingMix || 0;
 
