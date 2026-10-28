@@ -250,16 +250,22 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
   // Track whether user intentionally scrolled up using touch or wheel
   const isUserTouchingOrWheelingRef = useRef(false);
 
-  // Perform container-ONLY scrolling (NEVER scroll the main window/page!)
+  // Perform container-ONLY scrolling with requestAnimationFrame for 60fps silky smooth rendering
+  const scrollRafRef = useRef<number | null>(null);
   const scrollToBottom = useCallback((smooth = true) => {
     if (!containerRef.current) return;
-    const { scrollHeight, clientHeight } = containerRef.current;
-    containerRef.current.scrollTo({
-      top: scrollHeight - clientHeight,
-      behavior: smooth ? 'smooth' : 'auto',
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+
+    scrollRafRef.current = requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const { scrollHeight, clientHeight } = containerRef.current;
+      containerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+      setHasScrolledUp(false);
+      isUserTouchingOrWheelingRef.current = false;
     });
-    setHasScrolledUp(false);
-    isUserTouchingOrWheelingRef.current = false;
   }, []);
 
   // When a run starts (isRunning becomes true), automatically scroll to bottom and resume follow
@@ -540,9 +546,9 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
             </div>
           ) : (
             <>
-              {!showAllLogs && effectiveLogs.length > 100 && (
+              {!showAllLogs && effectiveLogs.length > 200 && (
                 <div className="flex items-center justify-between p-1.5 mb-1 bg-zinc-900/80 rounded border border-zinc-800 text-[11px] text-zinc-400">
-                  <span>تم تقليص العرض إلى أحدث 100 سجل لمنع تهنيج وسخونة الهاتف.</span>
+                  <span>تم تفعيل العرض الدائري فائق السلاسة (أحدث 200 سجل) لمنع أي تعليق أو سخونة.</span>
                   <button
                     onClick={() => setShowAllLogs(true)}
                     className="text-primary hover:underline font-bold px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[10px]"
@@ -551,7 +557,7 @@ export function VipTerminalLogs({ logs, onClear, isRunning = false, isDelegatedU
                   </button>
                 </div>
               )}
-              {(showAllLogs ? effectiveLogs : effectiveLogs.slice(-100)).map((log, index) => (
+              {(showAllLogs ? effectiveLogs : effectiveLogs.slice(-200)).map((log, index) => (
                 <LogLineRow
                   key={`${log.time}_${index}`}
                   log={log}

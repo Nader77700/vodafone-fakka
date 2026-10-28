@@ -202,7 +202,7 @@ export function VipDashboardTab({
 
   const appendLogs = (newLogs?: VipExecutionLog[]) => {
     if (!newLogs || newLogs.length === 0) return;
-    setTerminalLogs((prev) => [...prev, ...newLogs]);
+    setTerminalLogs((prev) => [...prev, ...newLogs].slice(-300));
   };
 
   const addSingleLog = (
@@ -210,7 +210,7 @@ export function VipDashboardTab({
     level: 'info' | 'success' | 'warn' | 'error' = 'info'
   ) => {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
-    setTerminalLogs((prev) => [...prev, { time, level, message }]);
+    setTerminalLogs((prev) => [...prev, { time, level, message }].slice(-300));
   };
 
   // 1. Comprehensive check status with real-time SSE stream
@@ -223,7 +223,7 @@ export function VipDashboardTab({
     try {
       const res = await executeVipCheckStatusStream(session.id, undefined, {
         onLog: (liveLog) => {
-          setTerminalLogs((prev) => [...prev, liveLog]);
+          setTerminalLogs((prev) => [...prev, liveLog].slice(-300));
           const parsed = parseBalancesFromLog(liveLog.message);
           if (parsed.ownerMix !== undefined) setLiveOwnerMix(parsed.ownerMix);
           if (parsed.childMix !== undefined) setLiveChildMix(parsed.childMix);
