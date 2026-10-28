@@ -1344,14 +1344,49 @@ async function handleSingleCycleInternal(
   let recoveredMixAmount = 0;
   let finalChildBal = 0;
 
-  // 1. Login to Owner
-  await sendStep("auth", 0, "تسجيل الدخول", "جاري الدخول لحساب الأونر...");
+  // 1. Dual Pre-Flight Authentication (المصادقة المزدوجة المتزامنة في بداية كل دورة للأونر والفرد)
+  await sendStep("auth", 0, "المصادقة المزدوجة", "تسجيل دخول الأونر والفرد والتحقق من سلامة الحسابين...");
   if (!await engine.login(ownerEmail, ownerPass, true)) {
     return {
       success: false,
       error: "فشل تسجيل الدخول لحساب الأونر.",
       logs: engine.logs,
     };
+  }
+
+  // ب. تسجيل دخول الفرد والتأكد من بياناته من بداية الدورة وتثبيتها في الذاكرة
+  let prewarmedChildEngine: EtisalatEngine | null = null;
+  if (childEmail && childPass) {
+    prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
+    prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
+    prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
+      supabase.from("vip_sessions").update({
+        cached_child_token: token,
+        cached_child_cookie: cookie,
+      }).eq("id", session_id).catch(() => {});
+    };
+    prewarmedChildEngine.onLog = (l) => engine.log(l.message, l.level);
+
+    engine.log(`[*] فحص تسجيل دخول خط الفرد والتأكد من جاهزية حسابه...`, "info");
+    const childLoginOk = await prewarmedChildEngine.login(childEmail, childPass, false, false);
+    if (!childLoginOk || !prewarmedChildEngine.authToken) {
+      const childAuthFailMsg = `تعذر تسجيل دخول خط الفرد (${childEmail}) في بداية الدورة. تم إلغاء الدورة في البداية فوراً لحماية الرصيد ومنع تصفيره أو تعليقه.`;
+      engine.log(`[🚨 حظر أمان مبكر] ${childAuthFailMsg}`, "error");
+
+      await supabase.from("vip_sessions").update({
+        operation_state: "paused",
+        pause_reason: childAuthFailMsg,
+        automation_enabled: false,
+        updated_at: new Date().toISOString(),
+      }).eq("id", session_id);
+
+      return {
+        success: false,
+        error: childAuthFailMsg,
+        logs: engine.logs,
+      };
+    }
+    engine.log(`[✓] تأكيد المصادقة المزدوجة: تم تسجيل دخول الأونر والفرد بنجاح! جلسة الفرد مثبتة بالذاكرة طوال خطوات الدورة.`, "success");
   }
 
   // Mark session as actively running immediately to prevent false stop detection
@@ -1403,26 +1438,9 @@ async function handleSingleCycleInternal(
   // 3. STEP 1: Parking Mixes to Child (ركن الميكسات عند الفرد وتدفئة جلسة الفرد مسبقاً)
   await sendStep("parking", 1, "ركن الميكسات وتدفئة الفرد", "نقل ميكسات الأونر للفرد فوراً وتجهيز جلسة الفرد الساخنة");
 
-  // Pre-warm child session in memory so recovery happens in <200ms without login lag
-  let prewarmedChildEngine: EtisalatEngine | null = null;
-  if (childEmail && childPass) {
-    try {
-      prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
-      prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
-      prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
-        supabase.from("vip_sessions").update({
-          cached_child_token: token,
-          cached_child_cookie: cookie,
-        }).eq("id", session_id).catch(() => {});
-      };
-      prewarmedChildEngine.onLog = (l) => engine.log(l.message, l.level);
-      const childLoggedIn = await prewarmedChildEngine.login(childEmail, childPass, false, true);
-      if (childLoggedIn) {
-        engine.log(`[⚡] تم تجهيز جلسة الفرد الساخنة مسبقاً بنجاح (جاهزة للاسترجاع اللحظي السريع).`, "info");
-      }
-    } catch (_e) {
-      engine.log(`[!] تنبيه: تعذر التدفئة المسبقة لجلسة الفرد، سيتم الدخول عند الحاجة.`, "warn");
-    }
+  // جلسة الفرد مثبتة في الذاكرة ومصادق عليها مسبقاً من الخطوة 0
+  if (prewarmedChildEngine && prewarmedChildEngine.authToken) {
+    engine.log(`[⚡] جلسة الفرد الساخنة جاهزة ومثبتة مسبقاً من بداية الدورة (0ms استجابة فورية).`, "info");
   }
 
   // ── PRE-FLIGHT LIVE CHECK OF BOTH ACCOUNTS (فحص استباقي شامل للأونر والفرد) ──
