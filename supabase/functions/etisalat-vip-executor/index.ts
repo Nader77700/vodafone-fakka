@@ -1415,8 +1415,8 @@ async function handleSingleCycleInternal(
   let recoveredMixAmount = 0;
   let finalChildBal = 0;
 
-  // 1. Dual Pre-Flight Authentication (المصادقة المزدوجة المتزامنة في بداية كل دورة للأونر والفرد)
-  await sendStep("auth", 0, "المصادقة المزدوجة", "تسجيل دخول الأونر والفرد والتحقق من سلامة الحسابين...");
+  // 1. Dual Pre-Flight Authentication (المصادقة والتحقق الذكي في بداية الدورة)
+  await sendStep("auth", 0, "المصادقة المزدوجة", "تسجيل دخول الأونر والتحقق من حساب الفرد...");
   if (!await engine.login(ownerEmail, ownerPass, true)) {
     return {
       success: false,
@@ -1425,42 +1425,7 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // ب. تسجيل دخول الفرد والتأكد من بياناته من بداية الدورة وتثبيتها في الذاكرة
-  let prewarmedChildEngine: EtisalatEngine | null = null;
-  if (childEmail && childPass) {
-    prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
-    prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
-    prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
-      supabase.from("vip_sessions").update({
-        cached_child_token: token,
-        cached_child_cookie: cookie,
-      }).eq("id", session_id).catch(() => {});
-    };
-    prewarmedChildEngine.onLog = (l) => engine.log(l.message, l.level);
-
-    engine.log(`[*] فحص تسجيل دخول خط الفرد والتأكد من جاهزية حسابه...`, "info");
-    const childLoginOk = await prewarmedChildEngine.login(childEmail, childPass, false, false);
-    if (!childLoginOk || !prewarmedChildEngine.authToken) {
-      const childAuthFailMsg = `تعذر تسجيل دخول خط الفرد (${childEmail}) في بداية الدورة. تم إلغاء الدورة في البداية فوراً لحماية الرصيد ومنع تصفيره أو تعليقه.`;
-      engine.log(`[🚨 حظر أمان مبكر] ${childAuthFailMsg}`, "error");
-
-      await supabase.from("vip_sessions").update({
-        operation_state: "paused",
-        pause_reason: childAuthFailMsg,
-        automation_enabled: false,
-        updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
-
-      return {
-        success: false,
-        error: childAuthFailMsg,
-        logs: engine.logs,
-      };
-    }
-    engine.log(`[✓] تأكيد المصادقة المزدوجة: تم تسجيل دخول الأونر والفرد بنجاح! جلسة الفرد مثبتة بالذاكرة طوال خطوات الدورة.`, "success");
-  }
-
-  // Mark session as actively running immediately to prevent false stop detection
+  // Mark session as actively running immediately
   try {
     await supabase.from("vip_sessions").update({
       operation_state: "running",
@@ -1471,7 +1436,7 @@ async function handleSingleCycleInternal(
     }).eq("id", session_id);
   } catch (_) {}
 
-  // 2. Check Plan & Child existence
+  // 2. Check Plan & Child existence on Server first
   let status = await engine.getStatusAndChild(true);
   let ownerPlanPre = status.planId;
   const ownerStartMix = status.remainingMix || 0;
@@ -1501,6 +1466,45 @@ async function handleSingleCycleInternal(
       error: "لا يوجد فرد مضاف داخل عائلة الأونر حالياً. يرجى الضغط على زر «إضافة وتأكيد الفرد الآن» أولاً.",
       logs: engine.logs,
     };
+  }
+
+  // 3. فحص تسجيل دخول الفرد وتحديد وضع التشغيل التلقائي (مزدوج أم وضع المالك المستقل)
+  let prewarmedChildEngine: EtisalatEngine | null = null;
+  let useOwnerMasterMode = false;
+
+  if (childEmail && childPass) {
+    prewarmedChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
+    prewarmedChildEngine.setAuthSession(session.cached_child_token, session.cached_child_cookie);
+    prewarmedChildEngine.onNewAuthToken = (token, cookie) => {
+      supabase.from("vip_sessions").update({
+        cached_child_token: token,
+        cached_child_cookie: cookie,
+      }).eq("id", session_id).catch(() => {});
+    };
+    prewarmedChildEngine.onLog = (l) => engine.log(l.message, l.level);
+
+    engine.log(`[*] فحص تسجيل دخول خط الفرد والتأكد من جاهزية حسابه...`, "info");
+    let childLoginOk = await prewarmedChildEngine.login(childEmail, childPass, false, false);
+
+    // تجربة الدخول برقم الهاتف إن فشل الإيميل
+    if (!childLoginOk && childNum) {
+      engine.log(`[*] تجربة تسجيل الدخول برقم هاتف الفرد (${childNum}) كبديل للإيميل...`, "info");
+      childLoginOk = await prewarmedChildEngine.login(childNum, childPass, false, true);
+    }
+
+    if (childLoginOk && prewarmedChildEngine.authToken) {
+      engine.log(`[✓] تأكيد المصادقة المزدوجة: تم تسجيل دخول الأونر والفرد بنجاح! جلسة الفرد مثبتة بالذاكرة.`, "success");
+      useOwnerMasterMode = false;
+    } else {
+      // ── التحول التلقائي للوضع الذكي المستقل (Owner Master Mode) ──
+      // طالما أن الفرد متواجد في عائلة الأونر، لا يتم إيقاف الدورة إطلاقاً!
+      // يتولى حساب المالك إدارة الدورة والتحويل التبادلي ثنائي الاتجاه بالكامل دون الحاجة لتوكن الفرد
+      engine.log(`[⚡ تفعيل الوضع الذكي المستقل] تعذر دخول الفرد ببياناته (كود 401)، ولكن تم التحقق المؤكد من وجود الفرد (${childNum}) داخل عائلة الأونر. استكمال الدورة بنجاح عبر صلاحية المالك الكاملة (Master Family Authority)!`, "success");
+      useOwnerMasterMode = true;
+    }
+  } else {
+    engine.log(`[⚡ تفعيل الوضع الذكي المستقل] بيانات دخول الفرد غير مسجلة، والاعتماد كلياً على صلاحية المالك الكاملة لتحويل الميكسات بالاتجاهين!`, "info");
+    useOwnerMasterMode = true;
   }
 
   const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
@@ -2270,30 +2274,20 @@ async function handleSingleCycleInternal(
   await sleep(2500);
 
   // 6. STEP 4: Smart Recovery from Child to Owner (تنشيط الفرد اللحظي ومراقبة الرصيد الحساس واسترجاعه للأونر)
-  await sendStep("recovery", 4, "تنشيط واسترجاع ميكسات الفرد", "تنشيط فوري لخط الفرد ومراقبة دقيقة للأرصدة ثم التحويل للأونر");
+  await sendStep("recovery", 4, "تنشيط واسترجاع ميكسات الفرد", "مراقبة دقيقة للأرصدة ثم استرجاع الميكسات للأونر");
   recoveredMixAmount = 0;
   let recoveredOk = false;
 
-  if (childEmail && childPass && engine.ownerDial) {
+  if (engine.ownerDial && childNum) {
     let activeChildEngine = prewarmedChildEngine;
-    if (!activeChildEngine || !activeChildEngine.authToken) {
+    if (!useOwnerMasterMode && (!activeChildEngine || !activeChildEngine.authToken)) {
       activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
       activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
     }
 
-    // ── تنشيط فوري للفرد وتحديث سريع لحظي لجلسته قبل التحويل ──
-    engine.log(`[⚡] تنشيط فوري لجلسة خط الفرد (${childNum}) وتحديث رصيده المباشر قبل التحويل...`, "info");
-    let childLoginOk = true;
-    if (!activeChildEngine.authToken || !activeChildEngine.currentDial) {
-      try {
-        childLoginOk = await activeChildEngine.login(childEmail, childPass, false, true);
-      } catch (_loginErr) {
-        childLoginOk = false;
-      }
-    }
-
-    if (!childLoginOk || !activeChildEngine.authToken) {
-      engine.log(`[!] تنشيط جلسة الفرد (${childNum}) يحتاج مصادقة طازجة، جاري التحديث السريع...`, "warn");
+    // تنشيط وتحديث الجلسة إن كنا في الوضع المزدوج
+    let childLoginOk = !useOwnerMasterMode;
+    if (!useOwnerMasterMode && activeChildEngine && (!activeChildEngine.authToken || !activeChildEngine.currentDial)) {
       try {
         childLoginOk = await activeChildEngine.login(childEmail, childPass, false, true);
       } catch (_) {
@@ -2303,14 +2297,14 @@ async function handleSingleCycleInternal(
 
     // مراقبة رصيد الفرد الفعلي المباشر بالسيرفر بدقة متناهية
     let authoritativeChildMix = 0;
-    if (activeChildEngine.authToken) {
+    if (!useOwnerMasterMode && activeChildEngine && activeChildEngine.authToken) {
       try {
         const childStPreTransfer = await activeChildEngine.getStatusAndChild(true);
         authoritativeChildMix = childStPreTransfer.remainingMix || 0;
       } catch (_) {}
     }
 
-    // استعلام مزدوج من جلسة الأونر للتأكد الحسابي التام من رصيد الفرد في مقسم العائلة
+    // استعلام مباشر من جلسة الأونر لمعرفة رصيد الفرد في عائلة الأونر
     try {
       const ownerViewChild = await engine.getChildConsumptionByOwner(childNum);
       if (ownerViewChild > authoritativeChildMix) {
@@ -2331,14 +2325,15 @@ async function handleSingleCycleInternal(
 
       // إرسال أمر التحويل الفعلي مع تسجيل كامل لاستجابة السيرفر
       let transferSubmitted = false;
-      if (activeChildEngine.authToken) {
+
+      // أ. إذا لم يكن وضع المالك الإجباري، تجربة جلسة الفرد أولاً:
+      if (!useOwnerMasterMode && activeChildEngine && activeChildEngine.authToken) {
         transferSubmitted = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
       }
 
-      // ── مسار التحويل التبادلي الذكي عبر جلسة الأونر (Master Family Authority Fallback) ──
-      // في حال تعذر أو بطء التحويل عبر جلسة الفرد، يتم فوراً استخدام صلاحية الأونر المباشرة للتحويل من الفرد للأونر
+      // ب. التحويل المباشر بسلطة المالك (Master Family Authority) - المسار الذكي الأساسي/البديل:
       if (!transferSubmitted && engine.authToken && childNum) {
-        engine.log(`[💡 مسار بديل ذكي] تجربة استرجاع الميكسات من الفرد للأونر مباشرة عبر جلسة الأونر (Master Family Authority)...`, "info");
+        engine.log(`[⚡ تحويل مباشر بجلسة الأونر] استرجاع الميكسات (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر بسلطة المالك (Master Authority)...`, "info");
         const ownerDrivenOk = await engine.transferMixBetween(childNum, engine.ownerDial || "", amountToTransfer, "Hekaya_XRP_MIX_Child_1");
         if (ownerDrivenOk) {
           engine.log(`[✓] نجح استرجاع الميكسات من الفرد للأونر فوراً عبر جلسة الأونر الرئيسية دون الحاجة لتوكن الفرد!`, "success");
