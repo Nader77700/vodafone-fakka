@@ -1760,7 +1760,7 @@ async function handleSingleCycleInternal(
 
         if (chMix >= (status.remainingMix * 0.7) || owMix <= 1000) {
           transferred = true;
-          status.remainingMix = owMix;
+          // preserve original transferred amount for parkedMixAmount
           break;
         }
 
@@ -1770,7 +1770,7 @@ async function handleSingleCycleInternal(
       }
 
       if (transferred) {
-        parkedMixAmount = status.remainingMix;
+        parkedMixAmount = armedMixToTransfer;
         
         // ── SMART INSTANT TELECOM ZERO-LOSS VERIFICATION ──
         // Transferred mixes in Etisalat settle into child line within 3 to 7 seconds.
@@ -2326,78 +2326,96 @@ async function handleSingleCycleInternal(
       // إرسال أمر التحويل الفعلي مع تسجيل كامل لاستجابة السيرفر
       let transferSubmitted = false;
 
-      // أ. إذا لم يكن وضع المالك الإجباري، تجربة جلسة الفرد أولاً:
+      // أ. إذا لم يكن وضع المالك الإجباري، الاعتماد حصراً وبشكل قطعي على جلسة الفرد:
       if (!useOwnerMasterMode && activeChildEngine && activeChildEngine.authToken) {
         transferSubmitted = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
       }
 
-      // ب. التحويل المباشر بسلطة المالك (Master Family Authority) - المسار الذكي الأساسي/البديل:
-      if (!transferSubmitted && engine.authToken && childNum) {
-        engine.log(`[⚡ تحويل مباشر بجلسة الأونر] استرجاع الميكسات (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر بسلطة المالك (Master Authority)...`, "info");
+      // ب. التحويل المباشر بسلطة المالك (حصر مشدد: فقط وفقط إذا كان الفرد في وضع useOwnerMasterMode لأن تسجيل دخوله فشل كلياً):
+      if (useOwnerMasterMode && !transferSubmitted && engine.authToken && childNum) {
+        engine.log(`[⚡ تحويل مباشر بجلسة الأونر] استرجاع الميكسات (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر بسلطة المالك المستقلة (Master Authority)...`, "info");
         const ownerDrivenOk = await engine.transferMixBetween(childNum, engine.ownerDial || "", amountToTransfer, "Hekaya_XRP_MIX_Child_1");
         if (ownerDrivenOk) {
-          engine.log(`[✓] نجح استرجاع الميكسات من الفرد للأونر فوراً عبر جلسة الأونر الرئيسية دون الحاجة لتوكن الفرد!`, "success");
+          engine.log(`[✓] نجح استرجاع الميكسات من الفرد للأونر فوراً عبر جلسة الأونر الرئيسية!`, "success");
           transferSubmitted = true;
         }
       }
 
       // ── بروتوكول الإنقاذ الإجباري للسيرفر (AUTO-RESCUE RETRY PROTOCOL) ──
-      // في حال تعثر التحويل لأي سبب، يمنع إيقاف الجلسة وترك الميكسات عند الفرد!
-      // يتدخل السيرفر فوراً في وضع الإنقاذ لإعادة المصادقة ونقل الميكسات للأونر بأي شكل.
+      // في حال تعثر التحويل، يتم التعامل مع كود BE_SDP_361 بفحص وصول الرصيد أولاً قبل تكرار التحويل!
+      const isPendingProcessing = !transferSubmitted && activeChildEngine && activeChildEngine.lastTransferErrorCode === "BE_SDP_361";
+      if (isPendingProcessing) {
+        engine.log(`[*] رصد مقسم اتصالات بحالة معالجة سارية [BE_SDP_361] - فحص مباشر لرصيد الأونر والفرد للتأكد هل تحركت الميكسات بالفعل...`, "info");
+        await sleep(3000);
+        let checkOwnerNow = 0;
+        try {
+          const oSt = await engine.getStatusAndChild(true);
+          checkOwnerNow = oSt.remainingMix || 0;
+        } catch (_) {}
+        if (checkOwnerNow > (confirmedNewMix + 2000) || checkOwnerNow >= 15000) {
+          engine.log(`[✓] تأكيد فوري: الميكسات (${checkOwnerNow.toLocaleString('en-US')} ميكس) وصلت للأونر بالفعل رغم رد المقسم BE_SDP_361!`, "success");
+          transferSubmitted = true;
+        }
+      }
+
+      // في حال لم ينجح التحويل وما زالت الميكسات عالقة، نبدأ محاولات الإنقاذ
       if (!transferSubmitted) {
-        engine.log(`[🛡️ تدخل إنقاذ تلقائي للسيرفر] تعثر أمر نقل الميكسات المبدئي من الفرد للأونر (كود: ${activeChildEngine.lastTransferErrorCode || "رفض مقسم اتصالات"}). جاري تفعيل بروتوكول الإنقاذ الفوري لضمان عدم ضياع أي ميكس...`, "warn");
+        const lastErr = (activeChildEngine && activeChildEngine.lastTransferErrorCode) || "رفض مقسم اتصالات";
+        engine.log(`[🛡️ تدخل إنقاذ تلقائي للسيرفر] تعثر أمر نقل الميكسات المبدئي من الفرد للأونر (كود: ${lastErr}). جاري تفعيل بروتوكول الإنقاذ لضمان عدم ضياع أي ميكس...`, "warn");
 
         for (let rescueAttempt = 1; rescueAttempt <= 6; rescueAttempt++) {
-          engine.log(`[🚑 محاولة إنقاذ ${rescueAttempt}/6] محاولة نقل الميكسات عبر جلسة الأونر أولاً...`, "info");
-          await sleep(1000 * rescueAttempt);
+          await sleep(1500 * rescueAttempt);
 
-          // 1. تجربة سحب الميكسات عبر جلسة الأونر
-          const rescueAmount = amountToTransfer;
-          const ownerRescueOk = await engine.transferMixBetween(childNum, engine.ownerDial || "", rescueAmount, "Hekaya_XRP_MIX_Child_1");
-          if (ownerRescueOk) {
-            engine.log(`[✓] تم إنقاذ ونقل الميكسات للأونر بنجاح في محاولة الإنقاذ رقم ${rescueAttempt} عبر جلسة الأونر!`, "success");
-            transferSubmitted = true;
-            break;
-          }
-
-          // 2. إعادة تهيئة ومصادقة جلسة الفرد
-          engine.log(`[🚑 محاولة إنقاذ ${rescueAttempt}/6] إعادة تهيئة ومصادقة جلسة الفرد (${childNum}) فورياً...`, "info");
-          activeChildEngine.authToken = "";
-          activeChildEngine.cookieHeader = "";
-          const reAuthOk = await activeChildEngine.login(childEmail, childPass, false, true);
-
-          if (reAuthOk && activeChildEngine.authToken) {
-            // التحقق هل الميكسات وصلت للأونر بالفعل أو ما زالت عند الفرد
-            let currentRescueChildMix = 0;
-            try {
-              const rescueChildSt = await activeChildEngine.getStatusAndChild(true);
-              currentRescueChildMix = rescueChildSt.remainingMix || 0;
-            } catch (_) {}
-
-            // فحص من زاوية الأونر أيضاً
-            try {
-              const ownerPerspective = await engine.getChildConsumptionByOwner(childNum);
-              if (ownerPerspective > 0 && currentRescueChildMix === 0) {
-                currentRescueChildMix = ownerPerspective;
-              }
-            } catch (_) {}
-
-            if (currentRescueChildMix <= (expectedChildQuota + 200) && currentRescueChildMix > 0) {
-              engine.log(`[✓] فحص الإنقاذ: رصيد الفرد الفعلي أصبح (${currentRescueChildMix} ميكس) وهو الحصة الأساسية، الرصيد وصل للأونر!`, "success");
+          // إذا كنا في وضع المالك المستقل فقط
+          if (useOwnerMasterMode) {
+            engine.log(`[🚑 محاولة إنقاذ ${rescueAttempt}/6] محاولة نقل الميكسات عبر جلسة الأونر...`, "info");
+            const rescueAmount = amountToTransfer;
+            const ownerRescueOk = await engine.transferMixBetween(childNum, engine.ownerDial || "", rescueAmount, "Hekaya_XRP_MIX_Child_1");
+            if (ownerRescueOk) {
+              engine.log(`[✓] تم إنقاذ ونقل الميكسات للأونر بنجاح في محاولة الإنقاذ رقم ${rescueAttempt} عبر جلسة الأونر!`, "success");
               transferSubmitted = true;
               break;
             }
+          } else if (activeChildEngine) {
+            // إعادة تهيئة ومصادقة جلسة الفرد حصراً طالما الفرد مسجل
+            engine.log(`[🚑 محاولة إنقاذ ${rescueAttempt}/6] إعادة تهيئة وتحديث جلسة الفرد (${childNum})...`, "info");
+            activeChildEngine.authToken = "";
+            activeChildEngine.cookieHeader = "";
+            const reAuthOk = await activeChildEngine.login(childEmail, childPass, false, true);
 
-            const currAmount = currentRescueChildMix > 0 ? currentRescueChildMix : rescueAmount;
-            engine.log(`[🚀] إرسال أمر استرجاع إنقاذي (${currAmount.toLocaleString('en-US')} ميكس) من الفرد للأونر...`, "info");
-            const rescueOk = await activeChildEngine.transferMix(engine.ownerDial, currAmount, "Hekaya_XRP_MIX_Child_1");
+            if (reAuthOk && activeChildEngine.authToken) {
+              // التحقق هل الميكسات وصلت للأونر بالفعل أو ما زالت عند الفرد
+              let currentRescueChildMix = 0;
+              try {
+                const rescueChildSt = await activeChildEngine.getStatusAndChild(true);
+                currentRescueChildMix = rescueChildSt.remainingMix || 0;
+              } catch (_) {}
 
-            if (rescueOk) {
-              engine.log(`[✓] نجح أمر التحويل في محاولة الإنقاذ رقم ${rescueAttempt}! جاري التحقق من استقرار الرصيد بالأونر...`, "success");
-              transferSubmitted = true;
-              break;
-            } else {
-              engine.log(`[!] محاولة الإنقاذ ${rescueAttempt} تم رفضها من مقسم اتصالات (كود: ${activeChildEngine.lastTransferErrorCode || "معلق"}). إعادة المحاولة...`, "warn");
+              // فحص من زاوية الأونر أيضاً
+              try {
+                const ownerPerspective = await engine.getChildConsumptionByOwner(childNum);
+                if (ownerPerspective > 0 && currentRescueChildMix === 0) {
+                  currentRescueChildMix = ownerPerspective;
+                }
+              } catch (_) {}
+
+              if (currentRescueChildMix <= (expectedChildQuota + 200) && currentRescueChildMix > 0) {
+                engine.log(`[✓] فحص الإنقاذ: رصيد الفرد الفعلي أصبح (${currentRescueChildMix} ميكس) وهو الحصة الأساسية، الرصيد وصل للأونر!`, "success");
+                transferSubmitted = true;
+                break;
+              }
+
+              const currAmount = currentRescueChildMix > 0 ? currentRescueChildMix : amountToTransfer;
+              engine.log(`[🚀] إرسال أمر استرجاع إنقاذي (${currAmount.toLocaleString('en-US')} ميكس) من الفرد للأونر...`, "info");
+              const rescueOk = await activeChildEngine.transferMix(engine.ownerDial, currAmount, "Hekaya_XRP_MIX_Child_1");
+
+              if (rescueOk) {
+                engine.log(`[✓] نجح أمر التحويل في محاولة الإنقاذ رقم ${rescueAttempt}! جاري التحقق من استقرار الرصيد بالأونر...`, "success");
+                transferSubmitted = true;
+                break;
+              } else {
+                engine.log(`[!] محاولة الإنقاذ ${rescueAttempt} تم رفضها من مقسم اتصالات (كود: ${activeChildEngine.lastTransferErrorCode || "معلق"}). إعادة المحاولة...`, "warn");
+              }
             }
           }
         }
