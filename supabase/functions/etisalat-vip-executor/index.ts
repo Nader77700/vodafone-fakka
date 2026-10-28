@@ -1149,18 +1149,18 @@ async function handleSingleCycleInternal(
   try {
     const { data: lockCheck } = await supabase
       .from("vip_sessions")
-      .select("worker_status, worker_last_heartbeat")
+      .select("worker_status, worker_last_heartbeat, operation_state")
       .eq("id", session_id)
       .maybeSingle();
 
-    if (lockCheck && lockCheck.worker_status === "executing") {
+    if (lockCheck && (lockCheck.worker_status === "executing" || lockCheck.worker_status === "running")) {
       const lastHeartbeatMs = lockCheck.worker_last_heartbeat
         ? new Date(lockCheck.worker_last_heartbeat).getTime()
         : 0;
       const elapsedMs = Date.now() - lastHeartbeatMs;
-      // If actively executing within last 45 seconds, reject duplicate execution
-      if (elapsedMs < 45000) {
-        console.warn(`[Mutex] Session ${session_id} is already executing a cycle (${elapsedMs}ms ago). Skipping duplicate trigger!`);
+      // If actively running within last 60 seconds, reject duplicate execution
+      if (elapsedMs < 60000) {
+        console.warn(`[Mutex] Session ${session_id} is already actively executing a cycle (${elapsedMs}ms ago). Skipping duplicate trigger!`);
         return {
           success: true,
           skipped_duplicate: true,
@@ -1168,7 +1168,7 @@ async function handleSingleCycleInternal(
           logs: [{
             time: new Date().toLocaleTimeString("ar-EG", { hour12: false }),
             level: "warn",
-            message: "[🛡️ قفل التزامن] تم تجاهل طلب تشغيل مكرر لمنع تضارب تحويل الميكسات وتصفير الرصيد.",
+            message: "[🛡️ قفل التزامن الحصري] تم حظر تشغيل متزامن مكرر لحماية الرصيد ومنع تصادم الأوامر بمقسم اتصالات.",
           }],
         };
       }
@@ -2076,6 +2076,11 @@ async function handleSingleCycleInternal(
 
   // 6. STEP 4: أمر استرجاع فوري ومباشر واحد من الفرد للأونر فور استجابة السيرفر
   await sendStep("recovering", 4, "تحويل فوري للأونر", "أمر تحويل مباشر من الفرد للأونر");
+  
+  // فترة انتظار واستقرار (2.5 ثانية) لمقسم اتصالات بعد تأكيد ترحيل النظام لضمان استقرار الباقة ومنع ضغط وتصادم الأوامر
+  engine.log(`[*] انتظار ثانيتين ونصف (2.5 ثانية) لتهدئة واستقرار مقسم اتصالات بعد ترحيل النظام واعتماد الباقة قبل إرسال أمر التحويل...`, "info");
+  await sleep(2500);
+
   recoveredMixAmount = 0;
   let recoveredOk = false;
 

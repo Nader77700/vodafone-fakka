@@ -137,6 +137,7 @@ class VipRunnerService {
   private states = new Map<string, VipRunnerState>();
   private listeners = new Map<string, Set<RunnerListener>>();
   private loopPromises = new Map<string, Promise<void>>();
+  private activeRunningSessions = new Set<string>();
   private lastResumeAttempt = new Map<string, number>();
   private saveTimers = new Map<string, any>();
   private notifyTimers = new Map<string, any>();
@@ -364,8 +365,10 @@ class VipRunnerService {
       `الهدف: ${targetMix.toLocaleString('ar-EG')} ميكس | الفاصل: ${delaySeconds}ث`
     );
 
-    const loopPromise = this.executeLoop(sessionId);
-    this.loopPromises.set(sessionId, loopPromise);
+    if (!this.activeRunningSessions.has(sessionId)) {
+      const loopPromise = this.executeLoop(sessionId);
+      this.loopPromises.set(sessionId, loopPromise);
+    }
   }
 
   /**
@@ -558,9 +561,16 @@ class VipRunnerService {
   }
 
   private async executeLoop(sessionId: string) {
-    const MAX_NETWORK_RETRIES = 50;
+    if (this.activeRunningSessions.has(sessionId)) {
+      console.warn(`[VipRunnerService] Loop already running for session ${sessionId}. Skipping duplicate launch.`);
+      return;
+    }
+    this.activeRunningSessions.add(sessionId);
 
-    while (true) {
+    try {
+      const MAX_NETWORK_RETRIES = 50;
+
+      while (true) {
       const state = this.states.get(sessionId);
       if (!state || state.stopRequested) {
         break;
@@ -902,6 +912,10 @@ class VipRunnerService {
         this.addLog(sessionId, `[✓] تم إيقاف الدورة التلقائية بنجاح.`, 'info');
       }
       this.notify(sessionId);
+    }
+    } finally {
+      this.activeRunningSessions.delete(sessionId);
+      this.loopPromises.delete(sessionId);
     }
   }
 }
