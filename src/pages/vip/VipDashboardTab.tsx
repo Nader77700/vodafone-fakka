@@ -106,6 +106,46 @@ export function VipDashboardTab({
   // Keep ref for auto loop cancel
   const stopRequestedRef = useRef(false);
 
+  // Atomic State Reset whenever session ID changes
+  useEffect(() => {
+    if (!session?.id) return;
+    const runnerState = vipRunnerService.getState(session.id);
+    
+    setLoopRunning(runnerState.isRunning);
+    setLoopCycle(runnerState.cycleCount || session.current_cycle || 0);
+    setCurrentStep(runnerState.currentStep || 'idle');
+    setStepMessage(runnerState.stepMessage || 'جاهز لبدء الدورة');
+    setCountdownSeconds(null);
+    setCheckingStatus(false);
+    setAddingChild(false);
+    setChangingPlan(false);
+    lastCycleRef.current = session.current_cycle || 0;
+
+    setLiveOwnerMix(
+      runnerState.latestOwnerMix !== undefined
+        ? runnerState.latestOwnerMix
+        : (session.owner_mix_balance !== undefined ? session.owner_mix_balance : null)
+    );
+    setLiveChildMix(
+      runnerState.latestChildMix !== undefined
+        ? runnerState.latestChildMix
+        : (session.individual_mix_balance !== undefined ? session.individual_mix_balance : null)
+    );
+    setLivePlan(runnerState.latestOwnerPlan || session.owner_current_plan || null);
+
+    if (runnerState.logs && runnerState.logs.length > 0) {
+      setTerminalLogs(runnerState.logs);
+    } else {
+      setTerminalLogs([
+        {
+          time: new Date().toLocaleTimeString('ar-EG', { hour12: false }),
+          level: 'info',
+          message: `[+] تم تحميل جلسة «${session.session_name || 'VIP'}». جاهز لبدء العمليات مع Etisalat VIP Bot.`,
+        },
+      ]);
+    }
+  }, [session?.id, session?.session_name, session?.current_cycle, session?.owner_mix_balance, session?.individual_mix_balance, session?.owner_current_plan]);
+
   // Subscribe to Persistent VIP Runner Service
   useEffect(() => {
     if (!session?.id) return;
@@ -160,8 +200,9 @@ export function VipDashboardTab({
     const effectiveOwnerMix = liveOwnerMix !== null ? liveOwnerMix : session.owner_mix_balance;
     const effectiveChildMix = liveChildMix !== null ? liveChildMix : session.individual_mix_balance;
     const targetMix = session.target_mix_balance || 50000;
-    const isTargetReached = targetMix > 0 && (Number(effectiveOwnerMix) || 0) >= targetMix;
-    const isCompleted = isTargetReached || currentStep === 'completed' || session.operation_state === 'completed';
+    // Target reached is only true if runner loop actually ran and hit the target, OR if session is explicitly marked completed in DB
+    const isTargetReached = (loopRunning || session.operation_state === 'completed') && targetMix > 0 && (Number(effectiveOwnerMix) || 0) >= targetMix;
+    const isCompleted = session.operation_state === 'completed' || (isTargetReached && loopRunning) || (currentStep === 'completed' && loopRunning);
 
     return {
       ...session,

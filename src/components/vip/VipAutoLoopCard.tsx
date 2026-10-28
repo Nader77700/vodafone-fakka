@@ -109,15 +109,24 @@ export function VipAutoLoopCard({
 
   // Synchronize target, delay, and auto-eject strictly when session changes
   useEffect(() => {
+    const curBal = session.owner_mix_balance || 0;
+    const defaultProposed = curBal > 0
+      ? (curBal >= 150000 ? 200000 : curBal >= 100000 ? 150000 : curBal >= 50000 ? 100000 : 50000)
+      : (session.target_mix_balance || 100000);
+
+    const initialTarget = session.target_mix_balance && session.target_mix_balance > curBal
+      ? session.target_mix_balance
+      : defaultProposed;
+
     setTargetPreset(
-      [50000, 100000, 150000, 200000].includes(session.target_mix_balance || 50000)
-        ? String(session.target_mix_balance || 50000)
+      [50000, 100000, 150000, 200000].includes(initialTarget)
+        ? String(initialTarget)
         : 'custom'
     );
-    setCustomTarget(String(session.target_mix_balance || 50000));
+    setCustomTarget(String(initialTarget));
     setCycleDelay(session.cycle_delay_seconds || 20);
     setAutoEject(session.auto_eject_child_on_complete ?? false);
-  }, [session.id, session.target_mix_balance, session.cycle_delay_seconds, session.auto_eject_child_on_complete]);
+  }, [session.id, session.target_mix_balance, session.cycle_delay_seconds, session.auto_eject_child_on_complete, session.owner_mix_balance]);
 
   const handleToggleAutoEject = async (newVal: boolean) => {
     setAutoEject(newVal);
@@ -143,7 +152,7 @@ export function VipAutoLoopCard({
   };
 
   const selectedTarget =
-    targetPreset === 'custom' ? parseInt(customTarget, 10) || 50000 : parseInt(targetPreset, 10);
+    targetPreset === 'custom' ? parseInt(customTarget, 10) || 100000 : parseInt(targetPreset, 10);
 
   // Total current balance across owner & child to prevent progress bar flashing 0 during parking
   const currentMix = Math.max(
@@ -151,7 +160,7 @@ export function VipAutoLoopCard({
     (session.owner_mix_balance || 0) + (session.individual_mix_balance || 0)
   );
   const progressPercent = selectedTarget > 0 ? Math.min(100, Math.round((currentMix / selectedTarget) * 100)) : 0;
-  const isTargetReached = currentMix >= selectedTarget && currentMix > 0;
+  const isTargetReached = (session.operation_state === 'completed' || isRunning) && currentMix >= selectedTarget && currentMix > 0;
 
   // Direct, unblocked running state strictly driven by execution
   const effectiveIsRunning = Boolean(isRunning);
@@ -159,8 +168,8 @@ export function VipAutoLoopCard({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleStartClick = () => {
-    // Strictly require confirmation ONLY when target was truly reached
-    if (isTargetReached) {
+    // Strictly require confirmation ONLY when target was truly reached during run or target is below current balance
+    if (isTargetReached || (selectedTarget <= currentMix && currentMix > 0)) {
       setShowConfirmModal(true);
       return;
     }

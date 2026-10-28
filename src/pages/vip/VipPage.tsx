@@ -145,7 +145,21 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
     }
   }, [isTemporaryShareMode]);
 
-  // 2. Load Sessions & Dashboard Data
+  // 2. Load Dashboard details for a specific session quickly without refetching session list
+  const loadDashboardForSession = useCallback(async (targetId: string, isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
+    try {
+      const data = await getVipDashboardData(targetId);
+      setDashboardData(data);
+    } catch (err: any) {
+      console.error('[VipPage] Failed to load dashboard for session:', targetId, err);
+      toast.error('تعذر جلب تفاصيل الجلسة: ' + (err?.message || 'خطأ'));
+    } finally {
+      if (isManualRefresh) setRefreshing(false);
+    }
+  }, []);
+
+  // 3. Load Sessions & Dashboard Data (Full Refresh)
   const loadSessionsAndData = useCallback(async (preferredSessionId?: string, isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
     else setLoadingData(true);
@@ -165,8 +179,6 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
       // Step B: Load Dashboard details for this active session
       const data = await getVipDashboardData(targetId);
       setDashboardData(data);
-
-      // Silent background sync — do NOT show an intrusive banner toast that covers the UI
     } catch (err: any) {
       console.error('[VipPage] Failed to load data:', err);
       toast.error('تعذر جلب بيانات قسم VIP: ' + (err?.message || 'خطأ غير معروف'));
@@ -184,16 +196,31 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
     loadSessionsAndData(activeSessionId, true);
   }, [loadSessionsAndData, activeSessionId]);
 
-  // Switch Active Session with Full Data & State Isolation
+  // Switch Active Session with Instant 0ms Optimistic Isolation & No DOM Flickering
   const handleSelectSession = (newSessionId: string) => {
+    if (!newSessionId || newSessionId === activeSessionId) return;
     setActiveSessionId(newSessionId);
-    setDashboardData(null); // Completely flush previous session's dashboard data
+
+    // Optimistically update dashboardData with the known session object to prevent unmounting tabs
+    const targetSession = sessions.find((s) => s.id === newSessionId);
+    if (targetSession) {
+      setDashboardData((prev) => ({
+        session: targetSession,
+        supported_systems: prev?.supported_systems || [],
+        recent_cycles: prev?.session?.id === newSessionId ? prev.recent_cycles : [],
+        recent_operations: prev?.session?.id === newSessionId ? prev.recent_operations : [],
+        server_time: new Date().toISOString(),
+      }));
+    }
+
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('session', newSessionId);
       return next;
     });
-    loadSessionsAndData(newSessionId, false);
+
+    // Fetch deep fresh dashboard data in background without unmounting the view
+    loadDashboardForSession(newSessionId, false);
   };
 
   const handleTabChange = (val: string) => {

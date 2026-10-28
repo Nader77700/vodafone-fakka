@@ -116,7 +116,7 @@ export function VipSessionSwitcher({
   const [ownerPassword, setOwnerPassword] = useState('');
   const [individualEmail, setIndividualEmail] = useState('');
   const [individualPassword, setIndividualPassword] = useState('');
-  const [targetPreset, setTargetPreset] = useState('50000');
+  const [targetPreset, setTargetPreset] = useState('100000');
   const [customTarget, setCustomTarget] = useState('');
   const [cycleDelaySeconds, setCycleDelaySeconds] = useState(20);
   const [description, setDescription] = useState('');
@@ -269,7 +269,7 @@ export function VipSessionSwitcher({
         setSessionName('');
         setOwnerEmail('');
         setOwnerPassword('');
-        setTargetPreset('50000');
+        setTargetPreset('100000');
         setCustomTarget('');
         setCycleDelaySeconds(20);
         setDescription('');
