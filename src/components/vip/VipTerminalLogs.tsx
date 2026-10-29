@@ -178,11 +178,11 @@ export const VipTerminalLogs = React.memo(function VipTerminalLogs({
     return sanitized;
   }, [logs, isDelegatedUser]);
 
-  // Windowed visible logs to keep DOM node count capped at 80 items during live updates
+  // Windowed visible logs to keep DOM node count strictly capped at 50 items during live updates
   const visibleLogs = React.useMemo(() => {
     if (showAllLogs) return effectiveLogs;
-    if (effectiveLogs.length <= 80) return effectiveLogs;
-    return effectiveLogs.slice(-80);
+    if (effectiveLogs.length <= 50) return effectiveLogs;
+    return effectiveLogs.slice(-50);
   }, [effectiveLogs, showAllLogs]);
 
   // Track whether user intentionally scrolled up using touch or wheel

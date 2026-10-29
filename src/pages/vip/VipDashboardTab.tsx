@@ -244,7 +244,7 @@ export function VipDashboardTab({
 
   const appendLogs = (newLogs?: VipExecutionLog[]) => {
     if (!newLogs || newLogs.length === 0) return;
-    setTerminalLogs((prev) => [...prev, ...newLogs].slice(-300));
+    setTerminalLogs((prev) => [...prev, ...newLogs].slice(-50));
   };
 
   const addSingleLog = (
@@ -252,7 +252,7 @@ export function VipDashboardTab({
     level: 'info' | 'success' | 'warn' | 'error' = 'info'
   ) => {
     const time = new Date().toLocaleTimeString('ar-EG', { hour12: false });
-    setTerminalLogs((prev) => [...prev, { time, level, message }].slice(-300));
+    setTerminalLogs((prev) => [...prev, { time, level, message }].slice(-50));
   };
 
   // 1. Comprehensive check status with real-time SSE stream
