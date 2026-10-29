@@ -1542,23 +1542,9 @@ async function handleSingleCycleInternal(
         }
       }
     } else if (status.remainingMix < verifiedPeakBalance * 0.70) {
-      // SMART RESUMPTION & BALANCE ADOPTION (عدم شل الحركة واعتماد الرصيد الحقيقي للبدء من جديد):
-      // The old peak balance is neither at Owner nor at Child (expired or wiped by network).
-      // Do NOT brick the session or halt automation! Adopt current live balance and proceed smoothly!
-      engine.log(`[!] تنبيه الموازنة الذكية: لم يتم العثور على الرصيد التاريخي السابق (${verifiedPeakBalance.toLocaleString('en-US')} ميكس) عند الأونر أو الفرد.`, "warn");
-      engine.log(`[✓] اعتماد الرصيد الفعلي الحالي للأونر (${status.remainingMix.toLocaleString('en-US')} ميكس) كنقطة انطلاق جديدة للدورة وبدء تجميع الميكسات فوراً دون تجميد الجلسة!`, "success");
-      
-      verifiedPeakBalance = status.remainingMix;
-      
-      // Update session in DB so it doesn't stay stuck with stale data
-      try {
-        await supabase.from("vip_sessions").update({
-          owner_mix_balance: status.remainingMix,
-          operation_state: "active",
-          pause_reason: null,
-          updated_at: new Date().toISOString(),
-        }).eq("id", session_id);
-      } catch (_dbE) {}
+      // حظر تصفير الرصيد التام: لا يتم خفض رصيد الجلسة نهائياً عند بطء القراءة المؤقت
+      engine.log(`[🛡️ حظر التصفير] رصيد القراءة المؤقت (${status.remainingMix.toLocaleString('en-US')} ميكس) أقل من الرصيد المعتمد (${verifiedPeakBalance.toLocaleString('en-US')} ميكس). يتم الحفاظ على الرصيد المعتمد دون أي تصفير!`, "warn");
+      status.remainingMix = Math.max(status.remainingMix, verifiedPeakBalance);
     }
   }
 
@@ -2113,11 +2099,19 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 6. STEP 4: أمر استرجاع فوري ومباشر بلحظة واحدة (0ms) من الفرد للأونر فور استجابة السيرفر
-  await sendStep("recovering", 4, "تحويل فوري للأونر", "أمر تحويل مباشر ولحظي من الفرد للأونر");
+  // 6. STEP 4: ضخ ميكسات النظام الجديد ثم استرجاع ميكسات الفرد للأونر للتراكم والتجميع
+  await sendStep("recovering", 4, "ضخ الباقة الجديدة واسترجاع الميكسات", "تجديد الباقة وضخ الميكسات ثم استرجاع ميكسات الفرد لتجميع الرصيد");
   
-  // إلغاء أي تأخير أو انتظار (0 ثانية) - استجابة فورية لحظية بمجرد اعتماد النظام الجديد كما طلب المالك
-  engine.log(`[⚡] تنفيذ فوري بلحظة واحدة (0ms): استرجاع ميكسات الفرد للأونر فور تأكيد تحول النظام مباشرة...`, "info");
+  // ضخ ميكسات النظام الجديد للأونر بينما الميكسات السابقة مركونة ومحمية بالكامل لدى الفرد
+  const newPlanCost = targetPlanId.includes("7") ? "270" : "180";
+  engine.log(`[⚡] ضخ ميكسات النظام الجديد: تجديد باقة (${targetPlanDisplay}) للأونر لتنزيل الحصة الإضافية...`, "info");
+  try {
+    await engine.renewBundleAction(targetPlanId, newPlanCost);
+    await sleep(2500);
+  } catch (_rnwE) {}
+
+  // استرجاع فوري ومباشر بلحظة واحدة من الفرد للأونر لدمج وتجميع الميكسات
+  engine.log(`[⚡] تنفيذ فوري بلحظة واحدة (0ms): استرجاع ميكسات الفرد للأونر لدمجها وتجميع الرصيد التراكمي...`, "info");
 
   recoveredMixAmount = 0;
   let recoveredOk = false;
