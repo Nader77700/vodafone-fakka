@@ -1333,14 +1333,29 @@ async function handleSingleCycleInternal(
   let targetCost = 180;
   let childDial = session.individual_account_identifier || "";
 
-  // Helper: notify UI step
-  const sendStep = async (stepKey: string, stepNum: number, title: string, desc: string, status: 'in_progress' | 'confirmed' | 'failed' | 'pending_verification' = 'in_progress') => {
+  // Helper: notify UI step & persist state machine for seamless resume across disconnects
+  const sendStep = async (
+    stepKey: string,
+    stepNum: number,
+    title: string,
+    desc: string,
+    status: 'in_progress' | 'confirmed' | 'failed' | 'pending_verification' = 'in_progress',
+    extras?: {
+      isUnresolved?: boolean;
+      operationId?: string;
+      payload?: Record<string, any>;
+      confirmedPlan?: string;
+    }
+  ) => {
     if (sendEvent) {
       await sendEvent("step", { step: stepKey, stepNumber: stepNum, title, desc, status });
     }
     try {
-      await supabase.from("vip_sessions").update({
+      const updatePayload: Record<string, any> = {
         current_step: stepKey,
+        current_step_key: stepKey,
+        is_operation_unresolved: extras?.isUnresolved ?? false,
+        pending_operation_id: extras?.operationId ?? null,
         current_cycle_details: {
           step: stepKey,
           stepNumber: stepNum,
@@ -1351,7 +1366,16 @@ async function handleSingleCycleInternal(
         },
         worker_last_heartbeat: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      }).eq("id", session_id);
+      };
+
+      if (extras?.payload) {
+        updatePayload.resume_step_payload = extras.payload;
+      }
+      if (extras?.confirmedPlan) {
+        updatePayload.last_confirmed_plan = extras.confirmedPlan;
+      }
+
+      await supabase.from("vip_sessions").update(updatePayload).eq("id", session_id);
     } catch (_) {}
   };
 
@@ -1612,7 +1636,28 @@ async function handleSingleCycleInternal(
         lastResponseSummary: `فشل الانتقال إلى ${targetPlanDisplay}`,
       });
     }
-    await sendStep("step_7_request_plan_change", 7, "طلب تغيير النظام", `تم إرسال طلب التغيير بنجاح، جاري المراقبة وعدم افتراض الاكتمال...`, "confirmed");
+    await sendStep(
+      "step_7_request_plan_change",
+      7,
+      "طلب تغيير النظام",
+      `تم إرسال طلب التغيير بنجاح، جاري المراقبة وعدم افتراض الاكتمال...`,
+      "confirmed",
+      {
+        isUnresolved: true,
+        payload: {
+          parkedMixAmount,
+          postParkChildBal,
+          ownerStartMix,
+          ownerPlanPre,
+          currentOwnerPlanName,
+          targetPlanName,
+          targetPlanDisplay,
+          targetCost,
+          currentCost,
+          childDial,
+        }
+      }
+    );
 
     // ═════════════════════════════════════════════════════════════════════════
     // 8. مراقبة حالة النظام باستخدام قراءات حديثة (step_8_monitor_plan_change)
@@ -1651,7 +1696,28 @@ async function handleSingleCycleInternal(
         message: "لم يؤكد مقسم اتصالات تغيير النظام خلال المهلة المحددة (تم إيقاف الدورة بأمان)",
       });
     }
-    await sendStep("step_8_monitor_plan_change", 8, "مراقبة تغيير النظام", `تم تأكيد اعتماد النظام الجديد بنجاح: ${targetPlanDisplay}`, "confirmed");
+    await sendStep(
+      "step_8_monitor_plan_change",
+      8,
+      "مراقبة تغيير النظام",
+      `تم تأكيد اعتماد النظام الجديد بنجاح: ${targetPlanDisplay}`,
+      "confirmed",
+      {
+        isUnresolved: false,
+        confirmedPlan: targetPlanName,
+        payload: {
+          parkedMixAmount,
+          postParkChildBal,
+          ownerStartMix,
+          ownerPlanPre,
+          targetPlanName,
+          targetPlanDisplay,
+          targetCost,
+          currentCost,
+          childDial,
+        }
+      }
+    );
 
     // ═════════════════════════════════════════════════════════════════════════
     // 9. التحقق من رصيد الفرد بعد التغيير (step_9_verify_child_post_change)
@@ -1683,7 +1749,24 @@ async function handleSingleCycleInternal(
         });
       }
     }
-    await sendStep("step_10_transfer_child_to_owner", 10, "استرجاع للأونر", "تم إرسال وقبول أمر استرجاع الرصيد بنجاح بالسيرفر", "confirmed");
+    await sendStep(
+      "step_10_transfer_child_to_owner",
+      10,
+      "استرجاع للأونر",
+      "تم إرسال وقبول أمر استرجاع الرصيد بنجاح بالسيرفر",
+      "confirmed",
+      {
+        isUnresolved: false,
+        payload: {
+          recoveredMixAmount,
+          safeChildBalance,
+          targetPlanName,
+          targetPlanDisplay,
+          targetCost,
+          childDial,
+        }
+      }
+    );
 
     // ═════════════════════════════════════════════════════════════════════════
     // 11. إعادة قراءة رصيد الأونر والفرد للتحقق من النتيجة (step_11_reread_balances)
@@ -1752,6 +1835,10 @@ async function handleSingleCycleInternal(
       owner_current_plan: finalPlan,
       current_cycle: newCycleCount,
       current_step: targetReached ? "completed" : "idle",
+      current_step_key: targetReached ? "completed" : "idle",
+      is_operation_unresolved: false,
+      pending_operation_id: null,
+      resume_step_payload: {},
       operation_state: targetReached ? "completed" : "idle",
       automation_enabled: !targetReached && session.automation_enabled,
       worker_status: "idle",
@@ -1780,6 +1867,8 @@ async function handleSingleCycleInternal(
       cycle_status: targetReached ? "stopped_at_target" : "completed",
       increased_owner_balance: finalOwnerMix > ownerStartMix,
       safe_error_summary: null,
+      is_resumed: Boolean(session.current_step_key && session.current_step_key !== 'idle' && session.current_step_key !== 'completed'),
+      resume_count: (session.resume_count || 0) + (session.current_step_key && session.current_step_key !== 'idle' ? 1 : 0),
     });
 
     engine.log(`[🎉] تم اكتمال الدورة #${newCycleCount} بنجاح تام! الرصيد النهائي: (${finalOwnerMix.toLocaleString('en-US')} ميكس)`, "success");

@@ -1,0 +1,14 @@
+ALTER TABLE vip_sessions 
+ADD COLUMN IF NOT EXISTS current_step_key TEXT DEFAULT 'idle',
+ADD COLUMN IF NOT EXISTS pending_operation_id TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS is_operation_unresolved BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS last_confirmed_plan TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS resume_step_payload JSONB DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS last_successful_read_at TIMESTAMPTZ DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS last_plan_change_request_at TIMESTAMPTZ DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS last_confirmed_transfer_amount NUMERIC DEFAULT NULL;
+
+ALTER TABLE vip_cycle_history
+ADD COLUMN IF NOT EXISTS resume_count INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS is_resumed BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS unresolved_reason TEXT DEFAULT NULL;

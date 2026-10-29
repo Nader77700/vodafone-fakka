@@ -86,7 +86,17 @@ export interface VipSession {
   worker_status?: 'idle' | 'ready' | 'running' | 'executing' | 'paused' | 'stopped' | 'completed' | 'error';
   worker_last_heartbeat?: string | null;
   current_step?: string | null;
+  current_step_key?: VipStepKey | null;
   current_cycle_details?: Record<string, any> | null;
+
+  // Persistence, Resumption & Unresolved Operations (Sections 1 & 2)
+  pending_operation_id?: string | null;
+  is_operation_unresolved?: boolean;
+  last_confirmed_plan?: string | null;
+  resume_step_payload?: Record<string, any> | null;
+  last_successful_read_at?: string | null;
+  last_plan_change_request_at?: string | null;
+  last_confirmed_transfer_amount?: number | null;
 
   // Credentials and Security (Masked)
   owner_email?: string | null;
@@ -137,6 +147,14 @@ export interface VipCycleRecord {
   safe_error_summary: string | null;
   increased_owner_balance: boolean;
   created_at: string;
+
+  // Extended Cycle Audit & Recovery Diagnostics
+  resume_count?: number;
+  is_resumed?: boolean;
+  unresolved_reason?: string | null;
+  error_category?: string | null;
+  failure_timestamp?: string | null;
+  last_api_response_summary?: string | null;
 }
 
 export interface VipSupportedSystem {

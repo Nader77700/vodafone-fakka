@@ -123,18 +123,27 @@ function toEnglishDigits(str: string): string {
 const LogLineRow = React.memo(function LogLineRow({ log }: { log: VipExecutionLog }) {
   const msg = log.message || '';
   let colorClass = 'text-zinc-300';
-  if (log.level === 'success' || msg.startsWith('[+]') || msg.startsWith('[✓]')) {
+
+  if (log.level === 'success' || msg.startsWith('[+]') || msg.startsWith('[✓]') || msg.includes('تم تأكيد') || msg.includes('تم اكتمال') || msg.includes('تم التحقق بنجاح')) {
     colorClass = 'text-emerald-400 font-medium';
   } else if (log.level === 'error' || msg.startsWith('[-]')) {
     colorClass = 'text-rose-400 font-medium';
-  } else if (log.level === 'warn' || msg.startsWith('[!]') || msg.startsWith('[⚠️]')) {
+  } else if (log.level === 'warn' || msg.startsWith('[!]') || msg.startsWith('[⚠️]') || msg.includes('تعذر قراءة الرصيد')) {
     colorClass = 'text-amber-400 font-medium';
+  } else if (msg.includes('[الأونر]') || msg.includes('حساب الأونر') || msg.includes('رصيد الأونر')) {
+    colorClass = 'text-amber-300 font-medium';
+  } else if (msg.includes('[الفرد]') || msg.includes('حساب الفرد') || msg.includes('رصيد الفرد')) {
+    colorClass = 'text-cyan-300 font-medium';
+  } else if (msg.includes('معلق') || msg.includes('قيد التحقق') || msg.includes('جارٍ انتظار')) {
+    colorClass = 'text-purple-300 font-medium';
   } else if (msg.startsWith('[*]')) {
     colorClass = 'text-sky-400';
   } else if (msg.startsWith('[⚡]')) {
     colorClass = 'text-yellow-300';
   } else if (msg.startsWith('[🛡️]')) {
     colorClass = 'text-cyan-300';
+  } else if (msg.startsWith('[🧪]')) {
+    colorClass = 'text-purple-300';
   }
 
   return (
