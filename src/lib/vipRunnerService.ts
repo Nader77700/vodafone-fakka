@@ -608,6 +608,18 @@ class VipRunnerService {
         continue;
       }
 
+      if (cycleResult.waiting_for_switch) {
+        this.addLog(
+          sessionId,
+          `[⏳ بانتظار رد المقسم] تغيير النظام قيد المعالجة بشبكة اتصالات — الرصيد محمي بالكامل والمراقبة مستمرة بهدوء حتى اعتماد النظام...`,
+          'info'
+        );
+        st.stepMessage = 'بانتظار اعتماد النظام الجديد من المقسم (مراقبة مستمرة)...';
+        this.notify(sessionId);
+        await new Promise((r) => setTimeout(r, 3500));
+        continue;
+      }
+
       if (!cycleResult.success) {
         // CRITICAL RECOVERY GUARD: If error happened during migration / while mixes were parked
         // NEVER ABORT! Auto-rescue child mixes and maintain the loop!

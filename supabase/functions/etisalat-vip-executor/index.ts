@@ -967,7 +967,7 @@ class EtisalatEngine {
       );
       const elapsedMigrateSec = ((Date.now() - tStartMigrate) / 1000).toFixed(1);
       if (isSuccess) {
-        this.log(`[⚡] تم تغيير النظام بنجاح إلى: ${displayName} (استغرق ${elapsedMigrateSec} ثانية)`, "success");
+        this.log(`[⚡] تم إرسال وقبول طلب تغيير النظام بالسيرفر (${displayName}) — جاري فحص ومراقبة التفعيل الفعلي بالمقسم...`, "info");
       } else {
         this.log(`[!] رد السيرفر على طلب الترحيل (استغرق ${elapsedMigrateSec} ثانية): ${text.slice(0, 160)}`, "warn");
       }
@@ -1559,12 +1559,27 @@ async function handleSingleCycleInternal(
     let skipInitialSteps = false;
     let jumpToMonitorOnly = false;
 
-    if (hasUnresolvedPlanChange && isPlanAlreadyFlipped) {
-      engine.log(`[✓ استئناف ذكي] تم رصد اكتمال ترحيل النظام مسبقاً إلى (${targetPlanDisplay}) بقراءة حية — تخطي التجديد الأولي وإعادة الإرسال...`, "success");
-      skipInitialSteps = true;
-    } else if (hasUnresolvedPlanChange && !isPlanAlreadyFlipped) {
-      engine.log(`[⏳ استئناف ذكي] طلب تغيير النظام مرسل مسبقاً وبانتظار المقسم — الانتقال مباشرة للمراقبة دون تكرار إرسال الطلب...`, "warn");
-      jumpToMonitorOnly = true;
+    // ─────────────────────────────────────────────────────────────────────────
+    // قاعدة رصيد الأونر الأساسية والخطوة التنشيطية:
+    // إذا كان رصيد الأونر > 0: لا يجوز أبداً تجاوز تحويل الرصيد للفرد والقفز للمراقبة!
+    // بل يجب حتماً تحويل رصيد الأونر بالكامل إلى الفرد ثم إرسال طلب تغيير النظام
+    // كخطوة تنشيطية لتأكيد استجابة المقسم الفورية.
+    // ─────────────────────────────────────────────────────────────────────────
+    if (ownerStartMix > 0) {
+      if (hasUnresolvedPlanChange) {
+        engine.log(`[⚡ خطوة تنشيطية] رصد رصيد حالي لدى الأونر (${ownerStartMix.toLocaleString('en-US')} ميكس) — جاري تحويل الرصيد للفرد أولاً ثم إرسال طلب تغيير النظام كخطوة تنشيطية لتأكيد الاستجابة الفورية...`, "info");
+      }
+      skipInitialSteps = false;
+      jumpToMonitorOnly = false;
+    } else {
+      // رصيد الأونر 0
+      if (hasUnresolvedPlanChange && isPlanAlreadyFlipped) {
+        engine.log(`[✓ استئناف ذكي] رصيد الأونر مفرغ (صفر) وتم رصد اكتمال ترحيل النظام مسبقاً إلى (${targetPlanDisplay}) بقراءة حية — تخطي التجديد الأولي والانتقال للاسترجاع...`, "success");
+        skipInitialSteps = true;
+      } else if (hasUnresolvedPlanChange && !isPlanAlreadyFlipped) {
+        engine.log(`[⏳ استئناف ذكي] رصيد الأونر مفرغ (صفر) وطلب تغيير النظام بانتظار المقسم — الانتقال لمراقبة اعتماد النظام الجديد...`, "warn");
+        jumpToMonitorOnly = true;
+      }
     }
 
     let ownerRenewedMix = ownerStartMix;
@@ -1703,7 +1718,7 @@ async function handleSingleCycleInternal(
       engine.simPlan = targetPlanName;
       planConfirmed = true;
     } else {
-      for (let poll = 1; poll <= 30; poll++) {
+      for (let poll = 1; poll <= 50; poll++) {
         await sleep(2500);
         monitoredStatus = await engine.getStatusAndChild(true);
         if (monitoredStatus.planId && monitoredStatus.planId.includes(targetPlanName.includes("7") ? "7" : "6")) {
@@ -1711,21 +1726,45 @@ async function handleSingleCycleInternal(
           engine.log(`[+] [اعتماد النظام الجديد] تم تأكيد تغيير النظام بالسيرفر إلى: ${engine.getPlanName(monitoredStatus.planId)} (في المحاولة ${poll})`, "success");
           break;
         }
+        if (poll % 10 === 0) {
+          engine.log(`[⏳ بانتظار المقسم] استمرار فحص اعتماد النظام الجديد (المحاولة ${poll}/50) — الرصيد محمي بالكامل لدى الفرد...`, "info");
+        }
       }
     }
 
     if (!planConfirmed && !isSimulation) {
-      engine.log(`[-] تعذر تأكيد تغيير النظام في الوقت المحدد. جاري استرجاع الميكسات للفرد بأمان...`, "error");
-      if (postParkChildBal > 0) {
-        await childEngine.transferMix(engine.ownerDial || session.owner_account_identifier, postParkChildBal, "Hekaya_XRP_MIX_Child_1");
-      }
-      return await recordCycleFailure({
-        category: "PLAN_CHANGE_FAILED",
-        stepKey: "step_8_monitor_plan_change",
-        stepNumber: 8,
-        stepTitle: "مراقبة تغيير النظام",
-        message: "لم يؤكد مقسم اتصالات تغيير النظام خلال المهلة المحددة (تم إيقاف الدورة بأمان)",
-      });
+      engine.log(`[⏳ استمرار المراقبة] لا يزال المقسم يعالج تغيير النظام — الرصيد محفوظ بأمان لدى الفرد (${postParkChildBal.toLocaleString('en-US')} ميكس) والمراقبة مستمرة دون انقطاع...`, "warn");
+      await sendStep(
+        "step_8_monitor_plan_change",
+        8,
+        "مراقبة تغيير النظام",
+        "الطلب مرسل وبانتظار رد المقسم — استمرار المراقبة دون انقطاع...",
+        "pending",
+        {
+          isUnresolved: true,
+          payload: {
+            parkedMixAmount,
+            postParkChildBal,
+            ownerStartMix,
+            ownerPlanPre,
+            targetPlanName,
+            targetPlanDisplay,
+            targetCost,
+            currentCost,
+            childDial,
+          }
+        }
+      );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          waiting_for_switch: true,
+          message: "النظام قيد الترحيل لدى المقسم — الرصيد محفوظ لدى الفرد والمراقبة مستمرة",
+          current_step_key: "step_8_monitor_plan_change",
+          cycle_count: cycleNumber,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     await sendStep(
       "step_8_monitor_plan_change",
