@@ -440,7 +440,7 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
 
                     <TabsTrigger value="delegation" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-amber-500/10 text-amber-400">
                       <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                      <span>إدارة التفويض ومشاركة الجلسة</span>
+                      <span>إدارة باقات VIP (الأونر والفرد)</span>
                     </TabsTrigger>
 
                     <TabsTrigger value="inspector" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">

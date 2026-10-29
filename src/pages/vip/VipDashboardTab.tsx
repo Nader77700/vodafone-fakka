@@ -28,7 +28,6 @@ import { VipReleaseAndMinionCard } from '@/components/vip/VipReleaseAndMinionCar
 import { VipTerminalLogs } from '@/components/vip/VipTerminalLogs';
 import { VipCycleStepper } from '@/components/vip/VipCycleStepper';
 import { VipLiveBalanceStrip } from '@/components/vip/VipLiveBalanceStrip';
-import { VipSimulationPanel } from '@/components/vip/VipSimulationPanel';
 import { parseBalancesFromLog } from '@/lib/vipRunnerService';
 
 interface Props {
@@ -468,7 +467,8 @@ export function VipDashboardTab({
             onRefresh={onRefresh}
             isRunning={
               loopRunning ||
-              vipRunnerService.isRunning(session.id)
+              vipRunnerService.isRunning(session.id) ||
+              displaySession.operation_state === 'running'
             }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}
@@ -476,13 +476,6 @@ export function VipDashboardTab({
             stepMessage={stepMessage}
             isDelegatedUser={isDelegatedUser}
             vipAccess={vipAccess}
-          />
-
-          {/* Safe Simulation Mode Controller (8 Edge Scenarios) */}
-          <VipSimulationPanel
-            session={displaySession}
-            onRefresh={onRefresh}
-            isRunning={loopRunning || checkingStatus}
           />
         </div>
 
@@ -493,12 +486,6 @@ export function VipDashboardTab({
             liveOwnerMix={liveOwnerMix}
             liveChildMix={liveChildMix}
             livePlan={livePlan}
-            currentStep={currentStep}
-            stepMessage={stepMessage}
-            isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
-          />
-
-          <VipCycleStepper
             currentStep={currentStep}
             stepMessage={stepMessage}
             isRunning={loopRunning || checkingStatus || addingChild || changingPlan}

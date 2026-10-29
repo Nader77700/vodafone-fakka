@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/db/supabase';
-import { VipComprehensiveReportCard } from '@/components/vip/VipComprehensiveReportCard';
 import {
   testVipBridgeConnection,
   executeVipCheckStatus,
@@ -314,8 +313,6 @@ export function VipDiagnosticsTab({
 
   return (
     <div className="space-y-3" dir="rtl">
-      {/* ── Official Comprehensive Audit Report for Owner (v4.1.0) ── */}
-      <VipComprehensiveReportCard />
       
       {/* ── Top Diagnostic Banner & Quick Actions ── */}
       <Card className="border border-border/80 bg-card/60 overflow-hidden shadow-xs">

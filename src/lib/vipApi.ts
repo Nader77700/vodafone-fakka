@@ -444,7 +444,6 @@ export interface VipExecutionResponse {
   safety_stop?: boolean;
   can_retry?: boolean;
   skipped_duplicate?: boolean;
-  waiting_for_switch?: boolean;
   server_timeout?: boolean;
   data?: any;
   config?: any;
