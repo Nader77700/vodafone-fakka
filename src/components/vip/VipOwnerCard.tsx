@@ -16,6 +16,9 @@ export function VipOwnerCard({ session, onQuickCheck, checking }: Props) {
   const isSix = session.owner_current_plan?.includes('6') || session.owner_current_plan?.includes('180');
 
   const formatBalance = (val: number | null | undefined) => {
+    if (session.owner_balance_status === 'unable_to_read') {
+      return <Badge variant="destructive" className="text-[10px] px-1.5 py-0 bg-rose-500/20 text-rose-400 border border-rose-500/30">تعذر قراءة الرصيد</Badge>;
+    }
     if (val === null || val === undefined) {
       return <span className="text-muted-foreground text-xs font-normal">بانتظار الفحص</span>;
     }

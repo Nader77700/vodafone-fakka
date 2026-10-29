@@ -28,6 +28,7 @@ import { VipReleaseAndMinionCard } from '@/components/vip/VipReleaseAndMinionCar
 import { VipTerminalLogs } from '@/components/vip/VipTerminalLogs';
 import { VipCycleStepper } from '@/components/vip/VipCycleStepper';
 import { VipLiveBalanceStrip } from '@/components/vip/VipLiveBalanceStrip';
+import { VipSimulationPanel } from '@/components/vip/VipSimulationPanel';
 import { parseBalancesFromLog } from '@/lib/vipRunnerService';
 
 interface Props {
@@ -477,6 +478,13 @@ export function VipDashboardTab({
             isDelegatedUser={isDelegatedUser}
             vipAccess={vipAccess}
           />
+
+          {/* Safe Simulation Mode Controller (8 Edge Scenarios) */}
+          <VipSimulationPanel
+            session={displaySession}
+            onRefresh={onRefresh}
+            isRunning={loopRunning || checkingStatus}
+          />
         </div>
 
         {/* Right Column (lg: 7 cols): Live Real-Time Balance Strip & Terminal Console */}
@@ -486,6 +494,12 @@ export function VipDashboardTab({
             liveOwnerMix={liveOwnerMix}
             liveChildMix={liveChildMix}
             livePlan={livePlan}
+            currentStep={currentStep}
+            stepMessage={stepMessage}
+            isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
+          />
+
+          <VipCycleStepper
             currentStep={currentStep}
             stepMessage={stepMessage}
             isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
