@@ -140,7 +140,7 @@ export function VipSessionSwitcher({
   const activeRunningSessionsCount = useMemo(() => {
     return sessions.filter((s) => {
       const rs = vipRunnerService.getState(s.id);
-      return rs.isRunning || s.operation_state === 'running' || s.worker_status === 'running';
+      return rs.isRunning;
     }).length;
   }, [sessions]);
 
@@ -642,10 +642,7 @@ export function VipSessionSwitcher({
               {visibleSessions.map((sess, idx) => {
                 const isSelected = sess.id === activeSessionId;
                 const runnerState = vipRunnerService.getState(sess.id);
-                const isRunning =
-                  runnerState.isRunning ||
-                  sess.operation_state === 'running' ||
-                  sess.worker_status === 'running';
+                const isRunning = runnerState.isRunning;
                 const ownerId = sess.owner_account_identifier || sess.owner_email || 'يُستخرج بالفحص';
                 const childId = sess.individual_account_identifier || sess.individual_email || 'غير مضاف';
                 const liveOwnerMix = (runnerState.latestOwnerMix !== undefined && runnerState.latestOwnerMix !== null)

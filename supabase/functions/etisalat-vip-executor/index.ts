@@ -1577,7 +1577,8 @@ async function handleSingleCycleInternal(
         engine.log(`[✓ استئناف ذكي] رصيد الأونر مفرغ (صفر) وتم رصد اكتمال ترحيل النظام مسبقاً إلى (${targetPlanDisplay}) بقراءة حية — تخطي التجديد الأولي والانتقال للاسترجاع...`, "success");
         skipInitialSteps = true;
       } else if (hasUnresolvedPlanChange && !isPlanAlreadyFlipped) {
-        engine.log(`[⏳ استئناف ذكي] رصيد الأونر مفرغ (صفر) وطلب تغيير النظام بانتظار المقسم — الانتقال لمراقبة اعتماد النظام الجديد...`, "warn");
+        engine.log(`[⚡ تنشيط استئناف] رصيد الأونر مفرغ (صفر) والنظام الحالي (${engine.getPlanName(ownerPlanPre)}) لم يتحول بعد — إرسال طلب تنشيطي لتغيير النظام إلى (${targetPlanDisplay}) لفك التعليق وتأكيد الاستجابة...`, "info");
+        await engine.changePlan(targetPlanName, "");
         jumpToMonitorOnly = true;
       }
     }
@@ -1755,16 +1756,13 @@ async function handleSingleCycleInternal(
           }
         }
       );
-      return new Response(
-        JSON.stringify({
-          success: true,
-          waiting_for_switch: true,
-          message: "النظام قيد الترحيل لدى المقسم — الرصيد محفوظ لدى الفرد والمراقبة مستمرة",
-          current_step_key: "step_8_monitor_plan_change",
-          cycle_count: cycleNumber,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return {
+        success: true,
+        waiting_for_switch: true,
+        message: "النظام قيد الترحيل لدى المقسم — الرصيد محفوظ لدى الفرد والمراقبة مستمرة",
+        current_step_key: "step_8_monitor_plan_change",
+        cycle_count: cycleNumber,
+      };
     }
     await sendStep(
       "step_8_monitor_plan_change",

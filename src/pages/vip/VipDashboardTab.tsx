@@ -468,8 +468,7 @@ export function VipDashboardTab({
             onRefresh={onRefresh}
             isRunning={
               loopRunning ||
-              vipRunnerService.isRunning(session.id) ||
-              displaySession.operation_state === 'running'
+              vipRunnerService.isRunning(session.id)
             }
             isPaused={displaySession.operation_state === 'paused'}
             currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}
