@@ -435,80 +435,62 @@ export function VipDashboardTab({
 
   return (
     <div className="space-y-2 max-w-7xl mx-auto" dir="rtl">
-      {/* ── 1. Live 5-Step Compact Horizontal Pipeline Strip (Slim & Visible) ── */}
+      {/* ── 1. Live Horizontal Independent Balances Strip (Full Width) ── */}
+      <VipLiveBalanceStrip
+        session={displaySession}
+        liveOwnerMix={liveOwnerMix}
+        liveChildMix={liveChildMix}
+        livePlan={livePlan}
+        currentStep={currentStep}
+        stepMessage={stepMessage}
+        isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
+      />
+
+      {/* ── 2. Live 5-Step Compact Horizontal Pipeline Strip (Slim & Visible) ── */}
       <VipCycleStepper
         currentStep={currentStep}
         stepMessage={stepMessage}
         isRunning={loopRunning}
       />
 
-      {/* ── 2. Responsive Side-by-Side Horizontal Layout for Mobile & Desktop ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
-        {/* Left Column (lg: 5 cols): Controls & Sessions Overview */}
-        <div className="lg:col-span-5 space-y-2">
-          {/* Master Info Card */}
-          <VipUnifiedMasterCard
-            session={displaySession}
-            onRefreshAll={() => handleCheckStatus(false)}
-            refreshing={checkingStatus || refreshing}
-            onAddChild={handleAddChild}
-            addingChild={addingChild}
-            onChangePlan={handleChangePlan}
-            changingPlan={changingPlan}
-            onAdoptLiveBalance={handleAdoptLiveBalance}
-            adoptingBalance={adoptingBalance}
-          />
+      {/* ── 3. Auto Loop Controller (Slim & Direct Controls) ── */}
+      <VipAutoLoopCard
+        session={displaySession}
+        onStartLoop={handleStartAutoLoop}
+        onStopLoop={handleStopAutoLoop}
+        onRefresh={onRefresh}
+        isRunning={
+          loopRunning ||
+          vipRunnerService.isRunning(session.id)
+        }
+        isPaused={displaySession.operation_state === 'paused'}
+        currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}
+        countdownSeconds={countdownSeconds}
+        stepMessage={stepMessage}
+        isDelegatedUser={isDelegatedUser}
+        vipAccess={vipAccess}
+      />
 
-          {/* Auto Loop Controller */}
-          <VipAutoLoopCard
-            session={displaySession}
-            onStartLoop={handleStartAutoLoop}
-            onStopLoop={handleStopAutoLoop}
-            onRefresh={onRefresh}
-            isRunning={
-              loopRunning ||
-              vipRunnerService.isRunning(session.id) ||
-              displaySession.operation_state === 'running'
-            }
-            isPaused={displaySession.operation_state === 'paused'}
-            currentCycle={Math.max(loopCycle, displaySession.current_cycle || 0)}
-            countdownSeconds={countdownSeconds}
-            stepMessage={stepMessage}
-            isDelegatedUser={isDelegatedUser}
-            vipAccess={vipAccess}
-          />
-        </div>
+      {/* ── 4. Main Live Terminal Screen (Full Width, Luxurious, Zero Lag) ── */}
+      <VipTerminalLogs
+        logs={terminalLogs}
+        onClear={handleClearLogs}
+        isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
+        isDelegatedUser={isDelegatedUser}
+      />
 
-        {/* Right Column (lg: 7 cols): Live Real-Time Balance Strip & Terminal Console */}
-        <div className="lg:col-span-7 space-y-2">
-          <VipLiveBalanceStrip
-            session={displaySession}
-            liveOwnerMix={liveOwnerMix}
-            liveChildMix={liveChildMix}
-            livePlan={livePlan}
-            currentStep={currentStep}
-            stepMessage={stepMessage}
-            isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
-          />
-
-          <VipTerminalLogs
-            logs={terminalLogs}
-            onClear={handleClearLogs}
-            isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
-            isDelegatedUser={isDelegatedUser}
-            onOpenTransferMonitor={onNavigateTab ? () => onNavigateTab('transfer-monitor') : undefined}
-          />
-        </div>
-      </div>
-
-      {/* Smart Release & MINION Management Card (Integrated directly inside active session details) */}
-      <div className="mt-3">
-        <VipReleaseAndMinionCard
-          activeSession={displaySession}
-          onRefresh={onRefresh}
-          isDelegatedUser={isDelegatedUser}
-        />
-      </div>
+      {/* ── 5. Master Account Information (Compact details below console) ── */}
+      <VipUnifiedMasterCard
+        session={displaySession}
+        onRefreshAll={() => handleCheckStatus(false)}
+        refreshing={checkingStatus || refreshing}
+        onAddChild={handleAddChild}
+        addingChild={addingChild}
+        onChangePlan={handleChangePlan}
+        changingPlan={changingPlan}
+        onAdoptLiveBalance={handleAdoptLiveBalance}
+        adoptingBalance={adoptingBalance}
+      />
     </div>
   );
 }

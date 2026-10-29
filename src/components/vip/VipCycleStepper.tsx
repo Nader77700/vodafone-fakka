@@ -20,41 +20,11 @@ interface Props {
 }
 
 const STEPS = [
-  {
-    key: 'parking',
-    num: 1,
-    title: 'ركن الميكسات',
-    desc: 'نقل ميكسات الأونر للفرد فوراً',
-    icon: ArrowDownLeft,
-  },
-  {
-    key: 'migrating',
-    num: 2,
-    title: 'ترحيل النظام',
-    desc: 'التبديل بين 270 و 180',
-    icon: ArrowLeftRight,
-  },
-  {
-    key: 'waiting_server',
-    num: 3,
-    title: 'تأكيد الترحيل',
-    desc: 'تأكيد ترحيل النظام بالسيرفر',
-    icon: Clock,
-  },
-  {
-    key: 'recovering',
-    num: 4,
-    title: 'استرجاع فوري',
-    desc: 'إعادة ميكسات الفرد للأونر',
-    icon: ArrowUpRight,
-  },
-  {
-    key: 'cooldown',
-    num: 5,
-    title: 'اكتمال واستراحة',
-    desc: 'تحديث الرصيد والعد التنازلي',
-    icon: Sparkles,
-  },
+  { key: 'parking', num: 1, title: 'ركن الميكسات', icon: ArrowDownLeft },
+  { key: 'migrating', num: 2, title: 'ترحيل النظام', icon: ArrowLeftRight },
+  { key: 'waiting_server', num: 3, title: 'تأكيد الترحيل', icon: Clock },
+  { key: 'recovering', num: 4, title: 'استرجاع فوري', icon: ArrowUpRight },
+  { key: 'cooldown', num: 5, title: 'اكتمال واستراحة', icon: Sparkles },
 ];
 
 export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }: Props) {
@@ -62,15 +32,20 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
     switch (key) {
       case 'auth':
       case 'parking':
+      case 'step_5_transfer_owner_to_child':
         return 0;
       case 'migrating':
+      case 'step_7_request_plan_change':
         return 1;
       case 'waiting_server':
+      case 'step_8_monitor_plan_change':
         return 2;
       case 'recovering':
+      case 'step_10_transfer_child_to_owner':
         return 3;
       case 'cooldown':
       case 'completed':
+      case 'step_13_record_final_result':
         return 4;
       default:
         return -1;
@@ -80,42 +55,10 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
   const activeIndex = getStepIndex(currentStep);
 
   return (
-    <Card className="border border-border/80 bg-card/95 shadow-xs overflow-hidden" dir="rtl">
-      <CardContent className="p-2 sm:p-2.5">
-        {/* Header indicator - Compact row */}
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="relative flex h-2 w-2">
-              {isRunning && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              )}
-              <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${
-                  isRunning ? 'bg-emerald-500' : 'bg-zinc-500'
-                }`}
-              />
-            </span>
-            <span className="text-[11px] font-black text-foreground">
-              مسار الدورة (Live Pipeline)
-            </span>
-          </div>
-
-          {stepMessage ? (
-            <Badge
-              variant="outline"
-              className="text-[9.5px] font-mono px-1.5 py-0 border-primary/30 text-primary bg-primary/5 max-w-[200px] sm:max-w-xs truncate"
-            >
-              {stepMessage}
-            </Badge>
-          ) : (
-            <span className="text-[9.5px] text-muted-foreground truncate">
-              فحص لحظي مستمر
-            </span>
-          )}
-        </div>
-
-        {/* 5-Step Compact Horizontal Strip */}
-        <div className="grid grid-cols-5 gap-1">
+    <Card className="w-full border border-border/80 bg-card/90 shadow-xs overflow-hidden" dir="rtl">
+      <CardContent className="p-1.5 sm:p-2">
+        {/* Compact Horizontal Steps Strip */}
+        <div className="grid grid-cols-5 gap-1 items-center">
           {STEPS.map((step, idx) => {
             const isCompleted = activeIndex > idx;
             const isCurrent = activeIndex === idx && isRunning;
@@ -124,16 +67,16 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
             return (
               <div
                 key={step.key}
-                className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 p-1 sm:p-1.5 rounded-md border text-center transition-all ${
+                className={`flex items-center justify-center gap-1 p-1 rounded-md border text-center transition-all ${
                   isCurrent
                     ? 'border-emerald-500 bg-emerald-500/15 shadow-xs ring-1 ring-emerald-500/40 text-emerald-400'
                     : isCompleted
-                    ? 'border-border/50 bg-muted/40 text-muted-foreground'
-                    : 'border-border/30 bg-muted/15 text-muted-foreground/60'
+                    ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400/90'
+                    : 'border-border/40 bg-muted/20 text-muted-foreground/60'
                 }`}
               >
                 <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
+                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8.5px] font-bold shrink-0 ${
                     isCurrent
                       ? 'bg-emerald-500 text-white animate-pulse'
                       : isCompleted
@@ -150,11 +93,9 @@ export function VipCycleStepper({ currentStep, stepMessage, isRunning = false }:
                   )}
                 </div>
 
-                <div className="min-w-0 flex flex-col text-right">
-                  <span className={`text-[10px] leading-tight font-bold truncate ${isCurrent ? 'text-emerald-400' : 'text-foreground'}`}>
-                    {step.title}
-                  </span>
-                </div>
+                <span className={`text-[10px] leading-none font-bold truncate ${isCurrent ? 'text-emerald-400' : 'text-foreground'}`}>
+                  {step.title}
+                </span>
               </div>
             );
           })}

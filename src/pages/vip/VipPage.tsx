@@ -398,67 +398,28 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
         ) : dashboardData && activeSession ? (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-2.5">
             
-            {/* Streamlined Clean Tabs (Sticky on scroll for instant accessibility) */}
-            <div className="sticky top-11 sm:top-14 z-20 py-1.5 backdrop-blur-md bg-background/85 overflow-x-auto scrollbar-none border-b border-border/50">
-              <TabsList className="bg-muted/70 p-1 rounded-xl h-auto border border-border inline-flex min-w-full sm:min-w-0 shadow-sm">
+            {/* Streamlined Clean Tabs - Only Essential Tabs Requested */}
+            <div className="sticky top-11 sm:top-14 z-20 py-1 backdrop-blur-md bg-background/90 overflow-x-auto scrollbar-none border-b border-border/40">
+              <TabsList className="bg-muted/70 p-1 rounded-xl h-auto border border-border inline-flex shadow-sm gap-1">
                 <TabsTrigger value="dashboard" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
                   <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
-                  <span>لوحة الجلسة النشطة والأتمتة</span>
+                  <span>لوحة التحكم والأتمتة</span>
                 </TabsTrigger>
 
-                <TabsTrigger value="transfer-monitor" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-primary/15 text-primary border border-primary/30 shadow-xs">
-                  <Radar className="w-3.5 h-3.5 text-primary animate-pulse" />
-                  <span>مراقبة السكريبت والتحويل 🛰️</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="cycles" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>سجل الدورات المكتملة</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="manual" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <Sliders className="w-3.5 h-3.5" />
+                <TabsTrigger value="manual" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
+                  <Sliders className="w-3.5 h-3.5 text-primary" />
                   <span>الأوامر اليدوية المباشرة</span>
                 </TabsTrigger>
 
-                <TabsTrigger value="history" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                  <History className="w-3.5 h-3.5" />
+                <TabsTrigger value="history" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
+                  <History className="w-3.5 h-3.5 text-primary" />
                   <span>سجل العمليات</span>
                 </TabsTrigger>
-
-                <TabsTrigger value="diagnostics" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
-                  <Activity className="w-3.5 h-3.5 text-primary" />
-                  <span>مراقبة وتشخيص السكريبت</span>
-                </TabsTrigger>
-
-                {!isDelegatedUser && (
-                  <>
-                    <TabsTrigger value="script" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg">
-                      <Code2 className="w-3.5 h-3.5 text-primary" />
-                      <span>الاسكريبت والجسر والأجهزة</span>
-                    </TabsTrigger>
-
-                    <TabsTrigger value="delegation" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold bg-amber-500/10 text-amber-400">
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                      <span>إدارة باقات VIP (الأونر والفرد)</span>
-                    </TabsTrigger>
-
-                    <TabsTrigger value="inspector" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg font-bold">
-                      <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>فاحص جلسات المستخدمين</span>
-                    </TabsTrigger>
-
-                    <TabsTrigger value="tamper" className="text-xs gap-1.5 py-1.5 px-3 rounded-lg text-destructive font-bold">
-                      <ShieldAlert className="w-3.5 h-3.5 text-destructive" />
-                      <span>سجل كشف التلاعب والحظر</span>
-                    </TabsTrigger>
-                  </>
-                )}
               </TabsList>
             </div>
 
-            {/* Tab 1: Dashboard (Unified Master Card + Auto Loop + Live Terminal) */}
-            <TabsContent value="dashboard" className="space-y-4 focus-visible:outline-none">
+            {/* Tab 1: Dashboard (Unified Live Terminal & Automation) */}
+            <TabsContent value="dashboard" className="space-y-2.5 focus-visible:outline-none">
               <VipDashboardTab
                 key={activeSession?.id || 'empty-dashboard'}
                 data={dashboardData}
@@ -471,28 +432,8 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
               />
             </TabsContent>
 
-            {/* Tab 1b: Dedicated Realtime Script & Transfer Monitor */}
-            <TabsContent value="transfer-monitor" className="space-y-4 focus-visible:outline-none">
-              <VipTransferMonitorTab
-                key={activeSession?.id || 'empty-transfer-monitor'}
-                activeSession={activeSession}
-                allSessions={sessions}
-                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
-              />
-            </TabsContent>
-
-            {/* Tab 2: Cycle-by-Cycle History */}
-            <TabsContent value="cycles" className="space-y-4 focus-visible:outline-none">
-              <VipCycleHistoryTab
-                key={activeSession?.id || 'empty-cycles'}
-                session={activeSession}
-                initialCycles={dashboardData?.recent_cycles || []}
-                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
-              />
-            </TabsContent>
-
-            {/* Tab 3: Manual Direct Controls */}
-            <TabsContent value="manual" className="space-y-4 focus-visible:outline-none">
+            {/* Tab 2: Manual Direct Controls */}
+            <TabsContent value="manual" className="space-y-3 focus-visible:outline-none">
               <VipManualControlsTab
                 key={activeSession?.id || 'empty-manual'}
                 data={dashboardData}
@@ -501,44 +442,14 @@ export default function VipPage({ shareToken, isTemporaryShareMode }: VipPagePro
               />
             </TabsContent>
 
-            {/* Tab 4: Operation History */}
-            <TabsContent value="history" className="space-y-4 focus-visible:outline-none">
+            {/* Tab 3: Operation History */}
+            <TabsContent value="history" className="space-y-3 focus-visible:outline-none">
               <VipOperationHistoryTab
                 key={activeSession?.id || 'empty-history'}
                 initialRecords={dashboardData?.recent_operations || []}
                 activeSession={activeSession}
                 onRefresh={() => loadSessionsAndData(activeSessionId, true)}
               />
-            </TabsContent>
-
-            {/* Tab 5: Script Diagnostics & Error Monitor */}
-            <TabsContent value="diagnostics" className="space-y-4 focus-visible:outline-none">
-              <VipDiagnosticsTab
-                key={activeSession?.id || 'empty-diagnostics'}
-                activeSession={activeSession}
-                allSessions={sessions}
-                onRefresh={() => loadSessionsAndData(activeSessionId, true)}
-              />
-            </TabsContent>
-
-            {/* Tab 6: Dynamic Script, Egypt Bridge & Device Fingerprints */}
-            <TabsContent value="script" className="space-y-4 focus-visible:outline-none">
-              <VipBotScriptTab />
-            </TabsContent>
-
-            {/* Tab 7: Delegated Users & Quota Limits */}
-            <TabsContent value="delegation" className="space-y-4 focus-visible:outline-none">
-              <VipDelegationManagerTab />
-            </TabsContent>
-
-            {/* Tab 8: User Sessions & Error Inspector */}
-            <TabsContent value="inspector" className="space-y-4 focus-visible:outline-none">
-              <VipSessionInspectorTab />
-            </TabsContent>
-
-            {/* Tab 9: Anti-Tamper & Security Audit */}
-            <TabsContent value="tamper" className="space-y-4 focus-visible:outline-none">
-              <VipSecurityTamperTab />
             </TabsContent>
 
           </Tabs>

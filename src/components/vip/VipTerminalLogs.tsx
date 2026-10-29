@@ -356,30 +356,13 @@ export const VipTerminalLogs = React.memo(function VipTerminalLogs({
       </CardHeader>
 
       <CardContent className="p-2 sm:p-2.5 relative">
-        {onOpenTransferMonitor && (
-          <div className="flex items-center justify-between p-2 mb-2 bg-primary/10 border border-primary/20 rounded-lg text-xs gap-2">
-            <div className="flex items-center gap-1.5 text-primary font-bold min-w-0">
-              <Radar className="w-4 h-4 animate-pulse shrink-0" />
-              <span className="truncate">ترغب في مراقبة كل ريكوست وتحويل XML مع اتصالات لحظة بلحظة؟</span>
-            </div>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onOpenTransferMonitor}
-              className="h-6 text-[11px] px-2.5 font-bold gap-1 shrink-0 shadow-sm"
-            >
-              <span>فتح شاشة المراقبة</span>
-              <span dir="ltr">→</span>
-            </Button>
-          </div>
-        )}
         <div
           ref={containerRef}
           onScroll={handleScroll}
           onTouchStart={() => { isUserTouchingOrWheelingRef.current = true; }}
           onWheel={() => { isUserTouchingOrWheelingRef.current = true; }}
           className={`font-mono text-xs sm:text-[12.5px] leading-relaxed overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-zinc-700 bg-zinc-950 p-2 sm:p-2.5 rounded-lg border border-zinc-900 transition-all duration-200 ${
-            isExpanded ? 'max-h-[580px] min-h-[380px]' : 'max-h-[300px] sm:max-h-[340px] min-h-[160px]'
+            isExpanded ? 'max-h-[720px] min-h-[520px]' : 'max-h-[460px] min-h-[340px]'
           }`}
         >
           {effectiveLogs.length === 0 ? (
