@@ -509,7 +509,8 @@ class EtisalatEngine {
     }
 
     const effectiveShortCode = this.shortCode || (this.role === "child" ? "XRPC1" : "XRPM7");
-    const effectiveSegmentId = (this.role === "child" || effectiveShortCode.includes("C1") || effectiveShortCode.includes("SPEED")) ? "SPEED" : "XRP";
+    // خطوط الفرد XRPC1 وخطوط الأونر XRPM تتبع قطاع XRP (حكاية ميكسات) وليس SPEED المخصص لباقات النت فقط
+    const effectiveSegmentId = this.shortCode && this.shortCode.includes("SPEED") ? "SPEED" : "XRP";
     const xmlBody = `<dialAndLanguageRequest><segmentId>${effectiveSegmentId}</segmentId><subscriberNumber>${this.currentDial}</subscriberNumber><language>1</language><shortCode>${effectiveShortCode}</shortCode></dialAndLanguageRequest>`;
     // CRITICAL: Python urllib.parse.quote defaults to safe='/' so '/' is NOT encoded to '%2F'
     const encodedReq = encodeURIComponent(xmlBody).replace(/%2F/g, "/");
@@ -710,6 +711,7 @@ class EtisalatEngine {
       "bodySignature": bodySig,
     };
 
+    const tStartRenew = Date.now();
     try {
       const targetUrl = this.getRequestUrl(urlPath);
       const res = await this.fetchWithTimeout(targetUrl, {
@@ -719,10 +721,11 @@ class EtisalatEngine {
       }, 7000);
       const text = await res.text();
       const ok = res.status === 200 && text.includes("<status>true</status>");
+      const elapsedSec = ((Date.now() - tStartRenew) / 1000).toFixed(1);
       if (ok) {
-        this.log(`[+] تم تجديد باقة الأونر بنجاح! ستصل حصة الفرد (1,300 ميكس) خلال فترة الاستراحة.`, "success");
+        this.log(`[+] تم تجديد باقة الأونر بنجاح (استغرق ${elapsedSec} ثانية)! ستصل حصة الفرد (1,300 ميكس) خلال فترة الاستراحة.`, "success");
       } else {
-        this.log(`[-] فشل إرسال أمر التجديد.`, "warn");
+        this.log(`[-] فشل إرسال أمر التجديد (استغرق ${elapsedSec} ثانية).`, "warn");
       }
       return ok;
     } catch {
@@ -752,6 +755,7 @@ class EtisalatEngine {
     const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${sender10}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target10}</receiverMsisdn><senderMsisdn>${sender10}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
     const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
+    const tStartTransfer = Date.now();
     try {
       const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
       const headers = {
@@ -776,6 +780,7 @@ class EtisalatEngine {
       const userAr = userArMatch ? userArMatch[1].trim() : "";
       const errMatch = text.match(/<(?:errorMessage|message|errorDesc|description)>([^<]+)<\//i);
       const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
+      const elapsedTransferSec = ((Date.now() - tStartTransfer) / 1000).toFixed(1);
 
       // تسجيل فوري وشفاف لكل تفاصيل المعاملة (الطلب والرد الفعلي) في قاعدة البيانات للمراقبة الحية
       if (this.sessionId) {
@@ -813,7 +818,7 @@ class EtisalatEngine {
 
       if (isSuccess) {
         const orderIdStr = orderIdMatch ? ` [رقم أمر التحويل بسيرفر اتصالات: ${orderIdMatch[1]}]` : "";
-        this.log(`[+] تم قبول وتنفيذ أمر التحويل الفعلي بسيرفر اتصالات (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
+        this.log(`[+] تم قبول وتنفيذ أمر التحويل الفعلي بسيرفر اتصالات (استغرق ${elapsedTransferSec} ثانية) (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
         return true;
       } else {
         if (errCode === "BE_SDP_361" || text.includes("BE_SDP_361") || errMsg.includes("cannot be completed")) {
@@ -845,6 +850,7 @@ class EtisalatEngine {
       "bodySignature": bodySig,
     };
 
+    const tStartMigrate = Date.now();
     try {
       const targetUrl = this.getRequestUrl(urlPath);
       const res = await this.fetchWithTimeout(targetUrl, {
@@ -859,8 +865,11 @@ class EtisalatEngine {
         text.includes("SUCCESS") ||
         text.includes("<statusCode>0</statusCode>")
       );
-      if (!isSuccess) {
-        this.log(`[!] رد السيرفر على طلب الترحيل: ${text.slice(0, 160)}`, "warn");
+      const elapsedMigrateSec = ((Date.now() - tStartMigrate) / 1000).toFixed(1);
+      if (isSuccess) {
+        this.log(`[⚡] تم تغيير النظام بنجاح إلى: ${displayName} (استغرق ${elapsedMigrateSec} ثانية)`, "success");
+      } else {
+        this.log(`[!] رد السيرفر على طلب الترحيل (استغرق ${elapsedMigrateSec} ثانية): ${text.slice(0, 160)}`, "warn");
       }
       return isSuccess;
     } catch (err: any) {
@@ -1695,6 +1704,15 @@ async function handleSingleCycleInternal(
               } catch (_) {}
             }
 
+            if (!childArrived) {
+              // إذا تم قبول التحويل بسيرفر اتصالات (transferred) والأونر تم خصمه بالفعل (!ownerHoldsMixes)
+              // فالميكسات مستقرة عند الفرد 100% ولا يجوز إيقاف الأتمتة!
+              if (transferred && !ownerHoldsMixes) {
+                engine.log(`[✓] تأكيد قاطع بالخصم المباشر: تم تأكيد خصم الميكسات كاملة (${parkedMixAmount.toLocaleString('en-US')} ميكس) من حساب الأونر بنجاح وقبول الطلب برقم أمر سيرفر اتصالات! الميكسات مستقرة ومحفوظة لدى الفرد، المتابعة فوراً لتغيير الباقة وتجديدها...`, "success");
+                childArrived = true;
+              }
+            }
+
             if (childArrived && parkedMixAmount > 0) {
               const remainingOwnerBal = status.remainingMix;
               try {
@@ -2116,12 +2134,15 @@ async function handleSingleCycleInternal(
     const amountToTransfer = parkedMixAmount || armedMixToTransfer || 0;
 
     if (amountToTransfer > 0) {
-      // أمر واحد مباشر وسريع لتحويل الميكسات كاملة دفعة واحدة من الفرد للأونر بدون أي تأخير
+      const tStartRecover = Date.now();
+      // أمر مباشر وسريع لتحويل الميكسات كاملة دفعة واحدة من الفرد للأونر مع حساب زمن الاستجابة بالثواني
       engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر...`, "info");
       const transferSuccess = await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+      const transferDur = ((Date.now() - tStartRecover) / 1000).toFixed(1);
 
-      // نظام تأكيدي سريع لحظي: فحص رصيد الفرد ورصيد الأونر بعد التحويل للتأكد هل خرج الرصيد للأونر أم لا
-      await sleep(1500);
+      // نظام تأكيدي سريع لحظي بالثواني: فحص رصيد الفرد ورصيد الأونر بعد التحويل للتأكد هل خرج الرصيد للأونر أم لا
+      const tStartAudit = Date.now();
+      await sleep(1200);
       let childStAfter = await activeChildEngine.getStatusAndChild(true);
       finalChildBal = childStAfter.remainingMix || 0;
 
@@ -2131,19 +2152,39 @@ async function handleSingleCycleInternal(
         ownerCheckAfter = await engine.getStatusAndChild(true);
       } catch (_) {}
 
+      const auditDur = ((Date.now() - tStartAudit) / 1000).toFixed(1);
       const ownerReceived = ownerCheckAfter && (ownerCheckAfter.remainingMix >= confirmedNewMix + (amountToTransfer * 0.7) || ownerCheckAfter.remainingMix >= amountToTransfer * 0.7);
 
       if (ownerReceived || finalChildBal <= 1000) {
         recoveredOk = true;
         recoveredMixAmount = amountToTransfer;
-        engine.log(`[✓] تأكيد استقرار الرصيد: تم تفريغ ميكسات الفرد للأونر بنجاح!`, "success");
+        engine.log(`[✓] تأكيد استقرار الرصيد (التحويل ${transferDur}ث | الفحص ${auditDur}ث): تم تفريغ ميكسات الفرد للأونر بنجاح!`, "success");
       } else {
         // إذا لم تصل الميكسات وبقي الرصيد كاملاً لدى الفرد ولم يتم الخصم نهائياً
         recoveredMixAmount = Math.max(0, amountToTransfer - finalChildBal);
         if (recoveredMixAmount > 0) {
           recoveredOk = true;
+          engine.log(`[✓] تم تأكيد خصم (${recoveredMixAmount.toLocaleString('en-US')}) ميكس من الفرد للأونر!`, "success");
         } else {
-          engine.log(`[!] تنبيه: لم يتم خصم الرصيد من الفرد بعد الطلب الأول. سيتم تجنب إرسال طلبات مكررة لتفادي حظر الحد الشهري.`, "warn");
+          // رصد ذكي: محاولة ثانية فورية ولحظية واحدة فقط لحل أي تعليق في طلب اتصالات
+          engine.log(`[*] رصد ذكي (فحص ${auditDur}ث): لم يتم خصم الرصيد من الفرد بعد الطلب الأول. جاري إرسال طلب تحويل ثانٍ لحظي للتأكيد...`, "warn");
+          const retryStart = Date.now();
+          await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+          const retryDur = ((Date.now() - retryStart) / 1000).toFixed(1);
+
+          await sleep(1200);
+          try {
+            const childStRetry = await activeChildEngine.getStatusAndChild(true);
+            finalChildBal = childStRetry.remainingMix || 0;
+          } catch (_) {}
+
+          recoveredMixAmount = Math.max(0, amountToTransfer - finalChildBal);
+          if (recoveredMixAmount > 0 || finalChildBal <= 1000) {
+            recoveredOk = true;
+            engine.log(`[✓] تم تفريغ الميكسات بنجاح بعد الطلب الثاني (استغرق ${retryDur}ث)!`, "success");
+          } else {
+            engine.log(`[!] تم إنهاء المحاولة الثانية وتفادي أي تكرار إضافي لحفظ حدود التحويل الشهرية.`, "info");
+          }
         }
       }
     } else {
