@@ -466,35 +466,25 @@ class VipRunnerService {
           return false;
         }
 
-        // If the server session is running or active:
+        // If the server session was previously marked active, only restore saved state for display
+        // DO NOT automatically launch the background loop or fire API requests without explicit user click!
         if (
           sess.automation_enabled &&
           (sess.operation_state === 'running' || sess.operation_state === 'active')
         ) {
           const st = this.states.get(sessionId) || this.getState(sessionId);
-          st.isRunning = true;
+          st.isRunning = false; // Never auto-run on section open
           st.stopRequested = false;
           st.targetMix = sess.target_mix_balance || fallbackTarget || 100000;
           st.delaySeconds = sess.cycle_delay_seconds || fallbackDelay || 20;
           st.cycleCount = sess.current_cycle || 0;
-          st.currentStep = (sess.current_step as any) || 'running';
-          st.stepMessage = 'الأتمتة السحابية تعمل في الخلفية على السيرفر 24/7...';
+          st.currentStep = (sess.current_step as any) || 'idle';
+          st.stepMessage = 'الحالة محفوظة بالسيرفر — اضغط «بدء التشغيل» أو «استئناف» للمتابعة';
           st.latestOwnerMix = sess.owner_mix_balance;
           this.states.set(sessionId, st);
           this.saveToLocalStorage(sessionId, st);
           this.notify(sessionId);
-          enableVipBackgroundExecution().catch(() => {});
-          showVipPersistentNotification(
-            sessionId,
-            `الهدف: ${st.targetMix.toLocaleString('ar-EG')} ميكس | الفاصل: ${st.delaySeconds}ث`
-          );
-
-          // If loop runner is not already actively running in this JS window, start execution monitor
-          if (!this.loopPromises.has(sessionId)) {
-            const loopPromise = this.executeLoop(sessionId);
-            this.loopPromises.set(sessionId, loopPromise);
-          }
-          return true;
+          return false;
         }
       }
     } catch (_) {}
@@ -507,33 +497,16 @@ class VipRunnerService {
       }
     } catch (_) {}
 
-    if (savedLoop && savedLoop.isRunning) {
-      const age = Date.now() - (savedLoop.timestamp || 0);
-      // Valid if less than 12 hours old
-      if (age < 12 * 60 * 60 * 1000) {
-        // Prevent duplicate spam on multiple rapid visibility triggers
-        const lastResume = this.lastResumeAttempt.get(sessionId) || 0;
-        if (Date.now() - lastResume < 15000) {
-          return true;
-        }
-        this.lastResumeAttempt.set(sessionId, Date.now());
-
-        this.addLog(
-          sessionId,
-          `[🔄] استئناف الأتمتة تلقائياً بعد العودة للتطبيق (استعادة من الخلفية)...`,
-          'info'
-        );
-        this.startLoop(
-          sessionId,
-          savedLoop.targetMix || fallbackTarget || 100000,
-          savedLoop.delaySeconds || fallbackDelay || 20
-        );
-        return true;
-      } else {
-        try {
-          window.localStorage.removeItem(`vip_active_loop_${sessionId}`);
-        } catch (_) {}
-      }
+    if (savedLoop) {
+      // Load saved state without auto-running
+      const st = this.states.get(sessionId) || this.getState(sessionId);
+      st.targetMix = savedLoop.targetMix || fallbackTarget || 100000;
+      st.delaySeconds = savedLoop.delaySeconds || fallbackDelay || 20;
+      st.cycleCount = savedLoop.cycleCount || 0;
+      st.isRunning = false; // Never start loop automatically on section mount
+      this.states.set(sessionId, st);
+      this.notify(sessionId);
+      return false;
     }
     return false;
   }
@@ -644,9 +617,20 @@ class VipRunnerService {
           st.currentStep === 'parking';
 
         if (hasParkedMixes) {
+          const errRaw = cycleResult.error || 'انتظار استجابة بوابة اتصالات';
+          const errLow = errRaw.toLowerCase();
+          let diagnosticMsg = `[🛡️ مراقبة حالة السيرفر] استجابة العملية: ${errRaw}`;
+          if (errLow.includes('timeout') || errLow.includes('مهلة')) {
+            diagnosticMsg = `[⏳ تأخر استجابة] تأخر استجابة بوابة اتصالات (Timeout) — جاري إعادة فحص الحالة دون تكرار الطلب`;
+          } else if (errLow.includes('read') || errLow.includes('قراءة') || errLow.includes('unable_to_read')) {
+            diagnosticMsg = `[📡 قراءة الحالة] تعذرت قراءة حالة النظام — ستتم إعادة المحاولة بقراءة حية`;
+          } else if (errLow.includes('fetch') || errLow.includes('network') || errLow.includes('connection')) {
+            diagnosticMsg = `[🔌 انقطاع اتصال] انقطع الاتصال فعلياً (${errRaw}) — تم حفظ المرحلة للاستئناف دون إعادة من البداية`;
+          }
+
           this.addLog(
             sessionId,
-            `[🛡️ درع الحماية الصارم] حدث انقطاع أثناء مرحلة الترحيل/الركن (${cycleResult.error || 'تعذر استجابة السيرفر'}). جاري فحص استقرار نظام الأونر بالسيرفر قبل أي تصرف...`,
+            `${diagnosticMsg}. جاري فحص استقرار نظام الأونر ورصيد الفرد بالسيرفر...`,
             'warn'
           );
           await new Promise((r) => setTimeout(r, 4000));

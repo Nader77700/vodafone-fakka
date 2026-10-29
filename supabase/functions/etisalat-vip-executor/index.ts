@@ -1543,121 +1543,152 @@ async function handleSingleCycleInternal(
     await sendStep("step_2_read_initial_status", 2, "قراءة الأرصدة والأنظمة", `رصيد الأونر: ${ownerStartMix.toLocaleString('en-US')} ميكس | رصيد الفرد: ${(childInitStatus.remainingMix ?? 0).toLocaleString('en-US')} ميكس`, "confirmed");
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 3. تجديد نظام الأونر الحالي (step_3_renew_owner_initial)
+    // فحص الاستئناف الذكي والعمليات غير المحسومة (Smart Resume & State Check)
     // ═════════════════════════════════════════════════════════════════════════
-    await sendStep("step_3_renew_owner_initial", 3, "تجديد نظام الأونر", `إرسال طلب تجديد باقة الأونر الحالية (${engine.getPlanName(currentOwnerPlanName)})...`);
-    engine.log(`[*] [الخطوة 3/13] تجديد نظام الأونر الحالي (${engine.getPlanName(currentOwnerPlanName)}) لتنشيط الخط...`, "info");
+    const hasUnresolvedPlanChange = Boolean(
+      session.is_operation_unresolved ||
+      session.current_step_key === "step_7_request_plan_change" ||
+      session.current_step_key === "step_8_monitor_plan_change"
+    );
 
-    const renew1Ok = await engine.renewBundleAction(currentOwnerPlanName, String(currentCost));
-    if (!renew1Ok && !isSimulation) {
-      return await recordCycleFailure({
-        category: "BUNDLE_RENEWAL_FAILED",
-        stepKey: "step_3_renew_owner_initial",
-        stepNumber: 3,
-        stepTitle: "تجديد نظام الأونر",
-        message: "فشل إرسال طلب تجديد نظام الأونر الحالي",
-        lastResponseSummary: `تم رفض أمر التجديد للباقة ${currentOwnerPlanName}`,
-      });
+    const isPlanAlreadyFlipped = Boolean(
+      ownerPlanPre &&
+      (targetPlanName.includes("7") ? ownerPlanPre.includes("7") || ownerPlanPre.includes("270") : ownerPlanPre.includes("6") || ownerPlanPre.includes("180"))
+    );
+
+    let skipInitialSteps = false;
+    let jumpToMonitorOnly = false;
+
+    if (hasUnresolvedPlanChange && isPlanAlreadyFlipped) {
+      engine.log(`[✓ استئناف ذكي] تم رصد اكتمال ترحيل النظام مسبقاً إلى (${targetPlanDisplay}) بقراءة حية — تخطي التجديد الأولي وإعادة الإرسال...`, "success");
+      skipInitialSteps = true;
+    } else if (hasUnresolvedPlanChange && !isPlanAlreadyFlipped) {
+      engine.log(`[⏳ استئناف ذكي] طلب تغيير النظام مرسل مسبقاً وبانتظار المقسم — الانتقال مباشرة للمراقبة دون تكرار إرسال الطلب...`, "warn");
+      jumpToMonitorOnly = true;
     }
-    await sendStep("step_3_renew_owner_initial", 3, "تجديد نظام الأونر", "تم إرسال وقبول أمر التجديد بنجاح بالسيرفر", "confirmed");
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // 4. الانتظار ثانيتين ثم إعادة قراءة البيانات (step_4_wait_and_recheck)
-    // ═════════════════════════════════════════════════════════════════════════
-    await sendStep("step_4_wait_and_recheck", 4, "انتظار ثانيتين وإعادة القراءة", "الانتظار ثانيتين لمزامنة الشبكة ثم إعادة قراءة البيانات والتأكد...");
-    engine.log(`[*] [الخطوة 4/13] انتظار ثانيتين لمزامنة الشبكة ثم إعادة قراءة البيانات...`, "info");
-    await sleep(2000);
+    let ownerRenewedMix = ownerStartMix;
+    let postParkChildBal = childInitStatus.remainingMix ?? 0;
 
-    const postRenewStatus = await engine.getStatusAndChild(false);
-    let ownerRenewedMix = postRenewStatus.remainingMix ?? ownerStartMix;
-    engine.log(`[+] [قراءة بعد التجديد] رصيد الأونر بعد التجديد: ${ownerRenewedMix.toLocaleString('en-US')} ميكس`, "info");
-    await sendStep("step_4_wait_and_recheck", 4, "انتظار ثانيتين وإعادة القراءة", `تمت القراءة بنجاح - رصيد الأونر: ${ownerRenewedMix.toLocaleString('en-US')} ميكس`, "confirmed");
+    if (!skipInitialSteps && !jumpToMonitorOnly) {
+      // ═════════════════════════════════════════════════════════════════════════
+      // 3. تجديد نظام الأونر الحالي (step_3_renew_owner_initial)
+      // ═════════════════════════════════════════════════════════════════════════
+      await sendStep("step_3_renew_owner_initial", 3, "تجديد نظام الأونر", `إرسال طلب تجديد باقة الأونر الحالية (${engine.getPlanName(currentOwnerPlanName)})...`);
+      engine.log(`[*] [الخطوة 3/13] تجديد نظام الأونر الحالي (${engine.getPlanName(currentOwnerPlanName)}) لتنشيط الخط...`, "info");
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // 5. تحويل ميكسات الأونر إلى الفرد والتحقق من نتيجة العملية (step_5_transfer_owner_to_child)
-    // ═════════════════════════════════════════════════════════════════════════
-    parkedMixAmount = ownerRenewedMix;
-    await sendStep("step_5_transfer_owner_to_child", 5, "تحويل ميكسات للأفراد", `تحويل (${parkedMixAmount.toLocaleString('en-US')}) ميكس من الأونر إلى الفرد (${childDial})...`);
-    engine.log(`[*] [الخطوة 5/13] تحويل ميكسات الأونر إلى الفرد والتحقق من نتيجة العملية...`, "info");
-
-    if (parkedMixAmount > 0) {
-      const parkOk = await engine.transferMix(childDial, parkedMixAmount, currentOwnerPlanName);
-      if (!parkOk && !isSimulation) {
+      const renew1Ok = await engine.renewBundleAction(currentOwnerPlanName, String(currentCost));
+      if (!renew1Ok && !isSimulation) {
         return await recordCycleFailure({
-          category: "TRANSFER_FAILED",
-          stepKey: "step_5_transfer_owner_to_child",
-          stepNumber: 5,
-          stepTitle: "تحويل ميكسات للأفراد",
-          message: "فشل إرسال طلب تحويل ميكسات الأونر إلى الفرد",
-          lastResponseSummary: `تم رفض أمر التحويل للمستلم ${childDial}`,
+          category: "BUNDLE_RENEWAL_FAILED",
+          stepKey: "step_3_renew_owner_initial",
+          stepNumber: 3,
+          stepTitle: "تجديد نظام الأونر",
+          message: "فشل إرسال طلب تجديد نظام الأونر الحالي",
+          lastResponseSummary: `تم رفض أمر التجديد للباقة ${currentOwnerPlanName}`,
         });
       }
-    }
-    await sendStep("step_5_transfer_owner_to_child", 5, "تحويل ميكسات للأفراد", "تم إرسال وقبول أمر تحويل الميكسات إلى الفرد بنجاح", "confirmed");
+      await sendStep("step_3_renew_owner_initial", 3, "تجديد نظام الأونر", "تم إرسال وقبول أمر التجديد بنجاح بالسيرفر", "confirmed");
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // 6. التحقق من الأرصدة بعد التحويل (step_6_verify_post_transfer)
-    // ═════════════════════════════════════════════════════════════════════════
-    await sendStep("step_6_verify_post_transfer", 6, "التحقق بعد التحويل", "التحقق من وصول الرصيد للفرد وخصمه من الأونر ومنع التكرار...");
-    engine.log(`[*] [الخطوة 6/13] التحقق من الأرصدة بعد التحويل والتأكد من عدم تكرار التحويل...`, "info");
+      // ═════════════════════════════════════════════════════════════════════════
+      // 4. الانتظار ثانيتين ثم إعادة قراءة البيانات (step_4_wait_and_recheck)
+      // ═════════════════════════════════════════════════════════════════════════
+      await sendStep("step_4_wait_and_recheck", 4, "انتظار ثانيتين وإعادة القراءة", "الانتظار ثانيتين لمزامنة الشبكة ثم إعادة قراءة البيانات والتأكد...");
+      engine.log(`[*] [الخطوة 4/13] انتظار ثانيتين لمزامنة الشبكة ثم إعادة قراءة البيانات...`, "info");
+      await sleep(2000);
 
-    let postParkChildBal = 0;
-    for (let auditTry = 1; auditTry <= 4; auditTry++) {
-      await sleep(1500);
-      const chkChild = await childEngine.getStatusAndChild(true);
-      if (chkChild.readSuccess && chkChild.remainingMix !== null) {
-        postParkChildBal = chkChild.remainingMix;
-        if (postParkChildBal > 0 || isSimulation) {
-          break;
+      const postRenewStatus = await engine.getStatusAndChild(false);
+      ownerRenewedMix = postRenewStatus.remainingMix ?? ownerStartMix;
+      engine.log(`[+] [قراءة بعد التجديد] رصيد الأونر بعد التجديد: ${ownerRenewedMix.toLocaleString('en-US')} ميكس`, "info");
+      await sendStep("step_4_wait_and_recheck", 4, "انتظار ثانيتين وإعادة القراءة", `تمت القراءة بنجاح - رصيد الأونر: ${ownerRenewedMix.toLocaleString('en-US')} ميكس`, "confirmed");
+
+      // ═════════════════════════════════════════════════════════════════════════
+      // 5. تحويل ميكسات الأونر إلى الفرد والتحقق من نتيجة العملية (step_5_transfer_owner_to_child)
+      // ═════════════════════════════════════════════════════════════════════════
+      parkedMixAmount = ownerRenewedMix;
+      await sendStep("step_5_transfer_owner_to_child", 5, "تحويل ميكسات للأفراد", `تحويل (${parkedMixAmount.toLocaleString('en-US')}) ميكس من الأونر إلى الفرد (${childDial})...`);
+      engine.log(`[*] [الخطوة 5/13] تحويل ميكسات الأونر إلى الفرد والتحقق من نتيجة العملية...`, "info");
+
+      if (parkedMixAmount > 0) {
+        const parkOk = await engine.transferMix(childDial, parkedMixAmount, currentOwnerPlanName);
+        if (!parkOk && !isSimulation) {
+          return await recordCycleFailure({
+            category: "TRANSFER_FAILED",
+            stepKey: "step_5_transfer_owner_to_child",
+            stepNumber: 5,
+            stepTitle: "تحويل ميكسات للأفراد",
+            message: "فشل إرسال طلب تحويل ميكسات الأونر إلى الفرد",
+            lastResponseSummary: `تم رفض أمر التحويل للمستلم ${childDial}`,
+          });
+        }
+      } else {
+        engine.log(`[ℹ️] رصيد الأونر صفر ميكس — تم تجاوز أمر التحويل الصفري لحماية رصيد الفرد`, "info");
+      }
+      await sendStep("step_5_transfer_owner_to_child", 5, "تحويل ميكسات للأفراد", "تم إرسال وقبول أمر تحويل الميكسات إلى الفرد بنجاح", "confirmed");
+
+      // ═════════════════════════════════════════════════════════════════════════
+      // 6. التحقق من الأرصدة بعد التحويل (step_6_verify_post_transfer)
+      // ═════════════════════════════════════════════════════════════════════════
+      await sendStep("step_6_verify_post_transfer", 6, "التحقق بعد التحويل", "التحقق من وصول الرصيد للفرد وخصمه من الأونر ومنع التكرار...");
+      engine.log(`[*] [الخطوة 6/13] التحقق من الأرصدة بعد التحويل والتأكد من عدم تكرار التحويل...`, "info");
+
+      for (let auditTry = 1; auditTry <= 4; auditTry++) {
+        await sleep(1500);
+        const chkChild = await childEngine.getStatusAndChild(true);
+        if (chkChild.readSuccess && chkChild.remainingMix !== null) {
+          postParkChildBal = chkChild.remainingMix;
+          if (postParkChildBal > 0 || isSimulation) {
+            break;
+          }
         }
       }
-    }
-    engine.log(`[+] [تأكيد التحويل] رصيد الفرد بعد الاستقبال: ${postParkChildBal.toLocaleString('en-US')} ميكس`, "info");
-    await sendStep("step_6_verify_post_transfer", 6, "التحقق بعد التحويل", `تم التحقق بنجاح - رصيد الفرد المؤكد: ${postParkChildBal.toLocaleString('en-US')} ميكس`, "confirmed");
+      engine.log(`[+] [تأكيد التحويل] رصيد الفرد بعد الاستقبال: ${postParkChildBal.toLocaleString('en-US')} ميكس`, "info");
+      await sendStep("step_6_verify_post_transfer", 6, "التحقق بعد التحويل", `تم التحقق بنجاح - رصيد الفرد المؤكد: ${postParkChildBal.toLocaleString('en-US')} ميكس`, "confirmed");
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // 7. طلب تغيير نظام الأونر إلى النظام الآخر (step_7_request_plan_change)
-    // ═════════════════════════════════════════════════════════════════════════
-    await sendStep("step_7_request_plan_change", 7, "طلب تغيير النظام", `إرسال طلب تغيير نظام الأونر إلى ${targetPlanDisplay}...`);
-    engine.log(`[*] [الخطوة 7/13] إرسال طلب ترحيل نظام الأونر إلى: ${targetPlanDisplay}...`, "info");
+      // ═════════════════════════════════════════════════════════════════════════
+      // 7. طلب تغيير نظام الأونر إلى النظام الآخر (step_7_request_plan_change)
+      // ═════════════════════════════════════════════════════════════════════════
+      await sendStep("step_7_request_plan_change", 7, "طلب تغيير النظام", `إرسال طلب تغيير نظام الأونر إلى ${targetPlanDisplay}...`);
+      engine.log(`[*] [الخطوة 7/13] إرسال طلب ترحيل نظام الأونر إلى: ${targetPlanDisplay}...`, "info");
 
-    const migrateOrderOk = await engine.changePlan(targetPlanName, "");
-    if (!migrateOrderOk && !isSimulation) {
-      engine.log(`[-] فشل طلب تغيير النظام! جاري استرجاع الميكسات المركونة فوراً لحماية الرصيد...`, "error");
-      if (postParkChildBal > 0) {
-        await childEngine.transferMix(engine.ownerDial || session.owner_account_identifier, postParkChildBal, "Hekaya_XRP_MIX_Child_1");
-      }
-      return await recordCycleFailure({
-        category: "PLAN_CHANGE_FAILED",
-        stepKey: "step_7_request_plan_change",
-        stepNumber: 7,
-        stepTitle: "طلب تغيير النظام",
-        message: "رفض مقسم اتصالات أمر تغيير النظام",
-        lastResponseSummary: `فشل الانتقال إلى ${targetPlanDisplay}`,
-      });
-    }
-    await sendStep(
-      "step_7_request_plan_change",
-      7,
-      "طلب تغيير النظام",
-      `تم إرسال طلب التغيير بنجاح، جاري المراقبة وعدم افتراض الاكتمال...`,
-      "confirmed",
-      {
-        isUnresolved: true,
-        payload: {
-          parkedMixAmount,
-          postParkChildBal,
-          ownerStartMix,
-          ownerPlanPre,
-          currentOwnerPlanName,
-          targetPlanName,
-          targetPlanDisplay,
-          targetCost,
-          currentCost,
-          childDial,
+      const migrateOrderOk = await engine.changePlan(targetPlanName, "");
+      if (!migrateOrderOk && !isSimulation) {
+        engine.log(`[-] فشل طلب تغيير النظام! جاري استرجاع الميكسات المركونة فوراً لحماية الرصيد...`, "error");
+        if (postParkChildBal > 0) {
+          await childEngine.transferMix(engine.ownerDial || session.owner_account_identifier, postParkChildBal, "Hekaya_XRP_MIX_Child_1");
         }
+        return await recordCycleFailure({
+          category: "PLAN_CHANGE_FAILED",
+          stepKey: "step_7_request_plan_change",
+          stepNumber: 7,
+          stepTitle: "طلب تغيير النظام",
+          message: "رفض مقسم اتصالات أمر تغيير النظام",
+          lastResponseSummary: `فشل الانتقال إلى ${targetPlanDisplay}`,
+        });
       }
-    );
+      await sendStep(
+        "step_7_request_plan_change",
+        7,
+        "طلب تغيير النظام",
+        `تم قبول الطلب — جارٍ انتظار ظهور النظام الجديد...`,
+        "confirmed",
+        {
+          isUnresolved: true,
+          payload: {
+            parkedMixAmount,
+            postParkChildBal,
+            ownerStartMix,
+            ownerPlanPre,
+            currentOwnerPlanName,
+            targetPlanName,
+            targetPlanDisplay,
+            targetCost,
+            currentCost,
+            childDial,
+          }
+        }
+      );
+    }
 
     // ═════════════════════════════════════════════════════════════════════════
     // 8. مراقبة حالة النظام باستخدام قراءات حديثة (step_8_monitor_plan_change)
