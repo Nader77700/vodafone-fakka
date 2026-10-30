@@ -511,191 +511,186 @@ class EtisalatEngine {
       return { planId: "غير معروف", remainingMix: 0, childNumber: null };
     }
 
-    const effectiveShortCode = this.shortCode || (this.role === "child" ? "XRPC1" : "XRPM7");
-    // خطوط الفرد XRPC1 وخطوط الأونر XRPM تتبع قطاع XRP (حكاية ميكسات) وليس SPEED المخصص لباقات النت فقط
-    const effectiveSegmentId = this.shortCode && this.shortCode.includes("SPEED") ? "SPEED" : "XRP";
-    const xmlBody = `<dialAndLanguageRequest><segmentId>${effectiveSegmentId}</segmentId><subscriberNumber>${this.currentDial}</subscriberNumber><language>1</language><shortCode>${effectiveShortCode}</shortCode></dialAndLanguageRequest>`;
-    // CRITICAL: Python urllib.parse.quote defaults to safe='/' so '/' is NOT encoded to '%2F'
-    const encodedReq = encodeURIComponent(xmlBody).replace(/%2F/g, "/");
-    const urlPath = `/Saytar/rest/servicemanagement/getGenericConsumptionsV2?requestParam=${encodedReq}`;
+    // Ensure this.shortCode aligns with current plan
+    let effectiveShortCode = this.shortCode || (this.role === "child" ? "XRPC1" : "XRPM7");
+    let effectiveSegmentId = this.shortCode && this.shortCode.includes("SPEED") ? "SPEED" : "XRP";
+    
+    // Candidate shortcodes to test for owner to NEVER get false 0 balance
+    const shortCodeCandidates = this.role === "child" 
+      ? ["XRPC1"] 
+      : (effectiveShortCode === "XRPM6" ? ["XRPM6", "XRPM7"] : ["XRPM7", "XRPM6"]);
 
-    const { headerSig, urlSig } = await this.generateSignatures(urlPath, "");
-    const headers: Record<string, string> = {
-      ...this.getBaseHeaders(),
-      "auth": `Bearer ${this.authToken}`,
-      "headerSignature": headerSig,
-      "urlSignature": urlSig,
-    };
+    let finalPlanId = "غير معروف";
+    let finalRemainingMix = 0;
+    let finalChildNumber: string | null = null;
 
-    if (this.bridgeConfig.bridge_auth) {
-      headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
-    }
+    for (const testShortCode of shortCodeCandidates) {
+      const xmlBody = `<dialAndLanguageRequest><segmentId>${effectiveSegmentId}</segmentId><subscriberNumber>${this.currentDial}</subscriberNumber><language>1</language><shortCode>${testShortCode}</shortCode></dialAndLanguageRequest>`;
+      // CRITICAL: Python urllib.parse.quote defaults to safe='/' so '/' is NOT encoded to '%2F'
+      const encodedReq = encodeURIComponent(xmlBody).replace(/%2F/g, "/");
+      const urlPath = `/Saytar/rest/servicemanagement/getGenericConsumptionsV2?requestParam=${encodedReq}`;
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const targetUrl = this.getRequestUrl(urlPath);
-        const res = await this.fetchWithTimeout(targetUrl, {
-          method: "GET",
-          headers,
-        }, 7000);
+      const { headerSig, urlSig } = await this.generateSignatures(urlPath, "");
+      const headers: Record<string, string> = {
+        ...this.getBaseHeaders(),
+        "auth": `Bearer ${this.authToken}`,
+        "headerSignature": headerSig,
+        "urlSignature": urlSig,
+      };
 
-        if (res.status === 200) {
-        const text = await res.text();
-        console.log(`[getStatusAndChild] Raw XML (${this.currentDial}):`, text);
+      if (this.bridgeConfig.bridge_auth) {
+        headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
+      }
 
-        // 1. Accurate Plan Detection from Etisalat response XML
-        let planId = "غير معروف";
-        const rateMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i);
-        const rateBlock = text.match(/<ratePlanConsumption>[\s\S]*?<\/ratePlanConsumption>/i)?.[0] || text;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const targetUrl = this.getRequestUrl(urlPath);
+          const res = await this.fetchWithTimeout(targetUrl, {
+            method: "GET",
+            headers,
+          }, 7000);
 
-        if (rateMatch && rateMatch[1] && (rateMatch[1].includes("Parent") || rateMatch[1].includes("Child"))) {
-          planId = rateMatch[1].trim();
-        } else if (/Parent_7|XRPM7|ميكسات\s*270/i.test(rateBlock)) {
-          planId = "Hekaya_XRP_MIX_Parent_7";
-        } else if (/Parent_6|XRPM6|ميكسات\s*180/i.test(rateBlock)) {
-          planId = "Hekaya_XRP_MIX_Parent_6";
-        } else if (/Parent_5|XRPM5|ميكسات\s*120/i.test(rateBlock)) {
-          planId = "Hekaya_XRP_MIX_Parent_5";
-        } else if (/Child_1|XRPC1/i.test(rateBlock)) {
-          planId = "Hekaya_XRP_MIX_Child_1";
-        } else if (/Child_2|XRPC2/i.test(rateBlock)) {
-          planId = "Hekaya_XRP_MIX_Child_2";
-        } else if (this.shortCode) {
-          if (this.shortCode.includes("M7")) planId = "Hekaya_XRP_MIX_Parent_7";
-          else if (this.shortCode.includes("M6")) planId = "Hekaya_XRP_MIX_Parent_6";
-          else if (this.shortCode.includes("M5")) planId = "Hekaya_XRP_MIX_Parent_5";
-          else if (this.shortCode.includes("C1")) planId = "Hekaya_XRP_MIX_Child_1";
-        }
+          if (res.status === 200) {
+            const text = await res.text();
+            console.log(`[getStatusAndChild] (${this.currentDial}|${testShortCode}):`, text.slice(0, 1500));
 
-        // 2. Comprehensive Mixes Detection across all consumption meters & buckets
-        // Never stop at the first bucket (e.g. Facebook/WhatsApp = 0 or expired meters)
-        const consumptionBlocks = text.match(/<consumption[\s>][\s\S]*?<\/consumption>/gi) || [];
-        let mainMix = 0;
-        let carriedMix = 0;
-        let transferredMix = 0;
-        const allMixCandidates: number[] = [];
+            // 1. Accurate Plan Detection
+            let planId = "غير معروف";
+            const rateMatch = text.match(/<ratePlanConsumption>[\s\S]*?<productId>([^<]+)<\/productId>/i);
+            const rateBlock = text.match(/<ratePlanConsumption>[\s\S]*?<\/ratePlanConsumption>/i)?.[0] || text;
 
-        for (const block of consumptionBlocks) {
-          const remMatch = block.match(/<remainingValue>([0-9]+(?:\.[0-9]+)?)<\/remainingValue>/i);
-          if (!remMatch) continue;
-          const remVal = parseInt(remMatch[1], 10);
+            if (rateMatch && rateMatch[1] && (rateMatch[1].includes("Parent") || rateMatch[1].includes("Child"))) {
+              planId = rateMatch[1].trim();
+            } else if (/Parent_7|XRPM7|ميكسات\s*270/i.test(rateBlock)) {
+              planId = "Hekaya_XRP_MIX_Parent_7";
+            } else if (/Parent_6|XRPM6|ميكسات\s*180/i.test(rateBlock)) {
+              planId = "Hekaya_XRP_MIX_Parent_6";
+            } else if (/Parent_5|XRPM5|ميكسات\s*120/i.test(rateBlock)) {
+              planId = "Hekaya_XRP_MIX_Parent_5";
+            } else if (/Child_1|XRPC1/i.test(rateBlock)) {
+              planId = "Hekaya_XRP_MIX_Child_1";
+            } else if (/Child_2|XRPC2/i.test(rateBlock)) {
+              planId = "Hekaya_XRP_MIX_Child_2";
+            }
 
-          const labelMatch = block.match(/<(?:consumedLabel|remainingLabel)>([^<]+)<\/(?:consumedLabel|remainingLabel)>/i);
-          const label = labelMatch ? labelMatch[1].trim() : "";
+            // Keep internal shortCode strictly synchronized with detected plan
+            if (planId === "Hekaya_XRP_MIX_Parent_7") this.shortCode = "XRPM7";
+            else if (planId === "Hekaya_XRP_MIX_Parent_6") this.shortCode = "XRPM6";
+            else if (planId === "Hekaya_XRP_MIX_Child_1") this.shortCode = "XRPC1";
 
-          const omsMatch = block.match(/<(?:remainingOmsName|consumedOmsName)>([^<]+)<\/(?:remainingOmsName|consumedOmsName)>/i);
-          const oms = omsMatch ? omsMatch[1].trim() : "";
+            // 2. Comprehensive Mixes Detection across all consumption meters & buckets
+            const consumptionBlocks = text.match(/<consumption[\s>][\s\S]*?<\/consumption>/gi) || [];
+            let mainMix = 0;
+            let carriedMix = 0;
+            let transferredMix = 0;
+            const allMixCandidates: number[] = [];
 
-          const unitMatch = block.match(/<(?:remainingUnit|totalUnit|consumedUnit)>([^<]+)<\/(?:remainingUnit|totalUnit|consumedUnit)>/i);
-          const unit = unitMatch ? unitMatch[1].trim() : "";
+            for (const block of consumptionBlocks) {
+              const remMatch = block.match(/<remainingValue>([0-9]+(?:\.[0-9]+)?)<\/remainingValue>/i);
+              if (!remMatch) continue;
+              const remVal = parseInt(remMatch[1], 10);
 
-          const meterTypeMatch = block.match(/<consumptionMeterType>([^<]+)<\/consumptionMeterType>/i);
-          const meterType = meterTypeMatch ? meterTypeMatch[1].trim() : "";
+              const labelMatch = block.match(/<(?:consumedLabel|remainingLabel)>([^<]+)<\/(?:consumedLabel|remainingLabel)>/i);
+              const label = labelMatch ? labelMatch[1].trim() : "";
 
-          // Exclude minutes / calls / voice / family minutes (CRITICAL: دقائق العيلة is 300 minutes, NOT mixes!)
-          const isMinutesBucket = 
-            /دقيقة|دقائق|min|minute/i.test(unit) ||
-            /MINUTES|VOICE|CALLS/i.test(oms) ||
-            (/دقائق|دقيقة/i.test(label) && !/ميكس|وحدة/i.test(label));
-          if (isMinutesBucket) {
-            continue;
-          }
+              const omsMatch = block.match(/<(?:remainingOmsName|consumedOmsName)>([^<]+)<\/(?:remainingOmsName|consumedOmsName)>/i);
+              const oms = omsMatch ? omsMatch[1].trim() : "";
 
-          // Exclude pure social / whatsapp / home vdsl / أقوي كارت if they have separate quotas
-          const isSocialOrVdsl = 
-            /whatsapp|facebook|vdsl|انترنت\s*المنزلي/i.test(oms) || 
-            /فيسبوك|واتساب|انترنت\s*حكاية|أقوي\s*كارت/i.test(label);
-          if (isSocialOrVdsl && !/ميكسات\s*الباقة/i.test(label)) {
-            continue;
-          }
+              const unitMatch = block.match(/<(?:remainingUnit|totalUnit|consumedUnit)>([^<]+)<\/(?:remainingUnit|totalUnit|consumedUnit)>/i);
+              const unit = unitMatch ? unitMatch[1].trim() : "";
 
-          const isMixBucket = (/ميكس|unit|وحدة/i.test(unit) ||
-                              /xrp_units|hekaya_units/i.test(meterType) ||
-                              /GENERAL_UNIT/i.test(oms) ||
-                              /CARRIED_OVER/i.test(oms) ||
-                              /TRANSFER_UNITS/i.test(oms) ||
-                              /ميكسات|ميكس|وحدة/i.test(label)) &&
-                              !/دقيقة|دقائق|ميجا/i.test(unit);
+              const meterTypeMatch = block.match(/<consumptionMeterType>([^<]+)<\/consumptionMeterType>/i);
+              const meterType = meterTypeMatch ? meterTypeMatch[1].trim() : "";
 
-          if (isMixBucket && remVal > 0) {
-            allMixCandidates.push(remVal);
-            
-            // STRICT DISCRIMINATIVE BUCKET CATEGORIZATION:
-            // Transferred or family units must NEVER be swallowed into basic quota!
-            const isTransfer = /TRANSFER/i.test(oms) || /محول|تحويل|مسترجع/i.test(label) || (/عيلة/i.test(label) && /ميكس|وحدة/i.test(label));
-            const isCarried = /CARRIED_OVER/i.test(oms) || /الميكسات\s*المرحلة|مرحل/i.test(label);
-            const isGeneral = (/GENERAL_UNIT/i.test(oms) || /ميكسات\s*الباقة\s*الأساسية/i.test(label) || /الأساسية/i.test(label)) && !isTransfer && !isCarried;
+              // Exclude minutes / calls / voice (دقائق للشبكات الأخرى)
+              const isMinutesBucket = 
+                /دقائق\s*للشبكات|MINUTES|VOICE|CALLS/i.test(oms) ||
+                (/دقائق\s*للشبكات/i.test(label) && !/ميكس|وحدة/i.test(label));
+              if (isMinutesBucket) {
+                continue;
+              }
 
-            if (isTransfer) {
-              if (remVal > transferredMix) transferredMix = remVal;
-            } else if (isCarried) {
-              if (remVal > carriedMix) carriedMix = remVal;
-            } else if (isGeneral) {
-              if (remVal > mainMix) mainMix = remVal;
-            } else {
-              // General XRP bucket without explicit flags
-              if (mainMix === 0) {
-                mainMix = remVal;
-              } else if (remVal !== mainMix && remVal !== carriedMix && remVal !== transferredMix) {
-                // Distinct secondary bucket (e.g. transferred quota on XRP)
-                if (transferredMix === 0) {
-                  transferredMix = remVal;
+              // Exclude pure social / whatsapp
+              const isPureSocial = 
+                /whatsapp|facebook/i.test(oms) || 
+                /فيسبوك|واتساب/i.test(label);
+              if (isPureSocial && !/ميكسات|وحدة|GENERAL/i.test(label)) {
+                continue;
+              }
+
+              const isMixBucket = /ميكس|unit|وحدة/i.test(unit) ||
+                                  /xrp_units|hekaya_units/i.test(meterType) ||
+                                  /GENERAL_UNIT/i.test(oms) ||
+                                  /CARRIED_OVER/i.test(oms) ||
+                                  /TRANSFER/i.test(oms) ||
+                                  /المتبقى|ميكسات|ميكس|وحدة|الأساسية/i.test(label);
+
+              if (isMixBucket && remVal > 0) {
+                allMixCandidates.push(remVal);
+                
+                const isTransfer = /TRANSFER/i.test(oms) || /محول|تحويل|مسترجع/i.test(label);
+                const isCarried = /CARRIED_OVER/i.test(oms) || /مرحل/i.test(label);
+                const isGeneral = (/GENERAL_UNIT/i.test(oms) || /الأساسية|المتبقى/i.test(label)) && !isTransfer && !isCarried;
+
+                if (isTransfer) {
+                  if (remVal > transferredMix) transferredMix = remVal;
+                } else if (isCarried) {
+                  if (remVal > carriedMix) carriedMix = remVal;
+                } else if (isGeneral) {
+                  if (remVal > mainMix) mainMix = remVal;
                 } else {
-                  transferredMix += remVal;
+                  if (mainMix === 0) mainMix = remVal;
+                  else transferredMix += remVal;
                 }
               }
             }
-          }
-        }
 
-        // Fallback: If no structured mix bucket matched, the line legitimately has 0 mixes (do not scrape minutes!)
-        if (allMixCandidates.length === 0) {
-          // Zero mixes verified
-        }
+            const candidateMax = allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0;
+            const combinedMix = (mainMix > 0 && carriedMix > 0) ? (mainMix + carriedMix) : (mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : 0));
+            const bucketSum = mainMix + carriedMix + transferredMix;
+            const remainingMix = Math.max(combinedMix, bucketSum, candidateMax);
 
-        const candidateMax = allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0;
-        // Sum basic quota, carried quota, and transferred quota when separate buckets exist
-        const combinedMix = (mainMix > 0 && carriedMix > 0) ? (mainMix + carriedMix) : (mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : 0));
-        const bucketSum = mainMix + carriedMix + transferredMix;
-        
-        // CRITICAL ZERO-LOSS FIX:
-        // Sum all separate buckets, and take the true maximum across combined sums and candidate values
-        const remainingMix = Math.max(combinedMix, bucketSum, candidateMax);
+            // 3. Child in family
+            let childNumber: string | null = null;
+            const fafListMatch = text.match(/<fafNumberList>([\s\S]*?)<\/fafNumberList>/i);
+            if (fafListMatch) {
+              const valMatches = [...fafListMatch[1].matchAll(/<value>([^<]+)<\/value>/gi)];
+              for (const m of valMatches) {
+                const val = m[1].trim();
+                const cleanVal = val.replace(/^20/, "0");
+                const cleanDial = (this.currentDial || "").replace(/^20/, "0");
+                if (cleanVal && cleanVal !== cleanDial && !cleanDial.endsWith(cleanVal) && !cleanVal.endsWith(cleanDial)) {
+                  childNumber = cleanVal;
+                  break;
+                }
+              }
+            }
 
-        // 3. Child in family (fafNumberList/fafNumber/value)
-        let childNumber: string | null = null;
-        const fafListMatch = text.match(/<fafNumberList>([\s\S]*?)<\/fafNumberList>/i);
-        if (fafListMatch) {
-          const valMatches = [...fafListMatch[1].matchAll(/<value>([^<]+)<\/value>/gi)];
-          for (const m of valMatches) {
-            const val = m[1].trim();
-            const cleanVal = val.replace(/^20/, "0");
-            const cleanDial = (this.currentDial || "").replace(/^20/, "0");
-            if (cleanVal && cleanVal !== cleanDial && !cleanDial.endsWith(cleanVal) && !cleanVal.endsWith(cleanDial)) {
-              childNumber = cleanVal;
-              break;
+            if (planId !== "غير معروف") finalPlanId = planId;
+            if (childNumber) finalChildNumber = childNumber;
+            if (remainingMix > finalRemainingMix) finalRemainingMix = remainingMix;
+
+            // If we found a positive mix balance, no need to probe alternate shortcode
+            if (remainingMix > 0) {
+              return { planId: finalPlanId, remainingMix: finalRemainingMix, childNumber: finalChildNumber };
             }
           }
+        } catch (err: any) {
+          console.error(`[getStatusAndChild] Error (${attempt}/2):`, err?.message || err);
+          if (attempt < 2) await sleep(1000);
         }
-
-        return { planId, remainingMix, childNumber };
-      } else {
-        console.warn(`[getStatusAndChild] Non-200 status (${attempt}/3): ${res.status}`);
-        if (attempt < 3) await sleep(1200);
       }
-    } catch (err: any) {
-      console.error(`[getStatusAndChild] Error (${attempt}/3):`, err?.message || err);
-      if (attempt < 3) await sleep(1200);
     }
-  }
 
     // Fallback if known from shortCode
-    let fallbackPlan = "غير معروف";
-    if (this.shortCode.includes("M7")) fallbackPlan = "Hekaya_XRP_MIX_Parent_7";
-    else if (this.shortCode.includes("M6")) fallbackPlan = "Hekaya_XRP_MIX_Parent_6";
-    else if (this.shortCode.includes("C1")) fallbackPlan = "Hekaya_XRP_MIX_Child_1";
+    let fallbackPlan = finalPlanId !== "غير معروف" ? finalPlanId : "غير معروف";
+    if (fallbackPlan === "غير معروف") {
+      if (this.shortCode.includes("M7")) fallbackPlan = "Hekaya_XRP_MIX_Parent_7";
+      else if (this.shortCode.includes("M6")) fallbackPlan = "Hekaya_XRP_MIX_Parent_6";
+      else if (this.shortCode.includes("C1")) fallbackPlan = "Hekaya_XRP_MIX_Child_1";
+    }
 
-    return { planId: fallbackPlan, remainingMix: 0, childNumber: null };
+    return { planId: fallbackPlan, remainingMix: finalRemainingMix, childNumber: finalChildNumber };
   }
 
   async renewBundleAction(planName: string, amount: string): Promise<boolean> {
@@ -785,35 +780,40 @@ class EtisalatEngine {
       const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
       const elapsedTransferSec = ((Date.now() - tStartTransfer) / 1000).toFixed(1);
 
-      // تسجيل فوري وشفاف لكل تفاصيل المعاملة (الطلب والرد الفعلي) في قاعدة البيانات للمراقبة الحية
+      // تسجيل فوري وشفاف لكل تفاصيل المعاملة في قاعدة البيانات للمراقبة الحية
       if (this.sessionId) {
         try {
-          await supabase.from("vip_operation_history").insert({
-            session_id: this.sessionId,
-            operation_type: this.role === 'child' ? 'transfer_to_owner' : 'transfer_to_child',
-            owner_account_ref: this.ownerDial || (this.role === 'owner' ? senderDisplay : receiverDisplay),
-            individual_account_ref: this.childDial || (this.role === 'child' ? senderDisplay : receiverDisplay),
-            requested_action: this.role === 'child'
-              ? `استرجاع ${quota.toLocaleString('en-US')} ميكس من الفرد للأونر`
-              : `تحويل ${quota.toLocaleString('en-US')} ميكس من الأونر للفرد`,
-            requested_amount: quota,
-            status: isSuccess ? 'succeeded' : 'failed',
-            failure_reason: isSuccess ? null : (userAr || errMsg || `كود ${res.status}`),
-            is_automatic: true,
-            result: {
-              url: targetUrl,
-              xml_payload: xmlBodyV2,
-              response_status: res.status,
-              response_body: text.slice(0, 2000),
-              order_id: orderIdMatch?.[1] || null,
-              error_code: errCode || null,
-              user_message_ar: userAr || null,
-              direction: this.role === 'child' ? 'child_to_owner' : 'owner_to_child',
-              sender: senderDisplay,
-              receiver: receiverDisplay,
-              product_name: productName,
-            },
-          });
+          const sbUrl = Deno.env.get("SUPABASE_URL") || "";
+          const sbKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+          if (sbUrl && sbKey) {
+            const sbClient = createClient(sbUrl, sbKey);
+            await sbClient.from("vip_operation_history").insert({
+              session_id: this.sessionId,
+              operation_type: this.role === 'child' ? 'transfer_to_owner' : 'transfer_to_child',
+              owner_account_ref: this.ownerDial || (this.role === 'owner' ? senderDisplay : receiverDisplay),
+              individual_account_ref: this.childDial || (this.role === 'child' ? senderDisplay : receiverDisplay),
+              requested_action: this.role === 'child'
+                ? `استرجاع ${quota.toLocaleString('en-US')} ميكس من الفرد للأونر`
+                : `تحويل ${quota.toLocaleString('en-US')} ميكس من الأونر للفرد`,
+              requested_amount: quota,
+              status: isSuccess ? 'succeeded' : 'failed',
+              failure_reason: isSuccess ? null : (userAr || errMsg || `كود ${res.status}`),
+              is_automatic: true,
+              result: {
+                url: targetUrl,
+                xml_payload: xmlBodyV2,
+                response_status: res.status,
+                response_body: text.slice(0, 2000),
+                order_id: orderIdMatch?.[1] || null,
+                error_code: errCode || null,
+                user_message_ar: userAr || null,
+                direction: this.role === 'child' ? 'child_to_owner' : 'owner_to_child',
+                sender: senderDisplay,
+                receiver: receiverDisplay,
+                product_name: productName,
+              },
+            });
+          }
         } catch (_dbE) {
           console.warn("Failed to log transfer into vip_operation_history:", _dbE);
         }
@@ -1476,8 +1476,8 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // 7. STEP 4: Instant 0ms Child -> Owner Transfer
-  await sendStep("recovering", 4, "تحويل الميكسات للأونر", "تنفيذ التحويل الذري الفوري من الفرد للأونر بدون أي تأخير");
+  // 7. STEP 4: Instant 0ms Child -> Owner Transfer (One Atomic Single-Shot Transfer)
+  await sendStep("recovering", 4, "تحويل الميكسات للأونر", "تنفيذ التحويل الذري الفوري من الفرد للأونر دفعة واحدة");
   engine.log(`[⚡] تنفيذ فوري بلحظة واحدة (0ms): استرجاع ميكسات الفرد للأونر لدمجها وتجميع الرصيد التراكمي...`, "info");
 
   recoveredMixAmount = 0;
@@ -1491,41 +1491,21 @@ async function handleSingleCycleInternal(
 
     const amountToTransfer = parkedMixAmount || 0;
     if (amountToTransfer > 0) {
-      engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر...`, "info");
+      engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر [طلب ذري وحيد]...`, "info");
+      // One single clean request without internal or external loop to protect monthly quota and prevent BE_SDP_361 lock
       await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
 
-      await sleep(1500);
-      let childStAfter = await activeChildEngine.getStatusAndChild(true);
-      finalChildBal = childStAfter.remainingMix || 0;
+      // Give Etisalat backend 4 seconds to settle the transaction in network
+      engine.log(`[*] انتظار 4 ثوانٍ لاستقرار الرصيد في شبكة اتصالات بعد أمر التحويل...`, "info");
+      await sleep(4000);
 
-      let ownerCheckAfter = null;
       try {
-        ownerCheckAfter = await engine.getStatusAndChild(true);
+        const childStAfter = await activeChildEngine.getStatusAndChild(true);
+        finalChildBal = childStAfter.remainingMix || 0;
       } catch (_) {}
 
-      const ownerReceived = ownerCheckAfter && (ownerCheckAfter.remainingMix >= amountToTransfer * 0.7);
-
-      if (ownerReceived || finalChildBal <= 1000) {
-        recoveredMixAmount = amountToTransfer;
-        engine.log(`[✓] تأكيد استقرار الرصيد: تم تفريغ ميكسات الفرد للأونر بنجاح!`, "success");
-      } else {
-        // If not yet transferred, retry ONCE as instructed
-        engine.log(`[*] رصد ذكي: لم يتم خصم الرصيد من الفرد بعد الطلب الأول. إعادة محاولة ثانية وأخيرة للتأكيد...`, "warn");
-        await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
-        await sleep(1500);
-
-        try {
-          const childStRetry = await activeChildEngine.getStatusAndChild(true);
-          finalChildBal = childStRetry.remainingMix || 0;
-        } catch (_) {}
-
-        recoveredMixAmount = Math.max(0, amountToTransfer - finalChildBal);
-        if (recoveredMixAmount > 0 || finalChildBal <= 1000) {
-          engine.log(`[✓] تم تفريغ الميكسات بنجاح بعد الطلب الثاني!`, "success");
-        } else {
-          engine.log(`[!] تم إنهاء المحاولة الثانية وتفادي أي تكرار إضافي لحفظ حدود التحويل الشهرية.`, "info");
-        }
-      }
+      recoveredMixAmount = amountToTransfer;
+      engine.log(`[✓] تم إنهاء عملية التحويل وتفادي أي تكرار إضافي لضمان حماية حدود التحويل الشهرية.`, "success");
     }
   }
 

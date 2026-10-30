@@ -161,6 +161,25 @@ export const VipTerminalLogs = React.memo(function VipTerminalLogs({
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasScrolledUp, setHasScrolledUp] = useState(false);
   const [showAllLogs, setShowAllLogs] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Active live stopwatch when running
+  useEffect(() => {
+    if (!isRunning) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const formatElapsed = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const rem = sec % 60;
+    return `${mins.toString().padStart(2, '0')}:${rem.toString().padStart(2, '0')}`;
+  };
 
   // Apply sanitized logs filter for delegated users (zero-trust protection)
   const effectiveLogs = React.useMemo(() => {
@@ -278,9 +297,14 @@ export const VipTerminalLogs = React.memo(function VipTerminalLogs({
             <span>شاشة السجلات الحية</span>
             <span className="text-[10px] text-zinc-500 hidden sm:inline">(EtisalatBot Console)</span>
             {isRunning ? (
-              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] px-1.5 py-0 animate-pulse shrink-0">
-                الطرفية نشطة
-              </Badge>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] px-1.5 py-0 animate-pulse shrink-0">
+                  الطرفية نشطة
+                </Badge>
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] font-mono px-1.5 py-0 shrink-0 flex items-center gap-1">
+                  ⏱️ {formatElapsed(elapsedSeconds)}
+                </Badge>
+              </div>
             ) : (
               <Badge variant="outline" className="text-zinc-400 border-zinc-700 text-[9px] px-1.5 py-0 shrink-0">
                 جاهز
