@@ -579,12 +579,16 @@ class EtisalatEngine {
             else if (planId === "Hekaya_XRP_MIX_Parent_6") this.shortCode = "XRPM6";
             else if (planId === "Hekaya_XRP_MIX_Child_1") this.shortCode = "XRPC1";
 
-            // 2. Comprehensive Mixes Detection across all consumption meters & buckets
-            const consumptionBlocks = text.match(/<consumption[\s>][\s\S]*?<\/consumption>/gi) || [];
+            // 2. Strict Mixes Detection: ONLY Base / Main Bundle units & Carried Over units
+            // Strictly EXCLUDE scratch cards (أقوى كارت), extra cards, addons, gifts, and non-transferable quotas.
+            // If <ratePlanConsumption> exists, prefer extracting <consumption> blocks from inside it.
+            const ratePlanBlocks = text.match(/<ratePlanConsumption>[\s\S]*?<\/ratePlanConsumption>/gi) || [];
+            const scopeText = ratePlanBlocks.length > 0 ? ratePlanBlocks.join("\n") : text;
+            const consumptionBlocks = scopeText.match(/<consumption[\s>][\s\S]*?<\/consumption>/gi) || [];
+
             let mainMix = 0;
             let carriedMix = 0;
             let transferredMix = 0;
-            const allMixCandidates: number[] = [];
 
             for (const block of consumptionBlocks) {
               const remMatch = block.match(/<remainingValue>([0-9]+(?:\.[0-9]+)?)<\/remainingValue>/i);
@@ -603,7 +607,19 @@ class EtisalatEngine {
               const meterTypeMatch = block.match(/<consumptionMeterType>([^<]+)<\/consumptionMeterType>/i);
               const meterType = meterTypeMatch ? meterTypeMatch[1].trim() : "";
 
-              // Exclude minutes / calls / voice (دقائق للشبكات الأخرى)
+              // ── STRICT EXCLUSION 1: Scratch cards, Aqwa Kart, Fakka, Gifts, Addons ──
+              // (مثل: "أقوى كارت (ميكس)", "كروت فكة", "الهدايا والباقات الاضافية", "EXTRA QUOTA")
+              // هذه الكروت غير قابلة للتحويل العائلي إطلاقاً وتسبب رفض التحويل بخطأ BE_SDP_361
+              const isExtraOrPromoCard = 
+                /أقوى\s*كارت|أقوي\s*كارت|كارت|كروت|فكة|فكه|هدايا|هدية|إضافية|اضافية|باقات\s*اضافية|EXTRA\s*QUOTA/i.test(label) ||
+                /AQWA|KART|CARD|FAKKA|EXTRA|ADDON|ADD_ON|GIFT|PROMO|BONUS|REWARD|BOOSTER|SUPER_NET|RECHARGE/i.test(oms) ||
+                /scratch|promo|addon|extra/i.test(meterType);
+              if (isExtraOrPromoCard) {
+                console.log(`[getStatusAndChild] Excluded extra/card bucket: [${label} | ${oms}] = ${remVal}`);
+                continue;
+              }
+
+              // ── STRICT EXCLUSION 2: Minutes / calls / voice (دقائق للشبكات الأخرى) ──
               const isMinutesBucket = 
                 /دقائق\s*للشبكات|MINUTES|VOICE|CALLS/i.test(oms) ||
                 (/دقائق\s*للشبكات/i.test(label) && !/ميكس|وحدة/i.test(label));
@@ -611,45 +627,44 @@ class EtisalatEngine {
                 continue;
               }
 
-              // Exclude pure social / whatsapp
-              const isPureSocial = 
-                /whatsapp|facebook/i.test(oms) || 
-                /فيسبوك|واتساب/i.test(label);
-              if (isPureSocial && !/ميكسات|وحدة|GENERAL/i.test(label)) {
+              // ── STRICT EXCLUSION 3: Pure social / whatsapp / home internet ──
+              const isPureSocialOrHome = 
+                /whatsapp|facebook|home_internet|adsl|dsl/i.test(oms) || 
+                /فيسبوك|واتساب|حكاية\s*المنزلي|منزلي/i.test(label);
+              if (isPureSocialOrHome && !/ميكسات\s*الباقة\s*الأساسية|GENERAL_UNIT/i.test(label)) {
                 continue;
               }
 
-              const isMixBucket = /ميكس|unit|وحدة/i.test(unit) ||
-                                  /xrp_units|hekaya_units/i.test(meterType) ||
-                                  /GENERAL_UNIT/i.test(oms) ||
-                                  /CARRIED_OVER/i.test(oms) ||
-                                  /TRANSFER/i.test(oms) ||
-                                  /المتبقى|ميكسات|ميكس|وحدة|الأساسية/i.test(label);
+              // ── VALIDATION: Only Genuine Main Plan Family Units ──
+              const isMainBasicMix = 
+                /GENERAL_UNIT/i.test(oms) || 
+                /الباقة\s*الأساسية|الاساسية|ميكسات\s*الباقة/i.test(label) ||
+                (/ميكس|وحدة/i.test(unit) && /xrp_units|hekaya_units/i.test(meterType));
 
-              if (isMixBucket && remVal > 0) {
-                allMixCandidates.push(remVal);
-                
-                const isTransfer = /TRANSFER/i.test(oms) || /محول|تحويل|مسترجع/i.test(label);
-                const isCarried = /CARRIED_OVER/i.test(oms) || /مرحل/i.test(label);
-                const isGeneral = (/GENERAL_UNIT/i.test(oms) || /الأساسية|المتبقى/i.test(label)) && !isTransfer && !isCarried;
+              const isCarriedOver = 
+                /CARRIED_OVER/i.test(oms) || 
+                /المرحلة|المرحله|مرحل/i.test(label);
 
-                if (isTransfer) {
-                  if (remVal > transferredMix) transferredMix = remVal;
-                } else if (isCarried) {
-                  if (remVal > carriedMix) carriedMix = remVal;
-                } else if (isGeneral) {
-                  if (remVal > mainMix) mainMix = remVal;
-                } else {
-                  if (mainMix === 0) mainMix = remVal;
-                  else transferredMix += remVal;
-                }
+              const isTransferred = 
+                /TRANSFER/i.test(oms) || 
+                /محول|تحويل|مسترجع/i.test(label);
+
+              if (isCarriedOver && remVal > 0) {
+                if (remVal > carriedMix) carriedMix = remVal;
+              } else if (isTransferred && remVal > 0) {
+                if (remVal > transferredMix) transferredMix = remVal;
+              } else if (isMainBasicMix && remVal > 0) {
+                if (remVal > mainMix) mainMix = remVal;
               }
             }
 
-            const candidateMax = allMixCandidates.length > 0 ? Math.max(...allMixCandidates) : 0;
-            const combinedMix = (mainMix > 0 && carriedMix > 0) ? (mainMix + carriedMix) : (mainMix > 0 ? mainMix : (carriedMix > 0 ? carriedMix : 0));
-            const bucketSum = mainMix + carriedMix + transferredMix;
-            const remainingMix = Math.max(combinedMix, bucketSum, candidateMax);
+            // For Owner: only main basic bundle + carried over units are transferable
+            // For Child: main + carried + transferred
+            const remainingMix = this.role === 'child'
+              ? (mainMix + carriedMix + transferredMix)
+              : (mainMix + carriedMix);
+
+            console.log(`[getStatusAndChild] Result for (${this.currentDial}): mainMix=${mainMix}, carriedMix=${carriedMix}, transferredMix=${transferredMix} => remainingMix=${remainingMix}`);
 
             // 3. Child in family
             let childNumber: string | null = null;
