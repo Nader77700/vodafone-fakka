@@ -1439,9 +1439,23 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // Pre-arming child in memory:
-  if (prewarmedChildEngine) {
-    engine.log(`[🎯 تسليح مسبق] تجهيز توكن الفرد وإجمالي الميكسات (${parkedMixAmount.toLocaleString('en-US')} ميكس) وأمر النقل للأونر في الذاكرة لتنفيذه فوراً بلحظة واحدة!`, "info");
+  // Pre-arming child in memory exactly like user's floating window pre-fill:
+  let amountToTransfer = parkedMixAmount || 0;
+  let activeChildEngine = prewarmedChildEngine;
+  if (childEmail && childPass) {
+    if (!activeChildEngine || !activeChildEngine.authToken) {
+      activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
+      activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
+      await activeChildEngine.login(childEmail, childPass, false, true);
+    }
+    // Pre-inquire child balance right now so it's 100% armed and ready with zero network lag at recovery time
+    try {
+      const childStPreArm = await activeChildEngine.getStatusAndChild(true);
+      if (childStPreArm.remainingMix > 0) {
+        amountToTransfer = Math.max(amountToTransfer, childStPreArm.remainingMix);
+      }
+    } catch (_) {}
+    engine.log(`[🎯 محاكاة الشاشة المنبثقة: تسليح مسبق كامل] تم تجهيز أمر التحويل الفوري (${amountToTransfer.toLocaleString('en-US')} ميكس) ورقم الأونر (${engine.ownerDial}) بالذاكرة كشاشة منبثقة جاهزة للتأكيد اللحظي (0ms)!`, "info");
   }
 
   await sendStep("waiting_server", 3, "انتظار ترحيل وتنشيط السيرفر", "فحص مستمر وتنشيط دوري وحفظ الميكسات بأمان لدى الفرد");
@@ -1474,44 +1488,29 @@ async function handleSingleCycleInternal(
 
       if (attempt % 20 === 0 && attempt < maxAttempts) {
         const currentElapsedMins = ((attempt * 0.6) / 60).toFixed(1);
-        engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${parkedMixAmount.toLocaleString('en-US')}) مسلحة ومحفوظة لدى الفرد...`, "info");
+        engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${amountToTransfer.toLocaleString('en-US')}) مسلحة ومحفوظة لدى الفرد...`, "info");
       }
     } catch (_pollErr) {}
   }
 
   if (!serverConfirmed) {
-    engine.log(`[🛡️] درع الأمان: تأخر السيرفر في ترحيل النظام. الميكسات (${parkedMixAmount.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد.`, "warn");
+    engine.log(`[🛡️] درع الأمان: تأخر السيرفر في ترحيل النظام. الميكسات (${amountToTransfer.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد.`, "warn");
     return {
       success: false,
       safety_stop: true,
-      error: `تأخر سيرفر اتصالات في ترحيل النظام. تم حفظ كافة الميكسات (${parkedMixAmount.toLocaleString('en-US')}) بأمان في حساب الفرد لحمايتها تماماً من التصفير.`,
+      error: `تأخر سيرفر اتصالات في ترحيل النظام. تم حفظ كافة الميكسات (${amountToTransfer.toLocaleString('en-US')}) بأمان في حساب الفرد لحمايتها تماماً من التصفير.`,
       logs: engine.logs,
     };
   }
 
-  // 7. STEP 4: Instant 0ms Child -> Owner Transfer (One Atomic Single-Shot Transfer)
+  // 7. STEP 4: Instant 0ms Child -> Owner Transfer (One Atomic Single-Shot Transfer immediately without delay)
   await sendStep("recovering", 4, "تحويل الميكسات للأونر", "تنفيذ التحويل الذري الفوري من الفرد للأونر دفعة واحدة");
-  engine.log(`[⚡] تنفيذ فوري بلحظة واحدة (0ms): استرجاع ميكسات الفرد للأونر لدمجها وتجميع الرصيد التراكمي...`, "info");
+  engine.log(`[⚡ إطلاق فوري 0ms] تم رصد تغير النظام فوراً! تنفيذ أمر التحويل المحضّر مسبقاً (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر دفعة واحدة...`, "info");
 
   recoveredMixAmount = 0;
-  if (childEmail && childPass && engine.ownerDial) {
-    let activeChildEngine = prewarmedChildEngine;
-    if (!activeChildEngine || !activeChildEngine.authToken) {
-      activeChildEngine = new EtisalatEngine("child", bridgeConfig, session_id, session.individual_name || "");
-      activeChildEngine.onLog = (l) => engine.log(l.message, l.level);
-      await activeChildEngine.login(childEmail, childPass, false, true);
-    }
-
-    let amountToTransfer = parkedMixAmount || 0;
-    try {
-      const childStBefore = await activeChildEngine.getStatusAndChild(true);
-      if (childStBefore.remainingMix > 0) {
-        amountToTransfer = Math.max(amountToTransfer, childStBefore.remainingMix);
-      }
-    } catch (_) {}
-
+  if (childEmail && childPass && engine.ownerDial && activeChildEngine) {
     if (amountToTransfer > 0) {
-      engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر [طلب ذري وحيد]...`, "info");
+      engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر [طلب ذري وحيد ومسلح مسبقاً]...`, "info");
       // One single clean request without internal or external loop to protect monthly quota and prevent BE_SDP_361 lock
       await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
 
