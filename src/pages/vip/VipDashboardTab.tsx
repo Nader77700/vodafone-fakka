@@ -296,6 +296,15 @@ export function VipDashboardTab({
       flushBuffer();
 
       if (res.success) {
+        if (typeof res.owner_mix_balance === 'number') {
+          setLiveOwnerMix(res.owner_mix_balance);
+        }
+        if (typeof res.child_mix_balance === 'number') {
+          setLiveChildMix(res.child_mix_balance);
+        }
+        if (res.owner_plan) {
+          setLivePlan(res.owner_plan);
+        }
         if (!silent) toast.success('تم فحص الحالة وتحديث البيانات بنجاح!');
         onRefresh();
       } else {

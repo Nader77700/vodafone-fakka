@@ -183,6 +183,7 @@ class EtisalatEngine {
   public childDial: string | null = null;
   public role: 'owner' | 'child';
   public sessionId?: string;
+  public lastTransferResult?: { success: boolean; errorCode: string; userAr: string; orderId: string | null };
   public logs: Array<{ time: string; level: 'info' | 'success' | 'warn' | 'error'; message: string }> = [];
 
   constructor(role: 'owner' | 'child', config?: BridgeConfig, sessionId?: string, knownName?: string) {
@@ -737,8 +738,12 @@ class EtisalatEngine {
     return this.renewBundleAction(pName, pCost);
   }
 
-  async transferMix(toDial: string, amount: number, productName: string): Promise<boolean> {
-    const quota = Math.floor(amount);
+  async transferMix(toDial: string, amount: number, productName: string, leaveBuffer = 0): Promise<boolean> {
+    let quota = Math.floor(amount - leaveBuffer);
+    // Align with Etisalat MAB requirement: family unit transfers must be in multiples of 50
+    if (quota >= 100) {
+      quota = Math.floor(quota / 50) * 50;
+    }
     if (quota <= 0) return true;
     const target10 = clean10DigitDial(toDial);
     const sender10 = clean10DigitDial(this.currentDial || '');
@@ -749,7 +754,6 @@ class EtisalatEngine {
 
     // Clean 10-digit number is the native format required by Etisalat MAB gateway for genuine family unit transfer
     // Strictly execute ONLY genuine family transfer endpoint (/Saytar/rest/services/newTransfer/v2)
-    // One clean single request with no internal retry loop to prevent duplicate transfer attempts / monthly limit lock (BE_SDP_361)
     const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${sender10}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target10}</receiverMsisdn><senderMsisdn>${sender10}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
     const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
@@ -779,6 +783,13 @@ class EtisalatEngine {
       const errMatch = text.match(/<(?:errorMessage|message|errorDesc|description)>([^<]+)<\//i);
       const errMsg = errMatch ? errMatch[1].trim() : `كود الاستجابة ${res.status}`;
       const elapsedTransferSec = ((Date.now() - tStartTransfer) / 1000).toFixed(1);
+
+      this.lastTransferResult = {
+        success: isSuccess,
+        errorCode: errCode,
+        userAr: userAr || errMsg,
+        orderId: orderIdMatch?.[1] || null,
+      };
 
       // تسجيل فوري وشفاف لكل تفاصيل المعاملة في قاعدة البيانات للمراقبة الحية
       if (this.sessionId) {
@@ -1375,22 +1386,64 @@ async function handleSingleCycleInternal(
   if (ownerStartMix > 0) {
     await sendStep("parking", 1, "ركن الميكسات عند الفرد", `تحويل ${ownerStartMix.toLocaleString('en-US')} ميكس للفرد`);
     engine.log(`[*] جاري تحويل (${ownerStartMix.toLocaleString('en-US')}) ميكس من الأونر إلى الفرد...`, "info");
-    await engine.transferMix(childNum, ownerStartMix, ownerPlanName);
-    await sleep(2000);
+    
+    // محاولة أولى بمضاعفات 50 المتوافقة مع مقسم اتصالات
+    let transferSuccess = await engine.transferMix(childNum, ownerStartMix, ownerPlanName);
 
+    // تطبيق بروتوكول فك قفل المقسم BE_SDP_361 المعتمد من المستخدم:
+    // "طيب ظهر له مشكله استجابه مجسم الاتصالات دي بيعمل تجديد للاونر وبعدين بيحول"
+    if (!transferSuccess && (engine.lastTransferResult?.errorCode === "BE_SDP_361" || !transferSuccess)) {
+      engine.log(`[⚡ بروتوكول فك قفل المقسم] تم رصد تعثر التحويل (كود ${engine.lastTransferResult?.errorCode || 'غير معروف'}): تجديد باقة الأونر فوراً لإعادة فتح وتنشيط خاصية التحويل بالمقسم...`, "warn");
+      try {
+        await engine.renewBundleAction(ownerPlanName, currentCost);
+        await sleep(3000);
+      } catch (_) {}
+
+      // فحص رصيد الأونر بعد التجديد التنشيطي
+      const ownerStAfterRenew = await engine.getStatusAndChild(true);
+      const remainingAtOwner = ownerStAfterRenew.remainingMix;
+      engine.log(`[*] فحص رصيد الأونر بعد التجديد التنشيطي: (${remainingAtOwner.toLocaleString('en-US')} ميكس). إعادة محاولة تحويل الرصيد للفرد...`, "info");
+
+      if (remainingAtOwner > 100) {
+        // تجربة التحويل مع الاحتفاظ بهامش 50 ميكس (مثل تطبيق ماي اتصالات الرسمي)
+        transferSuccess = await engine.transferMix(childNum, remainingAtOwner, ownerPlanName, 50);
+        if (!transferSuccess) {
+          await sleep(1500);
+          transferSuccess = await engine.transferMix(childNum, remainingAtOwner, ownerPlanName, 0);
+        }
+      }
+    }
+
+    await sleep(2500);
+
+    // ── فحص قطعي وصارم للأرصدة لدى الطرفين قبل الانتقال لأي خطوة تالية ──
+    const ownerStCheck = await engine.getStatusAndChild(true);
     let verifiedChildMix = 0;
     if (prewarmedChildEngine) {
       try {
         const cCheck = await prewarmedChildEngine.getStatusAndChild(true);
-        verifiedChildMix = cCheck.remainingMix || (childDetectedMix + ownerStartMix);
+        verifiedChildMix = cCheck.remainingMix || 0;
       } catch (_) {
-        verifiedChildMix = childDetectedMix + ownerStartMix;
+        verifiedChildMix = 0;
       }
-    } else {
-      verifiedChildMix = childDetectedMix + ownerStartMix;
     }
-    parkedMixAmount = verifiedChildMix;
-    engine.log(`[✓] تأكيد قطعي: إجمالي رصيد الفرد الكامل الآن: (${verifiedChildMix.toLocaleString('en-US')} ميكس).`, "success");
+
+    engine.log(`[🔍 فحص قطعي بعد التحويل] رصيد الأونر المتبقي: (${ownerStCheck.remainingMix.toLocaleString('en-US')} ميكس) | رصيد الفرد الحالي: (${verifiedChildMix.toLocaleString('en-US')} ميكس)`, "info");
+
+    // ── درع الأمان الصارم المانع للتصفير ──
+    // "ما بيدخلش على مرحله تغيير النظام غير لما يتاكد ان حساب الاونر فاضي تماما من المكسات وكل الميكسات عند الفرد تمام بعد كده بيبدا عادي ده نظام صارم"
+    if (ownerStCheck.remainingMix > 150 && verifiedChildMix <= childDetectedMix) {
+      engine.log(`[🛡️ درع الأمان الصارم] توقف إجباري لحظر تصفير الميكسات: رصيد الأونر ما زال يحتوي على (${ownerStCheck.remainingMix.toLocaleString('en-US')}) ميكس ولم يتم تأكيد انتقالها للفرد! حظر تام لتغيير النظام لحماية الميكسات بنسبة 100%.`, "error");
+      return {
+        success: false,
+        safety_stop: true,
+        error: `توقف إجباري لحماية الرصيد: ما زال لدى الأونر (${ownerStCheck.remainingMix.toLocaleString('en-US')} ميكس) ولم تنتقل للفرد. تم إيقاف الدورة بأمان دون المساس بالنظام لحماية الميكسات من التصفير.`,
+        logs: engine.logs,
+      };
+    }
+
+    parkedMixAmount = verifiedChildMix > 0 ? verifiedChildMix : (childDetectedMix + ownerStartMix);
+    engine.log(`[✓] تأكيد قطعي: تم إخلاء الأونر وإجمالي رصيد الفرد الكامل الآن: (${parkedMixAmount.toLocaleString('en-US')} ميكس).`, "success");
 
     // الخطوة الذهبية 3: تجديد نظام الأونر الحالي مرة ثانية لتوليد ميكسات جديدة وتثبيت عقد الخط
     engine.log(`[*] تجديد نظام الأونر الحالي (${engine.getPlanName(ownerPlanName)}) مرة ثانية لتوليد الميكسات وتثبيت العقد...`, "info");
@@ -1515,26 +1568,46 @@ async function handleSingleCycleInternal(
 
   // 7. STEP 4: Instant 0ms Child -> Owner Transfer (One Atomic Single-Shot Transfer immediately without delay)
   await sendStep("recovering", 4, "تحويل الميكسات للأونر", "تنفيذ التحويل الذري الفوري من الفرد للأونر دفعة واحدة");
-  engine.log(`[⚡ إطلاق فوري 0ms] تم رصد تغير النظام فوراً! تنفيذ أمر التحويل المحضّر مسبقاً (${amountToTransfer.toLocaleString('en-US')} ميكس) من الفرد للأونر دفعة واحدة...`, "info");
-
+  
   recoveredMixAmount = 0;
   if (childEmail && childPass && engine.ownerDial && activeChildEngine) {
-    if (amountToTransfer > 0) {
-      engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر [طلب ذري وحيد ومسلح مسبقاً]...`, "info");
-      // One single clean request without internal or external loop to protect monthly quota and prevent BE_SDP_361 lock
-      await activeChildEngine.transferMix(engine.ownerDial, amountToTransfer, "Hekaya_XRP_MIX_Child_1");
+    // قراءة رصيد الفرد الفعلي اللحظي بالسيرفر فور تأكيد التحول لضمان سحب كافة الميكسات حتى لو تم تحويلها يدوياً
+    let realChildBalance = 0;
+    try {
+      const childStNow = await activeChildEngine.getStatusAndChild(true);
+      realChildBalance = childStNow.remainingMix || 0;
+    } catch (_) {}
 
-      // Give Etisalat backend 4 seconds to settle the transaction in network
-      engine.log(`[*] انتظار 4 ثوانٍ لاستقرار الرصيد في شبكة اتصالات بعد أمر التحويل...`, "info");
-      await sleep(4000);
+    const totalToRecover = Math.max(amountToTransfer, realChildBalance);
+
+    if (totalToRecover > 0) {
+      engine.log(`[⚡ إطلاق فوري 0ms] تم رصد تغير النظام فوراً! فحص رصيد الفرد الفعلي اللحظي بالسيرفر: (${totalToRecover.toLocaleString('en-US')} ميكس). تنفيذ أمر التحويل المحضّر مسبقاً من الفرد للأونر دفعة واحدة...`, "info");
+      
+      let quotaToReturn = totalToRecover;
+      if (quotaToReturn >= 100) {
+        quotaToReturn = Math.floor(quotaToReturn / 50) * 50;
+      }
+
+      await activeChildEngine.transferMix(engine.ownerDial, quotaToReturn, "Hekaya_XRP_MIX_Child_1");
+
+      // Give Etisalat backend 3 seconds to settle the transaction in network
+      engine.log(`[*] انتظار 3 ثوانٍ لاستقرار الرصيد في شبكة اتصالات بعد أمر التحويل...`, "info");
+      await sleep(3000);
 
       try {
         const childStAfter = await activeChildEngine.getStatusAndChild(true);
         finalChildBal = childStAfter.remainingMix || 0;
+        // إذا تبقى ميكسات لدى الفرد (أكثر من 100)، إرسال طلب تصفير تكميلي فوري
+        if (finalChildBal >= 100) {
+          const secondQuota = Math.floor(finalChildBal / 50) * 50;
+          engine.log(`[*] جاري استرجاع المتبقي لدى الفرد (${secondQuota.toLocaleString('en-US')} ميكس) لتصفير حسابه بالكامل...`, "info");
+          await activeChildEngine.transferMix(engine.ownerDial, secondQuota, "Hekaya_XRP_MIX_Child_1");
+          await sleep(2000);
+        }
       } catch (_) {}
 
-      recoveredMixAmount = amountToTransfer;
-      engine.log(`[✓] تم إنهاء عملية التحويل وتفادي أي تكرار إضافي لضمان حماية حدود التحويل الشهرية.`, "success");
+      recoveredMixAmount = totalToRecover;
+      engine.log(`[✓] تم إنهاء عملية التحويل واسترجاع كافة الميكسات للأونر بنجاح!`, "success");
     }
   }
 

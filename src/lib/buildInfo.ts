@@ -4,14 +4,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const BUILD_INFO = {
-  appVersion:      '4.1.6',
-  versionCode:    608,
+  appVersion:      '4.1.7',
+  versionCode:    609,
   buildTimestamp: new Date().toISOString(),
-  sourceHash:     'build_v4_0_21_' + Date.now(),
-  bundleFile:     'VodafoneFakka-v4.0.21.apk',
-  bundleHash:     'apk_v4_0_21_code601',
-  apkHash:        'apk_v4_0_21_code601',
-  dbVersion:      'v4.0.21',
+  sourceHash:     'build_v4_1_7_' + Date.now(),
+  bundleFile:     'VodafoneFakka-v4.1.7.apk',
+  bundleHash:     'apk_v4_1_7_code609',
+  apkHash:        'apk_v4_1_7_code609',
+  dbVersion:      'v4.1.7',
   releaseNotes: [
     'v4.0.21: حل جذري ونهائي لمشكلة تصفير الميكسات بعد الدورة الأولى أو الثانية — تفعيل محرك التجميع التراكمي الحقيقي (ضخ ميكسات الباقة الجديدة فور تأكيد ترحيل النظام بينما الرصيد محمي ومركون بالفرد ثم استرجاعه للدمج)، وحظر تصفير أو خفض الرصيد في قاعدة البيانات بنسبة 100%.',
     'v4.0.17: حل جذري وشامل لمشكلة تجميد وتعليق شاشة السجلات الحية الطرفية (Terminal Logs) بنسبة 100% — تفعيل تقنية التثبيت الفوري (Direct scrollTop Assignment) دون تراكم عمليات السكرول في طابور المعالج، تحسين نافذة العرض لتقتصر على أحدث 80 سجلاً نشطاً (Windowed DOM rendering)، تجميع ومعالجة تدفق السجلات الحية (SSE Throttled Batching)، وتغليف المكون بـ React.memo لمنع أي إعادة تصيير غير ضرورية للواجهة.',

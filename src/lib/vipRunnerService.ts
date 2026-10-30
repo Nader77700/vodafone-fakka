@@ -43,6 +43,39 @@ export function parseBalancesFromLog(message: string): {
     res.childMix = 0; // After recovery, child is cleared
   }
 
+  // 1.0 "فحص الأونر المباشر: النظام (...) | الميكسات الحالية: 72258"
+  const directOwnerMatch = clean.match(/فحص الأونر المباشر.*?الميكسات الحالية:\s*\(?(\d+)\)?/);
+  if (directOwnerMatch) {
+    res.ownerMix = parseInt(directOwnerMatch[1], 10);
+  }
+
+  // 1.01 "فحص رصيد البداية المباشر: الأونر (72258 ميكس) | الفرد (1300 ميكس)"
+  const startBothMatch = clean.match(/فحص رصيد البداية المباشر.*?الأونر\s*\(?(\d+)\)?\s*ميكس.*?الفرد\s*\(?(\d+)\)?\s*ميكس/);
+  if (startBothMatch) {
+    res.ownerMix = parseInt(startBothMatch[1], 10);
+    res.childMix = parseInt(startBothMatch[2], 10);
+  }
+
+  // 1.02 "فحص قطعي بعد التحويل: رصيد الأونر المتبقي: (0 ميكس) | رصيد الفرد الحالي: (73450 ميكس)"
+  const postTransferMatch = clean.match(/فحص قطعي بعد التحويل.*?رصيد الأونر.*?\(?(\d+)\)?\s*ميكس.*?رصيد الفرد.*?\(?(\d+)\)?\s*ميكس/);
+  if (postTransferMatch) {
+    res.ownerMix = parseInt(postTransferMatch[1], 10);
+    res.childMix = parseInt(postTransferMatch[2], 10);
+  }
+
+  // 1.03 "حساب الفرد جاهز ... | الميكسات الحالية: 1300"
+  const childReadyMatch = clean.match(/حساب الفرد جاهز.*?الميكسات الحالية:\s*\(?(\d+)\)?/);
+  if (childReadyMatch) {
+    res.childMix = parseInt(childReadyMatch[1], 10);
+  }
+
+  // 1.04 "تأكيد قطعي: تم إخلاء الأونر وإجمالي رصيد الفرد الكامل الآن: (73450 ميكس)"
+  const childTotalConfirmed = clean.match(/تأكيد قطعي.*?إجمالي رصيد الفرد الكامل الآن:\s*\(?(\d+)\)?\s*ميكس/);
+  if (childTotalConfirmed) {
+    res.childMix = parseInt(childTotalConfirmed[1], 10);
+    res.ownerMix = 0;
+  }
+
   // 1.1 "تحديث العدادات اللحظية: الميكسات (70300) أصبحت لدى الفرد (مركونة) | رصيد الأونر الحالي: (800) ميكس"
   const liveSyncMatch = clean.match(/تحديث العدادات اللحظية:\s*الميكسات\s*\(?(\d+)\)?\s*أصبحت لدى الفرد.*?رصيد الأونر الحالي:\s*\(?(\d+)\)?\s*ميكس/);
   if (liveSyncMatch) {
@@ -65,7 +98,7 @@ export function parseBalancesFromLog(message: string): {
   }
 
   // 2. "رصيده الآن: 66100 ميكس"
-  const ownerNowMatch = clean.match(/رصيده الآن:\s*(\d+)\s*ميكس/);
+  const ownerNowMatch = clean.match(/رصيده(?: الفعلي)? الآن:\s*(\d+)\s*ميكس/);
   if (ownerNowMatch) {
     res.ownerMix = parseInt(ownerNowMatch[1], 10);
   }
