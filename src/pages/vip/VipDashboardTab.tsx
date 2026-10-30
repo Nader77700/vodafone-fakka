@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 
 import type { VipDashboardData, VipSession } from '@/types/vip';
@@ -29,6 +29,7 @@ import { VipTerminalLogs } from '@/components/vip/VipTerminalLogs';
 import { VipCycleStepper } from '@/components/vip/VipCycleStepper';
 import { VipLiveBalanceStrip } from '@/components/vip/VipLiveBalanceStrip';
 import { parseBalancesFromLog } from '@/lib/vipRunnerService';
+import { supabase } from '@/db/supabase';
 
 interface Props {
   data: VipDashboardData;
@@ -71,6 +72,7 @@ export function VipDashboardTab({
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
   const [changingPlan, setChangingPlan] = useState(false);
+  const [isRestoringLogs, setIsRestoringLogs] = useState(false);
 
   // Auto Loop & Stepper States
   const [loopRunning, setLoopRunning] = useState(false);
@@ -105,6 +107,75 @@ export function VipDashboardTab({
 
   // Keep ref for auto loop cancel
   const stopRequestedRef = useRef(false);
+
+  // Restore Historical Operations & Logs from Database
+  const loadHistoricalLogsFromDb = useCallback(async (sessionId: string, force = false) => {
+    if (!sessionId) return;
+    setIsRestoringLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('vip_operation_history')
+        .select('id, operation_type, status, requested_action, result, created_at, started_at')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true })
+        .limit(200);
+
+      if (error) {
+        console.warn('[VipDashboardTab] Failed to fetch historical logs:', error);
+        if (force) toast.error('تعذر استرجاع السجلات من السيرفر');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        if (force) toast.info('لا توجد عمليات سابقة مسجلة لهذه الجلسة في السيرفر');
+        return;
+      }
+
+      const dbLogs: VipExecutionLog[] = [
+        {
+          time: new Date(data[0].created_at).toLocaleTimeString('ar-EG', { hour12: false }),
+          level: 'info',
+          message: `[+] تم استرجاع (${data.length}) عملية محفوظة من السيرفر السحابي للجلسة «${session?.session_name || 'VIP'}».`,
+        },
+        ...data.map((row: any) => {
+          const time = new Date(row.created_at).toLocaleTimeString('ar-EG', { hour12: false });
+          const isSuccess = row.status === 'succeeded';
+          const isFail = row.status === 'failed';
+          const level: 'info' | 'success' | 'warn' | 'error' = isSuccess ? 'success' : isFail ? 'error' : 'info';
+          
+          let icon = '•';
+          if (row.operation_type === 'auto_cycle') icon = '🎯';
+          else if (row.operation_type === 'transfer_to_child') icon = '→';
+          else if (row.operation_type === 'transfer_to_owner') icon = '←';
+          else if (row.operation_type === 'smart_ejection') icon = '🚀';
+          else if (row.operation_type === 'change_plan') icon = '🔄';
+          else if (row.operation_type === 'check_status') icon = '🔍';
+
+          const cycleNum = row.result?.cycle_number !== undefined ? ` (دورة #${row.result.cycle_number})` : '';
+          const finalMix = row.result?.final_mix !== undefined ? ` — الرصيد: ${Number(row.result.final_mix).toLocaleString('ar-EG')} ميكس` : '';
+          const statusDesc = isSuccess ? '✓ تم بنجاح' : isFail ? '✗ تعثر' : 'قيد المعالجة';
+          const orderStr = row.result?.order_id ? ` [طلب: ${String(row.result.order_id).slice(0, 8)}]` : '';
+
+          return {
+            time,
+            level,
+            message: `[${icon}] ${row.requested_action || row.operation_type}${cycleNum} | ${statusDesc}${orderStr}${finalMix}`,
+          };
+        }),
+      ];
+
+      setTerminalLogs(dbLogs);
+      vipRunnerService.setLogs(sessionId, dbLogs);
+      if (force) {
+        toast.success(`تم استرجاع (${data.length}) عملية سابقة من السيرفر بنجاح`);
+      }
+    } catch (err: any) {
+      console.warn('[VipDashboardTab] Restore logs error:', err);
+      if (force) toast.error('حدث خطأ أثناء استرجاع السجلات');
+    } finally {
+      setIsRestoringLogs(false);
+    }
+  }, [session?.session_name]);
 
   // Atomic State Reset whenever session ID changes
   useEffect(() => {
@@ -143,6 +214,8 @@ export function VipDashboardTab({
           message: `[+] تم تحميل جلسة «${session.session_name || 'VIP'}». جاهز لبدء العمليات مع Etisalat VIP Bot.`,
         },
       ]);
+      // Automatically hydrate terminal with historical operations from database if local memory is empty
+      loadHistoricalLogsFromDb(session.id, false);
     }
   }, [session?.id, session?.session_name, session?.current_cycle, session?.owner_mix_balance, session?.individual_mix_balance, session?.owner_current_plan]);
 
@@ -486,6 +559,8 @@ export function VipDashboardTab({
         onClear={handleClearLogs}
         isRunning={loopRunning || checkingStatus || addingChild || changingPlan}
         isDelegatedUser={isDelegatedUser}
+        onRestoreDbLogs={() => session?.id && loadHistoricalLogsFromDb(session.id, true)}
+        isRestoringLogs={isRestoringLogs}
       />
 
       {/* ── 5. Master Account Information (Compact details below console) ── */}

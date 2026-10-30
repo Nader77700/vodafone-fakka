@@ -14,6 +14,7 @@ import {
   PlayCircle,
   Download,
   Radar,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { VipExecutionLog } from '@/lib/vipApi';
@@ -24,6 +25,8 @@ interface Props {
   isRunning?: boolean;
   isDelegatedUser?: boolean;
   onOpenTransferMonitor?: () => void;
+  onRestoreDbLogs?: () => void;
+  isRestoringLogs?: boolean;
 }
 
 // ── Sanitizer for Delegated Users (Zero-Trust Protection of Proprietary Script) ──
@@ -155,6 +158,8 @@ export const VipTerminalLogs = React.memo(function VipTerminalLogs({
   isRunning = false,
   isDelegatedUser = false,
   onOpenTransferMonitor,
+  onRestoreDbLogs,
+  isRestoringLogs = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -352,6 +357,21 @@ export const VipTerminalLogs = React.memo(function VipTerminalLogs({
             <Copy className="w-3 h-3" />
             <span className="hidden sm:inline">نسخ</span>
           </Button>
+
+          {/* Restore / Sync Logs from Database */}
+          {onRestoreDbLogs && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRestoreDbLogs}
+              disabled={isRestoringLogs}
+              className="h-6 text-[10px] px-1.5 text-cyan-400 hover:text-cyan-200 hover:bg-cyan-500/10 gap-1"
+              title="استرجاع كافة سجلات العمليات السابقة من السيرفر"
+            >
+              <RotateCcw className={`w-3 h-3 ${isRestoringLogs ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">سجلات السيرفر</span>
+            </Button>
+          )}
 
           {/* Download Text */}
           <Button

@@ -251,6 +251,24 @@ class VipRunnerService {
     } catch (_) {}
   }
 
+  public setLogs(sessionId: string, logs: VipExecutionLog[]): void {
+    const state = this.states.get(sessionId);
+    if (state) {
+      state.logs = logs;
+      this.notify(sessionId);
+    } else {
+      const st = this.getState(sessionId);
+      st.logs = logs;
+      this.states.set(sessionId, st);
+      this.notify(sessionId);
+    }
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(`vip_terminal_logs_${sessionId}`, JSON.stringify(logs.slice(-200)));
+      }
+    } catch (_) {}
+  }
+
   public isRunning(sessionId: string): boolean {
     return this.states.get(sessionId)?.isRunning || false;
   }
