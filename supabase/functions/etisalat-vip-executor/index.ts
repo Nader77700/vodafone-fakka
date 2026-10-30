@@ -1391,6 +1391,13 @@ async function handleSingleCycleInternal(
     }
     parkedMixAmount = verifiedChildMix;
     engine.log(`[✓] تأكيد قطعي: إجمالي رصيد الفرد الكامل الآن: (${verifiedChildMix.toLocaleString('en-US')} ميكس).`, "success");
+
+    // الخطوة الذهبية 3: تجديد نظام الأونر الحالي مرة ثانية لتوليد ميكسات جديدة وتثبيت عقد الخط
+    engine.log(`[*] تجديد نظام الأونر الحالي (${engine.getPlanName(ownerPlanName)}) مرة ثانية لتوليد الميكسات وتثبيت العقد...`, "info");
+    try {
+      await engine.renewBundleAction(ownerPlanName, currentCost);
+      await sleep(1500);
+    } catch (_) {}
   } else {
     // Branch B: Owner = 0 and Child > 0 -> Skip transfer to child, proceed directly to Migration
     parkedMixAmount = childDetectedMix;
@@ -1406,7 +1413,13 @@ async function handleSingleCycleInternal(
     changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   }
 
-  if (!changePlanSubmitted) {
+  if (changePlanSubmitted) {
+    // الخطوة الذهبية 5: تجديد تنشيطي مباشر للنظام الحالي بعد طلب التغيير لفتح المقسم ومنع خطأ BE_SDP_361 نهائياً
+    engine.log(`[*] تجديد تنشيطي مباشر للنظام الحالي لحفظ نشاط العقد ومنع قفل المقسم (BE_SDP_361)...`, "info");
+    try {
+      await engine.renewBundleAction(ownerPlanName, currentCost);
+    } catch (_) {}
+  } else {
     engine.log(`[-] تعذر إرسال طلب ترحيل النظام إلى سيرفر اتصالات. لإلغاء الدورة بأمان وحماية الميكسات، جاري استرجاع الرصيد من الفرد للأونر فوراً...`, "warn");
     if (parkedMixAmount > 0 && prewarmedChildEngine) {
       try {
@@ -1489,7 +1502,14 @@ async function handleSingleCycleInternal(
       await activeChildEngine.login(childEmail, childPass, false, true);
     }
 
-    const amountToTransfer = parkedMixAmount || 0;
+    let amountToTransfer = parkedMixAmount || 0;
+    try {
+      const childStBefore = await activeChildEngine.getStatusAndChild(true);
+      if (childStBefore.remainingMix > 0) {
+        amountToTransfer = Math.max(amountToTransfer, childStBefore.remainingMix);
+      }
+    } catch (_) {}
+
     if (amountToTransfer > 0) {
       engine.log(`[⚡] تحويل فوري للميكسات كاملة (${amountToTransfer.toLocaleString('en-US')} ميكس) دفعة واحدة من الفرد للأونر [طلب ذري وحيد]...`, "info");
       // One single clean request without internal or external loop to protect monthly quota and prevent BE_SDP_361 lock
