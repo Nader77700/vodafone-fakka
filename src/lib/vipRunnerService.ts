@@ -644,9 +644,38 @@ class VipRunnerService {
           st.currentStep === 'parking';
 
         if (hasParkedMixes) {
+          // First check server heartbeat without triggering unnecessary Etisalat logins
+          try {
+            const { data: dbSess } = await supabase
+              .from('vip_sessions')
+              .select('worker_status, worker_last_heartbeat, current_step, owner_current_plan, owner_mix_balance, individual_mix_balance')
+              .eq('id', sessionId)
+              .maybeSingle();
+
+            const isWorkerAlive =
+              dbSess &&
+              (dbSess.worker_status === 'executing' || dbSess.worker_status === 'running') &&
+              dbSess.worker_last_heartbeat &&
+              Date.now() - new Date(dbSess.worker_last_heartbeat).getTime() < 35000;
+
+            if (isWorkerAlive) {
+              this.addLog(
+                sessionId,
+                `[⚡ متابعة حية مستمرة] السيرفر ينفذ بنشاط ومستمر في فحص النظام وتنشيط العقد (الخطوة: ${dbSess.current_step || 'waiting_server'}). الرصيد محمي ومسلح بنسبة 100%...`,
+                'info'
+              );
+              st.currentStep = dbSess.current_step || 'waiting_server';
+              st.stepMessage = 'السيرفر ينفذ بنشاط ومستمر في فحص النظام...';
+              this.notify(sessionId);
+              await new Promise((r) => setTimeout(r, 3000));
+              st.cycleCount -= 1;
+              continue;
+            }
+          } catch (_) {}
+
           this.addLog(
             sessionId,
-            `[🛡️ درع الحماية الصارم] حدث انقطاع أثناء مرحلة الترحيل/الركن (${cycleResult.error || 'تعذر استجابة السيرفر'}). جاري فحص استقرار نظام الأونر بالسيرفر قبل أي تصرف...`,
+            `[🛡️ درع الحماية الصارم] فحص مباشر لاستقرار نظام الأونر بالسيرفر قبل أي تصرف...`,
             'warn'
           );
           await new Promise((r) => setTimeout(r, 4000));

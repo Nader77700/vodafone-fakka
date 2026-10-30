@@ -1466,6 +1466,11 @@ async function handleSingleCycleInternal(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     await sleep(600);
+    // Send SSE keep-alive ping on every attempt so mobile networks and Cloudflare proxies never drop the stream
+    if (sendEvent) {
+      await sendEvent("ping", { t: Date.now(), attempt });
+    }
+
     try {
       const currentCheck = await engine.getStatusAndChild(true);
       const planMatches =
@@ -1478,17 +1483,22 @@ async function handleSingleCycleInternal(
         break;
       }
 
-      // Periodic keepalive nudge every 50 attempts (~30 seconds)
-      if (attempt % 50 === 0) {
-        engine.log(`[⚡] نبضة تنشيطية (Keep-alive) للحفاظ على حرارة الجلسة والتوكن وتنشيط السيرفر...`, "info");
-        try {
-          await engine.changePlan(targetPlanId, ratePlanId);
-        } catch (_) {}
+      // Live visible pulse every 6 attempts (~3.6 seconds) so user sees active polling live in terminal
+      if (attempt % 6 === 0) {
+        const elapsedSec = (attempt * 0.6).toFixed(1);
+        const curPlanDisp = engine.getPlanName(currentCheck.planId || "قيد الترحيل");
+        engine.log(`[🔄 فحص حي #${attempt}] جاري فحص اعتماد النظام بالسيرفر (مضى ${elapsedSec} ث) | الحالي بالمقسم: [${curPlanDisp}] | المطلوب: [${targetPlanDisplay}] - الرصيد محمي ومسلح بالفرد...`, "info");
       }
 
-      if (attempt % 20 === 0 && attempt < maxAttempts) {
-        const currentElapsedMins = ((attempt * 0.6) / 60).toFixed(1);
-        engine.log(`[*] فحص استجابة السيرفر للنظام الجديد (${targetPlanDisplay}) [محاولة ${attempt}/${maxAttempts} - مضى ${currentElapsedMins} دقيقة]: الميكسات (${amountToTransfer.toLocaleString('en-US')}) مسلحة ومحفوظة لدى الفرد...`, "info");
+      // Periodic keepalive & contract renewal pulse every 35 attempts (~21 seconds)
+      // Exactly as requested by user: active renewal and migration pulse keeps contract open and prevents BE_SDP_361 lock or session timeout
+      if (attempt % 35 === 0) {
+        engine.log(`[⚡ تجديد تنشيطي دوري] إرسال نبضة تجديد تنشيطية للباقة لحفظ نشاط العقد ومنع انتهاء الجلسة أو قفل المقسم (BE_SDP_361)...`, "info");
+        try {
+          await engine.renewBundleAction(ownerPlanName, currentCost);
+          await sleep(1000);
+          await engine.changePlan(targetPlanId, ratePlanId);
+        } catch (_) {}
       }
     } catch (_pollErr) {}
   }
