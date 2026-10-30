@@ -752,27 +752,48 @@ class EtisalatEngine {
 
     this.log(`[*] جاري تحويل (${quota.toLocaleString('en-US')}) ميكس إلى الرقم: ${receiverDisplay} [المرسل: ${senderDisplay} | الباقة: ${productName}]...`, "info");
 
-    // Clean 10-digit number is the native format required by Etisalat MAB gateway for genuine family unit transfer
-    // Strictly execute ONLY genuine family transfer endpoint (/Saytar/rest/services/newTransfer/v2)
+    // Exact raw XML request payload matching Etisalat MAB specification:
+    // <newFamilyTransferRequest><distribute>false</distribute><msisdn>...</msisdn><productName>...</productName><quota>...</quota><receiverMsisdn>...</receiverMsisdn><senderMsisdn>...</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>
     const xmlBodyV2 = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><newFamilyTransferRequest><distribute>false</distribute><msisdn>${sender10}</msisdn><productName>${productName}</productName><quota>${quota}</quota><receiverMsisdn>${target10}</receiverMsisdn><senderMsisdn>${sender10}</senderMsisdn><type>UNITS</type></newFamilyTransferRequest>`;
     const urlPathV2 = "/Saytar/rest/services/newTransfer/v2";
 
     const tStartTransfer = Date.now();
     try {
-      const { headerSig, urlSig, bodySig } = await this.generateSignatures(urlPathV2, xmlBodyV2);
-      const headers = {
-        ...this.getBaseHeaders(),
-        "auth": `Bearer ${this.authToken}`,
-        "headerSignature": headerSig,
-        "urlSignature": urlSig,
-        "bodySignature": bodySig,
+      // Exact raw headers strictly matching official Etisalat MAB / okhttp request (no custom signatures, no fake IPs)
+      const headers: Record<string, string> = {
+        "applicationVersion": "2",
+        "applicationName": "MAB",
+        "Accept": "text/xml",
+        "Language": "ar",
+        "APP-BuildNumber": "10744",
+        "APP-Version": "36.1.0",
+        "OS-Type": "Android",
+        "OS-Version": this.device?.osVersion || "16",
+        "APP-STORE": "GOOGLE",
+        "C-Type": "WIFI",
+        "Is-Corporate": "false",
+        "Content-Type": "text/xml; charset=UTF-8",
+        "Connection": "Keep-Alive",
+        "Accept-Encoding": "gzip",
+        "User-Agent": this.device?.userAgent || "okhttp/5.0.0-alpha.11",
       };
+
+      if (this.authToken) {
+        headers["auth"] = `Bearer ${this.authToken}`;
+      }
+      if (this.cookieHeader) {
+        headers["Cookie"] = this.cookieHeader;
+      }
+      if (this.bridgeConfig.bridge_auth) {
+        headers["X-Bridge-Auth"] = this.bridgeConfig.bridge_auth;
+      }
+
       const targetUrl = this.getRequestUrl(urlPathV2);
       const res = await this.fetchWithTimeout(targetUrl, {
         method: "POST",
         headers,
         body: xmlBodyV2,
-      }, 7000);
+      }, 9000);
       const text = await res.text();
       const isSuccess = res.status === 200 && text.includes("<status>true</status>");
       const orderIdMatch = text.match(/<orderId>([^<]+)<\/orderId>/i);
@@ -835,8 +856,8 @@ class EtisalatEngine {
         this.log(`[+] تم قبول وتنفيذ أمر التحويل الفعلي بسيرفر اتصالات (استغرق ${elapsedTransferSec} ثانية) (${quota.toLocaleString('en-US')} ميكس إلى ${receiverDisplay})!${orderIdStr}`, "success");
         return true;
       } else {
-        if (errCode === "BE_SDP_361" || text.includes("BE_SDP_361") || errMsg.includes("cannot be completed")) {
-          this.log(`[!] استجابة مقسم اتصالات كود [BE_SDP_361]: "${userAr || errMsg}". (تنبيه ذكي: هذا الرد الشائع يعني أن طلب التحويل قيد المعالجة بالسيرفر أو تم تنفيذه بالفعل، سيتم التحقق الفوري من الأرصدة الحية لاعتماد وصول الميكسات)`, "warn");
+        if (errCode === "BE_SDP_361" || text.includes("BE_SDP_361")) {
+          this.log(`[!] استجابة مقسم اتصالات كود [BE_SDP_361]: "${userAr || errMsg}". (المعنى الفعلي المعتمد: تم استنفاذ التحويل المسموح به للنظام الحالي، يتطلب تغيير النظام لفتح دورة تحويل جديدة).`, "warn");
         } else {
           this.log(`[!] استجابة سيرفر اتصالات لأمر التحويل (${sender10} -> ${target10}): [${errCode || res.status}] ${userAr || errMsg}`, "warn");
         }
@@ -1323,14 +1344,7 @@ async function handleSingleCycleInternal(
   const ownerPlanName = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
   const currentCost = isSeven ? "270" : "180";
 
-  // 3. Renew current owner plan as active heartbeat + 5 seconds wait
-  engine.log(`[*] تجديد تنشيطي لنظام الأونر الحالي (${engine.getPlanName(ownerPlanName)})...`, "info");
-  await engine.renewBundleAction(ownerPlanName, currentCost);
-  engine.log(`[*] انتظار 5 ثوانٍ لاستقرار الرصيد في شبكة اتصالات...`, "info");
-  await sleep(5000);
-
-  // 4. Live balance inquiry for Owner and Child
-  status = await engine.getStatusAndChild(true);
+  // 3. Live balance inquiry for Owner and Child
   const ownerStartMix = status.remainingMix || 0;
 
   let childDetectedMix = 0;
@@ -1342,7 +1356,7 @@ async function handleSingleCycleInternal(
   }
   engine.log(`[*] فحص رصيد البداية المباشر: الأونر (${ownerStartMix.toLocaleString('en-US')} ميكس) | الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس).`, "info");
 
-  // 5. Intelligent Branching
+  // 4. Intelligent Branching
   let targetPlanId = isSeven ? "Hekaya_XRP_MIX_Parent_6" : "Hekaya_XRP_MIX_Parent_7";
   let targetPlanDisplay = isSeven ? "حكاية ميكسات 180" : "حكاية ميكسات 270";
   let ratePlanId = isSeven ? "951" : "";
@@ -1382,39 +1396,15 @@ async function handleSingleCycleInternal(
     };
   }
 
-  // Branch A: Owner has mixes -> Transfer to Child, wait 2s, confirm in single message
+  // Branch A: Owner has mixes -> Transfer to Child
   if (ownerStartMix > 0) {
     await sendStep("parking", 1, "ركن الميكسات عند الفرد", `تحويل ${ownerStartMix.toLocaleString('en-US')} ميكس للفرد`);
-    engine.log(`[*] جاري تحويل (${ownerStartMix.toLocaleString('en-US')}) ميكس من الأونر إلى الفرد...`, "info");
+    engine.log(`[*] جاري تحويل (${ownerStartMix.toLocaleString('en-US')}) ميكس من الأونر إلى الفرد عبر ريكوست اتصالات الرسمي (newTransfer/v2)...`, "info");
     
-    // محاولة أولى بمضاعفات 50 المتوافقة مع مقسم اتصالات
+    // تنفيذ أمر التحويل الفعلي بريكوست اتصالات الرسمي النقي
     let transferSuccess = await engine.transferMix(childNum, ownerStartMix, ownerPlanName);
 
-    // تطبيق بروتوكول فك قفل المقسم BE_SDP_361 المعتمد من المستخدم:
-    // "طيب ظهر له مشكله استجابه مجسم الاتصالات دي بيعمل تجديد للاونر وبعدين بيحول"
-    if (!transferSuccess && (engine.lastTransferResult?.errorCode === "BE_SDP_361" || !transferSuccess)) {
-      engine.log(`[⚡ بروتوكول فك قفل المقسم] تم رصد تعثر التحويل (كود ${engine.lastTransferResult?.errorCode || 'غير معروف'}): تجديد باقة الأونر فوراً لإعادة فتح وتنشيط خاصية التحويل بالمقسم...`, "warn");
-      try {
-        await engine.renewBundleAction(ownerPlanName, currentCost);
-        await sleep(3000);
-      } catch (_) {}
-
-      // فحص رصيد الأونر بعد التجديد التنشيطي
-      const ownerStAfterRenew = await engine.getStatusAndChild(true);
-      const remainingAtOwner = ownerStAfterRenew.remainingMix;
-      engine.log(`[*] فحص رصيد الأونر بعد التجديد التنشيطي: (${remainingAtOwner.toLocaleString('en-US')} ميكس). إعادة محاولة تحويل الرصيد للفرد...`, "info");
-
-      if (remainingAtOwner > 100) {
-        // تجربة التحويل مع الاحتفاظ بهامش 50 ميكس (مثل تطبيق ماي اتصالات الرسمي)
-        transferSuccess = await engine.transferMix(childNum, remainingAtOwner, ownerPlanName, 50);
-        if (!transferSuccess) {
-          await sleep(1500);
-          transferSuccess = await engine.transferMix(childNum, remainingAtOwner, ownerPlanName, 0);
-        }
-      }
-    }
-
-    await sleep(2500);
+    await sleep(2000);
 
     // ── فحص قطعي وصارم للأرصدة لدى الطرفين قبل الانتقال لأي خطوة تالية ──
     const ownerStCheck = await engine.getStatusAndChild(true);
@@ -1431,33 +1421,30 @@ async function handleSingleCycleInternal(
     engine.log(`[🔍 فحص قطعي بعد التحويل] رصيد الأونر المتبقي: (${ownerStCheck.remainingMix.toLocaleString('en-US')} ميكس) | رصيد الفرد الحالي: (${verifiedChildMix.toLocaleString('en-US')} ميكس)`, "info");
 
     // ── درع الأمان الصارم المانع للتصفير ──
-    // "ما بيدخلش على مرحله تغيير النظام غير لما يتاكد ان حساب الاونر فاضي تماما من المكسات وكل الميكسات عند الفرد تمام بعد كده بيبدا عادي ده نظام صارم"
+    // حظر تام لتغيير النظام إذا لم تكن الميكسات قد انتقلت بالكامل للفرد
     if (ownerStCheck.remainingMix > 150 && verifiedChildMix <= childDetectedMix) {
-      engine.log(`[🛡️ درع الأمان الصارم] توقف إجباري لحظر تصفير الميكسات: رصيد الأونر ما زال يحتوي على (${ownerStCheck.remainingMix.toLocaleString('en-US')}) ميكس ولم يتم تأكيد انتقالها للفرد! حظر تام لتغيير النظام لحماية الميكسات بنسبة 100%.`, "error");
+      const isLimitError = engine.lastTransferResult?.errorCode === "BE_SDP_361";
+      const reasonMsg = isLimitError 
+        ? "مقسم اتصالات يرفض التحويل بكود BE_SDP_361 (استنفاد حد التحويل لهذا النظام - يتطلب تغيير النظام يدوياً أو بعد انتهاء الشهر)" 
+        : (engine.lastTransferResult?.userAr || "تعثر انتقال الميكسات من الأونر للفرد");
+      engine.log(`[🛡️ درع الأمان الصارم] توقف إجباري لحظر تصفير الميكسات: ${reasonMsg}. رصيد الأونر ما زال يحتوي على (${ownerStCheck.remainingMix.toLocaleString('en-US')}) ميكس ولم يتم تأكيد انتقالها للفرد! حظر تام لتغيير النظام لحماية الميكسات بنسبة 100%.`, "error");
       return {
         success: false,
         safety_stop: true,
-        error: `توقف إجباري لحماية الرصيد: ما زال لدى الأونر (${ownerStCheck.remainingMix.toLocaleString('en-US')} ميكس) ولم تنتقل للفرد. تم إيقاف الدورة بأمان دون المساس بالنظام لحماية الميكسات من التصفير.`,
+        error: `توقف إجباري لحماية الرصيد: ${reasonMsg}. ما زال لدى الأونر (${ownerStCheck.remainingMix.toLocaleString('en-US')} ميكس). تم إيقاف الدورة بأمان دون المساس بالنظام لحماية الميكسات من التصفير.`,
         logs: engine.logs,
       };
     }
 
     parkedMixAmount = verifiedChildMix > 0 ? verifiedChildMix : (childDetectedMix + ownerStartMix);
     engine.log(`[✓] تأكيد قطعي: تم إخلاء الأونر وإجمالي رصيد الفرد الكامل الآن: (${parkedMixAmount.toLocaleString('en-US')} ميكس).`, "success");
-
-    // الخطوة الذهبية 3: تجديد نظام الأونر الحالي مرة ثانية لتوليد ميكسات جديدة وتثبيت عقد الخط
-    engine.log(`[*] تجديد نظام الأونر الحالي (${engine.getPlanName(ownerPlanName)}) مرة ثانية لتوليد الميكسات وتثبيت العقد...`, "info");
-    try {
-      await engine.renewBundleAction(ownerPlanName, currentCost);
-      await sleep(1500);
-    } catch (_) {}
   } else {
     // Branch B: Owner = 0 and Child > 0 -> Skip transfer to child, proceed directly to Migration
     parkedMixAmount = childDetectedMix;
-    engine.log(`[✓] رصد ذكي: الأونر لا يمتلك ميكسات حالياً (0 ميكس) ورصيد الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس) جاهز ومحفوظ. تخطي التحويل للفرد والانتقال مباشرة لتغيير النظام.`, "info");
+    engine.log(`[✓] رصد ذكي: الأونر لا يمتمل ميكسات حالياً (0 ميكس) ورصيد الفرد (${childDetectedMix.toLocaleString('en-US')} ميكس) جاهز ومحفوظ. تخطي التحويل للفرد والانتقال مباشرة لتغيير النظام.`, "info");
   }
 
-  // 6. Plan Migration with Keep-alive & Pre-arming
+  // 5. Plan Migration with Pre-arming
   await sendStep("migrating", 2, "ترحيل النظام", `جاري تغيير النظام إلى: ${targetPlanDisplay}`);
   let changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   if (!changePlanSubmitted) {
@@ -1466,13 +1453,7 @@ async function handleSingleCycleInternal(
     changePlanSubmitted = await engine.changePlan(targetPlanId, ratePlanId);
   }
 
-  if (changePlanSubmitted) {
-    // الخطوة الذهبية 5: تجديد تنشيطي مباشر للنظام الحالي بعد طلب التغيير لفتح المقسم ومنع خطأ BE_SDP_361 نهائياً
-    engine.log(`[*] تجديد تنشيطي مباشر للنظام الحالي لحفظ نشاط العقد ومنع قفل المقسم (BE_SDP_361)...`, "info");
-    try {
-      await engine.renewBundleAction(ownerPlanName, currentCost);
-    } catch (_) {}
-  } else {
+  if (!changePlanSubmitted) {
     engine.log(`[-] تعذر إرسال طلب ترحيل النظام إلى سيرفر اتصالات. لإلغاء الدورة بأمان وحماية الميكسات، جاري استرجاع الرصيد من الفرد للأونر فوراً...`, "warn");
     if (parkedMixAmount > 0 && prewarmedChildEngine) {
       try {
@@ -1543,13 +1524,10 @@ async function handleSingleCycleInternal(
         engine.log(`[🔄 فحص حي #${attempt}] جاري فحص اعتماد النظام بالسيرفر (مضى ${elapsedSec} ث) | الحالي بالمقسم: [${curPlanDisp}] | المطلوب: [${targetPlanDisplay}] - الرصيد محمي ومسلح بالفرد...`, "info");
       }
 
-      // Periodic keepalive & contract renewal pulse every 35 attempts (~21 seconds)
-      // Exactly as requested by user: active renewal and migration pulse keeps contract open and prevents BE_SDP_361 lock or session timeout
+      // Periodic re-affirmation of migration request every 35 attempts (~21 seconds)
       if (attempt % 35 === 0) {
-        engine.log(`[⚡ تجديد تنشيطي دوري] إرسال نبضة تجديد تنشيطية للباقة لحفظ نشاط العقد ومنع انتهاء الجلسة أو قفل المقسم (BE_SDP_361)...`, "info");
+        engine.log(`[⚡ نبضة ترحيل دورية] إعادة إرسال طلب الترحيل إلى (${targetPlanDisplay}) لتأكيد التنفيذ بمقسم اتصالات...`, "info");
         try {
-          await engine.renewBundleAction(ownerPlanName, currentCost);
-          await sleep(1000);
           await engine.changePlan(targetPlanId, ratePlanId);
         } catch (_) {}
       }
