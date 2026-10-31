@@ -1511,10 +1511,11 @@ async function handleSingleCycleInternal(
   engine.log(`[*] في انتظار تحديث السيرفر واعتماد النظام الجديد (${targetPlanDisplay})...`, "info");
 
   let serverConfirmed = false;
-  const maxAttempts = 600; // 6 minutes (600 * 600ms)
+  let didActivationStep = false;
+  const maxAttempts = 120; // Up to ~90-100 seconds within safe Edge Function limits
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await sleep(600);
+    await sleep(800);
     // Send SSE keep-alive ping on every attempt so mobile networks and Cloudflare proxies never drop the stream
     if (sendEvent) {
       await sendEvent("ping", { t: Date.now(), attempt });
@@ -1532,17 +1533,23 @@ async function handleSingleCycleInternal(
         break;
       }
 
-      // Live visible pulse every 6 attempts (~3.6 seconds) so user sees active polling live in terminal
-      if (attempt % 6 === 0) {
-        const elapsedSec = (attempt * 0.6).toFixed(1);
+      // Live visible pulse every 4 attempts so user sees active polling live in terminal
+      if (attempt % 4 === 0) {
+        const elapsedSec = (attempt * 0.8).toFixed(1);
         const curPlanDisp = engine.getPlanName(currentCheck.planId || "قيد الترحيل");
         engine.log(`[🔄 فحص حي #${attempt}] جاري فحص اعتماد النظام بالسيرفر (مضى ${elapsedSec} ث) | الحالي بالمقسم: [${curPlanDisp}] | المطلوب: [${targetPlanDisplay}] - الرصيد محمي ومسلح بالفرد...`, "info");
       }
 
-      // Periodic re-affirmation of migration request every 35 attempts (~21 seconds)
-      if (attempt % 35 === 0) {
-        engine.log(`[⚡ نبضة ترحيل دورية] إعادة إرسال طلب الترحيل إلى (${targetPlanDisplay}) لتأكيد التنفيذ بمقسم اتصالات...`, "info");
+      // Single activation step if delayed (> 40s): Renew current plan + re-affirm migration request ONCE only
+      if (!didActivationStep && attempt >= 18) {
+        didActivationStep = true;
+        engine.log(`[⚡ خطوة تنشيطية واحدة] تأخر اعتماد النظام بالمقسم. تنفيذ تجديد للباقة الحالية وتأكيد طلب الترحيل لتنشيط السيرفر...`, "info");
         try {
+          const isSeven = ownerPlanPre.includes("Parent_7") || ownerPlanPre.includes("7");
+          const curPlanPkg = isSeven ? "Hekaya_XRP_MIX_Parent_7" : "Hekaya_XRP_MIX_Parent_6";
+          const curPlanCost = isSeven ? "270" : "180";
+          await engine.renewBundleAction(curPlanPkg, curPlanCost);
+          await sleep(1200);
           await engine.changePlan(targetPlanId, ratePlanId);
         } catch (_) {}
       }
@@ -1550,11 +1557,15 @@ async function handleSingleCycleInternal(
   }
 
   if (!serverConfirmed) {
-    engine.log(`[🛡️] درع الأمان: تأخر السيرفر في ترحيل النظام. الميكسات (${amountToTransfer.toLocaleString('en-US')}) محفوظة بأمان لدى الفرد.`, "warn");
+    engine.log(`[🛡️] درع الأمان: تأخر السيرفر في ترحيل النظام. الميكسات (${amountToTransfer.toLocaleString('en-US')}) محفوظة ومسلحة بأمان لدى الفرد. المراقبة مستمرة...`, "info");
     return {
       success: false,
+      waiting_server: true,
       safety_stop: true,
-      error: `تأخر سيرفر اتصالات في ترحيل النظام. تم حفظ كافة الميكسات (${amountToTransfer.toLocaleString('en-US')}) بأمان في حساب الفرد لحمايتها تماماً من التصفير.`,
+      amount_parked: amountToTransfer,
+      target_plan_id: targetPlanId,
+      target_plan_display: targetPlanDisplay,
+      error: `في انتظار اعتماد السيرفر لتحول النظام إلى (${targetPlanDisplay}). تم حفظ كافة الميكسات (${amountToTransfer.toLocaleString('en-US')}) بأمان في حساب الفرد لحمايتها تماماً من التصفير.`,
       logs: engine.logs,
     };
   }

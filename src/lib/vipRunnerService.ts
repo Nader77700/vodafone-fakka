@@ -8,6 +8,8 @@ import {
   executeVipRunSingleCycleStream,
   executeVipCheckStatus,
   executeVipReturnChildMixes,
+  executeVipRenewBundle,
+  executeVipChangePlan,
   updateVipAutomationSettings,
   invokeVipExecutor,
   executeSmartEjectionSequence,
@@ -695,66 +697,160 @@ class VipRunnerService {
           st.currentStep === 'parking';
 
         if (hasParkedMixes) {
-          // First check server heartbeat without triggering unnecessary Etisalat logins
-          try {
-            const { data: dbSess } = await supabase
-              .from('vip_sessions')
-              .select('worker_status, worker_last_heartbeat, current_step, owner_current_plan, owner_mix_balance, individual_mix_balance')
-              .eq('id', sessionId)
-              .maybeSingle();
+          // ── حلقة المراقبة الصامدة المستمرة حتى تحول النظام ──
+          // عند حدوث تأخير من مقسم اتصالات: لا يتم قطع العملية أو عمل تسجيل خروج أو إعادة الدورة من البداية!
+          // يظل النظام مراقباً بنشاط وهدوء حتى اعتماد النظام واسترجاع الميكسات فوراً.
+          st.currentStep = 'waiting_server';
+          st.stepMessage = 'مراقبة مستمرة لتحول النظام واسترجاع الميكسات بأمان...';
+          this.notify(sessionId);
 
-            const isWorkerAlive =
-              dbSess &&
-              (dbSess.worker_status === 'executing' || dbSess.worker_status === 'running') &&
-              dbSess.worker_last_heartbeat &&
-              Date.now() - new Date(dbSess.worker_last_heartbeat).getTime() < 35000;
-
-            if (isWorkerAlive) {
-              this.addLog(
-                sessionId,
-                `[⚡ متابعة حية مستمرة] السيرفر ينفذ بنشاط ومستمر في فحص النظام وتنشيط العقد (الخطوة: ${dbSess.current_step || 'waiting_server'}). الرصيد محمي ومسلح بنسبة 100%...`,
-                'info'
-              );
-              st.currentStep = dbSess.current_step || 'waiting_server';
-              st.stepMessage = 'السيرفر ينفذ بنشاط ومستمر في فحص النظام...';
-              this.notify(sessionId);
-              await new Promise((r) => setTimeout(r, 3000));
-              st.cycleCount -= 1;
-              continue;
-            }
-          } catch (_) {}
+          const previousPlan = st.latestOwnerPlan || '';
+          let isPlanSwitched = false;
+          let pollAttempt = 0;
+          let didActivationStep = false;
+          const monitoringStartTime = Date.now();
 
           this.addLog(
             sessionId,
-            `[🛡️ درع الحماية الصارم] فحص مباشر لاستقرار نظام الأونر بالسيرفر قبل أي تصرف...`,
-            'warn'
+            `[🔒 حماية الرصيد الصارمة] الميكسات تظل محجوزة ومحمية بالكامل لدى الفرد (${st.latestChildMix ? st.latestChildMix.toLocaleString('ar-EG') : 'الرصيد المحفوظ'} ميكس). الدخول في المراقبة المستمرة الصامدة حتى تأكيد ترحيل النظام بالسيرفر دون إعادة تسجيل دخول...`,
+            'info'
           );
-          await new Promise((r) => setTimeout(r, 4000));
-          try {
-            const rescueCheck = (await executeVipCheckStatus(sessionId)) as any;
-            const currentPlan = rescueCheck?.owner?.plan || rescueCheck?.owner_plan || '';
-            const previousPlan = st.latestOwnerPlan || '';
-            const hasPlanSwitched = currentPlan && previousPlan && currentPlan !== previousPlan;
 
-            // قاعدة الحماية الفولاذية الصارمة: ممنوع نهائياً إرجاع الميكسات للأونر إلا بعد تأكيد تحول النظام!
-            if (hasPlanSwitched) {
-              if (rescueCheck?.child?.mix_balance && rescueCheck.child.mix_balance > 0) {
+          while (!isPlanSwitched && !st.stopRequested) {
+            pollAttempt++;
+            await new Promise((r) => setTimeout(r, 6000));
+            if (st.stopRequested) break;
+
+            const elapsedSec = Math.round((Date.now() - monitoringStartTime) / 1000);
+
+            try {
+              const statusCheck = (await executeVipCheckStatus(sessionId)) as any;
+              const currentPlan = statusCheck?.owner?.plan || statusCheck?.owner_plan || '';
+              const childBalance = statusCheck?.child?.mix_balance ?? st.latestChildMix ?? 0;
+
+              if (statusCheck?.child?.mix_balance !== undefined) {
+                st.latestChildMix = statusCheck.child.mix_balance;
+              }
+              if (statusCheck?.owner?.mix_balance !== undefined) {
+                st.latestOwnerMix = statusCheck.owner.mix_balance;
+              }
+
+              // Determine target plan based on previousPlan
+              const targetIsSeven = !previousPlan.includes('270') && !previousPlan.includes('Parent_7');
+              const targetPlanName = targetIsSeven ? 'حكاية ميكسات 270' : 'حكاية ميكسات 180';
+
+              // Has the plan switched?
+              const planHasChanged =
+                (currentPlan && previousPlan && currentPlan !== previousPlan) ||
+                (targetIsSeven && (currentPlan.includes('270') || currentPlan.includes('Parent_7'))) ||
+                (!targetIsSeven && (currentPlan.includes('180') || currentPlan.includes('Parent_6')));
+
+              if (planHasChanged) {
+                isPlanSwitched = true;
+                st.latestOwnerPlan = currentPlan;
                 this.addLog(
                   sessionId,
-                  `[✓ تأكيد ترحيل النظام] تأكد تحول نظام الأونر إلى (${currentPlan}). جاري استرجاع الميكسات (${rescueCheck.child.mix_balance.toLocaleString('ar-EG')} ميكس) بأمان تام للأونر...`,
+                  `[🎉 تأكيد الترحيل بالسيرفر] استجاب مقسم اتصالات وتأكد تحول نظام الأونر إلى (${currentPlan}) بنجاح تام بعد انتظار (${elapsedSec} ث)!`,
                   'success'
                 );
-                await executeVipReturnChildMixes(sessionId);
+
+                // Instantly recover parked mixes from child to owner
+                this.addLog(
+                  sessionId,
+                  `[⚡ استرجاع فوري لحظي] جاري سحب واسترجاع الميكسات المحمية (${childBalance.toLocaleString('ar-EG')} ميكس) فوراً إلى حساب الأونر...`,
+                  'info'
+                );
+
+                st.currentStep = 'recovering';
+                st.stepMessage = 'استرجاع الميكسات للأونر...';
+                this.notify(sessionId);
+
+                const returnRes = await executeVipReturnChildMixes(sessionId, childBalance);
+                if (returnRes.success) {
+                  this.addLog(
+                    sessionId,
+                    `[✓ تم الاسترجاع بنجاح] تم استرجاع كامل الميكسات للأونر بنجاح واكتمال الدورة #${st.cycleCount}!`,
+                    'success'
+                  );
+                } else {
+                  this.addLog(
+                    sessionId,
+                    `[!] استجابة أمر الاسترجاع: ${returnRes.error || returnRes.message || 'تم إرسال الأمر'}. فحص الرصيد المحدث...`,
+                    'info'
+                  );
+                }
+
+                // Refresh updated balances
+                await new Promise((r) => setTimeout(r, 2000));
+                try {
+                  const finalCheck = (await executeVipCheckStatus(sessionId)) as any;
+                  if (finalCheck?.owner?.mix_balance !== undefined) {
+                    st.latestOwnerMix = finalCheck.owner.mix_balance;
+                  }
+                  if (finalCheck?.child?.mix_balance !== undefined) {
+                    st.latestChildMix = finalCheck.child.mix_balance;
+                  }
+                } catch (_) {}
+
+                st.currentStep = 'cooldown';
+                st.stepMessage = `اكتملت الدورة #${st.cycleCount} بنجاح`;
+                this.notify(sessionId);
+                break;
               }
-            } else {
-              this.addLog(
-                sessionId,
-                `[🔒 حماية الرصيد من التصفير] نظام الأونر (${currentPlan || 'قيد الانتظار بالمقسم'}) لم يتغير بعد. الميكسات تظل محجوزة ومحمية بالكامل لدى الفرد لمنع مسحها عند استجابة السيرفر!`,
-                'warn'
-              );
+
+              // Periodic live pulse log (every 3 polls ~ 18 seconds)
+              if (pollAttempt % 3 === 0) {
+                this.addLog(
+                  sessionId,
+                  `[🔄 مراقبة حية مستمرة #${pollAttempt}] استمرار مراقبة مقسم اتصالات (مضى ${elapsedSec} ث) | الحالي: [${currentPlan || 'قيد الانتظار'}] | المطلوب: [${targetPlanName}] - الرصيد محمي بالفرد (${childBalance.toLocaleString('ar-EG')} ميكس)...`,
+                  'info'
+                );
+              }
+
+              // الخطوة التنشيطية: تنفذ مرة واحدة فقط إذا تأخر النظام أكثر من 70 ثانية
+              if (!didActivationStep && elapsedSec >= 70) {
+                didActivationStep = true;
+                this.addLog(
+                  sessionId,
+                  `[⚡ خطوة تنشيطية واحدة] تأخر اعتماد النظام بالمقسم (مضى ${elapsedSec} ث). جاري تنفيذ تجديد للباقة وتأكيد طلب الترحيل لتنشيط السيرفر...`,
+                  'info'
+                );
+                try {
+                  await executeVipRenewBundle(sessionId);
+                  await new Promise((r) => setTimeout(r, 1500));
+                  await executeVipChangePlan(sessionId, targetIsSeven ? '7' : '6');
+                  this.addLog(
+                    sessionId,
+                    `[✓] تم إرسال نبضة التنشيط وتأكيد طلب الترحيل بنجاح. المراقبة مستمرة دون مقاطعة حتى الترحيل الكامل...`,
+                    'success'
+                  );
+                } catch (actErr: any) {
+                  this.addLog(
+                    sessionId,
+                    `[!] ملاحظة أثناء الخطوة التنشيطية: ${actErr?.message || actErr}`,
+                    'warn'
+                  );
+                }
+              }
+            } catch (_pollErr) {
+              // Ignore temporary network hiccups during poll and continue monitoring calmly
             }
-          } catch (_) {}
-          continue;
+          }
+
+          if (st.stopRequested) break;
+
+          // If plan successfully switched and mixes recovered, pause briefly then move cleanly to next cycle!
+          if (isPlanSwitched) {
+            st.consecutiveErrors = 0;
+            const delaySec = 15;
+            this.addLog(
+              sessionId,
+              `[⏳] فترة أمان وفصل (${delaySec} ثانية) قبل بدء الدورة التالية #${st.cycleCount + 1}...`,
+              'info'
+            );
+            await new Promise((r) => setTimeout(r, delaySec * 1000));
+            continue;
+          }
         }
 
         const canRetryError =
